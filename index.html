@@ -248,6 +248,7 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
     <section class="section" id="strokeSelectSection" style="display:none;">
       <div class="section-title">🖊️ Selected Stroke</div>
       <div id="strokeRecipe" class="recipe-text"></div>
+      <div class="slider-row"><label>Colour</label><input id="strokeColorInput" class="color" type="color" value="#000000"><span class="hint" style="flex:1;">Recolours this stroke/outline directly.</span></div>
       <div class="slider-row"><label>Layer</label><select id="strokeLayerSelect" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></select></div>
       <div class="slider-row"><label>Width</label><input id="strokeWidthCtl" type="range" min="1" max="120" value="6"><span id="strokeWidthVal">6</span></div>
       <div class="row" style="margin-top:6px;flex-wrap:wrap;">
@@ -256,7 +257,11 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
         <button id="copyBrushStyleBtn" class="btn mini" style="flex:1 1 45%;">Copy Style</button>
         <button id="applyBrushStyleBtn" class="btn mini" style="flex:1 1 45%;" disabled>Apply Style</button>
       </div>
-      <button id="paintInsideBtn" class="btn mini" style="width:100%;margin-top:6px;" disabled>🎨 Paint Inside This Shape</button>
+      <div class="row" style="margin-top:6px;align-items:center;">
+        <input id="fillColorInput" class="color" type="color" value="#ffd166">
+        <button id="fillShapeBtn" class="btn mini" style="flex:1" disabled>🎨 Fill Shape</button>
+      </div>
+      <button id="paintInsideBtn" class="btn mini" style="width:100%;margin-top:6px;" disabled>✏️ Paint Inside This Shape</button>
       <div id="paintInsideHint" class="hint"></div>
       <div class="hint" style="margin-top:10px;">Tap a different brush below to re-apply it to this stroke — geometry doesn't change, only appearance.</div>
       <div id="strokeReassignSwatches" class="brush-family-row" style="margin-top:6px;"></div>
@@ -460,6 +465,24 @@ function rebuildLayersClippedBy(strokeId){
   layerIds.forEach(id=>rebuildLayer(id));
 }
 function renderStrokeClipped(ctx,stroke,brush,settings,alphaMul){
+  // Fill Shape strokes aren't brush-rendered at all — they ARE a closed path, solid-filled with
+  // their own fillColor. This runs before the clipStrokeId check below since a fill defines its
+  // own boundary and was never meant to be clipped by some OTHER shape.
+  if(stroke.fillColor){
+    const fillPts=stroke.nodes?nodesToPoints(stroke.nodes,true):stroke.points;
+    if(fillPts&&fillPts.length>=3){
+      ctx.save();
+      ctx.globalAlpha=alphaMul!=null?alphaMul:1;
+      ctx.beginPath();
+      ctx.moveTo(fillPts[0].x,fillPts[0].y);
+      for(let i=1;i<fillPts.length;i++)ctx.lineTo(fillPts[i].x,fillPts[i].y);
+      ctx.closePath();
+      ctx.fillStyle=stroke.fillColor;
+      ctx.fill();
+      ctx.restore();
+    }
+    return;
+  }
   const target=stroke.clipStrokeId?findClipTargetStroke(stroke.clipStrokeId):null;
   if(!target){BrushEngine.renderStroke(ctx,stroke,brush,settings,alphaMul);return;}
   const pts=target.nodes?nodesToPoints(target.nodes,true):target.points;
@@ -1053,6 +1076,10 @@ function syncStrokeSelectionUI(){
       ?'Painting inside switches to the Colour layer — the outline stays a fully independent, editable vector path.'
       :'Only closed shapes can hold paint — use ◯ Close Shape first.';
   }
+  const fillBtn=$('fillShapeBtn');
+  if(fillBtn)fillBtn.disabled=!stroke||!stroke.closed;
+  const strokeColorInput=$('strokeColorInput');
+  if(strokeColorInput&&stroke)strokeColorInput.value=stroke.color||'#000000';
   syncShapeParamsUI(stroke);
   syncStrokeLayerSelect(stroke);
 }
@@ -1534,6 +1561,35 @@ function setFreePaintMode(){
 }
 $('paintInsideBtn').onclick=startPaintInside;
 $('paintModePill').onclick=setFreePaintMode;
+// ---- Fill Shape: a one-tap solid fill, distinct from Paint Inside's freehand clipped scribble.
+// Reuses the selected closed shape's own path as a brand-new stroke (fillColor set, no brush) on
+// the Colour layer — see the fillColor branch in renderStrokeClipped for how it paints.
+function fillSelectedShape(){
+  const stroke=strokes.find(s=>s.id===selectedStrokeId);
+  if(!stroke||!stroke.closed)return;
+  const srcPts=stroke.nodes?nodesToPoints(stroke.nodes,true):stroke.points;
+  if(!srcPts||srcPts.length<3)return;
+  const pts=srcPts.map(p=>({...p}));
+  const colourLayer=layers.find(l=>{const n=l.name.trim().toLowerCase();return n==='colour'||n==='color';});
+  const layerId=colourLayer?colourLayer.id:activeLayerId;
+  const fillColor=$('fillColorInput').value;
+  const fillStroke={id:crypto.randomUUID(),brushId:stroke.brushId,layerId,color:fillColor,fillColor,settings:null,points:pts,nodes:null,closed:true,clipStrokeId:null,shape:null};
+  strokes.push(fillStroke);appendStrokeToLayer(fillStroke);
+  pushHist();redraw();
+  setStatus('🎨 Filled shape on "'+(layers.find(l=>l.id===layerId)?layers.find(l=>l.id===layerId).name:'')+'".');
+}
+$('fillShapeBtn').onclick=fillSelectedShape;
+// ---- Recolour an existing stroke (including outlines) directly — separate from the main brush
+// colour picker, which only sets the colour FUTURE strokes are drawn with.
+$('strokeColorInput').oninput=e=>{
+  const stroke=strokes.find(s=>s.id===selectedStrokeId);
+  if(!stroke)return;
+  stroke.color=e.target.value;
+  if(stroke.fillColor)stroke.fillColor=e.target.value;
+  rebuildLayer(stroke.layerId);
+  redraw();
+};
+$('strokeColorInput').onchange=()=>{pushHist();};
 
 // ---- Brush panel: family list, recents, favourites, quick controls -----------------------
 function makeBrushSwatch(b){
