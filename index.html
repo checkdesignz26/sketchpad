@@ -357,7 +357,16 @@ let renderScale=1;
 let baseScale=1;
 function computeRenderScale(){
   const raw=zoom*baseScale*(window.devicePixelRatio||1);
-  const buckets=[1,1.5,2,3,4];
+  // Capped at 2 (was 4): every bucket step squares the memory cost, since EVERY layer's display
+  // canvas plus the shared display/visible canvases all scale with it. On a Retina iPad
+  // (devicePixelRatio 2), bucket 2 is already the norm at 100% zoom with no user action at all —
+  // zooming in further used to escalate to 3 or 4, which with a few layers pushed total canvas
+  // memory well past what iPad Safari tolerates before it kills the tab. Capping at 2 keeps the
+  // worst case roughly a quarter the memory of the old cap; strokes stay fully vector/resolution-
+  // independent regardless (see the comment above renderScale), so this only means zooming in
+  // past 200% CSS-upscales the bitmap a little rather than re-rasterising sharper — a reasonable
+  // trade against the app crashing and losing the drawing.
+  const buckets=[1,1.5,2];
   for(const b of buckets){if(raw<=b)return b;}
   return buckets[buckets.length-1];
 }
