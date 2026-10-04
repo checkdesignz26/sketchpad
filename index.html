@@ -53,7 +53,14 @@ button,input,select{font:inherit}
 .float-panel{position:fixed;z-index:60;width:270px;max-width:calc(100vw - 24px);max-height:calc(100vh - 24px);overflow:auto;background:var(--sideBg);border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:0 18px 50px rgba(0,0,0,.35)}
 .float-panel-handle{cursor:move;touch-action:none;-webkit-user-select:none;user-select:none;display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:900;font-size:15px;margin:-14px -14px 10px -14px;padding:12px 14px;border-radius:18px 18px 0 0;background:var(--panel2);border-bottom:1px solid var(--line)}
 .float-panel-handle.dragging{cursor:grabbing}
-.float-panel-grip{opacity:.55;font-size:17px;letter-spacing:-1px}
+.float-panel-handle-actions{display:flex;align-items:center;gap:10px}
+/* A second, compact Done right in the title bar — always at a fixed, immediately-visible spot
+   the instant the panel opens, regardless of how tall the panel is or where it's been dragged,
+   so reaching it never depends on scrolling/navigating past Delete Node or anything else first.
+   The full-width Done at the bottom stays too, for a bigger, familiar target when that's easier
+   to reach instead. */
+.float-panel-done{padding:4px 10px;font-size:12.5px;cursor:pointer}
+.float-panel-grip{opacity:.55;font-size:17px;letter-spacing:-1px;cursor:move}
 .section-title{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:var(--pink);font-weight:800;margin-bottom:10px}
 .btn,.tool-btn,.brush-btn,.layout-btn{border:1px solid var(--btnBorder);border-radius:12px;background:var(--btnBg);color:var(--text);padding:10px 14px;font-size:14px;font-weight:850;cursor:pointer;box-shadow:none}
 .btn:active,.tool-btn:active,.brush-btn:active,.layout-btn:active{transform:scale(.97)}
@@ -302,7 +309,10 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
     </section>
   </aside>
   <div class="float-panel" id="pathEditBar" style="display:none;">
-    <div class="float-panel-handle" id="pathEditBarHandle"><span>✎ Edit Path</span><span class="float-panel-grip" title="Drag to move">⠿</span></div>
+    <div class="float-panel-handle" id="pathEditBarHandle">
+      <span>✎ Edit Path</span>
+      <span class="float-panel-handle-actions"><button id="pathEditDoneTopBtn" class="btn mini primary float-panel-done">✓ Done</button><span class="float-panel-grip" title="Drag to move">⠿</span></span>
+    </div>
     <div class="row"><button id="pathSelectToolBtn" class="btn mini active" style="flex:1">↖ Select</button><button id="pathAddNodeToolBtn" class="btn mini" style="flex:1">➕ Add Node</button></div>
     <div class="row" style="margin-top:6px;"><button id="nodeSmoothBtn" class="btn mini">⌒ Smooth</button><button id="nodeCornerBtn" class="btn mini">⌐ Corner</button></div>
     <div class="row" style="margin-top:6px;">
@@ -311,11 +321,14 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
       <button id="closePathBtn" class="btn mini" style="flex:1 1 45%;">◯ Close Shape</button>
       <button id="breakPathBtn" class="btn mini" style="flex:1 1 45%;">✂ Break</button>
     </div>
-    <button id="nodeDeleteBtn" class="btn mini danger" style="width:100%;margin-top:8px;">✕ Delete Node</button>
     <div class="row" style="margin-top:8px;">
       <button id="simplifyPathBtn" class="btn mini" style="flex:1">〜 Simplify</button>
     </div>
     <div id="pathEditHint" class="hint">Tap a node to select it, drag to move it. Switch to Add Node, then tap directly on the path to insert a node there.</div>
+    <!-- Delete Node is deliberately separated from Done (which also lives in the title bar, see
+         above) by the hint text and a bigger gap below — reported: reaching for Done was landing
+         on a destructive button right next to it instead. -->
+    <button id="nodeDeleteBtn" class="btn mini danger" style="width:100%;margin-top:14px;">✕ Delete Node</button>
     <button id="pathEditDoneBtn" class="btn primary" style="width:100%;margin-top:10px;">✓ Done</button>
   </div>
   <div class="float-panel" id="joinPickBar" style="display:none;">
@@ -2328,12 +2341,22 @@ function adjustHeldShape(p){
 // specifically so the panel can never again end up scrolled out of reach, or with its own
 // buttons (Done, Delete Node) crowded against an unrelated panel's button (Delete Stroke) at a
 // fixed spot the user has no way to move away from. One shared drag implementation for both.
+//
+// Bounded to the CANVAS viewport's own on-screen rect (viewportOuter), not raw window
+// dimensions — window.innerWidth/innerHeight on mobile Safari can disagree with what's actually
+// visible (collapsing address bar, etc.), which is exactly what could leave part of the panel,
+// Done included, rendered somewhere the user can't actually reach or see. Anchoring to a real,
+// already-correctly-laid-out DOM rect sidesteps that, and keeps the panel reading as "a tool
+// floating over the canvas" rather than "a window floating over the whole page" — matching what
+// was asked for.
 let floatPanelPositions={}; // {panelId:{x,y}} — remembered for the rest of this session, so a
 // panel reopens wherever it was last dragged to rather than snapping back to its default spot.
 function clampFloatPanelPos(el,x,y){
   const w=el.offsetWidth||270,h=el.offsetHeight||200;
-  const maxX=Math.max(8,window.innerWidth-w-8),maxY=Math.max(8,window.innerHeight-h-8);
-  return {x:Math.min(Math.max(8,x),maxX),y:Math.min(Math.max(8,y),maxY)};
+  const vr=viewportOuter.getBoundingClientRect();
+  const minX=vr.left+8,minY=vr.top+8;
+  const maxX=Math.max(minX,vr.right-w-8),maxY=Math.max(minY,vr.bottom-h-8);
+  return {x:Math.min(Math.max(minX,x),maxX),y:Math.min(Math.max(minY,y),maxY)};
 }
 function positionFloatPanel(id,defaultX,defaultY){
   const el=$(id);
@@ -2345,6 +2368,7 @@ function positionFloatPanel(id,defaultX,defaultY){
 function makeFloatPanelDraggable(panelId,handleId){
   const panel=$(panelId),handle=$(handleId);
   handle.addEventListener('pointerdown',e=>{
+    if(e.target.closest('button'))return; // let the handle's own Done button act normally, not start a drag
     // Deliberately NOT gated by isPen() — dragging a UI panel around is ordinary chrome
     // interaction (like any button), not canvas art editing, so touch works here same as
     // Pencil/mouse, unlike dragging a node or inserting one with Add Node.
@@ -2382,10 +2406,10 @@ function enterEditPath(strokeId){
   rebuildLayerDimmed(stroke.layerId,stroke.id,0);
   renderPathLivePreview();
   $('pathEditBar').style.display='block';$('pathEditBar').classList.add('open');
-  // Defaults to the top-right of the viewport (clear of both the sidebar and the usual drawing
-  // area) the FIRST time it's opened this session; after that it reopens wherever it was last
-  // dragged to, via floatPanelPositions.
-  positionFloatPanel('pathEditBar',window.innerWidth-294,88);
+  // Defaults to the top-right of the CANVAS viewport itself (not the raw window — see
+  // clampFloatPanelPos) the FIRST time it's opened this session; after that it reopens wherever
+  // it was last dragged to, via floatPanelPositions.
+  {const vr=viewportOuter.getBoundingClientRect();positionFloatPanel('pathEditBar',vr.right-294,vr.top+16);}
   renderPathNodeOverlay();
   setStatus('✎ Edit Path: drag nodes to adjust the curve, then tap Done.');
 }
@@ -2683,7 +2707,7 @@ function startJoinPath(){
   joinPendingStrokeId=strokeId;joinPendingFromEnd=fromEnd;
   mode='edit';syncMode();
   $('joinPickBar').style.display='block';
-  positionFloatPanel('joinPickBar',window.innerWidth-294,88);
+  {const vr=viewportOuter.getBoundingClientRect();positionFloatPanel('joinPickBar',vr.right-294,vr.top+16);}
   renderJoinTargets();
   setStatus('⋈ Choose Endpoint to Join: tap a highlighted endpoint, or Cancel.');
 }
@@ -2780,6 +2804,7 @@ bindTapButton($('nodeSmoothBtn'),()=>{if(selectedNodeIndex==null||!pathEditNodes
 bindTapButton($('nodeCornerBtn'),()=>{if(selectedNodeIndex==null||!pathEditNodes)return;pathEditNodes[selectedNodeIndex].type='corner';renderPathNodeOverlay();renderPathLivePreview();redraw();});
 bindTapButton($('nodeDeleteBtn'),()=>{if(selectedNodeIndex==null||!pathEditNodes||pathEditNodes.length<=(pathEditClosed?3:2))return;pathEditNodes.splice(selectedNodeIndex,1);selectedNodeIndex=null;renderPathNodeOverlay();renderPathLivePreview();redraw();});
 bindTapButton($('pathEditDoneBtn'),commitEditPath);
+bindTapButton($('pathEditDoneTopBtn'),commitEditPath);
 bindTapButton($('continuePathBtn'),startContinuePath);
 bindTapButton($('joinPathBtn'),startJoinPath);
 bindTapButton($('closePathBtn'),closeSelectedPath);
