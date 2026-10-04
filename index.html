@@ -2125,6 +2125,20 @@ function renderPathLivePreview(){
   BrushEngine.renderStroke(lctx,{...stroke,points:nodesToPoints(pathEditNodes,pathEditClosed)},brush,settings);
   liveActive=true;
 }
+// Unlike freehand drawing's incremental live preview (renderLivePreviewIncremental, which only
+// re-renders the NEW points since the last frame), a dragged node can move ANY point in the
+// path, so every frame has to re-run nodesToPoints + a full BrushEngine.renderStroke over the
+// WHOLE stroke — genuinely more expensive per call. The bug: it used to run that full re-render
+// on every raw pointermove event, not once per displayed frame — Apple Pencil commonly reports
+// well above 60Hz, so dragging a node on anything but a tiny/simple stroke was redoing this full
+// render 2x+ more often than the screen could even show the result, which is exactly what reads
+// as "laggy". redraw() already solves this with an rAF queue; this mirrors that same pattern so
+// rapid pointermoves between frames coalesce into one actual render instead of stacking up.
+let pathLivePreview_q=0;
+function schedulePathLivePreview(){
+  if(pathLivePreview_q)return;
+  pathLivePreview_q=requestAnimationFrame(()=>{pathLivePreview_q=0;renderPathLivePreview();redraw();});
+}
 function commitEditPath(){
   const stroke=strokes.find(s=>s.id===pathEditStrokeId);
   // Wrapped defensively: this must NEVER leave a stroke in the hidden/half-applied state
@@ -2192,7 +2206,7 @@ function renderPathNodeOverlay(){
         pathEditNodes[i].x=p.x;pathEditNodes[i].y=p.y;
         const np=canvasToScreen(p.x,p.y);
         el.style.left=np.x+'px';el.style.top=np.y+'px';
-        renderPathLivePreview();redraw();
+        schedulePathLivePreview();
       };
       const onUp=()=>{el.removeEventListener('pointermove',onMove);renderPathNodeOverlay();};
       el.addEventListener('pointermove',onMove);
