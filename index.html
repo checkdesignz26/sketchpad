@@ -2328,6 +2328,13 @@ function enterEditPath(strokeId){
   rebuildLayerDimmed(stroke.layerId,stroke.id,0);
   renderPathLivePreview();
   $('pathEditBar').style.display='block';$('pathEditBar').classList.add('open');
+  // The panel lives in normal document flow partway down a long, independently-scrollable
+  // sidebar (see the sidebar relocation) — simply toggling display:block does NOT bring a
+  // below-the-fold element into view. Without this, opening Edit Path on anything but a very
+  // tall viewport left the panel technically open but scrolled far out of sight, which is
+  // exactly what read as "Edit Path doesn't open" (confirmed: it silently required an extra
+  // ~1200px of manual scrolling on a realistic iPad-sized window before anything appeared).
+  $('pathEditBar').scrollIntoView({block:'start'});
   renderPathNodeOverlay();
   setStatus('✎ Edit Path: drag nodes to adjust the curve, then tap Done.');
 }
