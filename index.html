@@ -122,7 +122,6 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
 .layer-name{flex:1;font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .layer-opacity{width:46px;flex-shrink:0}
 .recipe-text{font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:0;white-space:pre-line;background:var(--btnBg);border-radius:10px;padding:8px 10px}
-#pathEditBar{position:absolute;left:12px;top:12px;z-index:16;width:270px;max-width:calc(100% - 24px);max-height:calc(100% - 24px);overflow:auto}
 #pathNodeOverlay{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:15}
 /* Real nodes: the VISIBLE dot is deliberately tiny (so the artwork underneath stays readable),
    but the actual hit target (this element) stays a generous ~28px — an invisible Pencil/finger
@@ -151,7 +150,6 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
 .path-node.join-target{cursor:pointer}
 .path-node.join-target.self-endpoint::after{border-style:dashed}
 @keyframes joinTargetPulse{0%,100%{box-shadow:0 0 0 0 rgba(115,212,140,.55),0 2px 8px rgba(0,0,0,.4)}50%{box-shadow:0 0 0 9px rgba(115,212,140,0),0 2px 8px rgba(0,0,0,.4)}}
-#joinPickBar{position:absolute;left:12px;top:12px;z-index:17;width:270px;max-width:calc(100% - 24px);background:var(--sideBg);border:1px solid var(--line);border-radius:22px;padding:14px;box-shadow:0 18px 50px rgba(0,0,0,.35)}
 #paintModePill{background:var(--accentTeal);border:1px solid rgba(92,184,171,.5);font:inherit}
 /* Collapsible left panel: a slim always-visible tab sits between the sidebar and the workspace
    in the same flex row, so it's reachable whether the panel is open or collapsed — collapsing
@@ -294,30 +292,32 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
       </div>
       <button id="deleteStrokeBtn" class="btn mini danger" style="width:100%;margin-top:8px;">Delete Stroke</button>
     </section>
+    <section class="section" id="pathEditBar" style="display:none;">
+      <div class="section-title">✎ Edit Path</div>
+      <div class="row"><button id="nodeSmoothBtn" class="btn mini">⌒ Smooth</button><button id="nodeCornerBtn" class="btn mini">⌐ Corner</button></div>
+      <div class="row" style="margin-top:6px;">
+        <button id="continuePathBtn" class="btn mini" style="flex:1 1 45%;">↳ Continue</button>
+        <button id="joinPathBtn" class="btn mini" style="flex:1 1 45%;">⋈ Join</button>
+        <button id="closePathBtn" class="btn mini" style="flex:1 1 45%;">◯ Close Shape</button>
+        <button id="breakPathBtn" class="btn mini" style="flex:1 1 45%;">✂ Break</button>
+      </div>
+      <button id="nodeDeleteBtn" class="btn mini danger" style="width:100%;margin-top:8px;">✕ Delete Node</button>
+      <div class="row" style="margin-top:8px;">
+        <button id="simplifyPathBtn" class="btn mini" style="flex:1">〜 Simplify</button>
+      </div>
+      <div id="pathEditHint" class="hint">Drag a node to move it. Tap a small dashed dot between two nodes to add one there. Tap a node to select it, then use the buttons above.</div>
+      <button id="pathEditDoneBtn" class="btn primary" style="width:100%;margin-top:10px;">✓ Done</button>
+    </section>
+    <section class="section" id="joinPickBar" style="display:none;">
+      <div class="section-title">⋈ Choose Endpoint to Join</div>
+      <div class="hint">The gold node is the endpoint you're joining from. Tap any pulsing green endpoint to connect it there.</div>
+      <button id="joinCancelBtn" class="btn mini" style="width:100%;margin-top:10px;">✕ Cancel</button>
+    </section>
   </aside>
   <button id="sidebarToggleBtn" class="sidebar-toggle" title="Hide tools panel">‹</button>
   <main class="workspace">
     <div class="toolbar"><button id="undoBtn" class="tool-btn">↩️ Undo</button><button id="redoBtn" class="tool-btn">↪️ Redo</button><div id="zoomPill" class="pill">100%</div><button id="resetRot" class="tool-btn">0° Rotation</button><button id="guidesBtn" class="tool-btn">📐 Guides</button><button id="paintModePill" class="pill" style="display:none;cursor:pointer;">🎨 Paint Inside — tap for Free Paint</button><button id="editMotifBar" class="pill" style="display:none;cursor:pointer;background:var(--accentTeal);border:1px solid rgba(92,184,171,.5);font:inherit;">✏️ Editing: <span id="editMotifBarName"></span> — tap Done</button><div class="toolbar-spacer"></div><button id="viewToggleBtn" class="tool-btn">⋯ View</button><button id="exportBtn" class="tool-btn primary">📸 Export</button></div>
-    <div id="canvasViewportOuter" class="canvas-viewport-outer"><div id="canvasWrap" class="canvas-wrap"><div id="viewPopover" class="sym-pop"><div class="section-title">🧭 Canvas / View</div><button id="symToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">🦋 Symmetry Off</button><div class="row" style="margin-bottom:10px;"><button id="tilingBtn" class="tool-btn active" style="flex:1">Tiling On</button><div id="layoutPill" class="pill">📍 Grid Mode</div></div><button id="themeToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">☀️ Light Mode</button><button id="clearDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear Drawing</button><button id="viewCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="symPopover" class="sym-pop"><div class="section-title">🦋 Symmetry</div><div class="grid"><button class="sym-btn btn active" data-sym="off">Off</button><button class="sym-btn btn" data-sym="vertical">Vertical</button><button class="sym-btn btn" data-sym="horizontal">Horizontal</button><button class="sym-btn btn" data-sym="quad">Quad</button><button class="sym-btn btn" data-sym="diamond">Diamond</button></div><div class="slider-row"><label>Axis X</label><input id="symX" type="range" min="0" max="1800" value="900"><span id="symXVal">50%</span></div><div class="slider-row"><label>Axis Y</label><input id="symY" type="range" min="0" max="1800" value="900"><span id="symYVal">50%</span></div><div class="row"><button id="symCentre" class="btn mini">Centre Axis</button><button id="symClose" class="btn mini">Done</button></div><div class="hint">Move the mirror point to make flowers, leaves and playful asymmetric symmetry.</div></div><canvas id="canvas" width="1800" height="1800"></canvas><div id="selectionBox" class="selection-box"><div id="resizeHandle" class="handle"></div><div id="rotateHandle" class="rotHandle"></div></div><div id="symAxis" class="sym-axis"></div><div id="rotateChip" class="rotate-chip">Canvas 0°</div><div id="pathNodeOverlay"></div><div id="pathEditBar" class="sym-pop" style="display:none;">
-  <div class="section-title">✎ Edit Path</div>
-  <div class="row"><button id="nodeSmoothBtn" class="btn mini">⌒ Smooth</button><button id="nodeCornerBtn" class="btn mini">⌐ Corner</button></div>
-  <div class="row" style="margin-top:6px;">
-    <button id="continuePathBtn" class="btn mini" style="flex:1 1 45%;">↳ Continue</button>
-    <button id="joinPathBtn" class="btn mini" style="flex:1 1 45%;">⋈ Join</button>
-    <button id="closePathBtn" class="btn mini" style="flex:1 1 45%;">◯ Close Shape</button>
-    <button id="breakPathBtn" class="btn mini" style="flex:1 1 45%;">✂ Break</button>
-  </div>
-  <button id="nodeDeleteBtn" class="btn mini danger" style="width:100%;margin-top:8px;">✕ Delete Node</button>
-  <div class="row" style="margin-top:8px;">
-    <button id="simplifyPathBtn" class="btn mini" style="flex:1">〜 Simplify</button>
-  </div>
-  <div id="pathEditHint" class="hint">Drag a node to move it. Tap a small dashed dot between two nodes to add one there. Tap a node to select it, then use the buttons above.</div>
-  <button id="pathEditDoneBtn" class="btn primary" style="width:100%;margin-top:10px;">✓ Done</button>
-</div><div id="joinPickBar" style="display:none;">
-  <div class="section-title">⋈ Choose Endpoint to Join</div>
-  <div class="hint">The gold node is the endpoint you're joining from. Tap any pulsing green endpoint to connect it there.</div>
-  <button id="joinCancelBtn" class="btn mini" style="width:100%;margin-top:10px;">✕ Cancel</button>
-</div></div></div>
+    <div id="canvasViewportOuter" class="canvas-viewport-outer"><div id="canvasWrap" class="canvas-wrap"><div id="viewPopover" class="sym-pop"><div class="section-title">🧭 Canvas / View</div><button id="symToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">🦋 Symmetry Off</button><div class="row" style="margin-bottom:10px;"><button id="tilingBtn" class="tool-btn active" style="flex:1">Tiling On</button><div id="layoutPill" class="pill">📍 Grid Mode</div></div><button id="themeToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">☀️ Light Mode</button><button id="clearDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear Drawing</button><button id="viewCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="symPopover" class="sym-pop"><div class="section-title">🦋 Symmetry</div><div class="grid"><button class="sym-btn btn active" data-sym="off">Off</button><button class="sym-btn btn" data-sym="vertical">Vertical</button><button class="sym-btn btn" data-sym="horizontal">Horizontal</button><button class="sym-btn btn" data-sym="quad">Quad</button><button class="sym-btn btn" data-sym="diamond">Diamond</button></div><div class="slider-row"><label>Axis X</label><input id="symX" type="range" min="0" max="1800" value="900"><span id="symXVal">50%</span></div><div class="slider-row"><label>Axis Y</label><input id="symY" type="range" min="0" max="1800" value="900"><span id="symYVal">50%</span></div><div class="row"><button id="symCentre" class="btn mini">Centre Axis</button><button id="symClose" class="btn mini">Done</button></div><div class="hint">Move the mirror point to make flowers, leaves and playful asymmetric symmetry.</div></div><canvas id="canvas" width="1800" height="1800"></canvas><div id="selectionBox" class="selection-box"><div id="resizeHandle" class="handle"></div><div id="rotateHandle" class="rotHandle"></div></div><div id="symAxis" class="sym-axis"></div><div id="rotateChip" class="rotate-chip">Canvas 0°</div><div id="pathNodeOverlay"></div></div></div>
     <div id="status" class="status">✨ Apple Pencil draws | one finger protected | two fingers pan/pinch/rotate | two-finger tap Undo | three-finger tap Redo | Capture Motif saves drawing ✨</div>
   </main>
 </div>
@@ -348,7 +348,8 @@ let compositeDirty=true;
 // gesture doesn't re-rasterise on every frame — only when it crosses a bucket boundary). Raising
 // it re-renders the same stroke geometry at a higher physical resolution — never scales an
 // existing bitmap — while staying capped so a big multi-layer document can't demand runaway
-// memory (capped to the app's own 400% zoom ceiling x a typical device pixel ratio).
+// memory (capped at a 2x bucket ceiling regardless of zoom, since renderScale itself is capped
+// independently of the app's 800% zoom ceiling — see the buckets array below).
 let renderScale=1;
 // baseScale: the CSS-px-per-canvas-unit factor that defines what "100% zoom" (zoom=1) actually
 // looks like for the current viewport — see updateBaseScale() further down for the full
@@ -976,7 +977,7 @@ canvas.addEventListener('pointercancel',()=>{
 // Pencil touch on iPad while still "working" under a mouse-driven click.
 function isUiTouchTarget(e){return !!(e.target&&e.target.closest&&e.target.closest('button,input,select,textarea,.sym-pop,.handle,.rotHandle'));}
 wrap.addEventListener('touchstart',e=>{if(isUiTouchTarget(e))return;e.preventDefault();const now=Date.now();touchState={n:e.touches.length,start:copyTouches(e.touches),last:copyTouches(e.touches),moved:false,time:now,zoom,panX,panY,rot};}, {passive:false});
-wrap.addEventListener('touchmove',e=>{if(isUiTouchTarget(e))return;e.preventDefault();if(!touchState)return;const cur=copyTouches(e.touches);touchState.moved=true;if(cur.length===1&&touchState.n===1){return}if(cur.length>=2&&touchState.start.length>=2){const s=touchState.start,c=cur;const sd=dist(s[0],s[1]),cd=dist(c[0],c[1]);const sa=ang(s[0],s[1]),ca=ang(c[0],c[1]);const sm=mid(s[0],s[1]),cm=mid(c[0],c[1]);zoom=Math.min(4,Math.max(.2,touchState.zoom*(cd/sd)));rot=touchState.rot+(ca-sa)*180/Math.PI;panX=touchState.panX+(cm.x-sm.x);panY=touchState.panY+(cm.y-sm.y);applyTransform();}}, {passive:false});
+wrap.addEventListener('touchmove',e=>{if(isUiTouchTarget(e))return;e.preventDefault();if(!touchState)return;const cur=copyTouches(e.touches);touchState.moved=true;if(cur.length===1&&touchState.n===1){return}if(cur.length>=2&&touchState.start.length>=2){const s=touchState.start,c=cur;const sd=dist(s[0],s[1]),cd=dist(c[0],c[1]);const sa=ang(s[0],s[1]),ca=ang(c[0],c[1]);const sm=mid(s[0],s[1]),cm=mid(c[0],c[1]);zoom=Math.min(8,Math.max(.2,touchState.zoom*(cd/sd)));rot=touchState.rot+(ca-sa)*180/Math.PI;panX=touchState.panX+(cm.x-sm.x);panY=touchState.panY+(cm.y-sm.y);applyTransform();}}, {passive:false});
 wrap.addEventListener('touchend',e=>{if(isUiTouchTarget(e))return;e.preventDefault();if(!touchState)return;const dt=Date.now()-touchState.time;const tap=!touchState.moved&&dt<260;if(tap&&touchState.n===2){undo();lastTouchEnd=Date.now()}else if(tap&&touchState.n===3){redo();lastTouchEnd=Date.now()}touchState=null;}, {passive:false});
 function copyTouches(t){return Array.from(t).map(v=>({x:v.clientX,y:v.clientY}))}function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)||1}function ang(a,b){return Math.atan2(b.y-a.y,b.x-a.x)}function mid(a,b){return{x:(a.x+b.x)/2,y:(a.y+b.y)/2}}
 // Renders the CURRENT strokes (all visible layers, flattened) to a cropped PNG data URL — shared
@@ -2768,7 +2769,7 @@ window.__sketchpadGetState=()=>({strokeCount:strokes.length,strokes,placed,motif
 // the (production, intentional) 120ms pinch-settle debounce so a test can assert on the
 // re-rendered result immediately instead of waiting out the debounce window.
 window.__sketchpadSetZoom=(z,skipDebounce)=>{
-  zoom=Math.min(4,Math.max(.2,z));
+  zoom=Math.min(8,Math.max(.2,z));
   if(skipDebounce)clearTimeout(renderScaleTimer);
   applyTransform();
   if(skipDebounce){const ns=computeRenderScale();if(ns!==renderScale)commitRenderScale(ns);}
