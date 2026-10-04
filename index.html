@@ -43,6 +43,17 @@ button,input,select{font:inherit}
 .app{height:100vh;display:flex;gap:8px;padding:8px}
 .sidebar{width:300px;max-width:32vw;background:var(--sideBg);border:1px solid var(--line);border-radius:24px;padding:14px;overflow:auto;display:flex;flex-direction:column;gap:12px}
 .section{background:var(--cardBg);border:1px solid var(--cardBorder);border-radius:16px;padding:12px}
+/* Edit Path / Join Pick panels: fixed to the VIEWPORT (not the scrollable sidebar, and not
+   clipped by canvas-wrap's own overflow:hidden — see .canvas-wrap), and user-draggable via their
+   own title bar, specifically so they can never again end up scrolled out of reach or with their
+   own buttons (Done, Delete Node) crowded against another panel's buttons (Delete Stroke) at a
+   fixed, non-negotiable position — the user drags it wherever is actually convenient instead.
+   Positioned by JS (left/top set directly, see positionFloatPanel) rather than CSS defaults, so
+   it can be clamped to stay fully on-screen at any viewport size. */
+.float-panel{position:fixed;z-index:60;width:270px;max-width:calc(100vw - 24px);max-height:calc(100vh - 24px);overflow:auto;background:var(--sideBg);border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:0 18px 50px rgba(0,0,0,.35)}
+.float-panel-handle{cursor:move;touch-action:none;-webkit-user-select:none;user-select:none;display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:900;font-size:15px;margin:-14px -14px 10px -14px;padding:12px 14px;border-radius:18px 18px 0 0;background:var(--panel2);border-bottom:1px solid var(--line)}
+.float-panel-handle.dragging{cursor:grabbing}
+.float-panel-grip{opacity:.55;font-size:17px;letter-spacing:-1px}
 .section-title{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:var(--pink);font-weight:800;margin-bottom:10px}
 .btn,.tool-btn,.brush-btn,.layout-btn{border:1px solid var(--btnBorder);border-radius:12px;background:var(--btnBg);color:var(--text);padding:10px 14px;font-size:14px;font-weight:850;cursor:pointer;box-shadow:none}
 .btn:active,.tool-btn:active,.brush-btn:active,.layout-btn:active{transform:scale(.97)}
@@ -289,29 +300,29 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
       </div>
       <button id="deleteStrokeBtn" class="btn mini danger" style="width:100%;margin-top:8px;">Delete Stroke</button>
     </section>
-    <section class="section" id="pathEditBar" style="display:none;">
-      <div class="section-title">✎ Edit Path</div>
-      <div class="row"><button id="pathSelectToolBtn" class="btn mini active" style="flex:1">↖ Select</button><button id="pathAddNodeToolBtn" class="btn mini" style="flex:1">➕ Add Node</button></div>
-      <div class="row" style="margin-top:6px;"><button id="nodeSmoothBtn" class="btn mini">⌒ Smooth</button><button id="nodeCornerBtn" class="btn mini">⌐ Corner</button></div>
-      <div class="row" style="margin-top:6px;">
-        <button id="continuePathBtn" class="btn mini" style="flex:1 1 45%;">↳ Continue</button>
-        <button id="joinPathBtn" class="btn mini" style="flex:1 1 45%;">⋈ Join</button>
-        <button id="closePathBtn" class="btn mini" style="flex:1 1 45%;">◯ Close Shape</button>
-        <button id="breakPathBtn" class="btn mini" style="flex:1 1 45%;">✂ Break</button>
-      </div>
-      <button id="nodeDeleteBtn" class="btn mini danger" style="width:100%;margin-top:8px;">✕ Delete Node</button>
-      <div class="row" style="margin-top:8px;">
-        <button id="simplifyPathBtn" class="btn mini" style="flex:1">〜 Simplify</button>
-      </div>
-      <div id="pathEditHint" class="hint">Tap a node to select it, drag to move it. Switch to Add Node, then tap directly on the path to insert a node there.</div>
-      <button id="pathEditDoneBtn" class="btn primary" style="width:100%;margin-top:10px;">✓ Done</button>
-    </section>
-    <section class="section" id="joinPickBar" style="display:none;">
-      <div class="section-title">⋈ Choose Endpoint to Join</div>
-      <div class="hint">The gold node is the endpoint you're joining from. Tap any pulsing green endpoint to connect it there.</div>
-      <button id="joinCancelBtn" class="btn mini" style="width:100%;margin-top:10px;">✕ Cancel</button>
-    </section>
   </aside>
+  <div class="float-panel" id="pathEditBar" style="display:none;">
+    <div class="float-panel-handle" id="pathEditBarHandle"><span>✎ Edit Path</span><span class="float-panel-grip" title="Drag to move">⠿</span></div>
+    <div class="row"><button id="pathSelectToolBtn" class="btn mini active" style="flex:1">↖ Select</button><button id="pathAddNodeToolBtn" class="btn mini" style="flex:1">➕ Add Node</button></div>
+    <div class="row" style="margin-top:6px;"><button id="nodeSmoothBtn" class="btn mini">⌒ Smooth</button><button id="nodeCornerBtn" class="btn mini">⌐ Corner</button></div>
+    <div class="row" style="margin-top:6px;">
+      <button id="continuePathBtn" class="btn mini" style="flex:1 1 45%;">↳ Continue</button>
+      <button id="joinPathBtn" class="btn mini" style="flex:1 1 45%;">⋈ Join</button>
+      <button id="closePathBtn" class="btn mini" style="flex:1 1 45%;">◯ Close Shape</button>
+      <button id="breakPathBtn" class="btn mini" style="flex:1 1 45%;">✂ Break</button>
+    </div>
+    <button id="nodeDeleteBtn" class="btn mini danger" style="width:100%;margin-top:8px;">✕ Delete Node</button>
+    <div class="row" style="margin-top:8px;">
+      <button id="simplifyPathBtn" class="btn mini" style="flex:1">〜 Simplify</button>
+    </div>
+    <div id="pathEditHint" class="hint">Tap a node to select it, drag to move it. Switch to Add Node, then tap directly on the path to insert a node there.</div>
+    <button id="pathEditDoneBtn" class="btn primary" style="width:100%;margin-top:10px;">✓ Done</button>
+  </div>
+  <div class="float-panel" id="joinPickBar" style="display:none;">
+    <div class="float-panel-handle" id="joinPickBarHandle"><span>⋈ Choose Endpoint to Join</span><span class="float-panel-grip" title="Drag to move">⠿</span></div>
+    <div class="hint">The gold node is the endpoint you're joining from. Tap any pulsing green endpoint to connect it there.</div>
+    <button id="joinCancelBtn" class="btn mini" style="width:100%;margin-top:10px;">✕ Cancel</button>
+  </div>
   <button id="sidebarToggleBtn" class="sidebar-toggle" title="Hide tools panel">‹</button>
   <main class="workspace">
     <div class="toolbar"><button id="undoBtn" class="tool-btn">↩️ Undo</button><button id="redoBtn" class="tool-btn">↪️ Redo</button><div id="zoomPill" class="pill">100%</div><button id="resetRot" class="tool-btn">0° Rotation</button><button id="guidesBtn" class="tool-btn">📐 Guides</button><button id="paintModePill" class="pill" style="display:none;cursor:pointer;">🎨 Paint Inside — tap for Free Paint</button><button id="editMotifBar" class="pill" style="display:none;cursor:pointer;background:var(--accentTeal);border:1px solid rgba(92,184,171,.5);font:inherit;">✏️ Editing: <span id="editMotifBarName"></span> — tap Done</button><div class="toolbar-spacer"></div><button id="viewToggleBtn" class="tool-btn">⋯ View</button><button id="exportBtn" class="tool-btn primary">📸 Export</button></div>
@@ -2312,6 +2323,49 @@ function adjustHeldShape(p){
   BrushEngine.renderStroke(lctx,{id:'hold-adjust',brushId:activeBrushId,color:currentColor,points:pts},BrushEngine.getBrush(activeBrushId),currentSettings());
   redraw();
 }
+// ---- Floating, draggable tool panels (Edit Path / Join Pick) ----------------------------------
+// Fixed to the viewport (see .float-panel CSS) and user-repositionable via their own title bar,
+// specifically so the panel can never again end up scrolled out of reach, or with its own
+// buttons (Done, Delete Node) crowded against an unrelated panel's button (Delete Stroke) at a
+// fixed spot the user has no way to move away from. One shared drag implementation for both.
+let floatPanelPositions={}; // {panelId:{x,y}} — remembered for the rest of this session, so a
+// panel reopens wherever it was last dragged to rather than snapping back to its default spot.
+function clampFloatPanelPos(el,x,y){
+  const w=el.offsetWidth||270,h=el.offsetHeight||200;
+  const maxX=Math.max(8,window.innerWidth-w-8),maxY=Math.max(8,window.innerHeight-h-8);
+  return {x:Math.min(Math.max(8,x),maxX),y:Math.min(Math.max(8,y),maxY)};
+}
+function positionFloatPanel(id,defaultX,defaultY){
+  const el=$(id);
+  const pos=floatPanelPositions[id]||{x:defaultX,y:defaultY};
+  const clamped=clampFloatPanelPos(el,pos.x,pos.y);
+  el.style.left=clamped.x+'px';el.style.top=clamped.y+'px';
+  floatPanelPositions[id]=clamped;
+}
+function makeFloatPanelDraggable(panelId,handleId){
+  const panel=$(panelId),handle=$(handleId);
+  handle.addEventListener('pointerdown',e=>{
+    // Deliberately NOT gated by isPen() — dragging a UI panel around is ordinary chrome
+    // interaction (like any button), not canvas art editing, so touch works here same as
+    // Pencil/mouse, unlike dragging a node or inserting one with Add Node.
+    e.preventDefault();
+    const startX=e.clientX,startY=e.clientY;
+    const startPos=floatPanelPositions[panelId]||{x:panel.offsetLeft,y:panel.offsetTop};
+    handle.classList.add('dragging');
+    try{handle.setPointerCapture(e.pointerId);}catch(err){}
+    const onMove=ev=>{
+      const clamped=clampFloatPanelPos(panel,startPos.x+(ev.clientX-startX),startPos.y+(ev.clientY-startY));
+      panel.style.left=clamped.x+'px';panel.style.top=clamped.y+'px';
+      floatPanelPositions[panelId]=clamped;
+    };
+    const onUp=()=>{handle.classList.remove('dragging');handle.removeEventListener('pointermove',onMove);};
+    handle.addEventListener('pointermove',onMove);
+    handle.addEventListener('pointerup',onUp,{once:true});
+    handle.addEventListener('pointercancel',onUp,{once:true});
+  });
+}
+makeFloatPanelDraggable('pathEditBar','pathEditBarHandle');
+makeFloatPanelDraggable('joinPickBar','joinPickBarHandle');
 function enterEditPath(strokeId){
   const stroke=strokes.find(s=>s.id===strokeId);if(!stroke)return;
   const layer=layers.find(l=>l.id===stroke.layerId);
@@ -2328,13 +2382,10 @@ function enterEditPath(strokeId){
   rebuildLayerDimmed(stroke.layerId,stroke.id,0);
   renderPathLivePreview();
   $('pathEditBar').style.display='block';$('pathEditBar').classList.add('open');
-  // The panel lives in normal document flow partway down a long, independently-scrollable
-  // sidebar (see the sidebar relocation) — simply toggling display:block does NOT bring a
-  // below-the-fold element into view. Without this, opening Edit Path on anything but a very
-  // tall viewport left the panel technically open but scrolled far out of sight, which is
-  // exactly what read as "Edit Path doesn't open" (confirmed: it silently required an extra
-  // ~1200px of manual scrolling on a realistic iPad-sized window before anything appeared).
-  $('pathEditBar').scrollIntoView({block:'start'});
+  // Defaults to the top-right of the viewport (clear of both the sidebar and the usual drawing
+  // area) the FIRST time it's opened this session; after that it reopens wherever it was last
+  // dragged to, via floatPanelPositions.
+  positionFloatPanel('pathEditBar',window.innerWidth-294,88);
   renderPathNodeOverlay();
   setStatus('✎ Edit Path: drag nodes to adjust the curve, then tap Done.');
 }
@@ -2632,6 +2683,7 @@ function startJoinPath(){
   joinPendingStrokeId=strokeId;joinPendingFromEnd=fromEnd;
   mode='edit';syncMode();
   $('joinPickBar').style.display='block';
+  positionFloatPanel('joinPickBar',window.innerWidth-294,88);
   renderJoinTargets();
   setStatus('⋈ Choose Endpoint to Join: tap a highlighted endpoint, or Cancel.');
 }
