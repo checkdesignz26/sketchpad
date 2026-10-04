@@ -124,21 +124,18 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
 .recipe-text{font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:0;white-space:pre-line;background:var(--btnBg);border-radius:10px;padding:8px 10px}
 #pathNodeOverlay{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:15}
 /* Real nodes: the VISIBLE dot is deliberately tiny (so the artwork underneath stays readable),
-   but the actual hit target (this element) stays a generous ~28px — an invisible Pencil/finger
-   target much bigger than what's drawn. The dot itself is rendered as a centred ::after so the
-   element's own box can stay large without looking large. */
-.path-node{position:absolute;width:28px;height:28px;margin-left:-14px;margin-top:-14px;pointer-events:auto;touch-action:none;cursor:grab;display:flex;align-items:center;justify-content:center}
+   but the actual hit target (this element) stays a generous ~36px — a fixed CSS-px size, so it
+   reads the same physical size on screen at ANY zoom level (the overlay is screen-space, see
+   canvasToScreen/renderPathNodeOverlay) rather than shrinking or growing with the canvas — an
+   invisible Pencil/finger target much bigger than what's drawn. The dot itself is rendered as a
+   centred ::after so the element's own box can stay large without looking large. */
+.path-node{position:absolute;width:36px;height:36px;margin-left:-18px;margin-top:-18px;pointer-events:auto;touch-action:none;cursor:grab;display:flex;align-items:center;justify-content:center}
 .path-node::after{content:'';display:block;width:6px;height:6px;border-radius:50%;background:#fff;border:1.5px solid var(--pink);box-shadow:0 1px 3px rgba(0,0,0,.35)}
 .path-node.corner::after{border-radius:1.5px}
-.path-node.selected::after{width:10px;height:10px;background:var(--pink);border-color:var(--pink);box-shadow:0 0 0 3px rgba(255,142,214,.3),0 1px 3px rgba(0,0,0,.35)}
+.path-node.selected::after{width:11px;height:11px;background:var(--pink);border-color:var(--pink);box-shadow:0 0 0 4px rgba(255,142,214,.35),0 1px 3px rgba(0,0,0,.35)}
 .path-node.corner.selected::after{border-radius:2px}
 .path-node.endpoint::after{border-color:var(--blue)}
 .path-node.endpoint.selected::after{border-color:var(--pink)}
-/* "Add node here" targets: even smaller, hollow, dashed — deliberately reads as "not a real node
-   yet" rather than just a smaller/fainter copy of a real one. Hit area stays generous too. */
-.path-node.mid{width:26px;height:26px;margin-left:-13px;margin-top:-13px}
-.path-node.mid::after{width:3.5px;height:3.5px;border-radius:50%;background:transparent;border:1.5px dashed var(--muted);opacity:.7;box-shadow:none}
-.path-node.mid:active::after{opacity:1;border-color:var(--pink)}
 /* Join Path picking mode: the ORIGIN endpoint (already chosen, step 2) stays put and visually
    distinct in gold so it's obvious which end is being joined; every TARGET endpoint (other open
    paths' ends, plus this same path's opposite end for the self-join -> Close Shape redirect)
@@ -294,7 +291,8 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
     </section>
     <section class="section" id="pathEditBar" style="display:none;">
       <div class="section-title">✎ Edit Path</div>
-      <div class="row"><button id="nodeSmoothBtn" class="btn mini">⌒ Smooth</button><button id="nodeCornerBtn" class="btn mini">⌐ Corner</button></div>
+      <div class="row"><button id="pathSelectToolBtn" class="btn mini active" style="flex:1">↖ Select</button><button id="pathAddNodeToolBtn" class="btn mini" style="flex:1">➕ Add Node</button></div>
+      <div class="row" style="margin-top:6px;"><button id="nodeSmoothBtn" class="btn mini">⌒ Smooth</button><button id="nodeCornerBtn" class="btn mini">⌐ Corner</button></div>
       <div class="row" style="margin-top:6px;">
         <button id="continuePathBtn" class="btn mini" style="flex:1 1 45%;">↳ Continue</button>
         <button id="joinPathBtn" class="btn mini" style="flex:1 1 45%;">⋈ Join</button>
@@ -305,7 +303,7 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
       <div class="row" style="margin-top:8px;">
         <button id="simplifyPathBtn" class="btn mini" style="flex:1">〜 Simplify</button>
       </div>
-      <div id="pathEditHint" class="hint">Drag a node to move it. Tap a small dashed dot between two nodes to add one there. Tap a node to select it, then use the buttons above.</div>
+      <div id="pathEditHint" class="hint">Tap a node to select it, drag to move it. Switch to Add Node, then tap directly on the path to insert a node there.</div>
       <button id="pathEditDoneBtn" class="btn primary" style="width:100%;margin-top:10px;">✓ Done</button>
     </section>
     <section class="section" id="joinPickBar" style="display:none;">
@@ -406,6 +404,10 @@ let eraserDirtyLayerIds=new Set(),eraserTouchedIds=new Set();
 let selectedStrokeId=null;
 let copiedBrushStyle=null; // {brushId,settings} — session-only clipboard for Copy/Apply Brush Style
 let pathEditStrokeId=null,pathEditNodes=null,pathEditClosed=false,selectedNodeIndex=null; // Edit Path mode state
+// Edit Path's own current tool: 'select' (tap a node to select it, drag to move — tapping bare
+// canvas/path never adds a node) or 'addNode' (tap directly on the path to insert a node at the
+// exact tapped location; an existing node still takes priority if the tap is also close to one).
+let pathEditTool='select';
 let continueStrokeId=null,continueBasePoints=null; // Continue Path: next drawn stroke extends this one instead of starting a new one
 let joinPendingStrokeId=null,joinPendingFromEnd=false; // Join Path: waiting for a tap on another stroke's endpoint
 // Paint Inside: 'free' is completely unchanged normal painting. 'inside' tags every NEW raster
@@ -961,6 +963,13 @@ function flushEraserRebuild(){
 }
 canvas.addEventListener('pointerdown',e=>{
   if(!isPen(e))return;
+  // While Edit Path is active, a canvas tap means something ENTIRELY different (select/insert a
+  // node — see handlePathEditCanvasTap) and must never fall through to selectAt()/drawing below.
+  // selectAt() itself calls commitEditPath() unconditionally as its first line (so picking a
+  // DIFFERENT stroke from ordinary Edit Mode correctly finishes any path edit in progress first)
+  // — which is exactly wrong here: it was committing and silently closing Edit Path on every tap
+  // that merely missed a node's own hit target, which read as "Edit Path doesn't stay open."
+  if(pathEditStrokeId){e.preventDefault();handlePathEditCanvasTap(e);return;}
   if(mode==='edit'){selectAt(e.clientX,e.clientY);return}
   const layer=getActiveLayer();
   if(!layer||layer.locked){setStatus('🔒 "'+(layer?layer.name:'')+'" is locked — unlock it in Layers to draw.');return;}
@@ -1510,6 +1519,7 @@ $('duplicateLayerBtn').onclick=()=>{
 let dragMotif=null,dragStroke=null;
 canvas.addEventListener('pointerdown',e=>{
   if(mode!=='edit'||!isPen(e))return;
+  if(pathEditStrokeId)return; // Edit Path owns canvas taps itself — see the earlier pointerdown listener
   // A stroke only starts moving on a tap-and-drag of the stroke it ALREADY selected — the very
   // first tap that selects it never arms a drag. Requiring that extra intentional step (select,
   // then drag) is what keeps an ordinary re-select tap, or the Pencil wobbling slightly, from
@@ -1833,12 +1843,28 @@ function rdpSimplify(points,epsilon){
   }
   return [first,last];
 }
-function pointsToNodes(points){
+// `closed` matters here, not just cosmetically: plain rdpSimplify anchors its whole simplification
+// on a baseline between points[0] and the array's LAST point. For a closed stroke's raw points
+// array those two are the same coordinate (every closed stroke in this app explicitly repeats its
+// first point as its last — see nodesToPoints/shapeToPoints), which makes that baseline a
+// zero-length segment. perpDist's distance-to-that-baseline is then 0 for every single point
+// (its cross-product term vanishes identically), so rdpSimplify's "biggest deviation beats
+// epsilon" test never fires and it collapses straight to [first,last] — two copies of the exact
+// same point. That was the actual bug behind Edit Path opening a closed shape (a circle, a
+// Close Shape outline, ...) onto two coincident nodes with no usable outline left to drag.
+// rdpSimplifyClosedLoop sidesteps this entirely by anchoring on the loop's two genuinely
+// farthest-apart points instead of an arbitrary (and, for a closed loop, degenerate) array edge.
+function pointsToNodes(points,closed){
+  let src=points;
+  if(closed&&src.length>1){
+    const first=src[0],last=src[src.length-1];
+    if(Math.hypot(first.x-last.x,first.y-last.y)<0.01)src=src.slice(0,-1); // drop the repeated seam point
+  }
   // A gentler epsilon than the original 10 — that could visibly flatten fine detail (feathers,
   // small loops) on a complex hand-drawn stroke the instant Edit Path was entered, before the
   // user had touched anything. 5 keeps noticeably more of the original shape while still cutting
   // a dense resampled polyline down to a manageable, actually-draggable handful of nodes.
-  const simplified=rdpSimplify(points,5);
+  const simplified=closed?rdpSimplifyClosedLoop(src,5):rdpSimplify(src,5);
   return simplified.map(p=>({x:p.x,y:p.y,pressure:p.pressure,type:'smooth'}));
 }
 function catmullRom(p0,p1,p2,p3,t){const t2=t*t,t3=t2*t;return 0.5*((2*p1)+(-p0+p2)*t+(2*p0-5*p1+4*p2-p3)*t2+(-p0+3*p1-3*p2+p3)*t3);}
@@ -1867,6 +1893,38 @@ function nodesToPoints(nodes,closed=false,samplesPerSeg=14){
   if(closed){out.push({...out[0]});}
   else{const last=nodes[n-1];out.push({x:last.x,y:last.y,pressure:last.pressure});}
   return out;
+}
+// Walks the CURRENTLY-EDITED path's actual rendered curve — same per-segment sampling as
+// nodesToPoints above (corner segments straight, smooth segments Catmull-Rom) — to find the
+// closest point on it to (px,py), and which logical node-to-node segment that point falls on.
+// Used by the Add Node tool to insert a node at the EXACT tapped location on a possibly-curved
+// segment, rather than snapping to a fixed midpoint.
+function findInsertionOnPath(px,py){
+  const nodes=pathEditNodes;if(!nodes||nodes.length<2)return null;
+  const n=nodes.length;
+  const segCount=pathEditClosed?n:n-1;
+  const at=idx=>pathEditClosed?nodes[((idx%n)+n)%n]:nodes[Math.max(0,Math.min(n-1,idx))];
+  let best=null;
+  for(let i=0;i<segCount;i++){
+    const n0=at(i-1),n1=at(i),n2=at(i+1),n3=at(i+2);
+    const smoothSeg=n1.type==='smooth'&&n2.type==='smooth';
+    const steps=smoothSeg?14:2;
+    let prev={x:n1.x,y:n1.y,pressure:n1.pressure};
+    for(let s=1;s<=steps;s++){
+      const t=s/steps;
+      const cur=smoothSeg
+        ?{x:catmullRom(n0.x,n1.x,n2.x,n3.x,t),y:catmullRom(n0.y,n1.y,n2.y,n3.y,t),pressure:n1.pressure+(n2.pressure-n1.pressure)*t}
+        :{x:n1.x+(n2.x-n1.x)*t,y:n1.y+(n2.y-n1.y)*t,pressure:n1.pressure+(n2.pressure-n1.pressure)*t};
+      const dx=cur.x-prev.x,dy=cur.y-prev.y,len2=dx*dx+dy*dy;
+      let tt=len2>0?((px-prev.x)*dx+(py-prev.y)*dy)/len2:0;
+      tt=Math.max(0,Math.min(1,tt));
+      const qx=prev.x+tt*dx,qy=prev.y+tt*dy,qp=prev.pressure+(cur.pressure-prev.pressure)*tt;
+      const d=Math.hypot(px-qx,py-qy);
+      if(!best||d<best.dist)best={dist:d,x:qx,y:qy,pressure:qp,segIndex:i};
+      prev=cur;
+    }
+  }
+  return best;
 }
 // ---- Vector Shapes ------------------------------------------------------------------------------
 // A shape is just a stroke (same points/nodes/closed/brushId/settings/clipStrokeId fields, same
@@ -2259,9 +2317,11 @@ function enterEditPath(strokeId){
   const layer=layers.find(l=>l.id===stroke.layerId);
   if(layer&&layer.locked){setStatus('🔒 "'+layer.name+'" is locked.');return;}
   pathEditStrokeId=stroke.id;
-  pathEditNodes=stroke.nodes?stroke.nodes.map(n=>({...n})):pointsToNodes(stroke.points);
+  pathEditNodes=stroke.nodes?stroke.nodes.map(n=>({...n})):pointsToNodes(stroke.points,stroke.closed);
   pathEditClosed=!!stroke.closed;
   selectedNodeIndex=null;
+  pathEditTool='select';
+  $('pathSelectToolBtn').classList.add('active');$('pathAddNodeToolBtn').classList.remove('active');
   // Fully hidden (alpha 0), not dimmed — the live preview IS the stroke while editing, so
   // there's only ever one visible outline, never a "ghost" of the original underneath it. Safe
   // to do now that commitEditPath is wrapped in try/finally and always restores this layer.
@@ -2326,6 +2386,14 @@ function exitEditPath(silent){
   liveActive=false;lctx.clearRect(0,0,W,H);
   if(!silent)redraw();
 }
+// Node selection/drag lives entirely on these overlay divs (generous, zoom-invariant 36px CSS
+// hit targets — see .path-node CSS) regardless of which Edit Path tool is active: Add Node only
+// changes what happens when a tap MISSES every node (see handlePathEditCanvasTap), it never
+// takes over an on-target tap. There used to also be small always-present "add node here" dots
+// between every pair of nodes — removed in favour of Add Node's canvas-level hit-testing (tap
+// anywhere on the path, not just a fixed midpoint), which was also the actual cause of nodes
+// occasionally gaining extra, unwanted neighbours: those dots sat close enough to a real node
+// that a tap meant to land ON the node could land on the dot instead and insert one.
 function renderPathNodeOverlay(){
   const host=$('pathNodeOverlay');if(!host)return;
   host.innerHTML='';
@@ -2344,8 +2412,7 @@ function renderPathNodeOverlay(){
       // capture and the move/up listeners attached below (this was a real bug: dragging did
       // nothing because the handle vanished out from under the pointer on the first move).
       // Only the dragged node's own on-screen position is touched during the drag; the full
-      // overlay (which also refreshes the "add node" midpoint markers) is safe to rebuild once
-      // the drag actually ends.
+      // overlay is safe to rebuild once the drag actually ends.
       if(selectedNodeIndex!==i){
         selectedNodeIndex=i;
         host.querySelectorAll('.path-node').forEach(n=>n.classList.remove('selected'));
@@ -2353,11 +2420,16 @@ function renderPathNodeOverlay(){
         syncPathEditBarButtons();
       }
       try{el.setPointerCapture(e.pointerId);}catch(err){}
+      // Preserve exactly where ON the node it was grabbed, rather than snapping the node's centre
+      // to the pointer's precise position — without this, a press that's a few px off-centre
+      // (easy on a 36px target) made the node visibly jump to the pointer the instant it moved.
+      const grabStart=screenToCanvas(e.clientX,e.clientY);
+      const dragDX=node.x-grabStart.x,dragDY=node.y-grabStart.y;
       const onMove=ev=>{
         const p=screenToCanvas(ev.clientX,ev.clientY);
         if(!Number.isFinite(p.x)||!Number.isFinite(p.y))return; // never let a bad reading corrupt the node
-        pathEditNodes[i].x=p.x;pathEditNodes[i].y=p.y;
-        const np=canvasToScreen(p.x,p.y);
+        pathEditNodes[i].x=p.x+dragDX;pathEditNodes[i].y=p.y+dragDY;
+        const np=canvasToScreen(pathEditNodes[i].x,pathEditNodes[i].y);
         el.style.left=np.x+'px';el.style.top=np.y+'px';
         schedulePathLivePreview();
       };
@@ -2367,25 +2439,50 @@ function renderPathNodeOverlay(){
     });
     host.appendChild(el);
   });
-  const segCount=pathEditClosed?pathEditNodes.length:pathEditNodes.length-1;
-  for(let i=0;i<segCount;i++){
-    const a=pathEditNodes[i],b=pathEditNodes[(i+1)%pathEditNodes.length];
-    const mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
-    const pos=canvasToScreen(mid.x,mid.y);
-    const el=document.createElement('div');
-    el.className='path-node mid';el.title='Add node here';
-    el.style.left=pos.x+'px';el.style.top=pos.y+'px';
-    const insertAt=i+1;
-    el.addEventListener('pointerup',e=>{
-      if(!isPen(e))return;
-      e.stopPropagation();e.preventDefault();
-      pathEditNodes.splice(insertAt,0,{x:mid.x,y:mid.y,pressure:(a.pressure+b.pressure)/2,type:'smooth'});
-      if(selectedNodeIndex!=null&&selectedNodeIndex>=insertAt)selectedNodeIndex++;
-      renderPathNodeOverlay();renderPathLivePreview();redraw();
-    });
-    host.appendChild(el);
-  }
   syncPathEditBarButtons();
+}
+// Edit Path's own tool toggle — 'select' (default) or 'addNode'. Switching tool never changes
+// the current selection/geometry, only how a tap on bare canvas/path is interpreted next.
+function setPathEditTool(tool){
+  pathEditTool=tool;
+  $('pathSelectToolBtn').classList.toggle('active',tool==='select');
+  $('pathAddNodeToolBtn').classList.toggle('active',tool==='addNode');
+  setStatus(tool==='addNode'
+    ?'➕ Add Node: tap directly on the path to insert a node there. An existing node still takes priority.'
+    :'✎ Edit Path: tap a node to select it, drag to move it.');
+}
+$('pathSelectToolBtn').onclick=()=>setPathEditTool('select');
+$('pathAddNodeToolBtn').onclick=()=>setPathEditTool('addNode');
+// Handles a canvas pointerdown while Edit Path is active that MISSED every node's own overlay
+// div (those own selecting/dragging an on-target tap directly — see renderPathNodeOverlay — this
+// only runs for whatever's left over: bare canvas, or a tap that landed on the rendered path
+// itself rather than a node). Existing nodes still take priority here too: even in Add Node mode,
+// a near-miss that's closer to a node than to the path selects that node instead of inserting —
+// Add Node can never shadow a node that's just a little off from its own precise centre.
+function handlePathEditCanvasTap(e){
+  if(!pathEditNodes||!pathEditNodes.length)return;
+  const p=screenToCanvas(e.clientX,e.clientY);
+  if(!Number.isFinite(p.x)||!Number.isFinite(p.y))return;
+  // Screen-px radii converted to canvas units via the current zoom keep this fallback's on-screen
+  // size constant at any zoom level (646% included) — the same principle as the node divs' own
+  // fixed-CSS-px hit targets, just applied to a canvas-space hit test instead of a DOM box.
+  const s=zoom*baseScale;
+  const nodeRadiusCanvas=18/s;
+  let nearestIdx=-1,nearestDist=Infinity;
+  pathEditNodes.forEach((n,i)=>{const d=Math.hypot(p.x-n.x,p.y-n.y);if(d<nearestDist){nearestDist=d;nearestIdx=i;}});
+  if(nearestDist<=nodeRadiusCanvas){
+    if(selectedNodeIndex!==nearestIdx){selectedNodeIndex=nearestIdx;renderPathNodeOverlay();syncPathEditBarButtons();}
+    return;
+  }
+  if(pathEditTool!=='addNode')return; // Select tool: a miss on bare canvas/path is simply a no-op
+  const hit=findInsertionOnPath(p.x,p.y);
+  const insertRadiusCanvas=22/s;
+  if(!hit||hit.dist>insertRadiusCanvas)return; // tapped well away from the path — do nothing
+  const insertAt=hit.segIndex+1;
+  pathEditNodes.splice(insertAt,0,{x:hit.x,y:hit.y,pressure:hit.pressure,type:'smooth'});
+  selectedNodeIndex=insertAt;
+  renderPathNodeOverlay();renderPathLivePreview();redraw();
+  setStatus('➕ Node added.');
 }
 // Greys out (rather than hides) whichever path operations don't make sense for the current
 // selection — Close only for an open path with enough nodes, Continue/Join only from an
@@ -2915,7 +3012,7 @@ boot();
 // Read-only introspection for debugging/testing — mirrors the small hooks already used for
 // Seamlessly Creative suite integration (see the bottom of this file once frozen into the
 // suite), just exposed unconditionally here since it's harmless and useful standalone too.
-window.__sketchpadGetState=()=>({strokeCount:strokes.length,strokes,placed,motifs,activeBrushId,eraserActive,selectedStrokeId,layout,layers:layers.map(l=>({id:l.id,name:l.name,visible:l.visible,locked:l.locked,opacity:l.opacity})),activeLayerId,pathEditStrokeId,pathEditNodes,pathEditClosed,copiedBrushStyle,continueStrokeId,joinPendingStrokeId,paintMode,paintInsideTargetId,armedShapeType,constrainShape,holdTriggered,holdCorrectedShape,currentPointsLength:currentPoints.length,zoom,baseScale,renderScale,rot,canvasBackingWidth:canvas.width,displayBackingWidth:displayCanvas.width,sidebarCollapsed});
+window.__sketchpadGetState=()=>({strokeCount:strokes.length,strokes,placed,motifs,activeBrushId,eraserActive,selectedStrokeId,layout,layers:layers.map(l=>({id:l.id,name:l.name,visible:l.visible,locked:l.locked,opacity:l.opacity})),activeLayerId,pathEditStrokeId,pathEditNodes,pathEditClosed,selectedNodeIndex,pathEditTool,copiedBrushStyle,continueStrokeId,joinPendingStrokeId,paintMode,paintInsideTargetId,armedShapeType,constrainShape,holdTriggered,holdCorrectedShape,currentPointsLength:currentPoints.length,zoom,baseScale,renderScale,rot,canvasBackingWidth:canvas.width,displayBackingWidth:displayCanvas.width,sidebarCollapsed});
 // Test-only: exposes the app's own screen<->canvas coordinate mapping directly, so a test can
 // place a real pointer event at the exact screen position corresponding to a given canvas-space
 // point (or vice versa) at whatever zoom/pan/rotation is currently active, without having to
