@@ -397,7 +397,12 @@ let liveActive=false;
 let strokes=[]; // retained, replayable, re-brushable — {id,brushId,layerId,color,settings,points:[{x,y,pressure}],nodes:null|[{x,y,pressure,type}]}
 let activeBrushId='smoothPen',eraserActive=false,currentColor='#000000';
 let currentPoints=[],currentStrokeId=null,smoothLast=null,lastRenderedIndex=0;
-let eraseCandidates=new Set();
+// Vector eraser gesture state — see eraseCircleOnActiveLayer/cutStrokeInPlace further down for
+// the actual path-cutting logic. eraserDirtyLayerIds/eraserTouchedIds accumulate across an
+// entire drag so the (comparatively expensive) layer rebuild can be coalesced to once per
+// animation frame while still cutting geometry eagerly on every move for a gap-free result.
+let eraserGestureActive=false,eraserLastPoint=null,eraserSelectionDirty=false;
+let eraserDirtyLayerIds=new Set(),eraserTouchedIds=new Set();
 let selectedStrokeId=null;
 let copiedBrushStyle=null; // {brushId,settings} — session-only clipboard for Copy/Apply Brush Style
 let pathEditStrokeId=null,pathEditNodes=null,pathEditClosed=false,selectedNodeIndex=null; // Edit Path mode state
@@ -812,17 +817,147 @@ function pushRawPoint(x,y,pressure){
   currentPoints.push({x:tx,y:ty,pressure});
 }
 function renderEraserCursor(x,y,radius){lctx.clearRect(0,0,W,H);lctx.save();lctx.globalAlpha=.35;lctx.fillStyle='#ff5b78';lctx.beginPath();lctx.arc(x,y,radius,0,Math.PI*2);lctx.fill();lctx.restore();}
-// Eraser removes whole strokes it crosses, scoped to the ACTIVE layer only — it never touches
-// other layers regardless of whether the pencil happens to pass over their content on screen,
-// which is what keeps erasing from destroying unrelated work. There is no genuinely raster-
-// painted content in this app today (every brush, including Paint/Texture, is vector/retained —
-// see brush-engine.js's header), so "erase" always means "remove the whole stroke", never a
-// pixel-level punch — partial/split-stroke erasing would need real path-boolean operations,
-// which is a materially bigger feature than fits safely in this pass; the eraser toggle's status
-// line says so explicitly rather than silently pretending otherwise.
-function eraseAt(x,y,radius){
+// ---- Vector eraser: true path cutting ------------------------------------------------------
+// Erases exactly the portion of a stroke's polyline that falls within the eraser's circle,
+// splitting whatever remains into independent strokes — rather than the old all-or-nothing
+// behaviour of deleting the entire stroke the instant the eraser touched it anywhere. This
+// works directly on stroke.points, the dense polyline BrushEngine.renderStroke actually draws
+// from (see brush-engine.js) — every remaining fragment is just a slice of those same points,
+// so brush id, colour, per-stroke settings (width/opacity/pressure response) and per-point
+// pressure all carry over automatically with no separate "preserve appearance" step needed.
+// Scoped to the ACTIVE layer only, same as before — it never touches other layers' content.
+
+// Solves |A + t*(B-A) - C| = r for t and returns the intersection t-values that fall strictly
+// inside the open segment (0,1), sorted ascending — endpoints themselves are handled by the
+// inside/outside test in cutPolylineAtCircle below, not here.
+function circleSegmentTs(ax,ay,bx,by,cx,cy,r){
+  const dx=bx-ax,dy=by-ay;
+  const A=dx*dx+dy*dy;
+  if(A<1e-9)return [];
+  const fx=ax-cx,fy=ay-cy;
+  const B=2*(fx*dx+fy*dy);
+  const Cc=fx*fx+fy*fy-r*r;
+  const disc=B*B-4*A*Cc;
+  if(disc<0)return [];
+  const sq=Math.sqrt(disc);
+  return [(-B-sq)/(2*A),(-B+sq)/(2*A)].filter(t=>t>1e-6&&t<1-1e-6).sort((a,b)=>a-b);
+}
+function lerpErasePt(a,b,t){const ap=a.pressure==null?1:a.pressure,bp=b.pressure==null?1:b.pressure;return {x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,pressure:ap+(bp-ap)*t};}
+function polylineLen(pts){let d=0;for(let i=1;i<pts.length;i++)d+=Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y);return d;}
+const MIN_ERASE_FRAGMENT_LEN=0.75; // px — drops degenerate slivers left by a near-tangent clip
+// Cuts a single dense point polyline against one eraser circle, returning the surviving pieces
+// as an array of point arrays. Uses real segment/circle intersection (not just "is this sampled
+// point near the centre") so the cut edge lands exactly on the visible eraser circle regardless
+// of how far apart the originally recorded points happen to be — required for the erased area
+// to actually match the eraser cursor rather than just approximating it.
+function cutPolylineAtCircle(points,cx,cy,r){
+  if(!points||points.length<2)return (points&&points.length===1&&Math.hypot(points[0].x-cx,points[0].y-cy)<=r)?[]:(points?[points]:[]);
+  const inside=p=>Math.hypot(p.x-cx,p.y-cy)<=r;
+  const fragments=[];
+  let current=inside(points[0])?[]:[points[0]];
+  for(let i=1;i<points.length;i++){
+    const a=points[i-1],b=points[i],aIn=inside(a),bIn=inside(b);
+    const ts=circleSegmentTs(a.x,a.y,b.x,b.y,cx,cy,r);
+    if(!aIn&&!bIn){
+      if(ts.length===2){
+        // Segment dips through the circle and back out without either endpoint itself inside it.
+        current.push(lerpErasePt(a,b,ts[0]));
+        fragments.push(current);
+        current=[lerpErasePt(a,b,ts[1]),b];
+      }else{
+        current.push(b);
+      }
+    }else if(!aIn&&bIn){
+      if(ts.length)current.push(lerpErasePt(a,b,ts[0]));
+      fragments.push(current);
+      current=[];
+    }else if(aIn&&!bIn){
+      current=ts.length?[lerpErasePt(a,b,ts[ts.length-1]),b]:[b];
+    } // aIn&&bIn: fully inside the eraser, nothing kept
+  }
+  if(current.length)fragments.push(current);
+  return fragments.filter(f=>f.length>=2&&polylineLen(f)>MIN_ERASE_FRAGMENT_LEN);
+}
+// Applies one eraser circle to every stroke on the active layer, mutating `strokes` in place.
+// Called many times per gesture (see eraseSweep) — the actual (cheap) geometry cut happens here
+// synchronously so dragging can't skip over a thin stroke between two pointer samples, while the
+// (comparatively expensive) layer re-render is deferred — see scheduleEraserRebuild.
+function eraseCircleOnActiveLayer(cx,cy,r){
   const layer=getActiveLayer();if(!layer||layer.locked)return;
-  strokes.forEach(s=>{if(s.layerId===layer.id&&!eraseCandidates.has(s.id)&&distanceToPolyline(x,y,s.points)<radius)eraseCandidates.add(s.id);});
+  const targets=strokes.filter(s=>s.layerId===layer.id);
+  targets.forEach(stroke=>{
+    if(distanceToPolyline(cx,cy,stroke.points)>r)return; // circle doesn't touch this stroke at all
+    cutStrokeInPlace(stroke,cx,cy,r);
+  });
+}
+// Replaces one stroke in `strokes` with zero or more fragments cut by the eraser circle at
+// (cx,cy,r). A stroke that's fully consumed is simply removed. A CLOSED stroke's points array
+// already has its own seam baked in (points[0] and the final point sit at the same spot — see
+// nodesToPoints/shapeToPoints), so if the eraser didn't touch either end of that array, the
+// fragment starting the array and the one ending it are really the two loose ends of the SAME
+// arc meeting at the seam — those get stitched back into one piece rather than left as an
+// arbitrary extra split. Every fragment that isn't a plain delete explicitly comes back
+// closed:false and shape:null — "erasing a section opens the outline" rather than silently
+// reconnecting the gap or leaving a stale parametric shape description that no longer matches
+// the cut geometry.
+function cutStrokeInPlace(stroke,cx,cy,r){
+  const idx=strokes.indexOf(stroke);if(idx===-1)return; // already consumed earlier in this same pass
+  eraserTouchedIds.add(stroke.id);
+  eraserDirtyLayerIds.add(stroke.layerId);
+  // Someone else's raster fill clipped to THIS stroke as its boundary needs re-rendering too —
+  // once this stroke is gone/opened, findClipTargetStroke stops resolving it and that paint
+  // reverts to fully visible instead of vanishing (same fallback already used when a clip
+  // target is deleted or explicitly opened elsewhere in the app).
+  strokes.filter(s=>s.clipStrokeId===stroke.id).forEach(s=>eraserDirtyLayerIds.add(s.layerId));
+  if(selectedStrokeId===stroke.id){selectedStrokeId=null;eraserSelectionDirty=true;}
+  // A Fill Shape stroke is a solid colour fill, not a brush-stroked line — there's no
+  // meaningful "cut this fill in two" the way there is for a pencil line, so touching one
+  // removes it outright, same as every eraser touch did before this change. It's a wholly
+  // separate stroke object from whatever outline it was filled from, so this never touches
+  // that outline's own geometry or appearance.
+  if(stroke.fillColor){strokes.splice(idx,1);return;}
+  let fragments=cutPolylineAtCircle(stroke.points,cx,cy,r);
+  if(stroke.closed&&fragments.length>=2){
+    const first=fragments[0],last=fragments[fragments.length-1];
+    if(first[0]===stroke.points[0]&&last[last.length-1]===stroke.points[stroke.points.length-1]){
+      const merged=last.concat(first.slice(1));
+      fragments=fragments.slice(1,-1);
+      fragments.push(merged);
+    }
+  }
+  if(!fragments.length){strokes.splice(idx,1);return;}
+  const baseSettings=Object.assign({},stroke.settings||BrushEngine.getSettings(stroke.brushId));
+  const newStrokes=fragments.map(pts=>({
+    id:crypto.randomUUID(),brushId:stroke.brushId,layerId:stroke.layerId,color:stroke.color,
+    settings:Object.assign({},baseSettings),points:pts,nodes:null,closed:false,
+    clipStrokeId:stroke.clipStrokeId||null,shape:null,
+  }));
+  strokes.splice(idx,1,...newStrokes);
+}
+// Subdivides the movement from `from` to `to` into circle applications spaced closely enough
+// (half the eraser radius) that a fast drag can't jump over a thin stroke between two pointer
+// samples — the same sweep-as-steps idea BrushEngine.resample uses for dab spacing, applied to
+// erasing instead of painting. Capped so a huge jump (e.g. a stray low-frequency sample) can't
+// spin the loop indefinitely; a very fast drag at a tiny radius may then leave a small gap
+// rather than hang the UI, an acceptable trade-off for a drawing app.
+function eraseSweep(from,to,r){
+  const dist=Math.hypot(to.x-from.x,to.y-from.y);
+  const step=Math.max(1,r*0.5);
+  const steps=Math.min(64,Math.max(1,Math.ceil(dist/step)));
+  for(let i=1;i<=steps;i++){
+    const t=i/steps;
+    eraseCircleOnActiveLayer(from.x+(to.x-from.x)*t,from.y+(to.y-from.y)*t,r);
+  }
+}
+let eraserRebuild_q=0;
+function scheduleEraserRebuild(){
+  if(eraserRebuild_q)return;
+  eraserRebuild_q=requestAnimationFrame(()=>{eraserRebuild_q=0;flushEraserRebuild();redraw();});
+}
+function flushEraserRebuild(){
+  eraserDirtyLayerIds.forEach(id=>rebuildLayer(id));
+  eraserDirtyLayerIds.clear();
+  if(eraserSelectionDirty){eraserSelectionDirty=false;syncStrokeSelectionUI();}
 }
 canvas.addEventListener('pointerdown',e=>{
   if(!isPen(e))return;
@@ -844,9 +979,12 @@ canvas.addEventListener('pointerdown',e=>{
   drawing=true;
   resetHoldState();
   if(eraserActive){
-    eraseCandidates.clear();
-    eraseAt(p.x,p.y,currentSettings().size/2);
-    renderEraserCursor(p.x,p.y,currentSettings().size/2);
+    eraserGestureActive=true;eraserLastPoint=p;
+    eraserDirtyLayerIds=new Set();eraserTouchedIds=new Set();eraserSelectionDirty=false;
+    const r=currentSettings().size/2;
+    eraseSweep(p,p,r);
+    scheduleEraserRebuild();
+    renderEraserCursor(p.x,p.y,r);
     liveActive=true;redraw();return;
   }
   currentStrokeId=crypto.randomUUID();smoothLast=null;
@@ -879,7 +1017,15 @@ canvas.addEventListener('pointermove',e=>{
     redraw();
     return;
   }
-  if(eraserActive){eraseAt(p.x,p.y,currentSettings().size/2);renderEraserCursor(p.x,p.y,currentSettings().size/2);redraw();return}
+  if(eraserActive){
+    const r=currentSettings().size/2;
+    eraseSweep(eraserLastPoint||p,p,r);
+    eraserLastPoint=p;
+    scheduleEraserRebuild();
+    renderEraserCursor(p.x,p.y,r);
+    redraw();
+    return;
+  }
   if(holdTriggered){adjustHeldShape(p);return;} // shape already snapped this gesture — Pencil now adjusts it, not freehand
   pushRawPoint(p.x,p.y,pressure);
   renderLivePreviewIncremental();redraw();
@@ -910,18 +1056,14 @@ canvas.addEventListener('pointerup',e=>{
     return;
   }
   if(eraserActive){
-    if(eraseCandidates.size){
-      const layer=getActiveLayer();
-      // Erasing a Paint Inside boundary along with everything else it crossed shouldn't destroy
-      // the paint it was clipping — same "target just stops resolving" fallback as deleting or
-      // opening one, so those layers need rebuilding too, not just the erased strokes' own layer.
-      const clippedLayerIds=new Set(strokes.filter(s=>eraseCandidates.has(s.clipStrokeId)).map(s=>s.layerId));
-      strokes=strokes.filter(s=>!eraseCandidates.has(s.id));
-      if(selectedStrokeId&&eraseCandidates.has(selectedStrokeId)){selectedStrokeId=null;syncStrokeSelectionUI();}
-      if(layer)rebuildLayer(layer.id);
-      clippedLayerIds.forEach(id=>rebuildLayer(id));
-    }
-    eraseCandidates.clear();liveActive=false;lctx.clearRect(0,0,W,H);
+    // One continuous drag = one Undo/Redo step: every circle along the way already mutated
+    // `strokes` live (for immediate visual feedback), so there's nothing left to apply here —
+    // just flush any still-pending layer rebuild and record ONE history entry for the whole
+    // gesture, exactly like a normal freehand stroke only pushes history once on release.
+    eraserGestureActive=false;
+    flushEraserRebuild();
+    eraserDirtyLayerIds=new Set();eraserTouchedIds=new Set();eraserLastPoint=null;
+    liveActive=false;lctx.clearRect(0,0,W,H);
     pushHist();redraw();return;
   }
   if(continueStrokeId){
@@ -962,7 +1104,17 @@ canvas.addEventListener('pointerup',e=>{
   pushHist();redraw();
 });
 canvas.addEventListener('pointercancel',()=>{
-  drawing=false;currentPoints=[];eraseCandidates.clear();liveActive=false;lctx.clearRect(0,0,W,H);
+  drawing=false;currentPoints=[];liveActive=false;lctx.clearRect(0,0,W,H);
+  if(eraserGestureActive){
+    // Unlike other gestures, the eraser already mutated `strokes` live (for on-screen feedback
+    // while dragging) rather than only at the end — there's no un-erased snapshot left to just
+    // drop, so a cancel mid-drag commits whatever was cut so far instead of silently leaving
+    // `strokes` out of sync with history.
+    eraserGestureActive=false;
+    flushEraserRebuild();
+    eraserDirtyLayerIds=new Set();eraserTouchedIds=new Set();eraserLastPoint=null;
+    pushHist();
+  }
   if(continueStrokeId){const s=strokes.find(x=>x.id===continueStrokeId);if(s)rebuildLayer(s.layerId);continueStrokeId=null;continueBasePoints=null;}
   shapeDrawStroke=null;shapeDrawStart=null;
   resetHoldState();
@@ -1650,7 +1802,7 @@ function syncControlsFromSettings(){
 }
 function patchCurrentSettings(patch){BrushEngine.setSettings(currentBrushIdForSettings(),patch);syncActiveBrushRecipeLine();}
 function selectBrush(id){eraserActive=false;activeBrushId=id;BrushEngine.touchRecent(id);syncRecents();syncControlsFromSettings();syncActiveSwatches();}
-$('eraserToggle').onclick=()=>{eraserActive=!eraserActive;syncControlsFromSettings();syncActiveSwatches();setStatus(eraserActive?'🧹 Eraser: drag across a stroke on the active layer to remove it.':'✏️ Back to '+BrushEngine.getBrush(activeBrushId).name+'.');};
+$('eraserToggle').onclick=()=>{eraserActive=!eraserActive;syncControlsFromSettings();syncActiveSwatches();setStatus(eraserActive?'🧹 Eraser: drag over a stroke on the active layer to erase just that part of it.':'✏️ Back to '+BrushEngine.getBrush(activeBrushId).name+'.');};
 $('brushSize').oninput=e=>{const v=+e.target.value;$('brushSizeVal').textContent=Math.round(v);patchCurrentSettings({size:v});};
 $('brushColor').oninput=e=>{currentColor=e.target.value;};
 $('brushOpacity').oninput=e=>{const v=+e.target.value;$('brushOpacityVal').textContent=Math.round(v)+'%';patchCurrentSettings({opacity:v});};
@@ -2763,7 +2915,19 @@ boot();
 // Read-only introspection for debugging/testing — mirrors the small hooks already used for
 // Seamlessly Creative suite integration (see the bottom of this file once frozen into the
 // suite), just exposed unconditionally here since it's harmless and useful standalone too.
-window.__sketchpadGetState=()=>({strokeCount:strokes.length,strokes,placed,motifs,activeBrushId,eraserActive,selectedStrokeId,layout,layers:layers.map(l=>({id:l.id,name:l.name,visible:l.visible,locked:l.locked,opacity:l.opacity})),activeLayerId,pathEditStrokeId,pathEditNodes,pathEditClosed,copiedBrushStyle,continueStrokeId,joinPendingStrokeId,paintMode,paintInsideTargetId,armedShapeType,constrainShape,holdTriggered,holdCorrectedShape,currentPointsLength:currentPoints.length,zoom,baseScale,renderScale,canvasBackingWidth:canvas.width,displayBackingWidth:displayCanvas.width,sidebarCollapsed});
+window.__sketchpadGetState=()=>({strokeCount:strokes.length,strokes,placed,motifs,activeBrushId,eraserActive,selectedStrokeId,layout,layers:layers.map(l=>({id:l.id,name:l.name,visible:l.visible,locked:l.locked,opacity:l.opacity})),activeLayerId,pathEditStrokeId,pathEditNodes,pathEditClosed,copiedBrushStyle,continueStrokeId,joinPendingStrokeId,paintMode,paintInsideTargetId,armedShapeType,constrainShape,holdTriggered,holdCorrectedShape,currentPointsLength:currentPoints.length,zoom,baseScale,renderScale,rot,canvasBackingWidth:canvas.width,displayBackingWidth:displayCanvas.width,sidebarCollapsed});
+// Test-only: exposes the app's own screen<->canvas coordinate mapping directly, so a test can
+// place a real pointer event at the exact screen position corresponding to a given canvas-space
+// point (or vice versa) at whatever zoom/pan/rotation is currently active, without having to
+// reimplement — and risk subtly diverging from — that same transform math in the test itself.
+window.__sketchpadScreenToCanvas=screenToCanvas;
+window.__sketchpadCanvasToScreenAbs=(x,y)=>{
+  // canvasToScreen() returns coordinates relative to #canvasWrap (it positions DOM overlays that
+  // live inside wrap) — add wrap's own viewport offset back to get absolute client coordinates,
+  // the frame page.mouse.move()/clientX/clientY expect.
+  const p=canvasToScreen(x,y),wrapRect=wrap.getBoundingClientRect();
+  return {x:p.x+wrapRect.left,y:p.y+wrapRect.top};
+};
 // Test-only: drives the exact same zoom -> renderScale -> applyTransform path real two-finger
 // pinch-zoom uses, without needing to simulate a real multitouch gesture. skipDebounce bypasses
 // the (production, intentional) 120ms pinch-settle debounce so a test can assert on the
