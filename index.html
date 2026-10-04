@@ -327,6 +327,15 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
 'use strict';
 const canvas=document.getElementById('canvas'),ctx=canvas.getContext('2d'),wrap=document.getElementById('canvasWrap'),viewportOuter=document.getElementById('canvasViewportOuter');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
+// Perf: updateComposite/updateDisplayComposite flatten EVERY visible layer's full-resolution
+// canvas every time they run. redraw() used to call both unconditionally on every single
+// pointermove while drawing (debounced to one rAF per frame, but still up to ~60/sec) even
+// though during an active stroke only the live-preview layer changes — the committed layers
+// those two functions flatten are byte-for-byte identical to the previous frame. This flag lets
+// redraw() skip that repeat work until a layer's actual pixel content changes (see rebuildLayer/
+// rebuildLayerDimmed/appendStrokeToLayer, the only three functions that draw into a layer's own
+// canvas), which was the single biggest cost in the pointermove hot path on an iPad.
+let compositeDirty=true;
 // ---- Display resolution (crisp vector strokes at any zoom) ----------------------------------
 // Every stroke is stored as vector point data and rasterised by stamping dabs with plain canvas
 // primitives (BrushEngine.renderStroke -> ctx.arc/gradient fills) — genuinely resolution-
@@ -505,6 +514,7 @@ function rebuildLayer(layerId){
     renderStrokeClipped(layer.ctx,s,brush,settings);
     renderStrokeClipped(layer.dctx,s,brush,settings);
   });
+  compositeDirty=true;
 }
 // Same as rebuildLayer but renders one stroke faintly — used while Edit Path is live, as a
 // "before" reference under the live edit preview. Deliberately dims rather than hides that
@@ -525,6 +535,7 @@ function rebuildLayerDimmed(layerId,dimStrokeId,alpha){
     renderStrokeClipped(layer.ctx,s,brush,settings,a);
     renderStrokeClipped(layer.dctx,s,brush,settings,a);
   });
+  compositeDirty=true;
 }
 function rebuildAllLayers(){layers.forEach(l=>rebuildLayer(l.id));}
 function appendStrokeToLayer(stroke){
@@ -532,6 +543,7 @@ function appendStrokeToLayer(stroke){
   const brush=BrushEngine.getBrush(stroke.brushId),settings=stroke.settings||BrushEngine.getSettings(stroke.brushId);
   renderStrokeClipped(layer.ctx,stroke,brush,settings);
   renderStrokeClipped(layer.dctx,stroke,brush,settings);
+  compositeDirty=true;
 }
 function updateComposite(){compositeCtx.clearRect(0,0,W,H);layers.forEach(l=>{if(!l.visible)return;compositeCtx.save();compositeCtx.globalAlpha=l.opacity/100;compositeCtx.drawImage(l.canvas,0,0);compositeCtx.restore();});}
 // Same flattening as updateComposite() above, but from each layer's HI-RES dcanvas into
@@ -627,7 +639,7 @@ function applyTransform(){
 }
 function screenToCanvas(x,y){const r=canvas.getBoundingClientRect();const cx=x-(r.left+r.width/2),cy=y-(r.top+r.height/2);const a=-rot*Math.PI/180;const s=zoom*baseScale;const ux=(cx*Math.cos(a)-cy*Math.sin(a))/s+W/2;const uy=(cx*Math.sin(a)+cy*Math.cos(a))/s+H/2;return {x:ux,y:uy};}
 function canvasToScreen(x,y){const rect=canvas.getBoundingClientRect(),wrapRect=wrap.getBoundingClientRect();const cx=rect.left+rect.width/2-wrapRect.left,cy=rect.top+rect.height/2-wrapRect.top;const a=rot*Math.PI/180;const s=zoom*baseScale;const px=(x-W/2)*s,py=(y-H/2)*s;return {x:cx+px*Math.cos(a)-py*Math.sin(a),y:cy+px*Math.sin(a)+py*Math.cos(a)};}
-function redraw(){if(redraw._q)return;redraw._q=requestAnimationFrame(()=>{redraw._q=0;updateComposite();updateDisplayComposite();ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);drawBackground();drawTraces();if(showTiling)drawTiles();else{ctx.drawImage(displayCanvas,0,0,W,H);if(liveActive)ctx.drawImage(liveLayer,0,0);}drawPlaced();drawStrokeSelection();drawTileBoundary();if(showGuides)drawGuides();updateSelectionBox();});}
+function redraw(){if(redraw._q)return;redraw._q=requestAnimationFrame(()=>{redraw._q=0;if(compositeDirty){updateComposite();updateDisplayComposite();compositeDirty=false;}ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);drawBackground();drawTraces();if(showTiling)drawTiles();else{ctx.drawImage(displayCanvas,0,0,W,H);if(liveActive)ctx.drawImage(liveLayer,0,0);}drawPlaced();drawStrokeSelection();drawTileBoundary();if(showGuides)drawGuides();updateSelectionBox();});}
 // A pattern (e.g. exported from Magic Builder) loaded as the base of the design - unlike Trace
 // Reference (a non-exported, freely-scaled/positioned tracing guide), this is sized to exactly
 // fill the guide-square tile, tiles using the same repeat offsets as the hand-drawn layer/motifs
@@ -1278,11 +1290,11 @@ function renderLayersList(){
       +'<button type="button" class="layer-icon-btn layer-up" title="Move up">↑</button>'
       +'<button type="button" class="layer-icon-btn layer-down" title="Move down">↓</button>'
       +'<button type="button" class="layer-icon-btn layer-del" title="Delete">✕</button>';
-    row.querySelector('.layer-vis').onclick=e=>{e.stopPropagation();layer.visible=!layer.visible;renderLayersList();pushHist();redraw();};
+    row.querySelector('.layer-vis').onclick=e=>{e.stopPropagation();layer.visible=!layer.visible;compositeDirty=true;renderLayersList();pushHist();redraw();};
     row.querySelector('.layer-lock').onclick=e=>{e.stopPropagation();layer.locked=!layer.locked;renderLayersList();pushHist();};
     row.querySelector('.layer-name').onclick=e=>{e.stopPropagation();const name=prompt('Rename layer',layer.name);if(name&&name.trim()){layer.name=name.trim();renderLayersList();pushHist();}};
     const opacityInput=row.querySelector('.layer-opacity');
-    opacityInput.oninput=e=>{layer.opacity=+e.target.value;redraw();};
+    opacityInput.oninput=e=>{layer.opacity=+e.target.value;compositeDirty=true;redraw();};
     opacityInput.onchange=()=>pushHist();
     opacityInput.addEventListener('click',e=>e.stopPropagation());
     row.querySelector('.layer-up').onclick=e=>{e.stopPropagation();moveLayer(layer.id,1);};
@@ -1296,6 +1308,7 @@ function moveLayer(id,dir){
   const i=layers.findIndex(l=>l.id===id);if(i<0)return;
   const j=i+dir;if(j<0||j>=layers.length)return;
   const tmp=layers[i];layers[i]=layers[j];layers[j]=tmp;
+  compositeDirty=true;
   renderLayersList();pushHist();redraw();
 }
 function deleteLayer(id){
@@ -2539,9 +2552,9 @@ $('bgInput').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new Fil
 $('bgOpacitySlider').oninput=e=>{bgOpacity=+e.target.value/100;$('bgOpacityVal').textContent=e.target.value+'%';redraw();scheduleAutosave();};
 $('bgToggle').onclick=()=>{bgShown=!bgShown;$('bgToggle').classList.toggle('active',bgShown);$('bgToggle').textContent=bgShown?'👁️ Shown':'🚫 Hidden';redraw();scheduleAutosave();};
 $('bgClear').onclick=()=>{bgImg=null;$('bgEmpty').style.display='block';$('bgControls').style.display='none';redraw();scheduleAutosave();};
-$('traceInput').onchange=e=>Array.from(e.target.files).forEach(f=>{const r=new FileReader();r.onload=ev=>{const img=new Image();img.onload=()=>{traces.push({img,src:ev.target.result,name:f.name,x:W/2,y:H/2,scale:Math.min(TILE/img.width,TILE/img.height),opacity:.35});renderTraces();redraw();};img.src=ev.target.result;};r.readAsDataURL(f);});
-function renderTraces(){const list=$('traceList');list.innerHTML='';traces.forEach((t,i)=>{const c=document.createElement('div');c.className='trace-card';c.innerHTML=`<img src="${t.src}"><div><div>${t.name}</div><div class="small">Trace ref · ${Math.round(t.opacity*100)}%</div></div><button class="x" style="position:static">×</button>`;c.querySelector('button').onclick=()=>{traces.splice(i,1);renderTraces();redraw();};list.appendChild(c);});}
-$('traceOpacity').oninput=e=>{traces.forEach(t=>t.opacity=+e.target.value/100);$('traceOpacityVal').textContent=e.target.value+'%';renderTraces();redraw();};$('traceScale').oninput=e=>{traces.forEach(t=>t.scale=+e.target.value/100);$('traceScaleVal').textContent=e.target.value+'%';redraw();};$('traceFit').onclick=()=>{traces.forEach(t=>t.scale=Math.min(TILE/t.img.width,TILE/t.img.height));redraw();};$('traceCentre').onclick=()=>{traces.forEach(t=>{t.x=W/2;t.y=H/2});redraw();};$('traceLock').onclick=()=>{traceLocked=!traceLocked;$('traceLock').textContent=traceLocked?'🔒 Locked':'🔓 Move';$('traceLock').classList.toggle('active',traceLocked)};$('traceClear').onclick=()=>{traces=[];renderTraces();redraw();};
+$('traceInput').onchange=e=>Array.from(e.target.files).forEach(f=>{const r=new FileReader();r.onload=ev=>{const img=new Image();img.onload=()=>{traces.push({img,src:ev.target.result,name:f.name,x:W/2,y:H/2,scale:Math.min(TILE/img.width,TILE/img.height),opacity:.35});renderTraces();redraw();scheduleAutosave();};img.src=ev.target.result;};r.readAsDataURL(f);});
+function renderTraces(){const list=$('traceList');list.innerHTML='';traces.forEach((t,i)=>{const c=document.createElement('div');c.className='trace-card';c.innerHTML=`<img src="${t.src}"><div><div>${t.name}</div><div class="small">Trace ref · ${Math.round(t.opacity*100)}%</div></div><button class="x" style="position:static">×</button>`;c.querySelector('button').onclick=()=>{traces.splice(i,1);renderTraces();redraw();scheduleAutosave();};list.appendChild(c);});}
+$('traceOpacity').oninput=e=>{traces.forEach(t=>t.opacity=+e.target.value/100);$('traceOpacityVal').textContent=e.target.value+'%';renderTraces();redraw();scheduleAutosave();};$('traceScale').oninput=e=>{traces.forEach(t=>t.scale=+e.target.value/100);$('traceScaleVal').textContent=e.target.value+'%';redraw();scheduleAutosave();};$('traceFit').onclick=()=>{traces.forEach(t=>t.scale=Math.min(TILE/t.img.width,TILE/t.img.height));redraw();scheduleAutosave();};$('traceCentre').onclick=()=>{traces.forEach(t=>{t.x=W/2;t.y=H/2});redraw();scheduleAutosave();};$('traceLock').onclick=()=>{traceLocked=!traceLocked;$('traceLock').textContent=traceLocked?'🔒 Locked':'🔓 Move';$('traceLock').classList.toggle('active',traceLocked)};$('traceClear').onclick=()=>{traces=[];renderTraces();redraw();scheduleAutosave();};
 function syncSymToggle(){const btn=$('symToggle');btn.textContent=symMode==='off'?'🦋 Symmetry Off':'🦋 '+symMode.charAt(0).toUpperCase()+symMode.slice(1);btn.classList.toggle('butterfly-on',symMode!=='off');}
 $('symToggle').onclick=()=>{$('symPopover').classList.toggle('open');};
 $('symClose').onclick=()=>{$('symPopover').classList.remove('open');};
@@ -2633,6 +2646,8 @@ async function saveDocNow(){
       editingMotifId,
       editingMotifStash:editingMotifStash?JSON.stringify(editingMotifStash):null,
       bgSrc:bgImg?bgImg.src:null,bgOpacity,bgShown,
+      tracesJSON:JSON.stringify(traces.map(t=>({src:t.src,name:t.name,x:t.x,y:t.y,scale:t.scale,opacity:t.opacity}))),
+      traceLocked,
       layout,activeTemplate,
       savedAt:Date.now(),
     };
@@ -2696,6 +2711,13 @@ async function restoreDocOnBoot(){
       $('bgOpacitySlider').value=Math.round(bgOpacity*100);$('bgOpacityVal').textContent=Math.round(bgOpacity*100)+'%';
       $('bgToggle').classList.toggle('active',bgShown);$('bgToggle').textContent=bgShown?'👁️ Shown':'🚫 Hidden';
     }
+    traces=[];
+    traceLocked=doc.traceLocked!==false;
+    $('traceLock').textContent=traceLocked?'🔒 Locked':'🔓 Move';$('traceLock').classList.toggle('active',traceLocked);
+    for(const t of JSON.parse(doc.tracesJSON||'[]')){
+      await new Promise(res=>{const img=new Image();img.onload=()=>{traces.push({img,src:t.src,name:t.name,x:t.x,y:t.y,scale:t.scale,opacity:t.opacity});res();};img.onerror=res;img.src=t.src;});
+    }
+    renderTraces();
     return true;
   }catch(e){console.warn('[sketchpad] restore failed',e);return false;}
 }
