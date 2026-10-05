@@ -1315,9 +1315,14 @@ function syncStrokeSelectionUI(){
     editPathBtnEl.disabled=!stroke||isPaint;
     editPathBtnEl.title=isPaint?'Painted content is edited by dragging its bounding-box handles on the canvas, not as individual nodes.':'';
   }
+  // Hidden while Edit Path is active for this stroke — both are .float-panel overlays that
+  // default to roughly the same corner of the canvas, so showing both at once meant they simply
+  // sat on top of each other, covering each other's buttons (reported: "competing with each
+  // other"). Edit Path already has its own move affordance (dragging nodes directly) while it's
+  // open, so the whole-stroke Move/Transform panel has nothing useful to add until editing ends.
   const actionsBar=$('strokeActionsBar');
   if(actionsBar){
-    if(selectedStrokeId){
+    if(selectedStrokeId&&!pathEditStrokeId){
       const wasHidden=actionsBar.style.display==='none';
       actionsBar.style.display='block';
       if(wasHidden){const vr=viewportOuter.getBoundingClientRect();positionFloatPanel('strokeActionsBar',vr.left+16,vr.bottom-420);}
@@ -2530,6 +2535,7 @@ function enterEditPath(strokeId){
   // it was last dragged to, via floatPanelPositions.
   {const vr=viewportOuter.getBoundingClientRect();positionFloatPanel('pathEditBar',vr.right-294,vr.top+16);}
   renderPathNodeOverlay();
+  syncStrokeSelectionUI(); // hides the Stroke Actions float-panel now that pathEditStrokeId is set
   setStatus('✎ Edit Path: drag nodes to adjust the curve, then tap Done.');
 }
 function renderPathLivePreview(){
@@ -2595,6 +2601,7 @@ function exitEditPath(silent){
   $('pathEditBar').style.display='none';$('pathEditBar').classList.remove('open');
   $('pathNodeOverlay').innerHTML='';
   liveActive=false;lctx.clearRect(0,0,W,H);
+  syncStrokeSelectionUI(); // brings the Stroke Actions float-panel back now that pathEditStrokeId is clear
   if(!silent)redraw();
 }
 // Node selection/drag lives entirely on these overlay divs (generous, zoom-invariant 36px CSS
