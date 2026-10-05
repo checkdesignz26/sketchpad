@@ -1,0 +1,60 @@
+# Codemagic cloud build: SketchPad for iPad -> TestFlight. No Mac needed.
+#
+# One-time setup (see IPAD.md):
+#   1. Enrol in the Apple Developer Program.
+#   2. In Codemagic: Teams > Integrations > Apple Developer Portal, add an App Store Connect API key
+#      and name it exactly as below (or change `integrations.app_store_connect`).
+#   3. Create the app record in App Store Connect with the bundle ID below.
+#
+# Replace the two placeholders marked CHANGE ME if you choose a different bundle ID / app name.
+
+workflows:
+  sketchpad-ipad:
+    name: SketchPad iPad (TestFlight)
+    instance_type: mac_mini_m2
+    max_build_duration: 45
+    integrations:
+      app_store_connect: Seamless Creative   # CHANGE ME: your Codemagic integration name
+    environment:
+      node: 22
+      xcode: latest
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.seamlesscreative.sketchpad   # CHANGE ME if you pick another ID
+      vars:
+        APP_STORE_APPLE_ID: "0000000000"   # CHANGE ME: numeric Apple ID of the app in App Store Connect
+    scripts:
+      - name: Install dependencies
+        script: npm install
+      - name: Build web bundle
+        script: npm run build:web
+      - name: Add iOS project (first run only)
+        script: |
+          if [ ! -d ios ]; then
+            npx cap add ios
+          fi
+      - name: Configure for iPad
+        script: npm run ios:configure
+      - name: Sync web assets into iOS
+        script: npx cap sync ios
+      - name: Set up signing
+        script: |
+          xcode-project use-profiles
+      - name: Set build number
+        script: |
+          cd ios/App
+          LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || echo 0)
+          agvtool new-version -all $((LATEST + 1))
+      - name: Build IPA
+        script: |
+          xcode-project build-ipa \
+            --workspace "ios/App/App.xcworkspace" \
+            --scheme "App"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true

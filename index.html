@@ -450,6 +450,7 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
     <div id="status" class="status">✨ Apple Pencil draws | one finger protected | two fingers pan/pinch/rotate | two-finger tap Undo | three-finger tap Redo | Capture Motif saves drawing ✨</div>
   </main>
 </div>
+<script src="native-bridge.js"></script>
 <script src="brush-engine.js"></script>
 <!-- Vendored unmodified: PolyBool v1.2.2 (MIT, Sean Connelly / voidqk, https://github.com/velipso/polybooljs)
      — the polygon union/intersect/difference engine behind Shape Tools (Merge/Subtract/Intersect).
@@ -4209,7 +4210,7 @@ function syncSymToggle(){const btn=$('symToggle');btn.textContent=symMode==='off
 $('symToggle').onclick=()=>{$('symPopover').classList.toggle('open');};
 $('symClose').onclick=()=>{$('symPopover').classList.remove('open');};
 document.querySelectorAll('.sym-btn').forEach(b=>b.onclick=()=>{document.querySelectorAll('.sym-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');symMode=b.dataset.sym;syncSymToggle();updateSymAxis();redraw();setStatus(symMode==='off'?'🦋 Symmetry off.':'🦋 Symmetry '+b.textContent+' active — move the axis if you want it off-centre.');});$('symX').oninput=e=>{symX=+e.target.value;$('symXVal').textContent=Math.round(symX/W*100)+'%';updateSymAxis();redraw();};$('symY').oninput=e=>{symY=+e.target.value;$('symYVal').textContent=Math.round(symY/H*100)+'%';updateSymAxis();redraw();};$('symCentre').onclick=()=>{symX=W/2;symY=H/2;$('symX').value=symX;$('symY').value=symY;$('symXVal').textContent='50%';$('symYVal').textContent='50%';updateSymAxis();redraw();};
-$('exportBtn').onclick=()=>{updateComposite();const a=document.createElement('a');a.download='pattern-playground-tile.png';const out=document.createElement('canvas');out.width=TILE;out.height=TILE;const o=out.getContext('2d');o.fillStyle='#fff';o.fillRect(0,0,TILE,TILE);if(bgImg&&bgShown){o.save();o.globalAlpha=bgOpacity;o.drawImage(bgImg,0,0,TILE,TILE);o.restore();}o.drawImage(compositeCanvas,C,C,TILE,TILE,0,0,TILE,TILE);placed.forEach(p=>{if(!p.img)return;o.save();o.translate(p.x-C,p.y-C);o.rotate(p.r*Math.PI/180);o.scale(p.s*p.fx,p.s*p.fy);o.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);o.restore();});a.href=out.toDataURL('image/png');a.click();};
+$('exportBtn').onclick=()=>{updateComposite();const out=document.createElement('canvas');out.width=TILE;out.height=TILE;const o=out.getContext('2d');o.fillStyle='#fff';o.fillRect(0,0,TILE,TILE);if(bgImg&&bgShown){o.save();o.globalAlpha=bgOpacity;o.drawImage(bgImg,0,0,TILE,TILE);o.restore();}o.drawImage(compositeCanvas,C,C,TILE,TILE,0,0,TILE,TILE);placed.forEach(p=>{if(!p.img)return;o.save();o.translate(p.x-C,p.y-C);o.rotate(p.r*Math.PI/180);o.scale(p.s*p.fx,p.s*p.fy);o.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);o.restore();});out.toBlob(b=>{if(b)SketchpadNative.saveBlob(b,'pattern-playground-tile.png');},'image/png');};
 window.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='z'){e.shiftKey?redo():undo();}});
 function syncThemeToggleUI(){const light=document.body.classList.contains('theme-light');$('themeToggle').textContent=light?'🌙 Dark Mode':'☀️ Light Mode';}
 $('themeToggle').onclick=()=>{const light=document.body.classList.toggle('theme-light');try{localStorage.setItem('pkmTheme',light?'light':'dark');}catch(e){}syncThemeToggleUI();};
@@ -4419,13 +4420,11 @@ async function applyDocObject(doc){
 function downloadProjectFile(){
   const doc=buildDocObject();
   const blob=new Blob([JSON.stringify(doc)],{type:'application/json'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
   const stamp=new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
-  a.download='sketchpad-project-'+stamp+'.json';
-  a.href=url;a.click();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
-  setStatus('⬇️ Project file downloaded — keep it somewhere safe as a backup.');
+  SketchpadNative.saveBlob(blob,'sketchpad-project-'+stamp+'.json').then(r=>{
+    if(r==='cancelled')return;
+    setStatus(r==='share'?'⬆️ Project file ready — save it to Files or AirDrop it as a backup.':'⬇️ Project file downloaded — keep it somewhere safe as a backup.');
+  });
 }
 async function openProjectFromFile(file){
   try{
