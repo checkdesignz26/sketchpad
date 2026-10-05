@@ -2536,7 +2536,17 @@ function renderPathLivePreview(){
   const stroke=strokes.find(s=>s.id===pathEditStrokeId);if(!stroke||!pathEditNodes)return;
   lctx.clearRect(0,0,W,H);
   const brush=BrushEngine.getBrush(stroke.brushId),settings=strokeSettings(stroke);
-  BrushEngine.renderStroke(lctx,{...stroke,points:nodesToPoints(pathEditNodes,pathEditClosed)},brush,settings);
+  // A taper brush (Tapered Ink, Spiral's "both" taper, ...) thins its own start/end down to
+  // near-nothing — correct for the finished artwork, but during editing specifically that thin,
+  // faint stretch right at the stroke's own endpoints reads exactly like a second, fainter path
+  // peeking out from underneath the real one (reported: "edit path still has the previous path
+  // underneath"). It isn't a leftover of the pre-edit geometry — rebuildLayerDimmed's alpha:0
+  // genuinely renders nothing for this stroke on its real layer (verified) — it's this SAME live
+  // preview's own natural taper. Edit Path's live view renders at full, uniform width instead, so
+  // the actual node structure stays unambiguous while editing; the committed stroke still tapers
+  // normally the moment Done bakes it back through the ordinary (non-preview) render path.
+  const previewBrush=(brush.taper&&brush.taper!=='none')?{...brush,taper:'none'}:brush;
+  BrushEngine.renderStroke(lctx,{...stroke,points:nodesToPoints(pathEditNodes,pathEditClosed)},previewBrush,settings);
   liveActive=true;
 }
 // Unlike freehand drawing's incremental live preview (renderLivePreviewIncremental, which only
