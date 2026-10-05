@@ -278,21 +278,6 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
       <div id="paintInsideHint" class="hint"></div>
       <div class="hint" style="margin-top:10px;">Tap a different brush below to re-apply it to this stroke — geometry doesn't change, only appearance.</div>
       <div id="strokeReassignSwatches" class="brush-family-row" style="margin-top:6px;"></div>
-      <div class="section-title" style="margin-top:12px;">✥ Move / Transform</div>
-      <div class="hint">Drag the shape on the canvas to move it (in Edit Mode). Geometry and appearance stay separate — these never change the brush.</div>
-      <div class="row" style="margin-top:6px;">
-        <button id="shapeSmallerBtn" class="btn mini" style="flex:1">🔍− Smaller</button>
-        <button id="shapeBiggerBtn" class="btn mini" style="flex:1">🔍+ Bigger</button>
-      </div>
-      <div class="row" style="margin-top:6px;">
-        <button id="shapeRotLBtn" class="btn mini" style="flex:1">↺ Rotate</button>
-        <button id="shapeRotRBtn" class="btn mini" style="flex:1">↻ Rotate</button>
-      </div>
-      <div class="row" style="margin-top:6px;">
-        <button id="shapeFlipHBtn" class="btn mini" style="flex:1">Flip H</button>
-        <button id="shapeFlipVBtn" class="btn mini" style="flex:1">Flip V</button>
-      </div>
-      <button id="duplicateStrokeBtn" class="btn mini" style="width:100%;margin-top:6px;">⧉ Duplicate</button>
       <div id="shapeParamsBox" style="display:none;">
         <div class="section-title" style="margin-top:12px;">🔷 Shape Controls</div>
         <div id="shapeParamCornerRow" class="slider-row" style="display:none;"><label>Corner</label><input id="shapeParamCorner" type="range" min="0" max="90" value="30"><span id="shapeParamCornerVal">30%</span></div>
@@ -305,7 +290,6 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
         <button id="shapeConvertBtn" class="btn mini primary" style="width:100%;margin-top:8px;">Convert to Path</button>
         <div class="hint">While it stays a Shape, resizing keeps its clean mathematical geometry. Convert to Path to freely edit individual nodes (this cannot be undone back into a parametric shape).</div>
       </div>
-      <button id="deleteStrokeBtn" class="btn mini danger" style="width:100%;margin-top:8px;">Delete Stroke</button>
     </section>
   </aside>
   <div class="float-panel" id="pathEditBar" style="display:none;">
@@ -336,10 +320,32 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
     <div class="hint">The gold node is the endpoint you're joining from. Tap any pulsing green endpoint to connect it there.</div>
     <button id="joinCancelBtn" class="btn mini" style="width:100%;margin-top:10px;">✕ Cancel</button>
   </div>
+  <div class="float-panel" id="strokeActionsBar" style="display:none;width:220px;">
+    <div class="float-panel-handle" id="strokeActionsBarHandle">
+      <span>✥ Stroke</span>
+      <span class="float-panel-handle-actions"><button id="strokeActionsDeleteTopBtn" class="btn mini danger float-panel-done">✕ Delete</button><span class="float-panel-grip" title="Drag to move">⠿</span></span>
+    </div>
+    <div class="hint">Drag the shape on the canvas to move it. Geometry and appearance stay separate — these never change the brush.</div>
+    <div class="row" style="margin-top:6px;">
+      <button id="shapeSmallerBtn" class="btn mini" style="flex:1">🔍− Smaller</button>
+      <button id="shapeBiggerBtn" class="btn mini" style="flex:1">🔍+ Bigger</button>
+    </div>
+    <div class="row" style="margin-top:6px;">
+      <button id="shapeRotLBtn" class="btn mini" style="flex:1">↺ Rotate</button>
+      <button id="shapeRotRBtn" class="btn mini" style="flex:1">↻ Rotate</button>
+    </div>
+    <div class="row" style="margin-top:6px;">
+      <button id="shapeFlipHBtn" class="btn mini" style="flex:1">Flip H</button>
+      <button id="shapeFlipVBtn" class="btn mini" style="flex:1">Flip V</button>
+    </div>
+    <button id="duplicateStrokeBtn" class="btn mini" style="width:100%;margin-top:6px;">⧉ Duplicate</button>
+    <button id="strokeActionsUndoBtn" class="btn mini" style="width:100%;margin-top:6px;">↩️ Undo</button>
+    <button id="deleteStrokeBtn" class="btn mini danger" style="width:100%;margin-top:14px;">✕ Delete Stroke</button>
+  </div>
   <button id="sidebarToggleBtn" class="sidebar-toggle" title="Hide tools panel">‹</button>
   <main class="workspace">
     <div class="toolbar"><button id="undoBtn" class="tool-btn">↩️ Undo</button><button id="redoBtn" class="tool-btn">↪️ Redo</button><div id="zoomPill" class="pill">100%</div><button id="resetRot" class="tool-btn">0° Rotation</button><button id="guidesBtn" class="tool-btn">📐 Guides</button><button id="paintModePill" class="pill" style="display:none;cursor:pointer;">🎨 Paint Inside — tap for Free Paint</button><button id="editMotifBar" class="pill" style="display:none;cursor:pointer;background:var(--accentTeal);border:1px solid rgba(92,184,171,.5);font:inherit;">✏️ Editing: <span id="editMotifBarName"></span> — tap Done</button><div class="toolbar-spacer"></div><button id="viewToggleBtn" class="tool-btn">⋯ View</button><button id="exportBtn" class="tool-btn primary">📸 Export</button></div>
-    <div id="canvasViewportOuter" class="canvas-viewport-outer"><div id="canvasWrap" class="canvas-wrap"><div id="viewPopover" class="sym-pop"><div class="section-title">🧭 Canvas / View</div><button id="symToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">🦋 Symmetry Off</button><div class="row" style="margin-bottom:10px;"><button id="tilingBtn" class="tool-btn active" style="flex:1">Tiling On</button><div id="layoutPill" class="pill">📍 Grid Mode</div></div><button id="themeToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">☀️ Light Mode</button><button id="clearDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear Drawing</button><button id="viewCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="symPopover" class="sym-pop"><div class="section-title">🦋 Symmetry</div><div class="grid"><button class="sym-btn btn active" data-sym="off">Off</button><button class="sym-btn btn" data-sym="vertical">Vertical</button><button class="sym-btn btn" data-sym="horizontal">Horizontal</button><button class="sym-btn btn" data-sym="quad">Quad</button><button class="sym-btn btn" data-sym="diamond">Diamond</button></div><div class="slider-row"><label>Axis X</label><input id="symX" type="range" min="0" max="1800" value="900"><span id="symXVal">50%</span></div><div class="slider-row"><label>Axis Y</label><input id="symY" type="range" min="0" max="1800" value="900"><span id="symYVal">50%</span></div><div class="row"><button id="symCentre" class="btn mini">Centre Axis</button><button id="symClose" class="btn mini">Done</button></div><div class="hint">Move the mirror point to make flowers, leaves and playful asymmetric symmetry.</div></div><canvas id="canvas" width="1800" height="1800"></canvas><div id="selectionBox" class="selection-box"><div id="resizeHandle" class="handle"></div><div id="rotateHandle" class="rotHandle"></div></div><div id="symAxis" class="sym-axis"></div><div id="rotateChip" class="rotate-chip">Canvas 0°</div><div id="pathNodeOverlay"></div></div></div>
+    <div id="canvasViewportOuter" class="canvas-viewport-outer"><div id="canvasWrap" class="canvas-wrap"><div id="viewPopover" class="sym-pop"><div class="section-title">🧭 Canvas / View</div><button id="symToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">🦋 Symmetry Off</button><div class="row" style="margin-bottom:10px;"><button id="tilingBtn" class="tool-btn active" style="flex:1">Tiling On</button><div id="layoutPill" class="pill">📍 Grid Mode</div></div><button id="themeToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">☀️ Light Mode</button><button id="clearDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear Drawing</button><button id="viewCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="symPopover" class="sym-pop"><div class="section-title">🦋 Symmetry</div><div class="grid"><button class="sym-btn btn active" data-sym="off">Off</button><button class="sym-btn btn" data-sym="vertical">Vertical</button><button class="sym-btn btn" data-sym="horizontal">Horizontal</button><button class="sym-btn btn" data-sym="quad">Quad</button><button class="sym-btn btn" data-sym="diamond">Diamond</button></div><div class="slider-row"><label>Axis X</label><input id="symX" type="range" min="0" max="1800" value="900"><span id="symXVal">50%</span></div><div class="slider-row"><label>Axis Y</label><input id="symY" type="range" min="0" max="1800" value="900"><span id="symYVal">50%</span></div><div class="row"><button id="symCentre" class="btn mini">Centre Axis</button><button id="symClose" class="btn mini">Done</button></div><div class="hint">Move the mirror point to make flowers, leaves and playful asymmetric symmetry.</div></div><canvas id="canvas" width="1800" height="1800"></canvas><div id="selectionBox" class="selection-box"><div id="resizeHandle" class="handle"></div><div id="rotateHandle" class="rotHandle"></div></div><div id="paintBBoxOverlay" class="selection-box" style="display:none;"><div id="paintResizeHandle" class="handle"></div><div id="paintRotateHandle" class="rotHandle"></div></div><div id="symAxis" class="sym-axis"></div><div id="rotateChip" class="rotate-chip">Canvas 0°</div><div id="pathNodeOverlay"></div></div></div>
     <div id="status" class="status">✨ Apple Pencil draws | one finger protected | two fingers pan/pinch/rotate | two-finger tap Undo | three-finger tap Redo | Capture Motif saves drawing ✨</div>
   </main>
 </div>
@@ -676,11 +682,11 @@ function applyTransform(){
       renderScaleTimer=setTimeout(()=>commitRenderScale(newScale),120);
     }
   }
-  canvas.style.transform=`translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom*baseScale}) rotate(${rot}deg)`;$('zoomPill').textContent=Math.round(zoom*100)+'%';$('rotateChip').textContent='Canvas '+Math.round(rot)+'°';updateSelectionBox();updateSymAxis();if(pathEditNodes)renderPathNodeOverlay();
+  canvas.style.transform=`translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom*baseScale}) rotate(${rot}deg)`;$('zoomPill').textContent=Math.round(zoom*100)+'%';$('rotateChip').textContent='Canvas '+Math.round(rot)+'°';updateSelectionBox();updatePaintBBoxOverlay();updateSymAxis();if(pathEditNodes)renderPathNodeOverlay();
 }
 function screenToCanvas(x,y){const r=canvas.getBoundingClientRect();const cx=x-(r.left+r.width/2),cy=y-(r.top+r.height/2);const a=-rot*Math.PI/180;const s=zoom*baseScale;const ux=(cx*Math.cos(a)-cy*Math.sin(a))/s+W/2;const uy=(cx*Math.sin(a)+cy*Math.cos(a))/s+H/2;return {x:ux,y:uy};}
 function canvasToScreen(x,y){const rect=canvas.getBoundingClientRect(),wrapRect=wrap.getBoundingClientRect();const cx=rect.left+rect.width/2-wrapRect.left,cy=rect.top+rect.height/2-wrapRect.top;const a=rot*Math.PI/180;const s=zoom*baseScale;const px=(x-W/2)*s,py=(y-H/2)*s;return {x:cx+px*Math.cos(a)-py*Math.sin(a),y:cy+px*Math.sin(a)+py*Math.cos(a)};}
-function redraw(){if(redraw._q)return;redraw._q=requestAnimationFrame(()=>{redraw._q=0;if(compositeDirty){updateComposite();updateDisplayComposite();compositeDirty=false;}ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);drawBackground();drawTraces();if(showTiling)drawTiles();else{ctx.drawImage(displayCanvas,0,0,W,H);if(liveActive)ctx.drawImage(liveLayer,0,0);}drawPlaced();drawStrokeSelection();drawTileBoundary();if(showGuides)drawGuides();updateSelectionBox();});}
+function redraw(){if(redraw._q)return;redraw._q=requestAnimationFrame(()=>{redraw._q=0;if(compositeDirty){updateComposite();updateDisplayComposite();compositeDirty=false;}ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);drawBackground();drawTraces();if(showTiling)drawTiles();else{ctx.drawImage(displayCanvas,0,0,W,H);if(liveActive)ctx.drawImage(liveLayer,0,0);}drawPlaced();drawStrokeSelection();drawTileBoundary();if(showGuides)drawGuides();updateSelectionBox();updatePaintBBoxOverlay();});}
 // A pattern (e.g. exported from Magic Builder) loaded as the base of the design - unlike Trace
 // Reference (a non-exported, freely-scaled/positioned tracing guide), this is sized to exactly
 // fill the guide-square tile, tiles using the same repeat offsets as the hand-drawn layer/motifs
@@ -1243,17 +1249,26 @@ function selectAt(x,y){
   if(!selected){
     // Hit tolerance grows a little for thin strokes so a thin 2px line isn't effectively
     // unselectable — never smaller than a comfortable ~18px finger/pencil target either way.
-    // Closed shapes (rectangles, circles...) are also selectable by tapping ANYWHERE inside their
-    // fill, not just near the outline — expected behaviour for a shape, not just a thin stroke.
     const lockedIds=new Set(layers.filter(l=>l.locked).map(l=>l.id));
     let best=null,bestDist=Infinity;
     for(let i=strokes.length-1;i>=0;i--){
       const s=strokes[i];if(lockedIds.has(s.layerId))continue;
       const settings=s.settings||BrushEngine.getSettings(s.brushId);
       const tolerance=Math.max(18,(settings.size||6)/2+12);
-      let d=distanceToPolyline(p.x,p.y,s.points);
-      if(s.closed&&pointInPolygon(p.x,p.y,s.points))d=0;
+      const d=distanceToPolyline(p.x,p.y,s.points);
       if(d<tolerance&&d<bestDist){bestDist=d;best=s.id;}
+    }
+    // Closed shapes (rectangles, circles...) are ALSO selectable by tapping anywhere inside their
+    // fill, not just near the outline — but only as a FALLBACK, when nothing else actually passed
+    // near the tap. Giving that an automatic win unconditionally meant a closed shape could never
+    // be tapped-through to anything genuinely closer drawn inside it — Paint Inside content, by
+    // definition, always sits inside its own boundary shape, so it could never be directly
+    // selected at all; the boundary always "won" first.
+    if(!best){
+      for(let i=strokes.length-1;i>=0;i--){
+        const s=strokes[i];if(lockedIds.has(s.layerId))continue;
+        if(s.closed&&pointInPolygon(p.x,p.y,s.points)){best=s.id;break;}
+      }
     }
     selectedStrokeId=best;
   }
@@ -1289,6 +1304,28 @@ function syncStrokeSelectionUI(){
   if(strokeColorInput&&stroke)strokeColorInput.value=stroke.color||'#000000';
   syncShapeParamsUI(stroke);
   syncStrokeLayerSelect(stroke);
+  // Paint Inside content is a freehand RASTER scribble clipped to a boundary, not a simple
+  // curve — Edit Path's node simplifier still has to represent every wiggle as a node, which is
+  // what read as "lots of points everywhere". It's not vector geometry meant for node editing,
+  // so Edit Path is disabled for it; the bounding-box handles (paintBBoxOverlay) are the actual
+  // move/resize/rotate affordance for this content — see updatePaintBBoxOverlay.
+  const editPathBtnEl=$('editPathBtn');
+  if(editPathBtnEl){
+    const isPaint=!!(stroke&&stroke.clipStrokeId);
+    editPathBtnEl.disabled=!stroke||isPaint;
+    editPathBtnEl.title=isPaint?'Painted content is edited by dragging its bounding-box handles on the canvas, not as individual nodes.':'';
+  }
+  const actionsBar=$('strokeActionsBar');
+  if(actionsBar){
+    if(selectedStrokeId){
+      const wasHidden=actionsBar.style.display==='none';
+      actionsBar.style.display='block';
+      if(wasHidden){const vr=viewportOuter.getBoundingClientRect();positionFloatPanel('strokeActionsBar',vr.left+16,vr.bottom-420);}
+    }else{
+      actionsBar.style.display='none';
+    }
+  }
+  updatePaintBBoxOverlay();
 }
 function syncStrokeLayerSelect(stroke){
   const sel=$('strokeLayerSelect');if(!sel||!stroke)return;
@@ -1608,6 +1645,84 @@ $('rotateHandle').addEventListener('pointerdown',e=>{const m=getSel();if(!m||!is
  $('rotateHandle').addEventListener('pointermove',onMove);$('rotateHandle').addEventListener('pointerup',onUp,{once:true});});
 function updateSymAxis(){const a=$('symAxis');if(!a)return;if(symMode==='off'){a.style.display='none';return}const rect=canvas.getBoundingClientRect(),wrapRect=wrap.getBoundingClientRect();const cx=rect.left+rect.width/2-wrapRect.left,cy=rect.top+rect.height/2-wrapRect.top;const rr=rot*Math.PI/180;const s=zoom*baseScale;const px=(symX-W/2)*s,py=(symY-H/2)*s;a.style.display='block';a.style.left=(cx+px*Math.cos(rr)-py*Math.sin(rr))+'px';a.style.top=(cy+px*Math.sin(rr)+py*Math.cos(rr))+'px';}
 function updateSelectionBox(){const box=$('selectionBox'),m=getSel();if(!m){box.style.display='none';return}const rect=canvas.getBoundingClientRect(),wrapRect=wrap.getBoundingClientRect();const cx=rect.left+rect.width/2-wrapRect.left,cy=rect.top+rect.height/2-wrapRect.top;const a=rot*Math.PI/180;const s=zoom*baseScale;const px=(m.x-W/2)*s,py=(m.y-H/2)*s;const sx=cx+px*Math.cos(a)-py*Math.sin(a),sy=cy+px*Math.sin(a)+py*Math.cos(a);box.style.display='block';box.style.width=(m.w*m.s*s)+'px';box.style.height=(m.h*m.s*s)+'px';box.style.left=(sx-m.w*m.s*s/2)+'px';box.style.top=(sy-m.h*m.s*s/2)+'px';box.style.transform=`rotate(${rot+m.r}deg)`;}
+// ---- Paint Inside content: bounding-box handles instead of vector node editing ----------------
+// A Paint Inside stroke is a freehand RASTER scribble clipped to a boundary — Edit Path's node
+// simplifier still has to represent every wiggle of that scribble as a node ("lots of points
+// everywhere"), which is the wrong editing model for it. This gives it the same move/resize/
+// rotate-by-dragging-a-handle affordance a placed motif gets (see selectionBox/getSel above),
+// computed from its own points' bounding box instead of a stored x/y/w/h/s/r transform — each
+// drag bakes the new coordinates straight into stroke.points (and stroke.nodes, on the rare
+// chance it has any), live-previewed via the liveLayer exactly like dragging a stroke on canvas
+// already does, and committed to history once on release.
+function selectedPaintStroke(){
+  const stroke=strokes.find(s=>s.id===selectedStrokeId);
+  return (stroke&&stroke.clipStrokeId&&stroke.points&&stroke.points.length)?stroke:null;
+}
+function strokePointsBBox(points){
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  points.forEach(p=>{if(p.x<minX)minX=p.x;if(p.y<minY)minY=p.y;if(p.x>maxX)maxX=p.x;if(p.y>maxY)maxY=p.y;});
+  return {cx:(minX+maxX)/2,cy:(minY+maxY)/2,w:Math.max(1,maxX-minX),h:Math.max(1,maxY-minY)};
+}
+function updatePaintBBoxOverlay(){
+  const box=$('paintBBoxOverlay');if(!box)return;
+  const stroke=selectedPaintStroke();
+  if(!stroke){box.style.display='none';return;}
+  const bb=strokePointsBBox(stroke.points);
+  const rect=canvas.getBoundingClientRect(),wrapRect=wrap.getBoundingClientRect();
+  const cx=rect.left+rect.width/2-wrapRect.left,cy=rect.top+rect.height/2-wrapRect.top;
+  const a=rot*Math.PI/180,s=zoom*baseScale,pad=16;
+  const px=(bb.cx-W/2)*s,py=(bb.cy-H/2)*s;
+  const sx=cx+px*Math.cos(a)-py*Math.sin(a),sy=cy+px*Math.sin(a)+py*Math.cos(a);
+  const bw=(bb.w+pad*2)*s,bh=(bb.h+pad*2)*s;
+  box.style.display='block';
+  box.style.width=bw+'px';box.style.height=bh+'px';
+  box.style.left=(sx-bw/2)+'px';box.style.top=(sy-bh/2)+'px';
+  box.style.transform=`rotate(${rot}deg)`;
+}
+function paintBBoxHandleDrag(handleEl,mode){
+  handleEl.addEventListener('pointerdown',e=>{
+    const stroke=selectedPaintStroke();if(!stroke||!isPen(e))return;
+    e.preventDefault();e.stopPropagation();
+    try{handleEl.setPointerCapture(e.pointerId);}catch(err){}
+    const bb=strokePointsBBox(stroke.points);
+    const start=screenToCanvas(e.clientX,e.clientY);
+    const baseDist=Math.hypot(start.x-bb.cx,start.y-bb.cy)||1;
+    const baseAngle=Math.atan2(start.y-bb.cy,start.x-bb.cx);
+    const basePoints=stroke.points.map(p=>({...p}));
+    // Fully hidden (alpha 0), not dimmed — the live preview IS the stroke while dragging, same
+    // "only one visible version, never a ghost underneath" technique Edit Path already uses.
+    rebuildLayerDimmed(stroke.layerId,stroke.id,0);
+    const onMove=ev=>{
+      const p=screenToCanvas(ev.clientX,ev.clientY);
+      let newPoints;
+      if(mode==='resize'){
+        const d=Math.hypot(p.x-bb.cx,p.y-bb.cy)||1;
+        const factor=Math.max(0.05,d/baseDist);
+        newPoints=basePoints.map(pt=>({x:bb.cx+(pt.x-bb.cx)*factor,y:bb.cy+(pt.y-bb.cy)*factor,pressure:pt.pressure}));
+      }else{
+        const dAng=Math.atan2(p.y-bb.cy,p.x-bb.cx)-baseAngle;
+        const cosA=Math.cos(dAng),sinA=Math.sin(dAng);
+        newPoints=basePoints.map(pt=>{const dx=pt.x-bb.cx,dy=pt.y-bb.cy;return {x:bb.cx+dx*cosA-dy*sinA,y:bb.cy+dx*sinA+dy*cosA,pressure:pt.pressure};});
+      }
+      stroke.points=newPoints;
+      lctx.clearRect(0,0,W,H);
+      renderStrokeClipped(lctx,stroke,BrushEngine.getBrush(stroke.brushId),strokeSettings(stroke));
+      liveActive=true;
+      updatePaintBBoxOverlay();
+      redraw();
+    };
+    const onUp=()=>{
+      handleEl.removeEventListener('pointermove',onMove);
+      liveActive=false;lctx.clearRect(0,0,W,H);
+      rebuildLayer(stroke.layerId);
+      pushHist();redraw();
+    };
+    handleEl.addEventListener('pointermove',onMove);
+    handleEl.addEventListener('pointerup',onUp,{once:true});
+  });
+}
+paintBBoxHandleDrag($('paintResizeHandle'),'resize');
+paintBBoxHandleDrag($('paintRotateHandle'),'rotate');
 function updateSelectedControls(){
  const m=getSel();
  if(m){$('motifScale').value=Math.round(m.s*100);$('motifScaleVal').textContent=Math.round(m.s*100)+'%';}
@@ -1672,7 +1787,7 @@ $('shapeRotRBtn').onclick=()=>rotateSelectedStroke(15);
 $('shapeFlipHBtn').onclick=()=>flipSelectedStroke('h');
 $('shapeFlipVBtn').onclick=()=>flipSelectedStroke('v');
 $('duplicateStrokeBtn').onclick=duplicateSelectedStroke;
-$('deleteStrokeBtn').onclick=()=>{
+function deleteSelectedStroke(){
   if(!selectedStrokeId)return;
   const stroke=strokes.find(s=>s.id===selectedStrokeId);
   const clippedLayerIds=stroke?new Set(strokes.filter(s=>s.clipStrokeId===stroke.id).map(s=>s.layerId)):new Set();
@@ -1683,7 +1798,10 @@ $('deleteStrokeBtn').onclick=()=>{
   // fully visible instead of vanishing along with the boundary.
   if(stroke){rebuildLayer(stroke.layerId);clippedLayerIds.forEach(id=>rebuildLayer(id));}
   syncStrokeSelectionUI();pushHist();redraw();
-};
+}
+$('deleteStrokeBtn').onclick=deleteSelectedStroke;
+$('strokeActionsDeleteTopBtn').onclick=deleteSelectedStroke;
+$('strokeActionsUndoBtn').onclick=undo;
 $('strokeWidthCtl').oninput=e=>{
   const stroke=strokes.find(s=>s.id===selectedStrokeId);if(!stroke)return;
   if(!stroke.settings)stroke.settings=Object.assign({},BrushEngine.getSettings(stroke.brushId));
@@ -2390,6 +2508,7 @@ function makeFloatPanelDraggable(panelId,handleId){
 }
 makeFloatPanelDraggable('pathEditBar','pathEditBarHandle');
 makeFloatPanelDraggable('joinPickBar','joinPickBarHandle');
+makeFloatPanelDraggable('strokeActionsBar','strokeActionsBarHandle');
 function enterEditPath(strokeId){
   const stroke=strokes.find(s=>s.id===strokeId);if(!stroke)return;
   const layer=layers.find(l=>l.id===stroke.layerId);
