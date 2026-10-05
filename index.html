@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Pattern Sketch</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pattern Sketch">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#f2e6d3">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
 <style>
 /* ===== Shared design tokens with Magic Builder - dark is the default palette,
    body.theme-light swaps every token to Magic Builder's ivory/cream palette so the
@@ -4210,7 +4217,7 @@ function syncSymToggle(){const btn=$('symToggle');btn.textContent=symMode==='off
 $('symToggle').onclick=()=>{$('symPopover').classList.toggle('open');};
 $('symClose').onclick=()=>{$('symPopover').classList.remove('open');};
 document.querySelectorAll('.sym-btn').forEach(b=>b.onclick=()=>{document.querySelectorAll('.sym-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');symMode=b.dataset.sym;syncSymToggle();updateSymAxis();redraw();setStatus(symMode==='off'?'🦋 Symmetry off.':'🦋 Symmetry '+b.textContent+' active — move the axis if you want it off-centre.');});$('symX').oninput=e=>{symX=+e.target.value;$('symXVal').textContent=Math.round(symX/W*100)+'%';updateSymAxis();redraw();};$('symY').oninput=e=>{symY=+e.target.value;$('symYVal').textContent=Math.round(symY/H*100)+'%';updateSymAxis();redraw();};$('symCentre').onclick=()=>{symX=W/2;symY=H/2;$('symX').value=symX;$('symY').value=symY;$('symXVal').textContent='50%';$('symYVal').textContent='50%';updateSymAxis();redraw();};
-$('exportBtn').onclick=()=>{updateComposite();const out=document.createElement('canvas');out.width=TILE;out.height=TILE;const o=out.getContext('2d');o.fillStyle='#fff';o.fillRect(0,0,TILE,TILE);if(bgImg&&bgShown){o.save();o.globalAlpha=bgOpacity;o.drawImage(bgImg,0,0,TILE,TILE);o.restore();}o.drawImage(compositeCanvas,C,C,TILE,TILE,0,0,TILE,TILE);placed.forEach(p=>{if(!p.img)return;o.save();o.translate(p.x-C,p.y-C);o.rotate(p.r*Math.PI/180);o.scale(p.s*p.fx,p.s*p.fy);o.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);o.restore();});out.toBlob(b=>{if(b)SketchpadNative.saveBlob(b,'pattern-playground-tile.png');},'image/png');};
+$('exportBtn').onclick=()=>{updateComposite();const out=document.createElement('canvas');out.width=TILE;out.height=TILE;const o=out.getContext('2d');o.fillStyle='#fff';o.fillRect(0,0,TILE,TILE);if(bgImg&&bgShown){o.save();o.globalAlpha=bgOpacity;o.drawImage(bgImg,0,0,TILE,TILE);o.restore();}o.drawImage(compositeCanvas,C,C,TILE,TILE,0,0,TILE,TILE);placed.forEach(p=>{if(!p.img)return;o.save();o.translate(p.x-C,p.y-C);o.rotate(p.r*Math.PI/180);o.scale(p.s*p.fx,p.s*p.fy);o.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);o.restore();});out.toBlob(b=>{if(b)SketchpadNative.saveBlob(b,'pattern-sketch-tile.png');},'image/png');};
 window.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='z'){e.shiftKey?redo():undo();}});
 function syncThemeToggleUI(){const light=document.body.classList.contains('theme-light');$('themeToggle').textContent=light?'🌙 Dark Mode':'☀️ Light Mode';}
 $('themeToggle').onclick=()=>{const light=document.body.classList.toggle('theme-light');try{localStorage.setItem('pkmTheme',light?'light':'dark');}catch(e){}syncThemeToggleUI();};

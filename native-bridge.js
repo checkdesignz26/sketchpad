@@ -104,6 +104,14 @@
     hapticTick: hapticTick
   };
 
+  // Web only: cache the app so the browser / Add-to-Home-Screen version works offline too.
+  // Silently does nothing in the iPad app, inside the suite, or if sw.js isn't deployed.
+  if (!isNative && 'serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+    });
+  }
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {

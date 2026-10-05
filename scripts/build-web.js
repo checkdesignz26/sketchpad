@@ -9,7 +9,11 @@ const root = path.resolve(__dirname, '..');
 const out = path.join(root, 'www');
 
 // Files the app needs at runtime. Add new scripts/assets here.
-const files = ['index.html', 'brush-engine.js', 'polybool.min.js', 'native-bridge.js'];
+const files = [
+  'index.html', 'brush-engine.js', 'polybool.min.js', 'native-bridge.js',
+  'manifest.webmanifest', 'sw.js',
+  'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png'
+];
 
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
@@ -20,6 +24,7 @@ for (const f of files) {
     console.error('Missing required file: ' + f);
     process.exit(1);
   }
+  fs.mkdirSync(path.dirname(path.join(out, f)), { recursive: true });
   fs.copyFileSync(src, path.join(out, f));
 }
 
