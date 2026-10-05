@@ -213,6 +213,8 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
         <input id="brushColor" class="color" type="color" value="#000000">
         <button id="eraserToggle" class="btn" style="flex:1">🧹 Eraser</button>
       </div>
+      <button id="continuousDrawToggle" class="btn mini" style="width:100%;margin-top:8px;">🔗 Continuous Draw: Off</button>
+      <div id="continuousDrawHint" class="hint" style="display:none;">On: starting a new stroke right where the last one ended extends it as one continuous path instead of a separate stroke.</div>
       <div class="brush-family-title">Recent</div>
       <div id="brushRecents" class="brush-family-row"></div>
       <div class="brush-family-title">Favourites</div>
@@ -339,6 +341,7 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
       <button id="shapeFlipVBtn" class="btn mini" style="flex:1">Flip V</button>
     </div>
     <button id="duplicateStrokeBtn" class="btn mini" style="width:100%;margin-top:6px;">⧉ Duplicate</button>
+    <button id="joinStrokesBtn" class="btn mini" style="width:100%;margin-top:6px;">⋈ Join to Another Path</button>
     <button id="strokeActionsUndoBtn" class="btn mini" style="width:100%;margin-top:6px;">↩️ Undo</button>
     <button id="deleteStrokeBtn" class="btn mini danger" style="width:100%;margin-top:14px;">✕ Delete Stroke</button>
   </div>
@@ -439,6 +442,7 @@ let pathEditStrokeId=null,pathEditNodes=null,pathEditClosed=false,selectedNodeIn
 // exact tapped location; an existing node still takes priority if the tap is also close to one).
 let pathEditTool='select';
 let continueStrokeId=null,continueBasePoints=null; // Continue Path: next drawn stroke extends this one instead of starting a new one
+let continuousDrawMode=false; // Continuous Draw toggle: auto-continue a nearby stroke's end instead of starting a new one — see findContinuousDrawTarget
 let joinPendingStrokeId=null,joinPendingFromEnd=false; // Join Path: waiting for a tap on another stroke's endpoint
 // Paint Inside: 'free' is completely unchanged normal painting. 'inside' tags every NEW raster
 // stroke with clipStrokeId=paintInsideTargetId (the closed vector path chosen as the boundary);
@@ -1026,6 +1030,27 @@ canvas.addEventListener('pointerdown',e=>{
     renderEraserCursor(p.x,p.y,r);
     liveActive=true;redraw();return;
   }
+  // Continuous Draw: starting a new stroke right where the most recently drawn OPEN stroke on
+  // this layer ends snaps into continuing THAT stroke instead of starting a separate one — same
+  // mechanism Continue Path already provides manually (continueStrokeId/continueBasePoints),
+  // just triggered by proximity instead of via the Edit Path panel. Off by default; see
+  // continuousDrawToggle. Never fires if already mid an explicit continue session.
+  if(continuousDrawMode&&!continueStrokeId){
+    const target=findContinuousDrawTarget(p);
+    if(target){
+      const stroke=target.stroke;
+      let basePoints=(stroke.nodes?nodesToPoints(stroke.nodes,false):stroke.points).map(pt=>({...pt}));
+      if(target.fromStart)basePoints.reverse();
+      continueStrokeId=stroke.id;continueBasePoints=basePoints;
+      // Match the continued stroke's own brush/appearance, not whatever happens to be selected
+      // right now — a continuous path with a mid-stroke brush change would look like two strokes
+      // stitched together, defeating the point of "one continuous path".
+      activeBrushId=stroke.brushId;
+      BrushEngine.setSettings(activeBrushId,{...strokeSettings(stroke)});
+      syncControlsFromSettings();syncActiveSwatches();syncActiveBrushRecipeLine();
+      rebuildLayerDimmed(stroke.layerId,stroke.id,0);
+    }
+  }
   currentStrokeId=crypto.randomUUID();smoothLast=null;
   lctx.clearRect(0,0,W,H);
   if(continueStrokeId){
@@ -1315,14 +1340,20 @@ function syncStrokeSelectionUI(){
     editPathBtnEl.disabled=!stroke||isPaint;
     editPathBtnEl.title=isPaint?'Painted content is edited by dragging its bounding-box handles on the canvas, not as individual nodes.':'';
   }
-  // Hidden while Edit Path is active for this stroke — both are .float-panel overlays that
-  // default to roughly the same corner of the canvas, so showing both at once meant they simply
-  // sat on top of each other, covering each other's buttons (reported: "competing with each
-  // other"). Edit Path already has its own move affordance (dragging nodes directly) while it's
-  // open, so the whole-stroke Move/Transform panel has nothing useful to add until editing ends.
+  const joinBtnEl=$('joinStrokesBtn');
+  if(joinBtnEl){
+    const canJoin=!!(stroke&&!stroke.closed&&(stroke.points||[]).length>=2);
+    joinBtnEl.disabled=!canJoin;
+    joinBtnEl.title=stroke&&stroke.closed?'A closed shape has no open end to join — use Edit Path\'s Open Shape first.':'';
+  }
+  // Hidden while Edit Path OR Join Pick is active — all three are .float-panel overlays that
+  // default to roughly the same corner of the canvas, so showing more than one at once meant
+  // they simply sat on top of each other, covering each other's buttons (reported: "competing
+  // with each other"). Each of those modes has its own on-canvas affordance while it's open, so
+  // the whole-stroke Move/Transform panel has nothing useful to add until it ends.
   const actionsBar=$('strokeActionsBar');
   if(actionsBar){
-    if(selectedStrokeId&&!pathEditStrokeId){
+    if(selectedStrokeId&&!pathEditStrokeId&&!joinPendingStrokeId){
       const wasHidden=actionsBar.style.display==='none';
       actionsBar.style.display='block';
       if(wasHidden){const vr=viewportOuter.getBoundingClientRect();positionFloatPanel('strokeActionsBar',vr.left+16,vr.bottom-420);}
@@ -1792,6 +1823,7 @@ $('shapeRotRBtn').onclick=()=>rotateSelectedStroke(15);
 $('shapeFlipHBtn').onclick=()=>flipSelectedStroke('h');
 $('shapeFlipVBtn').onclick=()=>flipSelectedStroke('v');
 $('duplicateStrokeBtn').onclick=duplicateSelectedStroke;
+$('joinStrokesBtn').onclick=startJoinSelectedStroke;
 function deleteSelectedStroke(){
   if(!selectedStrokeId)return;
   const stroke=strokes.find(s=>s.id===selectedStrokeId);
@@ -1960,6 +1992,13 @@ function syncControlsFromSettings(){
 function patchCurrentSettings(patch){BrushEngine.setSettings(currentBrushIdForSettings(),patch);syncActiveBrushRecipeLine();}
 function selectBrush(id){eraserActive=false;activeBrushId=id;BrushEngine.touchRecent(id);syncRecents();syncControlsFromSettings();syncActiveSwatches();}
 $('eraserToggle').onclick=()=>{eraserActive=!eraserActive;syncControlsFromSettings();syncActiveSwatches();setStatus(eraserActive?'🧹 Eraser: drag over a stroke on the active layer to erase just that part of it.':'✏️ Back to '+BrushEngine.getBrush(activeBrushId).name+'.');};
+$('continuousDrawToggle').onclick=()=>{
+  continuousDrawMode=!continuousDrawMode;
+  $('continuousDrawToggle').textContent='🔗 Continuous Draw: '+(continuousDrawMode?'On':'Off');
+  $('continuousDrawToggle').classList.toggle('active',continuousDrawMode);
+  $('continuousDrawHint').style.display=continuousDrawMode?'block':'none';
+  setStatus(continuousDrawMode?'🔗 Continuous Draw on — starting a new stroke right where the last one ended extends it as one path.':'🔗 Continuous Draw off.');
+};
 $('brushSize').oninput=e=>{const v=+e.target.value;$('brushSizeVal').textContent=Math.round(v);patchCurrentSettings({size:v});};
 $('brushColor').oninput=e=>{currentColor=e.target.value;};
 $('brushOpacity').oninput=e=>{const v=+e.target.value;$('brushOpacityVal').textContent=Math.round(v)+'%';patchCurrentSettings({opacity:v});};
@@ -2798,6 +2837,28 @@ function simplifyCurrentPath(){
   renderPathNodeOverlay();renderPathLivePreview();redraw();
   setStatus('〜 Simplified: '+before+' → '+pathEditNodes.length+' nodes.');
 }
+// Continuous Draw's automatic counterpart to Continue Path: finds the single most-recently-drawn
+// OPEN stroke on the ACTIVE layer and reports whether the given point sits within a small,
+// zoom-constant snap radius of either of its two ends. Only the most recent such stroke is ever
+// considered (not every open stroke on the layer) — this is meant to catch "I just lifted the
+// pencil and I'm picking the line back up", not silently weld together unrelated nearby strokes
+// drawn at some earlier point in the session. Returns null (no snap) if that one candidate's
+// nearer end is further away than the snap radius, rather than searching further back.
+function findContinuousDrawTarget(p){
+  for(let i=strokes.length-1;i>=0;i--){
+    const s=strokes[i];
+    if(s.layerId!==activeLayerId||s.closed||s.clipStrokeId||s.fillColor)continue;
+    const pts=s.nodes?nodesToPoints(s.nodes,false):s.points;
+    if(!pts||pts.length<2)return null;
+    const snapRadius=26/(zoom*baseScale);
+    const dStart=Math.hypot(p.x-pts[0].x,p.y-pts[0].y);
+    const dEnd=Math.hypot(p.x-pts[pts.length-1].x,p.y-pts[pts.length-1].y);
+    if(dEnd<=snapRadius&&dEnd<=dStart)return {stroke:s,fromStart:false};
+    if(dStart<=snapRadius)return {stroke:s,fromStart:true};
+    return null;
+  }
+  return null;
+}
 // Continue Path: commits any pending node edits, then arms the NEXT pencil stroke to extend
 // this same stroke's geometry (from whichever end was selected) instead of starting a new one —
 // brush/settings/layer all come from the stroke being continued, per the brief.
@@ -2841,39 +2902,66 @@ function startJoinPath(){
   const strokeId=pathEditStrokeId;
   commitEditPath();
   joinPendingStrokeId=strokeId;joinPendingFromEnd=fromEnd;
-  mode='edit';syncMode();
+  mode='edit';syncMode();syncStrokeSelectionUI();
   $('joinPickBar').style.display='block';
   {const vr=viewportOuter.getBoundingClientRect();positionFloatPanel('joinPickBar',vr.right-294,vr.top+16);}
   renderJoinTargets();
   setStatus('⋈ Choose Endpoint to Join: tap a highlighted endpoint, or Cancel.');
 }
+// Join Strokes, direct from a normal stroke selection — no need to enter Edit Path and pick a
+// specific endpoint node first. Since there's no pre-chosen endpoint here, BOTH of the selected
+// stroke's ends are offered as live join points (joinPendingFromEnd=null signals this "auto"
+// mode to renderJoinTargets/the tap handler below); whichever of its two ends turns out closer
+// to whatever target endpoint gets tapped is the one actually used, so the user just has to tap
+// the other path, not fuss with which end connects where.
+function startJoinSelectedStroke(){
+  const stroke=strokes.find(s=>s.id===selectedStrokeId);
+  if(!stroke||stroke.closed)return;
+  const pts=stroke.nodes?nodesToPoints(stroke.nodes,false):stroke.points;
+  if(!pts||pts.length<2){setStatus('⋈ This path needs at least 2 points to join.');return;}
+  joinPendingStrokeId=stroke.id;joinPendingFromEnd=null;
+  mode='edit';syncMode();selectedStrokeId=null;syncStrokeSelectionUI();
+  $('joinPickBar').style.display='block';
+  {const vr=viewportOuter.getBoundingClientRect();positionFloatPanel('joinPickBar',vr.right-294,vr.top+16);}
+  renderJoinTargets();
+  setStatus('⋈ Tap another open path (highlighted ends) to join it to this one, or Cancel.');
+}
 function endJoinPick(){
   joinPendingStrokeId=null;joinPendingFromEnd=false;
   $('joinPickBar').style.display='none';
   $('pathNodeOverlay').innerHTML='';
+  syncStrokeSelectionUI(); // brings Stroke Actions back if a stroke is still selected (e.g. Cancel)
 }
-// Renders the origin endpoint (gold, inert) plus every compatible target endpoint (pulsing
+// Renders the origin endpoint(s) (gold, inert) plus every compatible target endpoint (pulsing
 // green) as real tappable elements in the node overlay — the only things selectable while
 // picking, so the user is never asked to guess which end of which object connects where.
+// joinPendingFromEnd is a specific end (Edit Path's own Join button, one endpoint already
+// selected) or null (startJoinSelectedStroke's "either end" auto mode — both of strokeA's ends
+// show as origins, and whichever is actually closer to the tapped target is the one used).
 function renderJoinTargets(){
   const host=$('pathNodeOverlay');host.innerHTML='';
   const strokeA=strokes.find(s=>s.id===joinPendingStrokeId);
   if(!strokeA){endJoinPick();return;}
   const ptsA=strokeA.nodes?nodesToPoints(strokeA.nodes,false):strokeA.points;
   if(!ptsA||ptsA.length<2){endJoinPick();return;}
-  const originPt=joinPendingFromEnd?ptsA[ptsA.length-1]:ptsA[0];
-  const originEl=document.createElement('div');
-  const op=canvasToScreen(originPt.x,originPt.y);
-  originEl.className='path-node join-origin';
-  originEl.style.left=op.x+'px';originEl.style.top=op.y+'px';
-  host.appendChild(originEl);
+  const autoMode=joinPendingFromEnd==null;
+  const originEnds=autoMode?[false,true]:[joinPendingFromEnd];
+  originEnds.forEach(fromEnd=>{
+    const originPt=fromEnd?ptsA[ptsA.length-1]:ptsA[0];
+    const originEl=document.createElement('div');
+    const op=canvasToScreen(originPt.x,originPt.y);
+    originEl.className='path-node join-origin';
+    originEl.style.left=op.x+'px';originEl.style.top=op.y+'px';
+    host.appendChild(originEl);
+  });
   strokes.forEach(s=>{
     if(s.closed||s.layerId!==strokeA.layerId)return;
+    if(autoMode&&s.id===strokeA.id)return; // auto mode only joins to ANOTHER path — self-join is Edit Path's manual Close Shape gesture
     const pts=s.nodes?nodesToPoints(s.nodes,false):s.points;
     if(!pts||pts.length<2)return;
     [{pt:pts[0],fromEnd:false},{pt:pts[pts.length-1],fromEnd:true}].forEach(({pt,fromEnd})=>{
       const isSelf=s.id===strokeA.id;
-      if(isSelf&&fromEnd===joinPendingFromEnd)return; // that's the origin marker itself, not a target
+      if(isSelf&&!autoMode&&fromEnd===joinPendingFromEnd)return; // that's the origin marker itself, not a target
       const el=document.createElement('div');
       const pos=canvasToScreen(pt.x,pt.y);
       el.className='path-node join-target'+(isSelf?' self-endpoint':'');
@@ -2885,7 +2973,10 @@ function renderJoinTargets(){
           endJoinPick();
           closeSelectedStrokeAsShape(strokeA);
         }else{
-          const strokeAId=strokeA.id,fromEnd0=joinPendingFromEnd;
+          const strokeAId=strokeA.id;
+          // Auto mode: pick whichever of strokeA's two ends sits closer to the tapped target —
+          // the user picked a PATH, not a specific end, so infer the end that actually makes sense.
+          const fromEnd0=autoMode?(Math.hypot(pt.x-ptsA[ptsA.length-1].x,pt.y-ptsA[ptsA.length-1].y)<=Math.hypot(pt.x-ptsA[0].x,pt.y-ptsA[0].y)):joinPendingFromEnd;
           endJoinPick();
           performJoin(strokes.find(x=>x.id===strokeAId),fromEnd0,s,fromEnd);
         }
@@ -2920,6 +3011,7 @@ function performJoin(strokeA,aFromEnd,strokeB,bFromEnd){
   const orientedB=bFromEnd?ptsB.slice().reverse():ptsB;
   strokeA.points=orientedA.concat(orientedB);
   strokeA.nodes=null;
+  strokeA.shape=null; // merged geometry can never still match a parametric shape description
   strokes=strokes.filter(s=>s.id!==strokeB.id);
   rebuildLayer(strokeA.layerId);
   selectedStrokeId=strokeA.id;selected=null;
