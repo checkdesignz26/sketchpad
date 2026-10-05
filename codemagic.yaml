@@ -1,4 +1,4 @@
-# Codemagic cloud build: SketchPad for iPad -> TestFlight. No Mac needed.
+# Codemagic cloud build: Pattern Sketch for iPad -> TestFlight. No Mac needed.
 #
 # One-time setup (see IPAD.md):
 #   1. Enrol in the Apple Developer Program.
@@ -9,8 +9,8 @@
 # Replace the two placeholders marked CHANGE ME if you choose a different bundle ID / app name.
 
 workflows:
-  sketchpad-ipad:
-    name: SketchPad iPad (TestFlight)
+  patternsketch-ipad:
+    name: Pattern Sketch iPad (TestFlight)
     instance_type: mac_mini_m2
     max_build_duration: 45
     integrations:
@@ -21,7 +21,7 @@ workflows:
       cocoapods: default
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: com.seamlesscreative.sketchpad   # CHANGE ME if you pick another ID
+        bundle_identifier: com.seamlesscreative.patternsketch   # CHANGE ME if you pick another ID
       vars:
         APP_STORE_APPLE_ID: "0000000000"   # CHANGE ME: numeric Apple ID of the app in App Store Connect
     scripts:

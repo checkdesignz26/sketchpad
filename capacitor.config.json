@@ -1,6 +1,6 @@
 {
-  "appId": "com.seamlesscreative.sketchpad",
-  "appName": "SketchPad",
+  "appId": "com.seamlesscreative.patternsketch",
+  "appName": "Pattern Sketch",
   "webDir": "www",
   "backgroundColor": "#f2e6d3",
   "ios": {

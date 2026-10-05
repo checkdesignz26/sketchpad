@@ -14,7 +14,7 @@ set_key() { # key type value
   "$PB" -c "Add :$1 $2 $3" "$PLIST"
 }
 
-set_key CFBundleDisplayName string "SketchPad"
+set_key CFBundleDisplayName string "Pattern Sketch"
 set_key UIFileSharingEnabled bool true
 set_key LSSupportsOpeningDocumentsInPlace bool true
 set_key ITSAppUsesNonExemptEncryption bool false

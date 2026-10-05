@@ -1,4 +1,4 @@
-# SketchPad for iPad
+# Pattern Sketch for iPad
 
 The same `index.html` powers the browser app, the Seamless Creative suite, and the iPad app.
 Native behaviour lives in `native-bridge.js` and only switches on inside the iPad app
@@ -30,13 +30,13 @@ When you add a new script or image to the app, add its file name to the `files` 
 ## One-time setup (no Mac)
 
 1. **Apple Developer Program** (US$99/year): https://developer.apple.com/programs/enroll/
-2. **App Store Connect**: create the app record. Use bundle ID `com.seamlesscreative.sketchpad`
+2. **App Store Connect**: create the app record. Use bundle ID `com.seamlesscreative.patternsketch`
    (or change it in `capacitor.config.json` and `codemagic.yaml`). Note its numeric Apple ID.
 3. **App Store Connect API key**: Users and Access > Integrations > App Store Connect API > generate a key.
 4. **Codemagic** (https://codemagic.io, sign in with GitHub): add this repo, then
    Teams > Integrations > Apple Developer Portal and add the API key. Put the integration's name
    in `codemagic.yaml` (`integrations.app_store_connect`) and the app's Apple ID in `APP_STORE_APPLE_ID`.
-5. Start the `sketchpad-ipad` workflow. When it finishes, the build appears in TestFlight.
+5. Start the `patternsketch-ipad` workflow. When it finishes, the build appears in TestFlight.
 6. Install **TestFlight** on your iPad and test with a real Apple Pencil.
 
 ## Before submitting to the App Store
