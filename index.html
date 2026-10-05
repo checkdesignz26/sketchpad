@@ -253,6 +253,18 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
       <button id="shapeConstrainBtn" class="btn mini" style="width:100%;margin-top:8px;">🔒 Constrain (Square/Circle)</button>
       <div id="shapeToolHint" class="hint">Tap a shape, then draw it on the canvas with Apple Pencil — drag to size it, lift to place. Tap the shape button again to cancel.</div>
     </section>
+    <section class="section" id="areaFillSection">
+      <div class="section-title">🪣 Vector Area Fill</div>
+      <button id="areaFillToggleBtn" class="btn mini" style="width:100%;">🪣 Area Fill: Off</button>
+      <div class="row" style="margin-top:6px;align-items:center;">
+        <input id="areaFillColorInput" class="color" type="color" value="#ffd166">
+        <span class="hint" style="flex:1;">Colour for the next tapped area.</span>
+      </div>
+      <div class="slider-row"><label>Opacity</label><input id="areaFillOpacityCtl" type="range" min="5" max="100" value="100"><span id="areaFillOpacityVal">100%</span></div>
+      <div class="slider-row"><label>Gap tol.</label><input id="areaFillGapCtl" type="range" min="0" max="20" value="4"><span id="areaFillGapVal">4px</span></div>
+      <div class="slider-row"><label>Into</label><select id="areaFillLayerSelect" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></select></div>
+      <div id="areaFillHint" class="hint">Tap the Area Fill button, then tap inside any enclosed region (even one bounded by several separate strokes) to fill just that region as its own editable vector shape. Gap tolerance bridges small unintentional gaps in the outline.</div>
+    </section>
     <section class="section" id="layersSection">
       <div class="section-title">📚 Layers</div>
       <div id="layersList"></div>
@@ -280,6 +292,7 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
         <input id="fillColorInput" class="color" type="color" value="#ffd166">
         <button id="fillShapeBtn" class="btn mini" style="flex:1" disabled>🎨 Fill Shape</button>
       </div>
+      <div id="fillOpacityRow" class="slider-row" style="display:none;"><label>Fill opacity</label><input id="fillOpacityCtl" type="range" min="5" max="100" value="100"><span id="fillOpacityVal">100%</span></div>
       <button id="paintInsideBtn" class="btn mini" style="width:100%;margin-top:6px;" disabled>✏️ Paint Inside This Shape</button>
       <div id="paintInsideHint" class="hint"></div>
       <div class="hint" style="margin-top:10px;">Tap a different brush below to re-apply it to this stroke — geometry doesn't change, only appearance.</div>
@@ -449,6 +462,7 @@ let pathEditTool='select';
 let continueStrokeId=null,continueBasePoints=null; // Continue Path: next drawn stroke extends this one instead of starting a new one
 let continuousDrawMode=false; // Continuous Draw toggle: auto-continue a nearby stroke's end instead of starting a new one — see findContinuousDrawTarget
 let joinPendingStrokeId=null,joinPendingFromEnd=false; // Join Path: waiting for a tap on another stroke's endpoint
+let areaFillArmed=false; // Vector Area Fill: next canvas tap fills the enclosed region under it instead of drawing/selecting
 // Paint Inside: 'free' is completely unchanged normal painting. 'inside' tags every NEW raster
 // stroke with clipStrokeId=paintInsideTargetId (the closed vector path chosen as the boundary);
 // the clip itself is applied live at render time from that path's CURRENT geometry (see
@@ -537,7 +551,7 @@ function renderStrokeClipped(ctx,stroke,brush,settings,alphaMul){
     const fillPts=stroke.nodes?nodesToPoints(stroke.nodes,true):stroke.points;
     if(fillPts&&fillPts.length>=3){
       ctx.save();
-      ctx.globalAlpha=alphaMul!=null?alphaMul:1;
+      ctx.globalAlpha=(alphaMul!=null?alphaMul:1)*(stroke.fillOpacity!=null?stroke.fillOpacity:1);
       ctx.beginPath();
       ctx.moveTo(fillPts[0].x,fillPts[0].y);
       for(let i=1;i<fillPts.length;i++)ctx.lineTo(fillPts[i].x,fillPts[i].y);
@@ -1002,6 +1016,7 @@ function flushEraserRebuild(){
 }
 canvas.addEventListener('pointerdown',e=>{
   if(!isPen(e))return;
+  if(areaFillArmed){e.preventDefault();attemptAreaFillAt(e.clientX,e.clientY);return;}
   // While Edit Path is active, a canvas tap means something ENTIRELY different (select/insert a
   // node — see handlePathEditCanvasTap) and must never fall through to selectAt()/drawing below.
   // selectAt() itself calls commitEditPath() unconditionally as its first line (so picking a
@@ -1330,6 +1345,14 @@ function syncStrokeSelectionUI(){
   }
   const fillBtn=$('fillShapeBtn');
   if(fillBtn)fillBtn.disabled=!stroke||!stroke.closed;
+  const fillOpacityRow=$('fillOpacityRow');
+  if(fillOpacityRow){
+    fillOpacityRow.style.display=(stroke&&stroke.fillColor)?'flex':'none';
+    if(stroke&&stroke.fillColor){
+      const pct=Math.round((stroke.fillOpacity!=null?stroke.fillOpacity:1)*100);
+      $('fillOpacityCtl').value=pct;$('fillOpacityVal').textContent=pct+'%';
+    }
+  }
   const strokeColorInput=$('strokeColorInput');
   if(strokeColorInput&&stroke)strokeColorInput.value=stroke.color||'#000000';
   syncShapeParamsUI(stroke);
@@ -1576,6 +1599,7 @@ function renderLayersList(){
     row.onclick=()=>{activeLayerId=layer.id;renderLayersList();};
     host.appendChild(row);
   });
+  syncAreaFillLayerSelect();
 }
 function moveLayer(id,dir){
   const i=layers.findIndex(l=>l.id===id);if(i<0)return;
@@ -1621,6 +1645,7 @@ $('duplicateLayerBtn').onclick=()=>{
 let dragMotif=null,dragStroke=null;
 canvas.addEventListener('pointerdown',e=>{
   if(mode!=='edit'||!isPen(e))return;
+  if(areaFillArmed)return; // Area Fill owns canvas taps itself while armed — see the earlier pointerdown listener
   if(pathEditStrokeId)return; // Edit Path owns canvas taps itself — see the earlier pointerdown listener
   // A stroke only starts moving on a tap-and-drag of the stroke it ALREADY selected — the very
   // first tap that selects it never arms a drag. Requiring that extra intentional step (select,
@@ -1779,7 +1804,7 @@ function updateSelectedControls(){
  }
 }
 function syncMode(){$('drawModeBtn').classList.toggle('active',mode==='draw');$('editModeBtn').classList.toggle('active',mode==='edit');canvas.style.cursor=mode==='draw'?'crosshair':'grab';setStatus(mode==='draw'?'✏️ Draw Mode: Apple Pencil draws, two fingers move the canvas.':'↔️ Edit Mode: tap motif with Pencil/mouse, then move, scale, rotate or flip.');}
-$('drawModeBtn').onclick=()=>{if(pathEditStrokeId)commitEditPath();if(joinPendingStrokeId)endJoinPick();armedShapeType=null;syncShapeToolUI();mode='draw';selected=null;selectedStrokeId=null;syncStrokeSelectionUI();syncMode();redraw()};$('editModeBtn').onclick=()=>{armedShapeType=null;syncShapeToolUI();mode='edit';syncMode()};$('captureBtn').onclick=captureMotif;$('undoBtn').onclick=undo;$('redoBtn').onclick=redo;$('resetRot').onclick=()=>{rot=0;applyTransform()};
+$('drawModeBtn').onclick=()=>{if(pathEditStrokeId)commitEditPath();if(joinPendingStrokeId)endJoinPick();disarmAreaFill();armedShapeType=null;syncShapeToolUI();mode='draw';selected=null;selectedStrokeId=null;syncStrokeSelectionUI();syncMode();redraw()};$('editModeBtn').onclick=()=>{disarmAreaFill();armedShapeType=null;syncShapeToolUI();mode='edit';syncMode()};$('captureBtn').onclick=captureMotif;$('undoBtn').onclick=undo;$('redoBtn').onclick=redo;$('resetRot').onclick=()=>{rot=0;applyTransform()};
 // Clear Drawing only clears the ACTIVE layer's strokes — clearing the whole document across
 // every layer from one button would be far too easy to trigger by accident once layers are
 // holding genuinely different content (Sketch vs Colour vs Outline).
@@ -1802,7 +1827,7 @@ document.querySelectorAll('.shape-btn').forEach(btn=>{
   btn.onclick=()=>{
     const type=btn.dataset.shape;
     armedShapeType=(armedShapeType===type)?null:type; // tap again to cancel
-    if(armedShapeType){if(pathEditStrokeId)commitEditPath();if(joinPendingStrokeId)endJoinPick();mode='draw';selected=null;selectedStrokeId=null;syncStrokeSelectionUI();syncMode();}
+    if(armedShapeType){if(pathEditStrokeId)commitEditPath();if(joinPendingStrokeId)endJoinPick();disarmAreaFill();mode='draw';selected=null;selectedStrokeId=null;syncStrokeSelectionUI();syncMode();}
     syncShapeToolUI();redraw();
   };
 });
@@ -1913,6 +1938,7 @@ function syncPaintModePill(){
 function startPaintInside(){
   const stroke=strokes.find(s=>s.id===selectedStrokeId);
   if(!stroke||!stroke.closed)return;
+  disarmAreaFill();
   paintMode='inside';paintInsideTargetId=stroke.id;
   // Prefer a layer actually named "Colour" (the default raster layer) — if it's been renamed or
   // removed, fall back to whatever layer is already active rather than forcing one into existence.
@@ -1959,6 +1985,251 @@ $('strokeColorInput').oninput=e=>{
   redraw();
 };
 $('strokeColorInput').onchange=()=>{pushHist();};
+// Per-fill opacity — shown only while the selected stroke IS a fill (fillColor set), covers
+// both whole-shape Fill Shape strokes and Vector Area Fill strokes since they share one field.
+$('fillOpacityCtl').oninput=e=>{
+  const stroke=strokes.find(s=>s.id===selectedStrokeId);
+  if(!stroke||!stroke.fillColor)return;
+  stroke.fillOpacity=(+e.target.value)/100;
+  $('fillOpacityVal').textContent=e.target.value+'%';
+  rebuildLayer(stroke.layerId);redraw();
+};
+$('fillOpacityCtl').onchange=()=>{pushHist();};
+
+// ---- Vector Area Fill ---------------------------------------------------------------------------
+// Tap inside an enclosed region (bounded by one or several separate vector strokes, not just a
+// single closed shape) and fill ONLY that region — distinct from Fill Shape (one selected closed
+// path) and Paint Inside (a freehand raster scribble clipped to one boundary). The result is a
+// bona fide vector stroke: a flood fill is run on a rasterised boundary image purely to FIND the
+// enclosed region, then its pixel contour is traced and simplified back into an ordinary closed
+// point path with fillColor set — after that it's just another fillColor stroke, so every existing
+// mechanism (selection, recolour, opacity, delete, move-to-layer, undo/redo, save/load, motif
+// capture) already applies to it with zero extra plumbing, exactly like Fill Shape's output.
+function disarmAreaFill(){
+  if(!areaFillArmed)return;
+  areaFillArmed=false;syncAreaFillUI();
+}
+function syncAreaFillUI(){
+  const btn=$('areaFillToggleBtn');if(!btn)return;
+  btn.textContent='🪣 Area Fill: '+(areaFillArmed?'On':'Off');
+  btn.classList.toggle('active',areaFillArmed);
+  canvas.style.cursor=areaFillArmed?'crosshair':'';
+}
+function syncAreaFillLayerSelect(){
+  const sel=$('areaFillLayerSelect');if(!sel)return;
+  const prev=sel.value;
+  sel.innerHTML='';
+  const def=document.createElement('option');
+  def.value='__default__';def.textContent='Fills layer (default)';
+  sel.appendChild(def);
+  layers.slice().reverse().forEach(l=>{
+    const opt=document.createElement('option');
+    opt.value=l.id;opt.textContent=l.name+(l.locked?' 🔒':'');
+    sel.appendChild(opt);
+  });
+  sel.value=[...sel.options].some(o=>o.value===prev)?prev:'__default__';
+}
+// Creates the default "Fills" layer the first time it's needed, at the BOTTOM of the stack (index
+// 0 renders first = beneath every other layer) so area fills sit under outlines automatically
+// without needing any per-stroke z-order trickery when they live on their own layer.
+function ensureFillsLayer(){
+  let l=layers.find(x=>x.name.trim().toLowerCase()==='fills');
+  if(!l){
+    l=makeLayer('Fills');
+    layers.unshift(l);
+    renderLayersList();
+  }
+  return l;
+}
+function getAreaFillTargetLayerId(){
+  const sel=$('areaFillLayerSelect');
+  if(sel&&sel.value&&sel.value!=='__default__'){
+    const l=layers.find(x=>x.id===sel.value);
+    if(l&&!l.locked)return l.id;
+  }
+  return ensureFillsLayer().id;
+}
+// Inserts a stroke so it renders BENEATH every other stroke already on that layer (new strokes
+// drawn normally still simply append on top as usual) — this is what keeps a fill placed into an
+// existing ink layer from covering the outlines that bound it.
+function insertStrokeBeneathLayerContent(stroke,layerId){
+  // Beneath any INK (non-fill) stroke already on this layer, but above any FILL already there —
+  // so a later fill still stacks naturally over an earlier sibling fill on the same layer instead
+  // of silently reversing every time that layer accumulates more than one.
+  const firstInkIdx=strokes.findIndex(s=>s.layerId===layerId&&!s.fillColor);
+  if(firstInkIdx===-1)strokes.push(stroke);else strokes.splice(firstInkIdx,0,stroke);
+}
+// Traces the outer boundary of a binary mask (Uint8Array, 1=filled) sized maskW x maskH into an
+// ordered closed loop of grid-vertex coordinates, by collecting every unit boundary edge (an edge
+// between a filled pixel and an unfilled/out-of-bounds neighbour) and stitching them together —
+// each boundary vertex has exactly two incident boundary edges for a simple blob, so walking that
+// adjacency is a reliable way to recover one continuous loop without the directional edge-cases a
+// classic Moore-neighbour tracer has. If the mask has more than one loop (e.g. a thin pinch point),
+// the longest one (the outer boundary) is returned.
+function traceMaskContour(mask,maskW,maskH){
+  const filled=(x,y)=>x>=0&&y>=0&&x<maskW&&y<maskH&&mask[y*maskW+x];
+  const adj=new Map();
+  const vkey=(x,y)=>x+','+y;
+  function addEdge(x1,y1,x2,y2){
+    const a=vkey(x1,y1),b=vkey(x2,y2);
+    if(!adj.has(a))adj.set(a,[]);
+    if(!adj.has(b))adj.set(b,[]);
+    adj.get(a).push(b);adj.get(b).push(a);
+  }
+  for(let y=0;y<maskH;y++)for(let x=0;x<maskW;x++){
+    if(!filled(x,y))continue;
+    if(!filled(x,y-1))addEdge(x,y,x+1,y);
+    if(!filled(x,y+1))addEdge(x,y+1,x+1,y+1);
+    if(!filled(x-1,y))addEdge(x,y,x,y+1);
+    if(!filled(x+1,y))addEdge(x+1,y,x+1,y+1);
+  }
+  if(!adj.size)return null;
+  const visitedEdge=new Set();
+  const edgeKey=(a,b)=>a<b?a+'|'+b:b+'|'+a;
+  let bestLoop=null;
+  for(const startKey of adj.keys()){
+    for(const n0 of adj.get(startKey)){
+      const ek0=edgeKey(startKey,n0);
+      if(visitedEdge.has(ek0))continue;
+      const loopKeys=[startKey];
+      let prev=startKey,cur=n0;
+      visitedEdge.add(ek0);
+      let guard=0;
+      while(cur!==startKey&&guard++<adj.size+10){
+        loopKeys.push(cur);
+        const opts=adj.get(cur)||[];
+        let next=null;
+        for(const o of opts){
+          if(visitedEdge.has(edgeKey(cur,o)))continue;
+          if(o===prev&&opts.length>1)continue;
+          next=o;break;
+        }
+        if(next==null)for(const o of opts){if(!visitedEdge.has(edgeKey(cur,o))){next=o;break;}}
+        if(next==null)break;
+        visitedEdge.add(edgeKey(cur,next));
+        prev=cur;cur=next;
+      }
+      if(cur===startKey&&loopKeys.length>=4&&(!bestLoop||loopKeys.length>bestLoop.length))bestLoop=loopKeys;
+    }
+  }
+  if(!bestLoop)return null;
+  return bestLoop.map(k=>{const p=k.split(',');return {x:+p[0],y:+p[1]};});
+}
+// Runs the actual flood fill + contour trace for a tap at canvas point (px,py). Returns
+// {ok:true,points} with a closed vector path on success, or {ok:false,reason} — 'onLine' (tapped
+// exactly on a boundary), 'open' (the flood reached the edge of the canvas, i.e. the region isn't
+// actually enclosed), or 'empty'/'traceFailed' for degenerate cases — so the caller can show a
+// precise, helpful message instead of ever silently flooding the whole canvas.
+function computeAreaFillPolygon(px,py,gapTolerance){
+  const mw=W,mh=H;
+  const off=document.createElement('canvas');off.width=mw;off.height=mh;
+  const octx=off.getContext('2d');
+  octx.lineCap='round';octx.lineJoin='round';octx.strokeStyle='#000';
+  // Boundaries come from visible ink strokes only — a fillColor stroke is painted content (not a
+  // line to wall off against) and a Paint Inside raster scribble is clipped content, not a drawn
+  // edge, so both are excluded; only the vector linework the user actually drew counts as a wall.
+  const inkStrokes=strokes.filter(s=>{
+    if(s.fillColor||s.clipStrokeId)return false;
+    const layer=layers.find(l=>l.id===s.layerId);
+    return layer&&layer.visible;
+  });
+  if(!inkStrokes.length)return {ok:false,reason:'empty'};
+  inkStrokes.forEach(s=>{
+    const pts=s.nodes?nodesToPoints(s.nodes,s.closed):s.points;
+    if(!pts||pts.length<2)return;
+    const baseWidth=(s.settings&&s.settings.size)||BrushEngine.getSettings(s.brushId).size||4;
+    octx.lineWidth=Math.max(1,baseWidth)+gapTolerance*2;
+    octx.beginPath();
+    octx.moveTo(pts[0].x,pts[0].y);
+    for(let i=1;i<pts.length;i++)octx.lineTo(pts[i].x,pts[i].y);
+    if(s.closed)octx.closePath();
+    octx.stroke();
+  });
+  const data=octx.getImageData(0,0,mw,mh).data;
+  const isWall=(x,y)=>data[(y*mw+x)*4+3]>40;
+  const startX=Math.round(px),startY=Math.round(py);
+  if(startX<0||startY<0||startX>=mw||startY>=mh)return {ok:false,reason:'offcanvas'};
+  if(isWall(startX,startY))return {ok:false,reason:'onLine'};
+  const visited=new Uint8Array(mw*mh);
+  const qx=new Int32Array(mw*mh),qy=new Int32Array(mw*mh);
+  let qh=0,qt=0;
+  qx[qt]=startX;qy[qt]=startY;qt++;
+  visited[startY*mw+startX]=1;
+  let touchedEdge=false,minX=startX,maxX=startX,minY=startY,maxY=startY;
+  while(qh<qt){
+    const x=qx[qh],y=qy[qh];qh++;
+    if(x===0||y===0||x===mw-1||y===mh-1){touchedEdge=true;break;} // open region — stop early, no need to flood the rest
+    if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y;
+    const cand=[[x+1,y],[x-1,y],[x,y+1],[x,y-1]];
+    for(let i=0;i<4;i++){
+      const nx=cand[i][0],ny=cand[i][1];
+      if(nx<0||ny<0||nx>=mw||ny>=mh)continue;
+      const idx=ny*mw+nx;
+      if(visited[idx]||isWall(nx,ny))continue;
+      visited[idx]=1;qx[qt]=nx;qy[qt]=ny;qt++;
+    }
+  }
+  if(touchedEdge)return {ok:false,reason:'open'};
+  const bw=maxX-minX+1,bh=maxY-minY+1;
+  const mask=new Uint8Array(bw*bh);
+  for(let y=minY;y<=maxY;y++)for(let x=minX;x<=maxX;x++)mask[(y-minY)*bw+(x-minX)]=visited[y*mw+x];
+  const loop=traceMaskContour(mask,bw,bh);
+  if(!loop||loop.length<4)return {ok:false,reason:'traceFailed'};
+  let pts=loop.map(v=>({x:v.x+minX,y:v.y+minY}));
+  if(pts.length>3000){ // cap before the O(n^2) closed-loop RDP below, however large the raw trace was
+    const stride=Math.ceil(pts.length/3000);
+    pts=pts.filter((_,i)=>i%stride===0);
+  }
+  const diag=Math.hypot(bw,bh);
+  const epsilon=Math.max(0.6,diag*0.0025);
+  pts=rdpSimplifyClosedLoop(pts,epsilon);
+  if(pts.length<3)return {ok:false,reason:'traceFailed'};
+  return {ok:true,points:pts};
+}
+function attemptAreaFillAt(clientX,clientY){
+  const p=screenToCanvas(clientX,clientY);
+  const gapTolerance=+$('areaFillGapCtl').value;
+  const result=computeAreaFillPolygon(p.x,p.y,gapTolerance);
+  if(!result.ok){
+    const messages={
+      onLine:'🪣 That\'s right on a line — tap inside an enclosed area instead.',
+      open:'🪣 That area isn\'t fully enclosed, so filling it would flood the whole canvas — close the gap (or raise the gap tolerance) and try again.',
+      empty:'🪣 No drawn lines to fill against yet — sketch an enclosed shape first.',
+      offcanvas:'🪣 Tap inside the canvas.',
+      traceFailed:'🪣 Couldn\'t trace that area — try tapping somewhere else inside it.',
+    };
+    setStatus(messages[result.reason]||'🪣 Couldn\'t fill that area.');
+    return;
+  }
+  const targetLayerId=getAreaFillTargetLayerId();
+  const fillColor=$('areaFillColorInput').value;
+  const fillOpacity=(+$('areaFillOpacityCtl').value)/100;
+  // brushId is never actually used for rendering (the fillColor branch in renderStrokeClipped
+  // short-circuits before touching it) but other code paths (stroke-width tolerance in selectAt,
+  // "Use This Brush") expect a real id here — mirrors what fillSelectedShape already does.
+  const fillStroke={id:crypto.randomUUID(),brushId:activeBrushId,layerId:targetLayerId,color:fillColor,fillColor,fillOpacity,settings:null,points:result.points,nodes:null,closed:true,clipStrokeId:null,shape:null};
+  insertStrokeBeneathLayerContent(fillStroke,targetLayerId);
+  rebuildLayer(targetLayerId);
+  renderLayersList();
+  pushHist();redraw();
+  setStatus('🪣 Filled area on "'+(layers.find(l=>l.id===targetLayerId)||{}).name+'".');
+}
+$('areaFillToggleBtn').onclick=()=>{
+  areaFillArmed=!areaFillArmed;
+  if(areaFillArmed){
+    if(pathEditStrokeId)commitEditPath();
+    if(joinPendingStrokeId)endJoinPick();
+    if(paintMode==='inside')setFreePaintMode();
+    eraserActive=false;armedShapeType=null;syncShapeToolUI();
+    selected=null;selectedStrokeId=null;syncStrokeSelectionUI();
+    syncAreaFillLayerSelect();
+    setStatus('🪣 Area Fill: tap inside any enclosed region to fill it.');
+  }
+  syncAreaFillUI();
+};
+$('areaFillOpacityCtl').oninput=e=>{$('areaFillOpacityVal').textContent=e.target.value+'%';};
+$('areaFillGapCtl').oninput=e=>{$('areaFillGapVal').textContent=e.target.value+'px';};
+syncAreaFillUI();
 
 // ---- Brush panel: family list, recents, favourites, quick controls -----------------------
 function makeBrushSwatch(b){
@@ -1996,7 +2267,7 @@ function syncControlsFromSettings(){
 }
 function patchCurrentSettings(patch){BrushEngine.setSettings(currentBrushIdForSettings(),patch);syncActiveBrushRecipeLine();}
 function selectBrush(id){eraserActive=false;activeBrushId=id;BrushEngine.touchRecent(id);syncRecents();syncControlsFromSettings();syncActiveSwatches();}
-$('eraserToggle').onclick=()=>{eraserActive=!eraserActive;syncControlsFromSettings();syncActiveSwatches();setStatus(eraserActive?'🧹 Eraser: drag over a stroke on the active layer to erase just that part of it.':'✏️ Back to '+BrushEngine.getBrush(activeBrushId).name+'.');};
+$('eraserToggle').onclick=()=>{eraserActive=!eraserActive;if(eraserActive)disarmAreaFill();syncControlsFromSettings();syncActiveSwatches();setStatus(eraserActive?'🧹 Eraser: drag over a stroke on the active layer to erase just that part of it.':'✏️ Back to '+BrushEngine.getBrush(activeBrushId).name+'.');};
 $('continuousDrawToggle').onclick=()=>{
   continuousDrawMode=!continuousDrawMode;
   $('continuousDrawToggle').textContent='🔗 Continuous Draw: '+(continuousDrawMode?'On':'Off');
@@ -2562,6 +2833,7 @@ function enterEditPath(strokeId){
   const stroke=strokes.find(s=>s.id===strokeId);if(!stroke)return;
   const layer=layers.find(l=>l.id===stroke.layerId);
   if(layer&&layer.locked){setStatus('🔒 "'+layer.name+'" is locked.');return;}
+  disarmAreaFill();
   pathEditStrokeId=stroke.id;
   pathEditNodes=stroke.nodes?stroke.nodes.map(n=>({...n})):pointsToNodes(stroke.points,stroke.closed);
   pathEditClosed=!!stroke.closed;
@@ -2924,6 +3196,7 @@ function startJoinSelectedStroke(){
   if(!stroke||stroke.closed)return;
   const pts=stroke.nodes?nodesToPoints(stroke.nodes,false):stroke.points;
   if(!pts||pts.length<2){setStatus('⋈ This path needs at least 2 points to join.');return;}
+  disarmAreaFill();
   joinPendingStrokeId=stroke.id;joinPendingFromEnd=null;
   mode='edit';syncMode();selectedStrokeId=null;syncStrokeSelectionUI();
   $('joinPickBar').style.display='block';
