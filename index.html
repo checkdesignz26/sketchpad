@@ -462,7 +462,7 @@ button.pill:active{transform:scale(.97)}
   </div>
   <button id="sidebarToggleBtn" class="sidebar-toggle" title="Hide tools panel">‹</button>
   <main class="workspace">
-    <div class="toolbar"><button id="undoBtn" class="tool-btn">↩️ Undo</button><button id="redoBtn" class="tool-btn">↪️ Redo</button><button id="zoomPill" class="pill" title="Zoom and view recovery">100% ▾</button><button id="resetRot" class="tool-btn">0° Rotation</button><button id="guidesBtn" class="tool-btn">📐 Guides</button><button id="strokePanelBtn" class="tool-btn" title="Show or hide the Stroke panel">🖊️ Stroke</button><button id="paintModePill" class="pill" style="display:none;cursor:pointer;">🎨 Paint Inside — tap for Free Paint</button><button id="editMotifBar" class="pill" style="display:none;cursor:pointer;background:var(--accentTeal);border:1px solid rgba(92,184,171,.5);font:inherit;">✏️ Editing: <span id="editMotifBarName"></span> — tap Done</button><div class="toolbar-spacer"></div><button id="quickSaveBtn" class="tool-btn">💾 Save</button><div id="saveStatusPill" class="pill" title="Autosave status">Saved</div><button id="downloadProjectBtn" class="tool-btn">⬇️ Download Project</button><label class="tool-btn" for="openProjectInput" style="cursor:pointer;">📂 Open Project</label><input id="openProjectInput" type="file" accept="application/json" style="display:none;"><button id="viewToggleBtn" class="tool-btn">⋯ View</button><button id="exportBtn" class="tool-btn primary">📸 Export</button></div>
+    <div class="toolbar"><button id="undoBtn" class="tool-btn">↩️ Undo</button><button id="redoBtn" class="tool-btn">↪️ Redo</button><button id="zoomPill" class="pill" title="Zoom and view recovery">100% ▾</button><button id="resetRot" class="tool-btn">0° Rotation</button><button id="guidesBtn" class="tool-btn">📐 Guides</button><button id="strokePanelBtn" class="tool-btn" title="Show or hide the Stroke panel">🖊️ Stroke</button><button id="paintModePill" class="pill" style="display:none;cursor:pointer;">🎨 Paint Inside — tap for Free Paint</button><button id="editMotifBar" class="pill" style="display:none;cursor:pointer;background:var(--accentTeal);border:1px solid rgba(92,184,171,.5);font:inherit;">✏️ Editing: <span id="editMotifBarName"></span> — tap Done</button><div class="toolbar-spacer"></div><button id="quickSaveBtn" class="tool-btn">💾 Save</button><div id="saveStatusPill" class="pill" title="Autosave status">Saved</div><button id="downloadProjectBtn" class="tool-btn">⬇️ Download Project</button><label class="tool-btn" for="openProjectInput" style="cursor:pointer;">📂 Open Project</label><input id="openProjectInput" type="file" accept="application/json" style="display:none;"><button id="viewToggleBtn" class="tool-btn">⋯ View</button><button id="exportBtn" class="tool-btn primary">📸 Export</button><button id="exportSvgBtn" class="tool-btn" title="Export as SVG (vector)">🖋️ SVG</button></div>
     <div id="restoreBanner" style="display:none;">📂 Autosaved session found from <span id="restoreBannerTime"></span>. <button id="restoreAcceptBtn" class="btn mini primary">Restore</button><button id="restoreDeclineBtn" class="btn mini">Start Fresh</button></div>
     <div id="canvasViewportOuter" class="canvas-viewport-outer"><div id="canvasWrap" class="canvas-wrap"><div id="viewPopover" class="sym-pop"><div class="section-title">🧭 Canvas / View</div><button id="symToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">🦋 Symmetry Off</button><div class="row" style="margin-bottom:10px;"><button id="tilingBtn" class="tool-btn active" style="flex:1">Tiling On</button><div id="layoutPill" class="pill">📍 Grid Mode</div></div><button id="themeToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">☀️ Light Mode</button><button id="clearDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear Drawing &amp; Motifs</button><button id="clearAllDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear All Layers &amp; Motifs</button><button id="viewCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="zoomPopover" class="sym-pop"><div class="section-title">🔍 View <span id="zoomPopPct" class="small"></span></div><div class="zoom-row"><button id="zoomOutBtn" class="tool-btn" aria-label="Zoom out">−</button><button id="zoomInBtn" class="tool-btn" aria-label="Zoom in">+</button></div><button id="zoom100Btn" class="tool-btn" style="width:100%;margin-bottom:8px;">100% — actual size</button><button id="zoomFitBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">Fit to View</button><button id="zoomResetBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;">Reset View (0°, centre, fit)</button><div class="hint" style="margin-bottom:8px;">These always work, even if the canvas has scrolled out of sight.</div><button id="zoomCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="symPopover" class="sym-pop"><div class="section-title">🦋 Symmetry</div><div class="grid"><button class="sym-btn btn active" data-sym="off">Off</button><button class="sym-btn btn" data-sym="vertical">Vertical</button><button class="sym-btn btn" data-sym="horizontal">Horizontal</button><button class="sym-btn btn" data-sym="quad">Quad</button><button class="sym-btn btn" data-sym="diamond">Diamond</button></div><div class="slider-row"><label>Axis X</label><input id="symX" type="range" min="0" max="1800" value="900"><span id="symXVal">50%</span></div><div class="slider-row"><label>Axis Y</label><input id="symY" type="range" min="0" max="1800" value="900"><span id="symYVal">50%</span></div><div class="row"><button id="symCentre" class="btn mini">Centre Axis</button><button id="symClose" class="btn mini">Done</button></div><div class="hint">Move the mirror point to make flowers, leaves and playful asymmetric symmetry.</div></div><canvas id="fabricCanvas" aria-hidden="true"></canvas><canvas id="canvas" width="1800" height="1800"></canvas><div id="tileOutline" aria-hidden="true"></div><div id="selectionBox" class="selection-box"><div id="resizeHandle" class="handle"></div><div id="rotateHandle" class="rotHandle"></div></div><div id="paintBBoxOverlay" class="selection-box" style="display:none;"><div id="paintResizeHandle" class="handle"></div><div id="paintRotateHandle" class="rotHandle"></div></div><div id="symAxis" class="sym-axis"></div><div id="rotateChip" class="rotate-chip">Canvas 0°</div><div id="pathNodeOverlay"></div></div></div>
     <div id="status" class="status">✨ Apple Pencil draws | one finger protected | two fingers pan/pinch/rotate | two-finger tap Undo | three-finger tap Redo | Capture Motif saves drawing ✨</div>
@@ -4380,6 +4380,92 @@ function syncSymToggle(){const btn=$('symToggle');btn.textContent=symMode==='off
 $('symToggle').onclick=()=>{$('symPopover').classList.toggle('open');};
 $('symClose').onclick=()=>{$('symPopover').classList.remove('open');};
 document.querySelectorAll('.sym-btn').forEach(b=>b.onclick=()=>{document.querySelectorAll('.sym-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');symMode=b.dataset.sym;syncSymToggle();updateSymAxis();redraw();setStatus(symMode==='off'?'🦋 Symmetry off.':'🦋 Symmetry '+b.textContent+' active — move the axis if you want it off-centre.');});$('symX').oninput=e=>{symX=+e.target.value;$('symXVal').textContent=Math.round(symX/W*100)+'%';updateSymAxis();redraw();};$('symY').oninput=e=>{symY=+e.target.value;$('symYVal').textContent=Math.round(symY/H*100)+'%';updateSymAxis();redraw();};$('symCentre').onclick=()=>{symX=W/2;symY=H/2;$('symX').value=symX;$('symY').value=symY;$('symXVal').textContent='50%';$('symYVal').textContent='50%';updateSymAxis();redraw();};
+// ---- SVG export ---------------------------------------------------------------------------------
+// Strokes are stored as point lists that the brush engine stamps as soft dabs. SVG has no dabs, so
+// each stroke becomes one filled outline whose width follows the same size / pressure / taper rules
+// (so it looks like the drawing), while grain, jitter and soft edges are simplified. Fill Shapes are
+// exact vectors. Every layer becomes a named group; the eight neighbouring repeats are included as
+// <use> copies so the tile still wraps seamlessly. Motifs and the background image stay as images.
+function svgNum(n){return String(Math.round(n*100)/100);}
+function svgEsc(t){return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function svgColor(c){c=String(c||'#000000');if(/^rgba?\(/i.test(c)){const m=c.match(/[\d.]+/g)||[0,0,0];return {fill:'rgb('+Math.round(m[0])+','+Math.round(m[1])+','+Math.round(m[2])+')',alpha:m[3]!=null?+m[3]:1};}return {fill:c,alpha:1};}
+function svgPoly(pts){return 'M'+pts.map(p=>svgNum(p.x)+' '+svgNum(p.y)).join('L')+'Z';}
+function svgStrokeOutline(stroke,settings,brush){
+  const pts=BrushEngine.resample(stroke.points,Math.max(1,(settings.spacing/100)*Math.max(4,settings.size)));
+  const n=pts.length;if(!n)return null;
+  let opSum=0;
+  const rs=pts.map((pt,i)=>{
+    const wm=BrushEngine.pressureFactor(pt.pressure,settings.pressureWidth);
+    opSum+=BrushEngine.pressureFactor(pt.pressure,settings.pressureOpacity);
+    let tm=1;if(brush.taper==='both'){const edge=Math.min(i,n-1-i),tl=Math.max(2,Math.round(n*0.12));if(edge<tl)tm=Math.max(.12,edge/tl);}
+    return Math.max(.3,(settings.size/2)*wm*tm);
+  });
+  const opacity=Math.max(0,Math.min(1,(settings.opacity/100)*(opSum/n)));
+  if(n===1)return {d:'M'+svgNum(pts[0].x-rs[0])+' '+svgNum(pts[0].y)+'a'+svgNum(rs[0])+' '+svgNum(rs[0])+' 0 1 0 '+svgNum(rs[0]*2)+' 0a'+svgNum(rs[0])+' '+svgNum(rs[0])+' 0 1 0 '+svgNum(-rs[0]*2)+' 0Z',opacity};
+  const L=[],R=[];
+  for(let i=0;i<n;i++){
+    const a=pts[Math.max(0,i-1)],b=pts[Math.min(n-1,i+1)];
+    let tx=b.x-a.x,ty=b.y-a.y;const tl=Math.hypot(tx,ty)||1;tx/=tl;ty/=tl;
+    L.push({x:pts[i].x-ty*rs[i],y:pts[i].y+tx*rs[i]});R.push({x:pts[i].x+ty*rs[i],y:pts[i].y-tx*rs[i]});
+  }
+  let d=svgPoly(L.concat(R.reverse()));
+  // round caps
+  [[pts[0],rs[0]],[pts[n-1],rs[n-1]]].forEach(([p,r])=>{d+='M'+svgNum(p.x-r)+' '+svgNum(p.y)+'a'+svgNum(r)+' '+svgNum(r)+' 0 1 0 '+svgNum(r*2)+' 0a'+svgNum(r)+' '+svgNum(r)+' 0 1 0 '+svgNum(-r*2)+' 0Z';});
+  return {d,opacity};
+}
+function svgStrokeMarkup(stroke,clipIds){
+  if(stroke.brushId==='eraser')return '';
+  const brush=BrushEngine.getBrush(stroke.brushId),settings=stroke.settings||BrushEngine.getSettings(stroke.brushId);
+  let clip='';
+  if(stroke.clipStrokeId&&clipIds[stroke.clipStrokeId])clip=' clip-path="url(#'+clipIds[stroke.clipStrokeId]+')"';
+  if(stroke.regions){
+    return stroke.regions.filter(r=>r&&r.length>=2).map(r=>svgStrokeMarkup({...stroke,regions:null,points:r,clipStrokeId:null},clipIds)).join('');
+  }
+  if(stroke.fillColor){
+    const fp=stroke.nodes?nodesToPoints(stroke.nodes,true):stroke.points;
+    if(!fp||fp.length<3)return '';
+    const c=svgColor(stroke.fillColor),op=(stroke.fillOpacity!=null?stroke.fillOpacity:1)*c.alpha;
+    return '<path d="'+svgPoly(fp)+'" fill="'+svgEsc(c.fill)+'"'+(op<1?' fill-opacity="'+svgNum(op)+'"':'')+clip+'/>';
+  }
+  const o=svgStrokeOutline(stroke,settings,brush);if(!o)return '';
+  const c=svgColor(stroke.color),op=o.opacity*c.alpha;
+  return '<path d="'+o.d+'" fill="'+svgEsc(c.fill)+'" fill-rule="nonzero"'+(op<.995?' fill-opacity="'+svgNum(op)+'"':'')+clip+'/>';
+}
+function imageToDataURL(img){try{const c=document.createElement('canvas');c.width=img.naturalWidth||img.width;c.height=img.naturalHeight||img.height;c.getContext('2d').drawImage(img,0,0);return c.toDataURL('image/png');}catch(e){return null;}}
+function buildSvgExport(){
+  const clipIds={},defs=[];
+  strokes.forEach(s=>{
+    if(!s.clipStrokeId||clipIds[s.clipStrokeId])return;
+    const t=findClipTargetStroke(s.clipStrokeId);if(!t)return;
+    const pts=t.nodes?nodesToPoints(t.nodes,true):t.points;if(!pts||pts.length<3)return;
+    const id='clip-'+Object.keys(clipIds).length;clipIds[s.clipStrokeId]=id;
+    defs.push('<clipPath id="'+id+'"><path d="'+svgPoly(pts)+'"/></clipPath>');
+  });
+  const lat=[];for(let ix=-1;ix<=1;ix++)for(let iy=-1;iy<=1;iy++){if(ix||iy)lat.push(tilePos(ix,iy));}
+  const useCopies=id=>lat.map(([ox,oy])=>'<use href="#'+id+'" transform="translate('+svgNum(ox)+' '+svgNum(oy)+')"/>').join('');
+  const out=[];
+  out.push('<rect id="background" x="'+C+'" y="'+C+'" width="'+TILE+'" height="'+TILE+'" fill="#ffffff"/>');
+  if(bgImg&&bgShown){const u=imageToDataURL(bgImg);if(u)out.push('<image id="background-pattern" x="'+C+'" y="'+C+'" width="'+TILE+'" height="'+TILE+'" opacity="'+svgNum(bgOpacity)+'" href="'+u+'"/>');}
+  let li=0;
+  layers.forEach(layer=>{
+    if(!layer.visible)return;
+    const body=strokes.filter(s=>s.layerId===layer.id).map(s=>svgStrokeMarkup(s,clipIds)).join('');
+    if(!body)return;
+    li++;const id='art-'+li;
+    out.push('<g id="layer-'+li+'" data-name="'+svgEsc(layer.name)+'" inkscape:groupmode="layer" inkscape:label="'+svgEsc(layer.name)+'"'+(layer.opacity<100?' opacity="'+svgNum(layer.opacity/100)+'"':'')+'><g id="'+id+'">'+body+'</g>'+useCopies(id)+'</g>');
+  });
+  const imgs=placed.filter(p=>p.img).map(p=>{const u=imageToDataURL(p.img);return u?'<image x="'+svgNum(-p.w/2)+'" y="'+svgNum(-p.h/2)+'" width="'+svgNum(p.w)+'" height="'+svgNum(p.h)+'" transform="translate('+svgNum(p.x)+' '+svgNum(p.y)+') rotate('+svgNum(p.r)+') scale('+svgNum(p.s*p.fx)+' '+svgNum(p.s*p.fy)+')" href="'+u+'"/>':'';}).join('');
+  if(imgs){out.push('<g id="layer-motifs" inkscape:groupmode="layer" inkscape:label="Motifs"><g id="art-motifs">'+imgs+'</g>'+useCopies('art-motifs')+'</g>');}
+  return '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="'+TILE+'" height="'+TILE+'" viewBox="0 0 '+TILE+' '+TILE+'">\n<defs>'+defs.join('')+'<clipPath id="tile"><rect x="0" y="0" width="'+TILE+'" height="'+TILE+'"/></clipPath></defs>\n<g clip-path="url(#tile)"><g transform="translate('+(-C)+' '+(-C)+')">\n'+out.join('\n')+'\n</g></g>\n</svg>\n';
+}
+$('exportSvgBtn').onclick=()=>{
+  try{
+    const svg=buildSvgExport(),blob=new Blob([svg],{type:'image/svg+xml'});
+    if(window.SketchpadNative)SketchpadNative.saveBlob(blob,'pattern-playground-tile.svg');
+    else{const a=document.createElement('a');a.download='pattern-playground-tile.svg';a.href=URL.createObjectURL(blob);a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
+    setStatus('🖋️ SVG saved: one outline per stroke (brush grain is simplified), layers kept as groups.');
+  }catch(err){console.error(err);setStatus('⚠️ Could not build the SVG: '+(err&&err.message||err));}
+};
 $('exportBtn').onclick=()=>{updateComposite();const a=document.createElement('a');a.download='pattern-playground-tile.png';const out=document.createElement('canvas');out.width=TILE;out.height=TILE;const o=out.getContext('2d');o.fillStyle='#fff';o.fillRect(0,0,TILE,TILE);if(bgImg&&bgShown){o.save();o.globalAlpha=bgOpacity;o.drawImage(bgImg,0,0,TILE,TILE);o.restore();}// Seamless export: the tile also receives the parts of its eight neighbouring repeats that spill
   // over its edges (same lattice as the on-screen repeat), so anything crossing an edge wraps round.
   const wrapOffs=[[0,0]];for(let ix=-1;ix<=1;ix++)for(let iy=-1;iy<=1;iy++){if(ix||iy)wrapOffs.push(tilePos(ix,iy));}
