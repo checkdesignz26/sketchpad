@@ -233,26 +233,26 @@ button.pill:active{transform:scale(.97)}
 <script>(function(){try{if((localStorage.getItem('pkmTheme')||'light')==='light')document.body.classList.add('theme-light');}catch(e){document.body.classList.add('theme-light');}})();</script>
 <div class="app">
   <aside class="sidebar" id="sidebar">
-    <label class="upload accentPurple">📸 Add Motifs<input id="motifInput" type="file" accept="image/*" multiple style="display:none"></label>
-    <section class="section"><div class="section-title">🧱 Background Pattern</div><label class="upload accentBg">🖼️ Load as Background<input id="bgInput" type="file" accept="image/*" style="display:none"></label><div id="bgEmpty" class="hint">Load a tile from Magic Builder (or any square pattern) as the base — it tiles with the same repeat layout, sits under your drawing and motifs, and is included in export.</div><div id="bgControls" style="display:none"><div class="slider-row"><label>Opacity</label><input id="bgOpacitySlider" type="range" min="0" max="100" value="100"><span id="bgOpacityVal">100%</span></div><div class="row"><button id="bgToggle" class="btn mini active">👁️ Shown</button><button id="bgClear" class="btn mini danger">Clear</button></div></div></section>
-    <section class="section"><div class="section-title">📐 Templates</div><div class="grid">
+    <label class="upload accentPurple">Add Motifs<input id="motifInput" type="file" accept="image/*" multiple style="display:none"></label>
+    <section class="section"><div class="section-title">Background Pattern</div><label class="upload accentBg">Load as Background<input id="bgInput" type="file" accept="image/*" style="display:none"></label><div id="bgEmpty" class="hint">Load a tile from Magic Builder (or any square pattern) as the base — it tiles with the same repeat layout, sits under your drawing and motifs, and is included in export.</div><div id="bgControls" style="display:none"><div class="slider-row"><label>Opacity</label><input id="bgOpacitySlider" type="range" min="0" max="100" value="100"><span id="bgOpacityVal">100%</span></div><div class="row"><button id="bgToggle" class="btn mini active">Shown</button><button id="bgClear" class="btn mini danger">Clear</button></div></div></section>
+    <section class="section"><div class="section-title">Templates</div><div class="grid">
       <button class="btn mini template-btn" data-tpl="fourCorners">Four Corners</button>
       <button class="btn mini template-btn" data-tpl="focalPoint">Focal Point</button>
       <button class="btn mini template-btn" data-tpl="diamondFrame">Diamond Frame</button>
       <button class="btn mini template-btn" data-tpl="scattered">Scattered</button>
       <button class="btn mini template-btn" data-tpl="dotGrid">Dot Grid</button>
-    </div><label class="upload accentPurple" style="margin-top:8px">📥 Import Template from Magic Builder<input id="templateImportInput" type="file" accept="application/json,.json" style="display:none"></label><button id="templateClear" class="btn mini danger" style="width:100%;margin-top:8px">✕ Clear Template</button><div class="hint">Pick a layout above, or import a template's layout exported from Magic Builder ("export for playground"), then tap a motif below to drop it into the next empty slot - bigger (hero) slots take your focal motifs, smaller (accent/filler) slots take details.</div></section>
-    <section class="section"><div class="section-title">🖼️ Motif Tray</div><div id="motifTray" class="motif-tray"></div><div id="motifEmpty" class="hint">Captured drawings and uploaded motifs appear here.</div></section>
-    <section class="section"><div class="section-title">📚 Trace Reference</div><label class="upload accentTeal">➕ Trace Artwork<input id="traceInput" type="file" accept="image/*" multiple style="display:none"></label><div id="traceList" class="trace-list" style="margin-top:8px"></div><div class="slider-row"><label>Opacity</label><input id="traceOpacity" type="range" min="5" max="100" value="35"><span id="traceOpacityVal">35%</span></div><div class="slider-row"><label>Scale</label><input id="traceScale" type="range" min="20" max="400" value="100"><span id="traceScaleVal">100%</span></div><div class="row"><button id="traceFit" class="btn mini">Fit</button><button id="traceCentre" class="btn mini">Centre</button><button id="traceLock" class="btn mini active">🔒 Locked</button><button id="traceClear" class="btn mini danger">Clear</button></div></section>
+    </div><label class="upload accentPurple" style="margin-top:8px">Import Template from Magic Builder<input id="templateImportInput" type="file" accept="application/json,.json" style="display:none"></label><button id="templateClear" class="btn mini danger" style="width:100%;margin-top:8px">✕ Clear Template</button><div class="hint">Pick a layout above, or import a template's layout exported from Magic Builder ("export for playground"), then tap a motif below to drop it into the next empty slot - bigger (hero) slots take your focal motifs, smaller (accent/filler) slots take details.</div></section>
+    <section class="section"><div class="section-title">Motif Tray</div><div id="motifTray" class="motif-tray"></div><div id="motifEmpty" class="hint">Captured drawings and uploaded motifs appear here.</div></section>
+    <section class="section"><div class="section-title">Trace Reference</div><label class="upload accentTeal">➕ Trace Artwork<input id="traceInput" type="file" accept="image/*" multiple style="display:none"></label><div id="traceList" class="trace-list" style="margin-top:8px"></div><div class="slider-row"><label>Opacity</label><input id="traceOpacity" type="range" min="5" max="100" value="35"><span id="traceOpacityVal">35%</span></div><div class="slider-row"><label>Scale</label><input id="traceScale" type="range" min="20" max="400" value="100"><span id="traceScaleVal">100%</span></div><div class="row"><button id="traceFit" class="btn mini">Fit</button><button id="traceCentre" class="btn mini">Centre</button><button id="traceLock" class="btn mini active">Locked</button><button id="traceClear" class="btn mini danger">Clear</button></div></section>
     <section class="section" id="colourSection">
-      <div class="section-title">🎨 Colour</div>
+      <div class="section-title">Colour</div>
       <div class="hint" style="margin-top:0;">Pick a target below, then tap any swatch to send that colour there. Adjusting hero/vibe/richness or an image upload only regenerates the swatches — it never recolours anything on its own.</div>
       <div class="section-title" style="font-size:11px;margin:10px 0 6px;">Colour target</div>
       <div class="grid" id="colourTargetRow">
-        <button class="btn mini colour-target-btn active" data-target="brush">✏️ Brush</button>
-        <button class="btn mini colour-target-btn" data-target="stroke">🖊️ Stroke tools</button>
-        <button class="btn mini colour-target-btn" data-target="fill">🎨 Fill</button>
-        <button class="btn mini colour-target-btn" data-target="areaFill">🪣 Area Fill</button>
+        <button class="btn mini colour-target-btn active" data-target="brush">Brush</button>
+        <button class="btn mini colour-target-btn" data-target="stroke">Stroke tools</button>
+        <button class="btn mini colour-target-btn" data-target="fill">Fill</button>
+        <button class="btn mini colour-target-btn" data-target="areaFill">Area Fill</button>
       </div>
       <div id="colourTargetHint" class="hint"></div>
       <div class="slider-row" style="margin-top:10px;"><label>Hero</label><input id="acHero" class="color" type="color" value="#9b6bff"></div>
@@ -262,7 +262,7 @@ button.pill:active{transform:scale(.97)}
       <div class="slider-row"><label>Richness</label><input id="acRichness" type="range" min="0" max="100" value="40"></div>
       <div class="slider-row"><label>Extra</label><input id="acVariationCount" type="range" min="0" max="24" value="8"><span id="acVariationVal">8</span></div>
       <div class="swatches" id="acSwatches" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;"></div>
-      <button id="acExtractToggle" class="btn mini" style="width:100%;margin-top:10px;">🖼️ Extract from Image</button>
+      <button id="acExtractToggle" class="btn mini" style="width:100%;margin-top:10px;">Extract from Image</button>
       <div id="acExtractBox" style="display:none;margin-top:8px;padding:9px;border:1px solid var(--btnBorder);border-radius:12px;">
         <div class="row">
           <label class="btn mini" style="flex:1;text-align:center;cursor:pointer;">Upload Image<input id="acImageFile" type="file" accept="image/*" style="display:none"></label>
@@ -273,7 +273,7 @@ button.pill:active{transform:scale(.97)}
         <div class="swatches" id="acImageSwatches" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;"><span class="hint">Upload an image, or use the loaded background/trace artwork, to pull its colours.</span></div>
         <div class="row" style="margin-top:8px;">
           <input id="acPaletteName" placeholder="palette name" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);">
-          <button id="acSavePaletteBtn" class="btn mini primary" style="flex:1;">💾 Save Palette</button>
+          <button id="acSavePaletteBtn" class="btn mini primary" style="flex:1;">Save Palette</button>
         </div>
       </div>
       <div id="acSavedPalettesBox" style="margin-top:10px;">
@@ -282,8 +282,8 @@ button.pill:active{transform:scale(.97)}
       </div>
     </section>
     <section class="section" id="brushSection">
-      <div class="section-title">✏️ Draw</div>
-      <div class="mode-switch"><button id="drawModeBtn" class="btn active">✏️ Draw</button><button id="editModeBtn" class="btn">↔️ Edit</button></div>
+      <div class="section-title">Draw</div>
+      <div class="mode-switch"><button id="drawModeBtn" class="btn active">Draw</button><button id="editModeBtn" class="btn">↔ Edit</button></div>
       <div id="brushPreviewWrap" style="margin:8px 0 4px;border:1px solid var(--line);border-radius:12px;overflow:hidden;"><canvas id="brushPreview" style="position:static;display:block;width:100%;height:76px;max-width:100%;transform:none;left:auto;top:auto;"></canvas></div>
       <div class="brush-quickbar">
         <div class="slider-row"><label>Size</label><input id="brushSize" type="range" min="1" max="120" value="6"><span id="brushSizeVal">6</span></div>
@@ -291,9 +291,9 @@ button.pill:active{transform:scale(.97)}
       </div>
       <div class="row" style="margin-top:10px">
         <input id="brushColor" class="color" type="color" value="#000000">
-        <button id="eraserToggle" class="btn" style="flex:1">🧹 Eraser</button>
+        <button id="eraserToggle" class="btn" style="flex:1">Eraser</button>
       </div>
-      <button id="continuousDrawToggle" class="btn mini" style="width:100%;margin-top:8px;">🔗 Continuous Draw: Off</button>
+      <button id="continuousDrawToggle" class="btn mini" style="width:100%;margin-top:8px;">Continuous Draw: Off</button>
       <div id="continuousDrawHint" class="hint" style="display:none;">On: starting a new stroke right where the last one ended extends it as one continuous path instead of a separate stroke.</div>
       <div class="brush-family-title">Recent</div>
       <div id="brushRecents" class="brush-family-row"></div>
@@ -301,7 +301,7 @@ button.pill:active{transform:scale(.97)}
       <div id="brushFavorites" class="brush-family-row"></div>
       <button id="makeBrushBtn" class="btn mini" style="width:100%;margin:8px 0;">＋ Create custom brush…</button>
       <div id="brushFamilies"></div>
-      <button id="moreSettingsToggle" class="btn mini" style="width:100%;margin-top:10px;">⚙️ More Settings</button>
+      <button id="moreSettingsToggle" class="btn mini" style="width:100%;margin-top:10px;">⚙ More Settings</button>
       <div id="moreSettings" style="display:none;">
         <div class="slider-row"><label>Smooth</label><input id="brushSmooth" type="range" min="0" max="90" value="30"><span id="brushSmoothVal">30%</span></div>
         <div class="slider-row"><label>Pressure → width</label><input id="pressureWidth" type="range" min="0" max="100" value="50"><span id="pressureWidthVal">50%</span></div>
@@ -314,13 +314,13 @@ button.pill:active{transform:scale(.97)}
         </div>
       </div>
       <div id="activeBrushRecipe" class="hint" style="margin-top:8px;"></div>
-      <button id="captureBtn" class="btn primary" style="width:100%;margin-top:10px;">✂️ Capture Motif</button>
+      <button id="captureBtn" class="btn primary" style="width:100%;margin-top:10px;">Capture Motif</button>
       <button id="captureAreaBtn" class="btn" style="width:100%;margin-top:6px;">▭ Capture Area — drag a box round just one drawing</button>
       <div class="hint">Capture Motif takes everything you have drawn. Capture Area takes only what is inside the box you drag, and leaves the rest of your drawing alone.</div>
       <div class="hint">Apple Pencil draws. One finger no longer pans while drawing. Use two fingers to pan, pinch and rotate.</div>
     </section>
     <section class="section" id="shapesSection">
-      <div class="section-title">🔷 Shapes</div>
+      <div class="section-title">Shapes</div>
       <div class="grid">
         <button class="btn mini shape-btn" data-shape="line">╱ Line</button>
         <button class="btn mini shape-btn" data-shape="rect">▭ Rectangle</button>
@@ -332,14 +332,14 @@ button.pill:active{transform:scale(.97)}
         <button class="btn mini shape-btn" data-shape="polygon">⬡ Polygon</button>
         <button class="btn mini shape-btn" data-shape="star">☆ Star</button>
         <button class="btn mini shape-btn" data-shape="heart">♡ Heart</button>
-        <button class="btn mini shape-btn" data-shape="spiral">🌀 Spiral</button>
+        <button class="btn mini shape-btn" data-shape="spiral">Spiral</button>
       </div>
-      <button id="shapeConstrainBtn" class="btn mini" style="width:100%;margin-top:8px;">🔒 Constrain (Square/Circle)</button>
+      <button id="shapeConstrainBtn" class="btn mini" style="width:100%;margin-top:8px;">Constrain (Square/Circle)</button>
       <div id="shapeToolHint" class="hint">Tap a shape, then draw it on the canvas with Apple Pencil — drag to size it, lift to place. Tap the shape button again to cancel.</div>
     </section>
     <section class="section" id="areaFillSection">
-      <div class="section-title">🪣 Vector Area Fill</div>
-      <button id="areaFillToggleBtn" class="btn mini" style="width:100%;">🪣 Area Fill: Off</button>
+      <div class="section-title">Vector Area Fill</div>
+      <button id="areaFillToggleBtn" class="btn mini" style="width:100%;">Area Fill: Off</button>
       <div class="row" style="margin-top:6px;align-items:center;">
         <input id="areaFillColorInput" class="color" type="color" value="#ffd166">
         <span class="hint" style="flex:1;">Colour for the next tapped area.</span>
@@ -349,27 +349,27 @@ button.pill:active{transform:scale(.97)}
       <div class="slider-row"><label>Into</label><select id="areaFillLayerSelect" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></select></div>
       <div id="areaFillHint" class="hint">Tap the Area Fill button, then tap inside any enclosed region (even one bounded by several separate strokes) to fill just that region as its own editable vector shape. Gap tolerance bridges small unintentional gaps in the outline.</div>
     </section>
-    <section class="section" id="brushMakerSection"><div class="section-title">🖌️ Pattern Brush</div>
+    <section class="section" id="brushMakerSection"><div class="section-title">Pattern Brush</div>
       <div class="hint">Turn a vector path into a brush tip. Uses the selected stroke (Edit mode), or every stroke on the active layer if none is selected.</div>
       <div class="slider-row" style="grid-template-columns:64px 1fr;"><label>Name</label><input id="brushNameInput" type="text" maxlength="40" placeholder="my-brush" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"></div>
       <div class="slider-row" style="grid-template-columns:64px 1fr;"><label>Size</label><select id="brushSizeSelect" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><option value="1024">1024 px</option><option value="2048" selected>2048 px (Procreate max)</option></select></div>
-      <button id="brushShapeBtn" class="btn mini" style="width:100%;margin-top:6px;min-height:40px;">⬇️ Shape PNG (white on black, Procreate)</button>
-      <button id="brushStampBtn" class="btn mini" style="width:100%;margin-top:6px;min-height:40px;">⬇️ Colour stamp PNG (transparent)</button>
-      <button id="brushProcreateBtn" class="btn mini active" style="width:100%;margin-top:6px;min-height:40px;">⬇️ Procreate .brush (from this path)</button>
-      <button id="brushPackBtn" class="btn mini" style="width:100%;margin-top:6px;min-height:40px;">⬇️ PNG pack (.zip with both PNGs)</button>
+      <button id="brushShapeBtn" class="btn mini" style="width:100%;margin-top:6px;min-height:40px;">Shape PNG (white on black, Procreate)</button>
+      <button id="brushStampBtn" class="btn mini" style="width:100%;margin-top:6px;min-height:40px;">Colour stamp PNG (transparent)</button>
+      <button id="brushProcreateBtn" class="btn mini active" style="width:100%;margin-top:6px;min-height:40px;">Procreate .brush (from this path)</button>
+      <button id="brushPackBtn" class="btn mini" style="width:100%;margin-top:6px;min-height:40px;">PNG pack (.zip with both PNGs)</button>
       <div class="hint">A .brush opens straight in Procreate. Or import the shape PNG: Brush Studio &gt; Shape &gt; Edit &gt; Import.</div>
     </section>
-    <section class="section" id="brushSetSection"><div class="section-title">📦 Motif Brush Set</div>
+    <section class="section" id="brushSetSection"><div class="section-title">Motif Brush Set</div>
       <div class="hint">Turn your captured motifs into a Procreate brush set: one stamp brush per motif. Tick the motifs to include and rename them. Uses the size chosen above.</div>
       <div class="slider-row" style="grid-template-columns:64px 1fr;"><label>Set</label><input id="brushSetNameInput" type="text" maxlength="40" placeholder="My Stamp Set" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"></div>
-      <div id="brushSetList"></div><div id="brushSetEmpty" class="hint">Capture a motif first (✂️ Capture) and it will appear here.</div>
-      <button id="brushSetBtn" class="btn mini active" style="width:100%;margin-top:6px;min-height:40px;">⬇️ Procreate brush set (.brushset)</button>
-      <button id="brushFilesBtn" class="btn mini" style="width:100%;margin-top:6px;min-height:40px;">⬇️ Separate .brush files (.zip)</button>
-      <button id="brushPngPackBtn" class="btn mini" style="width:100%;margin-top:6px;min-height:40px;">⬇️ PNG pack (.zip)</button>
+      <div id="brushSetList"></div><div id="brushSetEmpty" class="hint">Capture a motif first (Capture) and it will appear here.</div>
+      <button id="brushSetBtn" class="btn mini active" style="width:100%;margin-top:6px;min-height:40px;">Procreate brush set (.brushset)</button>
+      <button id="brushFilesBtn" class="btn mini" style="width:100%;margin-top:6px;min-height:40px;">Separate .brush files (.zip)</button>
+      <button id="brushPngPackBtn" class="btn mini" style="width:100%;margin-top:6px;min-height:40px;">PNG pack (.zip)</button>
       <div class="hint">Open the .brushset in Procreate and try the brushes before you sell them.</div>
     </section>
     <section class="section" id="layersSection">
-      <div class="section-title">📚 Layers</div>
+      <div class="section-title">Layers</div>
       <div id="layersList"></div>
       <div class="row" style="margin-top:4px;">
         <button id="addLayerBtn" class="btn mini" style="flex:1">+ Add</button>
@@ -378,11 +378,11 @@ button.pill:active{transform:scale(.97)}
       </div>
       <div class="hint">New strokes go onto the active (highlighted) layer. Tap a row to make it active.</div>
     </section>
-    <section class="section"><div class="section-title">📐 Repeat Layouts</div><div class="grid"><button class="layout-btn active" data-layout="grid">Grid</button><button class="layout-btn" data-layout="halfDrop">Half Drop</button><button class="layout-btn" data-layout="halfBrick">Half Brick</button><button class="layout-btn" data-layout="diamond">Diamond</button><button class="layout-btn" data-layout="ogee">Ogee</button><button class="layout-btn" data-layout="tossed">Tossed</button></div></section>
-    <section class="section"><div class="section-title">🔧 Selected Motif</div><div class="slider-row"><label>Size</label><input id="motifScale" type="range" min="15" max="300" value="100"><span id="motifScaleVal">100%</span></div><div class="row"><button id="rotL" class="btn mini">↺</button><button id="rotR" class="btn mini">↻</button><button id="flipH" class="btn mini">Flip H</button><button id="flipV" class="btn mini">Flip V</button><button id="deleteSel" class="btn mini danger">Delete</button></div><div class="row" style="margin-top:6px;"><button id="editMotifBtn" class="btn mini primary" style="flex:1 1 100%;display:none;">✏️ Edit Motif</button><button id="recolourBtn" class="btn mini" style="flex:1 1 100%;display:none;">🎨 Recolour Parts</button></div><div class="row" style="margin-top:6px;"><button id="duplicateMotifBtn" class="btn mini" style="flex:1 1 45%;display:none;">⧉ Duplicate</button><button id="makeIndependentBtn" class="btn mini" style="flex:1 1 45%;display:none;">🔓 Make Independent</button></div></section>
+    <section class="section"><div class="section-title">Repeat Layouts</div><div class="grid"><button class="layout-btn active" data-layout="grid">Grid</button><button class="layout-btn" data-layout="halfDrop">Half Drop</button><button class="layout-btn" data-layout="halfBrick">Half Brick</button><button class="layout-btn" data-layout="diamond">Diamond</button><button class="layout-btn" data-layout="ogee">Ogee</button><button class="layout-btn" data-layout="tossed">Tossed</button></div></section>
+    <section class="section"><div class="section-title">Selected Motif</div><div class="slider-row"><label>Size</label><input id="motifScale" type="range" min="15" max="300" value="100"><span id="motifScaleVal">100%</span></div><div class="row"><button id="rotL" class="btn mini">↺</button><button id="rotR" class="btn mini">↻</button><button id="flipH" class="btn mini">Flip H</button><button id="flipV" class="btn mini">Flip V</button><button id="deleteSel" class="btn mini danger">Delete</button></div><div class="row" style="margin-top:6px;"><button id="editMotifBtn" class="btn mini primary" style="flex:1 1 100%;display:none;">Edit Motif</button><button id="recolourBtn" class="btn mini" style="flex:1 1 100%;display:none;">Recolour Parts</button></div><div class="row" style="margin-top:6px;"><button id="duplicateMotifBtn" class="btn mini" style="flex:1 1 45%;display:none;">⧉ Duplicate</button><button id="makeIndependentBtn" class="btn mini" style="flex:1 1 45%;display:none;">Make Independent</button></div></section>
     <section class="section" id="alignSection">
-      <div class="section-title">📐 Align Motifs</div>
-      <button id="multiSelectToggle" class="btn mini" style="width:100%;">🔢 Multi-Select: Off</button>
+      <div class="section-title">Align Motifs</div>
+      <button id="multiSelectToggle" class="btn mini" style="width:100%;">Multi-Select: Off</button>
       <div id="multiSelectHint" class="hint">On: tap motifs on the canvas to add/remove them from the alignment selection instead of single-selecting.</div>
       <div id="alignCountHint" class="hint" style="display:none;"></div>
       <div class="grid" style="margin-top:8px;">
@@ -404,7 +404,7 @@ button.pill:active{transform:scale(.97)}
       <div class="hint">Distribution needs 3 or more selected motifs. Each action is one undoable step and always preserves every motif's own scale, rotation and internal arrangement.</div>
     </section>
     <section class="section" id="strokeSelectSection" style="display:none;">
-      <div class="section-title">🖊️ Selected Stroke</div>
+      <div class="section-title">Selected Stroke</div>
       <div id="strokeRecipe" class="recipe-text"></div>
       <div class="slider-row"><label>Colour</label><input id="strokeColorInput" class="color" type="color" value="#000000"><span class="hint" style="flex:1;">Recolours this stroke/outline directly.</span></div>
       <div class="slider-row"><label>Layer</label><select id="strokeLayerSelect" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></select></div>
@@ -417,15 +417,15 @@ button.pill:active{transform:scale(.97)}
       </div>
       <div class="row" style="margin-top:6px;align-items:center;">
         <input id="fillColorInput" class="color" type="color" value="#ffd166">
-        <button id="fillShapeBtn" class="btn mini" style="flex:1" disabled>🎨 Fill Shape</button>
+        <button id="fillShapeBtn" class="btn mini" style="flex:1" disabled>Fill Shape</button>
       </div>
       <div id="fillOpacityRow" class="slider-row" style="display:none;"><label>Fill opacity</label><input id="fillOpacityCtl" type="range" min="5" max="100" value="100"><span id="fillOpacityVal">100%</span></div>
-      <button id="paintInsideBtn" class="btn mini" style="width:100%;margin-top:6px;" disabled>✏️ Paint Inside This Shape</button>
+      <button id="paintInsideBtn" class="btn mini" style="width:100%;margin-top:6px;" disabled>Paint Inside This Shape</button>
       <div id="paintInsideHint" class="hint"></div>
       <div class="hint" style="margin-top:10px;">Tap a different brush below to re-apply it to this stroke — geometry doesn't change, only appearance.</div>
       <div id="strokeReassignSwatches" class="brush-family-row" style="margin-top:6px;"></div>
       <div id="shapeParamsBox" style="display:none;">
-        <div class="section-title" style="margin-top:12px;">🔷 Shape Controls</div>
+        <div class="section-title" style="margin-top:12px;">Shape Controls</div>
         <div id="shapeParamCornerRow" class="slider-row" style="display:none;"><label>Corner</label><input id="shapeParamCorner" type="range" min="0" max="90" value="30"><span id="shapeParamCornerVal">30%</span></div>
         <div id="shapeParamSidesRow" class="slider-row" style="display:none;"><label>Sides</label><input id="shapeParamSides" type="range" min="3" max="12" value="6"><span id="shapeParamSidesVal">6</span></div>
         <div id="shapeParamPointsRow" class="slider-row" style="display:none;"><label>Points</label><input id="shapeParamPoints" type="range" min="3" max="16" value="5"><span id="shapeParamPointsVal">5</span></div>
@@ -437,7 +437,7 @@ button.pill:active{transform:scale(.97)}
         <div class="hint">While it stays a Shape, resizing keeps its clean mathematical geometry. Convert to Path to freely edit individual nodes (this cannot be undone back into a parametric shape).</div>
       </div>
       <div id="shapeToolsBox" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--btnBorder);">
-        <div class="section-title">✂️ Shape Tools</div>
+        <div class="section-title">Shape Tools</div>
         <div class="row" style="align-items:center;gap:8px;">
           <span id="shapeToolsBaseSwatch" style="width:20px;height:20px;border-radius:5px;border:2px solid var(--btnBorder);flex:0 0 auto;"></span>
           <span id="shapeToolsBaseHint" class="hint" style="flex:1;margin:0;">Select a closed vector shape first to use as the base.</span>
@@ -464,7 +464,7 @@ button.pill:active{transform:scale(.97)}
       <button id="continuePathBtn" class="btn mini" style="flex:1 1 45%;">↳ Continue</button>
       <button id="joinPathBtn" class="btn mini" style="flex:1 1 45%;">⋈ Join</button>
       <button id="closePathBtn" class="btn mini" style="flex:1 1 45%;">◯ Close Shape</button>
-      <button id="breakPathBtn" class="btn mini" style="flex:1 1 45%;">✂ Break</button>
+      <button id="breakPathBtn" class="btn mini" style="flex:1 1 45%;">Break</button>
     </div>
     <div class="row" style="margin-top:8px;">
       <button id="simplifyPathBtn" class="btn mini" style="flex:1">〜 Simplify</button>
@@ -488,8 +488,8 @@ button.pill:active{transform:scale(.97)}
     </div>
     <div class="hint">Drag the shape on the canvas to move it. Geometry and appearance stay separate — these never change the brush.</div>
     <div class="row" style="margin-top:6px;">
-      <button id="shapeSmallerBtn" class="btn mini" style="flex:1">🔍− Smaller</button>
-      <button id="shapeBiggerBtn" class="btn mini" style="flex:1">🔍+ Bigger</button>
+      <button id="shapeSmallerBtn" class="btn mini" style="flex:1">− Smaller</button>
+      <button id="shapeBiggerBtn" class="btn mini" style="flex:1">+ Bigger</button>
     </div>
     <div class="row" style="margin-top:6px;">
       <button id="shapeRotLBtn" class="btn mini" style="flex:1">↺ Rotate</button>
@@ -502,15 +502,15 @@ button.pill:active{transform:scale(.97)}
     <button id="actionsEditPathBtn" class="btn mini primary" style="width:100%;margin-top:6px;">✎ Edit Path</button>
     <button id="duplicateStrokeBtn" class="btn mini" style="width:100%;margin-top:6px;">⧉ Duplicate</button>
     <button id="joinStrokesBtn" class="btn mini" style="width:100%;margin-top:6px;">⋈ Join to Another Path</button>
-    <button id="strokeActionsUndoBtn" class="btn mini" style="width:100%;margin-top:6px;">↩️ Undo</button>
+    <button id="strokeActionsUndoBtn" class="btn mini" style="width:100%;margin-top:6px;">↩ Undo</button>
     <button id="deleteStrokeBtn" class="btn mini danger" style="width:100%;margin-top:14px;">✕ Delete Stroke</button>
   </div>
   <button id="sidebarToggleBtn" class="sidebar-toggle" title="Hide tools panel">‹</button>
   <main class="workspace">
-    <div class="toolbar"><button id="undoBtn" class="tool-btn">↩️ Undo</button><button id="redoBtn" class="tool-btn">↪️ Redo</button><button id="zoomPill" class="pill" title="Zoom and view recovery">100% ▾</button><button id="resetRot" class="tool-btn">0° Rotation</button><button id="guidesBtn" class="tool-btn">📐 Guides</button><button id="strokePanelBtn" class="tool-btn" title="Show or hide the Stroke panel">🖊️ Stroke</button><button id="paintModePill" class="pill" style="display:none;cursor:pointer;">🎨 Paint Inside — tap for Free Paint</button><button id="editMotifBar" class="pill" style="display:none;cursor:pointer;background:var(--accentTeal);border:1px solid rgba(92,184,171,.5);font:inherit;">✏️ Editing: <span id="editMotifBarName"></span> — tap Done</button><div class="toolbar-spacer"></div><button id="quickSaveBtn" class="tool-btn">💾 Save</button><div id="saveStatusPill" class="pill" title="Autosave status">Saved</div><button id="downloadProjectBtn" class="tool-btn">⬇️ Download Project</button><button id="backupsBtn" class="tool-btn" title="Automatic earlier versions of your work">🕘 Earlier saves</button><label class="tool-btn" for="openProjectInput" style="cursor:pointer;">📂 Open Project</label><input id="openProjectInput" type="file" accept="application/json" style="display:none;"><button id="viewToggleBtn" class="tool-btn">⋯ View</button><button id="exportBtn" class="tool-btn primary">📸 Export</button><button id="exportSvgBtn" class="tool-btn" title="Export as SVG (vector)">🖋️ SVG</button></div>
-    <div id="quickEditBar" style="display:none;position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:60;gap:8px;background:var(--sideBg);border:1px solid var(--line);border-radius:999px;padding:6px 8px;box-shadow:0 8px 28px rgba(0,0,0,.3);"><button id="quickEditPathBtn" class="btn mini primary">✎ Edit Path</button><button id="quickStrokeToolsBtn" class="btn mini">🖊️ Stroke tools</button></div>
+    <div class="toolbar"><button id="undoBtn" class="tool-btn">↩ Undo</button><button id="redoBtn" class="tool-btn">↪ Redo</button><button id="zoomPill" class="pill" title="Zoom and view recovery">100% ▾</button><button id="resetRot" class="tool-btn">0° Rotation</button><button id="guidesBtn" class="tool-btn">Guides</button><button id="strokePanelBtn" class="tool-btn" title="Show or hide the Stroke panel">Stroke</button><button id="paintModePill" class="pill" style="display:none;cursor:pointer;">Paint Inside — tap for Free Paint</button><button id="editMotifBar" class="pill" style="display:none;cursor:pointer;background:var(--accentTeal);border:1px solid rgba(92,184,171,.5);font:inherit;">Editing: <span id="editMotifBarName"></span> — tap Done</button><div class="toolbar-spacer"></div><button id="quickSaveBtn" class="tool-btn">Save</button><div id="saveStatusPill" class="pill" title="Autosave status">Saved</div><button id="downloadProjectBtn" class="tool-btn">Download Project</button><button id="backupsBtn" class="tool-btn" title="Automatic earlier versions of your work">Earlier saves</button><label class="tool-btn" for="openProjectInput" style="cursor:pointer;">Open Project</label><input id="openProjectInput" type="file" accept="application/json" style="display:none;"><button id="viewToggleBtn" class="tool-btn">⋯ View</button><button id="exportBtn" class="tool-btn primary">Export</button><button id="exportSvgBtn" class="tool-btn" title="Export as SVG (vector)">SVG</button></div>
+    <div id="quickEditBar" style="display:none;position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:60;gap:8px;background:var(--sideBg);border:1px solid var(--line);border-radius:999px;padding:6px 8px;box-shadow:0 8px 28px rgba(0,0,0,.3);"><button id="quickEditPathBtn" class="btn mini primary">✎ Edit Path</button><button id="quickStrokeToolsBtn" class="btn mini">Stroke tools</button></div>
     <div id="brushMakerPanel" style="display:none;position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:91;background:var(--sideBg);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:0 18px 50px rgba(0,0,0,.35);font-size:13.5px;width:min(480px,calc(100vw - 24px));max-height:calc(100vh - 90px);overflow:auto;">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:800;margin-bottom:8px;">🖌️ Create custom brush<button id="bmCancel" class="btn mini">Close</button></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:800;margin-bottom:8px;">Create custom brush<button id="bmCancel" class="btn mini">Close</button></div>
       <div style="border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:8px;"><canvas id="bmPreview" style="position:static;display:block;width:100%;height:84px;transform:none;left:auto;top:auto;"></canvas></div>
       <div class="slider-row"><label>Name</label><input id="bmName" type="text" placeholder="My brush" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></div>
       <div class="slider-row"><label>Based on</label><select id="bmFrom" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></select></div>
@@ -528,11 +528,11 @@ button.pill:active{transform:scale(.97)}
       <div class="slider-row"><label>Spacing</label><input id="bmSpacing" type="range" min="1" max="40" value="8"><span id="bmSpacingVal"></span></div>
       <div class="slider-row"><label>Pressure → width</label><input id="bmPW" type="range" min="0" max="100" value="0"><span id="bmPWVal"></span></div>
       <div class="slider-row"><label>Pressure → opacity</label><input id="bmPO" type="range" min="0" max="100" value="0"><span id="bmPOVal"></span></div>
-      <div style="margin:8px 0;"><label class="btn mini" style="cursor:pointer;display:inline-block;">🖼️ Use an image as the brush tip<input id="bmTip" type="file" accept="image/*" style="display:none;"></label> <button id="bmTipClear" class="btn mini" style="display:none;">Remove image</button>
+      <div style="margin:8px 0;"><label class="btn mini" style="cursor:pointer;display:inline-block;">Use an image as the brush tip<input id="bmTip" type="file" accept="image/*" style="display:none;"></label> <button id="bmTipClear" class="btn mini" style="display:none;">Remove image</button>
         <div class="hint">An image tip (a PNG with a transparent background works best) is stamped along the path, like your Motif Brushes.</div></div>
       <details id="bmGrainBox" style="margin:6px 0;"><summary style="cursor:pointer;font-weight:700;">Grain texture</summary>
         <div class="slider-row"><label>Texture</label><select id="bmGrainSel" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"><option value="">None</option><option value="paper">Paper</option><option value="grit">Grit</option><option value="weave">Canvas weave</option><option value="custom">Your own image…</option></select></div>
-        <div style="margin:4px 0;"><label class="btn mini" style="cursor:pointer;display:inline-block;">🖼️ Choose grain image<input id="bmGrainFile" type="file" accept="image/*" style="display:none;"></label> <span id="bmGrainName" class="hint" style="display:inline;"></span>
+        <div style="margin:4px 0;"><label class="btn mini" style="cursor:pointer;display:inline-block;">Choose grain image<input id="bmGrainFile" type="file" accept="image/*" style="display:none;"></label> <span id="bmGrainName" class="hint" style="display:inline;"></span>
           <div class="hint">Any picture works — light areas let the colour through, dark areas hold it back. Greyscale textures give the cleanest result.</div></div>
         <div id="bmGrainCtl">
           <div class="slider-row"><label>Depth</label><input id="bmGDepth" type="range" min="0" max="100" value="70"><span id="bmGDepthVal"></span></div>
@@ -557,16 +557,16 @@ button.pill:active{transform:scale(.97)}
           <div class="slider-row"><label>Scatter</label><input id="bmDScatter" type="range" min="0" max="200" value="45"><span id="bmDScatterVal"></span></div>
           <div class="slider-row"><label>Count</label><input id="bmDCount" type="range" min="1" max="6" value="3"><span id="bmDCountVal"></span></div>
           <div class="slider-row"><label>Softness</label><input id="bmDSoft" type="range" min="5" max="100" value="100"><span id="bmDSoftVal"></span></div>
-          <div style="margin:4px 0;"><label class="btn mini" style="cursor:pointer;display:inline-block;">🖼️ Use an image for the second tip<input id="bmDualFile" type="file" accept="image/*" style="display:none;"></label> <button id="bmDualClear" class="btn mini" style="display:none;">Remove image</button></div>
+          <div style="margin:4px 0;"><label class="btn mini" style="cursor:pointer;display:inline-block;">Use an image for the second tip<input id="bmDualFile" type="file" accept="image/*" style="display:none;"></label> <button id="bmDualClear" class="btn mini" style="display:none;">Remove image</button></div>
           <div class="hint">Only the parts of the stroke that overlap the second tip are kept, which gives speckled, bristly or stippled marks.</div>
         </div></details>
-      <div class="row" style="margin-top:8px;"><button id="bmSave" class="btn primary" style="flex:1;">💾 Save brush</button></div>
+      <div class="row" style="margin-top:8px;"><button id="bmSave" class="btn primary" style="flex:1;">Save brush</button></div>
       <div id="bmListWrap" style="margin-top:10px;"></div>
     </div>
-    <div id="backupsPanel" style="display:none;position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:90;background:var(--sideBg);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:0 18px 50px rgba(0,0,0,.35);font-size:13.5px;max-width:min(560px,calc(100vw - 24px));max-height:70vh;overflow:auto;"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:800;margin-bottom:6px;">🕘 Earlier saves<button id="backupsClose" class="btn mini">Close</button></div><div id="backupsList"></div></div>
-    <div id="restoreBanner" style="display:none;"><span id="restoreBannerText">📂 Autosaved session found from </span><span id="restoreBannerTime"></span>. <button id="restoreAcceptBtn" class="btn mini primary">Restore</button><button id="restoreDeclineBtn" class="btn mini">Start Fresh</button></div>
-    <div id="canvasViewportOuter" class="canvas-viewport-outer"><div id="canvasWrap" class="canvas-wrap"><div id="viewPopover" class="sym-pop"><div class="section-title">🧭 Canvas / View</div><button id="symToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">🦋 Symmetry Off</button><div class="row" style="margin-bottom:10px;"><button id="tilingBtn" class="tool-btn active" style="flex:1">Tiling On</button><div id="layoutPill" class="pill">📍 Grid Mode</div></div><button id="themeToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">☀️ Light Mode</button><button id="clearDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear Drawing &amp; Motifs</button><button id="clearAllDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear All Layers &amp; Motifs</button><button id="viewCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="zoomPopover" class="sym-pop"><div class="section-title">🔍 View <span id="zoomPopPct" class="small"></span></div><div class="zoom-row"><button id="zoomOutBtn" class="tool-btn" aria-label="Zoom out">−</button><button id="zoomInBtn" class="tool-btn" aria-label="Zoom in">+</button></div><button id="zoom100Btn" class="tool-btn" style="width:100%;margin-bottom:8px;">100% — actual size</button><button id="zoomFitBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">Fit to View</button><button id="zoomResetBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;">Reset View (0°, centre, fit)</button><div class="hint" style="margin-bottom:8px;">These always work, even if the canvas has scrolled out of sight.</div><button id="zoomCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="svgPopover" class="sym-pop"><div class="section-title">🖋️ Export SVG</div><div class="hint" style="margin-bottom:8px;">Vector strokes and fills only. Pictures (placed motifs, background image) are not vector, so they are left out.</div><div class="row" style="margin-bottom:8px;"><button class="tool-btn svg-preset" data-size="780">780</button><button class="tool-btn svg-preset" data-size="1800">1800</button><button class="tool-btn svg-preset" data-size="3600">3600</button></div><div class="slider-row" style="grid-template-columns:64px 1fr 30px;"><label>Size</label><input id="svgSizeInput" type="number" min="64" max="20000" step="1" value="3600" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><span>px</span></div><div class="hint" style="margin-bottom:8px;">Width and height of the square file. 3600 × 3600 is the usual pattern size. The artwork scales exactly.</div><button id="svgSaveBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;min-height:44px;">⬇️ Save SVG</button><button id="svgCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="recolourPopover" class="sym-pop"><div class="section-title">🎨 Recolour Parts</div><div class="hint" style="margin-bottom:8px;">Motif: <b id="recolourName"></b>. Each row is one colour used in the motif. Pick a new colour for any of them.</div><div id="recolourRows"></div><button id="recolourApplyBtn" class="tool-btn primary" style="width:100%;margin:8px 0;min-height:44px;">Apply to this motif</button><button id="recolourNewBtn" class="tool-btn" style="width:100%;margin-bottom:8px;min-height:44px;">Save as new colourway</button><div class="row"><button id="recolourResetBtn" class="btn mini" style="flex:1">Reset</button><button id="recolourCloseBtn" class="btn mini" style="flex:1">✕ Close</button></div></div><div id="symPopover" class="sym-pop"><div class="section-title">🦋 Symmetry</div><div class="grid"><button class="sym-btn btn active" data-sym="off">Off</button><button class="sym-btn btn" data-sym="vertical">Vertical</button><button class="sym-btn btn" data-sym="horizontal">Horizontal</button><button class="sym-btn btn" data-sym="quad">Quad</button><button class="sym-btn btn" data-sym="diamond">Diamond</button></div><div class="slider-row"><label>Axis X</label><input id="symX" type="range" min="0" max="1800" value="900"><span id="symXVal">50%</span></div><div class="slider-row"><label>Axis Y</label><input id="symY" type="range" min="0" max="1800" value="900"><span id="symYVal">50%</span></div><div class="row"><button id="symCentre" class="btn mini">Centre Axis</button><button id="symClose" class="btn mini">Done</button></div><div class="hint">Move the mirror point to make flowers, leaves and playful asymmetric symmetry.</div></div><canvas id="fabricCanvas" aria-hidden="true"></canvas><canvas id="canvas" width="1800" height="1800"></canvas><div id="tileOutline" aria-hidden="true"></div><div id="selectionBox" class="selection-box"><div id="resizeHandle" class="handle"></div><div id="rotateHandle" class="rotHandle"></div></div><div id="paintBBoxOverlay" class="selection-box" style="display:none;"><div id="paintResizeHandle" class="handle"></div><div id="paintRotateHandle" class="rotHandle"></div></div><div id="symAxis" class="sym-axis"></div><div id="rotateChip" class="rotate-chip">Canvas 0°</div><div id="pathNodeOverlay"></div></div></div>
-    <div id="status" class="status">✨ Apple Pencil draws | one finger protected | two fingers pan/pinch/rotate | two-finger tap Undo | three-finger tap Redo | Capture Motif saves drawing ✨</div>
+    <div id="backupsPanel" style="display:none;position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:90;background:var(--sideBg);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:0 18px 50px rgba(0,0,0,.35);font-size:13.5px;max-width:min(560px,calc(100vw - 24px));max-height:70vh;overflow:auto;"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:800;margin-bottom:6px;">Earlier saves<button id="backupsClose" class="btn mini">Close</button></div><div id="backupsList"></div></div>
+    <div id="restoreBanner" style="display:none;"><span id="restoreBannerText">Autosaved session found from </span><span id="restoreBannerTime"></span>. <button id="restoreAcceptBtn" class="btn mini primary">Restore</button><button id="restoreDeclineBtn" class="btn mini">Start Fresh</button></div>
+    <div id="canvasViewportOuter" class="canvas-viewport-outer"><div id="canvasWrap" class="canvas-wrap"><div id="viewPopover" class="sym-pop"><div class="section-title">Canvas / View</div><button id="symToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">Symmetry Off</button><div class="row" style="margin-bottom:10px;"><button id="tilingBtn" class="tool-btn active" style="flex:1">Tiling On</button><div id="layoutPill" class="pill">Grid Mode</div></div><button id="themeToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">Light Mode</button><button id="clearDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear Drawing &amp; Motifs</button><button id="clearAllDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear All Layers &amp; Motifs</button><button id="viewCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="zoomPopover" class="sym-pop"><div class="section-title">View <span id="zoomPopPct" class="small"></span></div><div class="zoom-row"><button id="zoomOutBtn" class="tool-btn" aria-label="Zoom out">−</button><button id="zoomInBtn" class="tool-btn" aria-label="Zoom in">+</button></div><button id="zoom100Btn" class="tool-btn" style="width:100%;margin-bottom:8px;">100% — actual size</button><button id="zoomFitBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">Fit to View</button><button id="zoomResetBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;">Reset View (0°, centre, fit)</button><div class="hint" style="margin-bottom:8px;">These always work, even if the canvas has scrolled out of sight.</div><button id="zoomCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="svgPopover" class="sym-pop"><div class="section-title">Export SVG</div><div class="hint" style="margin-bottom:8px;">Vector strokes and fills only. Pictures (placed motifs, background image) are not vector, so they are left out.</div><div class="row" style="margin-bottom:8px;"><button class="tool-btn svg-preset" data-size="780">780</button><button class="tool-btn svg-preset" data-size="1800">1800</button><button class="tool-btn svg-preset" data-size="3600">3600</button></div><div class="slider-row" style="grid-template-columns:64px 1fr 30px;"><label>Size</label><input id="svgSizeInput" type="number" min="64" max="20000" step="1" value="3600" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><span>px</span></div><div class="hint" style="margin-bottom:8px;">Width and height of the square file. 3600 × 3600 is the usual pattern size. The artwork scales exactly.</div><button id="svgSaveBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;min-height:44px;">Save SVG</button><button id="svgCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="recolourPopover" class="sym-pop"><div class="section-title">Recolour Parts</div><div class="hint" style="margin-bottom:8px;">Motif: <b id="recolourName"></b>. Each row is one colour used in the motif. Pick a new colour for any of them.</div><div id="recolourRows"></div><button id="recolourApplyBtn" class="tool-btn primary" style="width:100%;margin:8px 0;min-height:44px;">Apply to this motif</button><button id="recolourNewBtn" class="tool-btn" style="width:100%;margin-bottom:8px;min-height:44px;">Save as new colourway</button><div class="row"><button id="recolourResetBtn" class="btn mini" style="flex:1">Reset</button><button id="recolourCloseBtn" class="btn mini" style="flex:1">✕ Close</button></div></div><div id="symPopover" class="sym-pop"><div class="section-title">Symmetry</div><div class="grid"><button class="sym-btn btn active" data-sym="off">Off</button><button class="sym-btn btn" data-sym="vertical">Vertical</button><button class="sym-btn btn" data-sym="horizontal">Horizontal</button><button class="sym-btn btn" data-sym="quad">Quad</button><button class="sym-btn btn" data-sym="diamond">Diamond</button></div><div class="slider-row"><label>Axis X</label><input id="symX" type="range" min="0" max="1800" value="900"><span id="symXVal">50%</span></div><div class="slider-row"><label>Axis Y</label><input id="symY" type="range" min="0" max="1800" value="900"><span id="symYVal">50%</span></div><div class="row"><button id="symCentre" class="btn mini">Centre Axis</button><button id="symClose" class="btn mini">Done</button></div><div class="hint">Move the mirror point to make flowers, leaves and playful asymmetric symmetry.</div></div><canvas id="fabricCanvas" aria-hidden="true"></canvas><canvas id="canvas" width="1800" height="1800"></canvas><div id="tileOutline" aria-hidden="true"></div><div id="selectionBox" class="selection-box"><div id="resizeHandle" class="handle"></div><div id="rotateHandle" class="rotHandle"></div></div><div id="paintBBoxOverlay" class="selection-box" style="display:none;"><div id="paintResizeHandle" class="handle"></div><div id="paintRotateHandle" class="rotHandle"></div></div><div id="symAxis" class="sym-axis"></div><div id="rotateChip" class="rotate-chip">Canvas 0°</div><div id="pathNodeOverlay"></div></div></div>
+    <div id="status" class="status">Apple Pencil draws | one finger protected | two fingers pan/pinch/rotate | two-finger tap Undo | three-finger tap Redo | Capture Motif saves drawing </div>
   </main>
 </div>
 <script src="brush-engine.js"></script>
@@ -1036,8 +1036,8 @@ function applyLayerMeta(layerMeta,wantActiveId){
   strokes.forEach(s=>{if(!s.layerId||!layers.find(l=>l.id===s.layerId))s.layerId=fallback.id;});
   activeLayerId=(wantActiveId&&layers.find(l=>l.id===wantActiveId))?wantActiveId:fallback.id;
 }
-function undo(){if(hIndex>0){hIndex--;restore(history[hIndex]);setStatus('↩️ Undo');}}
-function redo(){if(hIndex<history.length-1){hIndex++;restore(history[hIndex]);setStatus('↪️ Redo');}}
+function undo(){if(hIndex>0){hIndex--;restore(history[hIndex]);setStatus('↩ Undo');}}
+function redo(){if(hIndex<history.length-1){hIndex++;restore(history[hIndex]);setStatus('↪ Redo');}}
 // Resizes every render target's BACKING STORE (physical pixels) to the current renderScale,
 // without touching its on-screen CSS size — canvas.style.width/height keep it at logical W x H
 // so nothing about layout, pan or the existing zoom/rotate CSS transform math changes; only the
@@ -1309,7 +1309,7 @@ function applyBricks(bricksArr,name,key){
   return {id:crypto.randomUUID(),motifId:null,img:null,slotShape:b.shape||b.type||'oval',role:b.role||'filler',
    x:C+(b.x/100)*TILE,y:C+(b.y/100)*TILE,w,h,boxW:w,boxH:h,s:1,r:b.rot||0,fx:1,fy:1};});
  selected=placed[0]?.id||null;activeTemplate=key||null;mode='edit';syncMode();syncTemplateUI();pushHist();redraw();
- setStatus('📐 '+(name||'Template')+' loaded - tap a motif to fill the next slot.');
+ setStatus(''+(name||'Template')+' loaded - tap a motif to fill the next slot.');
 }
 function applyTemplate(key){applyBricks(TEMPLATES[key].bricks,TEMPLATES[key].name,key);}
 function syncTemplateUI(){document.querySelectorAll('.template-btn').forEach(b=>b.classList.toggle('active',b.dataset.tpl===activeTemplate));}
@@ -1323,7 +1323,7 @@ $('templateImportInput').onchange=e=>{
    const data=JSON.parse(ev.target.result);
    if(!Array.isArray(data.bricks)||!data.bricks.length)throw new Error('no bricks in file');
    applyBricks(data.bricks,data.name||f.name.replace(/\.json$/i,''),null);
-  }catch(err){setStatus('⚠️ Could not read that as a Magic Builder template - use its "export for playground" button to make one.');}
+  }catch(err){setStatus('Could not read that as a Magic Builder template - use its "export for playground" button to make one.');}
  };
  r.readAsText(f);e.target.value='';
 };
@@ -1556,13 +1556,13 @@ canvas.addEventListener('pointerdown',e=>{
   if(pathEditStrokeId){e.preventDefault();handlePathEditCanvasTap(e);return;}
   if(mode==='edit'){selectAt(e.clientX,e.clientY);return}
   const layer=getActiveLayer();
-  if(!layer||layer.locked){setStatus('🔒 "'+(layer?layer.name:'')+'" is locked — unlock it in Layers to draw.');return;}
+  if(!layer||layer.locked){setStatus('"'+(layer?layer.name:'')+'" is locked — unlock it in Layers to draw.');return;}
   // Drawing on a hidden (or fully transparent) layer used to look exactly like "my stroke disappears
   // when I lift the pen": it was drawn, just onto a layer nobody could see. Reveal it instead.
   if(layer.visible===false||layer.opacity<10){
     layer.visible=true;if(layer.opacity<10)layer.opacity=100;
     compositeDirty=true;renderLayersList();
-    setStatus('👁️ "'+layer.name+'" was hidden, so it is now shown — otherwise your stroke would be invisible.');
+    setStatus('"'+layer.name+'" was hidden, so it is now shown — otherwise your stroke would be invisible.');
   }
   e.preventDefault();try{canvas.setPointerCapture(e.pointerId);}catch(err){} // capture is best-effort — a stroke must still start even if it's refused
   const p=screenToCanvas(e.clientX,e.clientY),pressure=(e.pressure&&e.pressure>0)?e.pressure:.5;
@@ -1680,7 +1680,7 @@ canvas.addEventListener('pointerup',e=>{
     mode='edit';syncMode();syncStrokeSelectionUI();
     BrushEngine.touchRecent(stroke.brushId);syncRecents();
     pushHist();redraw();
-    setStatus('🔷 Shape created and selected — tap 🖊️ Stroke in the toolbar to resize/rotate it or Convert to Path.');
+    setStatus('Shape created and selected — tap Stroke tools in the toolbar to resize/rotate it or Convert to Path.');
     return;
   }
   if(eraserActive){
@@ -1801,7 +1801,7 @@ function captureMotif(subset){
   // placeMotif() for why capture must NOT silently strand the canvas in Edit Mode afterward.
   addMotif(preview.src,'Motif '+(motifs.length+1),true,source,true);
   strokes=subset?allStrokes.filter(st=>!subset.includes(st)):[];rebuildAllLayers();selectedStrokeId=null;syncStrokeSelectionUI();pushHist();redraw();
-  setStatus(subset?'✂️ Captured just that drawing as an editable motif — the rest of your drawing is still on the canvas.':'✂️ Captured as an editable motif and cleared the canvas — select it and tap Edit Motif any time to return to it.');
+  setStatus(subset?'Captured just that drawing as an editable motif — the rest of your drawing is still on the canvas.':'Captured as an editable motif and cleared the canvas — select it and tap Edit Motif any time to return to it.');
 }
 // Every motif gets a stable id (never a bare array index — placed[] instances and Edit Motif both
 // need something that survives another motif being deleted/reordered ahead of it). `source` is
@@ -1896,7 +1896,7 @@ function selectAt(x,y){
     }
     if(!hitStroke)return;
     if(!isShapeOpEligible(hitStroke)){
-      setStatus('✂️ '+shapeOpIneligibleReason(hitStroke)+' — Shape Tools only works on closed vector outlines.');
+      setStatus(''+shapeOpIneligibleReason(hitStroke)+' — Shape Tools only works on closed vector outlines.');
       return;
     }
     const idx=shapeOtherIds.indexOf(hitStroke.id);
@@ -2055,7 +2055,7 @@ function syncStrokeLayerSelect(stroke){
   sel.innerHTML='';
   layers.slice().reverse().forEach(l=>{
     const opt=document.createElement('option');
-    opt.value=l.id;opt.textContent=l.name+(l.locked?' 🔒':'');
+    opt.value=l.id;opt.textContent=l.name+(l.locked?' (locked)':'');
     sel.appendChild(opt);
   });
   sel.value=stroke.layerId;
@@ -2290,7 +2290,7 @@ function moveLayer(id,dir){
   renderLayersList();pushHist();redraw();
 }
 function deleteLayer(id){
-  if(layers.length<=1){setStatus('⚠️ At least one layer is required.');return;}
+  if(layers.length<=1){setStatus('At least one layer is required.');return;}
   const layer=layers.find(l=>l.id===id);if(!layer)return;
   const affected=strokes.filter(s=>s.layerId===id).length;
   const msg=affected?('Delete "'+layer.name+'" and its '+affected+' stroke'+(affected===1?'':'s')+'? This can\'t be undone.'):('Delete "'+layer.name+'"?');
@@ -2305,7 +2305,7 @@ $('addLayerBtn').onclick=()=>{
   const layer=makeLayer('Layer '+(layers.length+1));
   layers.push(layer);activeLayerId=layer.id;
   renderLayersList();pushHist();redraw();
-  setStatus('📚 Added "'+layer.name+'" — new strokes go here now.');
+  setStatus('Added "'+layer.name+'" — new strokes go here now.');
 };
 $('renameLayerBtn').onclick=()=>{const l=getActiveLayer();if(l)startLayerRename(l.id);};
 $('duplicateLayerBtn').onclick=()=>{
@@ -2526,8 +2526,8 @@ function unionAABB(ids){
 function canvasAlignBounds(){return {x0:C,y0:C,x1:C+TILE,y1:C+TILE};}
 function applyAlign(kind){
   const ids=getAlignTargetIds();
-  if(!ids.length){setStatus('📐 Select a motif first (or turn on Multi-Select for several).');return;}
-  if(alignToMode==='selection'&&ids.length<2){setStatus('📐 "To Selection" needs 2 or more selected motifs — try "To Canvas" for a single motif.');return;}
+  if(!ids.length){setStatus('Select a motif first (or turn on Multi-Select for several).');return;}
+  if(alignToMode==='selection'&&ids.length<2){setStatus('"To Selection" needs 2 or more selected motifs — try "To Canvas" for a single motif.');return;}
   const bounds=alignToMode==='canvas'?canvasAlignBounds():unionAABB(ids);
   if(!bounds)return;
   ids.forEach(id=>{
@@ -2541,14 +2541,14 @@ function applyAlign(kind){
     else if(kind==='vmiddle')m.y+=(bounds.y0+bounds.y1)/2-(box.y0+box.y1)/2;
   });
   pushHist();redraw();
-  setStatus('📐 Aligned '+ids.length+' motif'+(ids.length===1?'':'s')+'.');
+  setStatus('Aligned '+ids.length+' motif'+(ids.length===1?'':'s')+'.');
 }
 // Classic "equal GAP" distribution (the empty space between each pair of adjacent bounding boxes
 // is equal), not equal centre-to-centre spacing — the first and last (by position) stay put, only
 // the ones in between move.
 function applyDistribute(axis){
   const ids=getAlignTargetIds();
-  if(ids.length<3){setStatus('📐 Distribution needs 3 or more selected motifs — turn on Multi-Select and tap a few more.');return;}
+  if(ids.length<3){setStatus('Distribution needs 3 or more selected motifs — turn on Multi-Select and tap a few more.');return;}
   const items=ids.map(id=>{const m=placed.find(p=>p.id===id);return m?{m,box:motifAABB(m)}:null;}).filter(Boolean);
   if(items.length<3)return;
   if(axis==='h'){
@@ -2567,7 +2567,7 @@ function applyDistribute(axis){
     items.forEach(it=>{const h=it.box.y1-it.box.y0;it.m.y+=cursor-it.box.y0;cursor+=h+gap;});
   }
   pushHist();redraw();
-  setStatus('📐 Distributed '+items.length+' motifs evenly.');
+  setStatus('Distributed '+items.length+' motifs evenly.');
 }
 function syncAlignUI(){
   const ids=getAlignTargetIds();
@@ -2584,11 +2584,11 @@ function syncAlignUI(){
 $('multiSelectToggle').onclick=()=>{
   multiSelectMode=!multiSelectMode;
   if(!multiSelectMode)multiSelectIds=[];
-  $('multiSelectToggle').textContent='🔢 Multi-Select: '+(multiSelectMode?'On':'Off');
+  $('multiSelectToggle').textContent='Multi-Select: '+(multiSelectMode?'On':'Off');
   $('multiSelectToggle').classList.toggle('active',multiSelectMode);
   if(multiSelectMode){selected=null;selectedStrokeId=null;disarmShapeMultiSelect();syncStrokeSelectionUI();mode='edit';syncMode();}
   syncAlignUI();redraw();
-  setStatus(multiSelectMode?'🔢 Multi-Select on — tap motifs on the canvas to add/remove them.':'🔢 Multi-Select off.');
+  setStatus(multiSelectMode?'Multi-Select on — tap motifs on the canvas to add/remove them.':'Multi-Select off.');
 };
 document.querySelectorAll('.align-to-btn').forEach(btn=>{
   btn.onclick=()=>{
@@ -2656,11 +2656,11 @@ function polygonArea(pts){
 }
 function runShapeOp(opKind){
   const base=strokes.find(s=>s.id===selectedStrokeId);
-  if(!base||!isShapeOpEligible(base)){setStatus('✂️ Select a closed vector shape as the base first.');return;}
+  if(!base||!isShapeOpEligible(base)){setStatus('Select a closed vector shape as the base first.');return;}
   const others=shapeOtherIds.map(id=>strokes.find(s=>s.id===id)).filter(s=>s&&isShapeOpEligible(s));
-  if(!others.length){setStatus('✂️ Turn on Add Shapes and tap at least one other closed shape.');return;}
+  if(!others.length){setStatus('Turn on Add Shapes and tap at least one other closed shape.');return;}
   let acc=strokeToPolyBoolPoly(base);
-  if(!acc){setStatus('✂️ The base shape has no usable area.');return;}
+  if(!acc){setStatus('The base shape has no usable area.');return;}
   for(const other of others){
     const otherPoly=strokeToPolyBoolPoly(other);
     if(!otherPoly)continue;
@@ -2674,7 +2674,7 @@ function runShapeOp(opKind){
   if(!regions.length||totalArea<1){
     // Explicitly does NOT touch strokes[] at all — the originals, their styling and their
     // placement are left completely untouched, per the brief.
-    setStatus('✂️ '+names[opKind]+' produced no area — the original shapes are unchanged.');
+    setStatus(''+names[opKind]+' produced no area — the original shapes are unchanged.');
     return;
   }
   const otherIdsSet=new Set(others.map(o=>o.id));
@@ -2706,7 +2706,7 @@ function runShapeOp(opKind){
   selectedStrokeId=resultStroke.id;
   syncStrokeSelectionUI();updateSelectedControls();
   pushHist();redraw();
-  setStatus('✂️ '+{merge:'Merged',subtract:'Subtracted',intersect:'Intersected'}[opKind]+' into one shape — selected and ready to move or edit.');
+  setStatus(''+{merge:'Merged',subtract:'Subtracted',intersect:'Intersected'}[opKind]+' into one shape — selected and ready to move or edit.');
 }
 function syncShapeToolsUI(){
   const swatch=$('shapeToolsBaseSwatch'),hint=$('shapeToolsBaseHint');
@@ -2733,26 +2733,26 @@ function disarmShapeMultiSelect(){
 $('shapeMultiSelectToggle').onclick=()=>{
   const base=strokes.find(s=>s.id===selectedStrokeId);
   if(!shapeMultiSelectMode&&!isShapeOpEligible(base)){
-    setStatus('✂️ Select a closed vector shape in Edit Mode first, then turn on Add Shapes.');
+    setStatus('Select a closed vector shape in Edit Mode first, then turn on Add Shapes.');
     return;
   }
   if(pathEditStrokeId)commitEditPath();
   if(joinPendingStrokeId)endJoinPick();
   disarmAreaFill();
-  if(multiSelectMode){multiSelectMode=false;multiSelectIds=[];$('multiSelectToggle').textContent='🔢 Multi-Select: Off';$('multiSelectToggle').classList.remove('active');syncAlignUI();}
+  if(multiSelectMode){multiSelectMode=false;multiSelectIds=[];$('multiSelectToggle').textContent='Multi-Select: Off';$('multiSelectToggle').classList.remove('active');syncAlignUI();}
   shapeMultiSelectMode=!shapeMultiSelectMode;
   if(!shapeMultiSelectMode)shapeOtherIds=[];
   $('shapeMultiSelectToggle').textContent='➕ Add Shapes: '+(shapeMultiSelectMode?'On':'Off');
   $('shapeMultiSelectToggle').classList.toggle('active',shapeMultiSelectMode);
   mode='edit';syncMode();
   syncShapeToolsUI();redraw();
-  setStatus(shapeMultiSelectMode?'✂️ Add Shapes on — tap other closed shapes on the canvas.':'✂️ Add Shapes off.');
+  setStatus(shapeMultiSelectMode?'Add Shapes on — tap other closed shapes on the canvas.':'Add Shapes off.');
 };
 $('shapeMergeBtn').onclick=()=>runShapeOp('merge');
 $('shapeSubtractBtn').onclick=()=>runShapeOp('subtract');
 $('shapeIntersectBtn').onclick=()=>runShapeOp('intersect');
-function syncMode(){$('drawModeBtn').classList.toggle('active',mode==='draw');$('editModeBtn').classList.toggle('active',mode==='edit');canvas.style.cursor=mode==='draw'?'crosshair':'grab';setStatus(mode==='draw'?'✏️ Draw Mode: Apple Pencil draws, two fingers move the canvas.':'↔️ Edit Mode: tap motif with Pencil/mouse, then move, scale, rotate or flip.');;if(typeof syncStrokeSelectionUI==='function')syncStrokeSelectionUI();}
-$('drawModeBtn').onclick=()=>{if(pathEditStrokeId)commitEditPath();if(joinPendingStrokeId)endJoinPick();disarmAreaFill();disarmShapeMultiSelect();armedShapeType=null;syncShapeToolUI();mode='draw';selected=null;selectedStrokeId=null;multiSelectMode=false;multiSelectIds=[];$('multiSelectToggle').textContent='🔢 Multi-Select: Off';$('multiSelectToggle').classList.remove('active');syncAlignUI();syncStrokeSelectionUI();syncMode();redraw()};$('editModeBtn').onclick=()=>{disarmAreaFill();armedShapeType=null;syncShapeToolUI();mode='edit';syncMode()};$('captureBtn').onclick=()=>captureMotif();
+function syncMode(){$('drawModeBtn').classList.toggle('active',mode==='draw');$('editModeBtn').classList.toggle('active',mode==='edit');canvas.style.cursor=mode==='draw'?'crosshair':'grab';setStatus(mode==='draw'?'Draw Mode: Apple Pencil draws, two fingers move the canvas.':'↔ Edit Mode: tap motif with Pencil/mouse, then move, scale, rotate or flip.');;if(typeof syncStrokeSelectionUI==='function')syncStrokeSelectionUI();}
+$('drawModeBtn').onclick=()=>{if(pathEditStrokeId)commitEditPath();if(joinPendingStrokeId)endJoinPick();disarmAreaFill();disarmShapeMultiSelect();armedShapeType=null;syncShapeToolUI();mode='draw';selected=null;selectedStrokeId=null;multiSelectMode=false;multiSelectIds=[];$('multiSelectToggle').textContent='Multi-Select: Off';$('multiSelectToggle').classList.remove('active');syncAlignUI();syncStrokeSelectionUI();syncMode();redraw()};$('editModeBtn').onclick=()=>{disarmAreaFill();armedShapeType=null;syncShapeToolUI();mode='edit';syncMode()};$('captureBtn').onclick=()=>captureMotif();
 // Capture Area: drag a box on the canvas; only strokes inside it become the motif.
 function setCaptureArea(on){
   captureAreaArmed=on;captureRect=null;
@@ -2800,11 +2800,11 @@ $('clearDrawing').onclick=()=>{
   closeViewPopover();
   const locked=layer.locked;
   const n=locked?0:strokes.filter(s=>s.layerId===layer.id).length,m=placed.length;
-  if(!n&&!m){setStatus(locked?'🔒 "'+layer.name+'" is locked, so nothing was cleared.':(strokes.length?'Nothing to clear on "'+layer.name+'". Your drawing is on other layers (use Clear All Layers).':'Nothing to clear.'));return;}
+  if(!n&&!m){setStatus(locked?'"'+layer.name+'" is locked, so nothing was cleared.':(strokes.length?'Nothing to clear on "'+layer.name+'". Your drawing is on other layers (use Clear All Layers).':'Nothing to clear.'));return;}
   if(n){strokes=strokes.filter(s=>s.layerId!==layer.id);rebuildLayer(layer.id);}
   placed=[];selected=null;selectedStrokeId=null;multiSelectIds=[];
   compositeDirty=true;syncStrokeSelectionUI();pushHist();redraw();scheduleAutosave();
-  setStatus('🧹 Cleared '+n+' stroke'+(n===1?'':'s')+' on "'+layer.name+'"'+(m?' and '+m+' motif'+(m===1?'':'s'):'')+'. Tap Undo to bring it back.');
+  setStatus('Cleared '+n+' stroke'+(n===1?'':'s')+' on "'+layer.name+'"'+(m?' and '+m+' motif'+(m===1?'':'s'):'')+'. Tap Undo to bring it back.');
 };
 $('clearAllDrawing').onclick=()=>{
   closeViewPopover();
@@ -2816,7 +2816,7 @@ $('clearAllDrawing').onclick=()=>{
   strokes=strokes.filter(s=>!ids.has(s.layerId));
   placed=[];selected=null;selectedStrokeId=null;multiSelectIds=[];
   unlocked.forEach(l=>rebuildLayer(l.id));compositeDirty=true;syncStrokeSelectionUI();pushHist();redraw();scheduleAutosave();
-  setStatus('🧹 Cleared all unlocked layers and motifs. Tap Undo to bring it back.');
+  setStatus('Cleared all unlocked layers and motifs. Tap Undo to bring it back.');
 };
 // ---- Shape Tool panel ---------------------------------------------------------------------------
 function syncShapeToolUI(){
@@ -2887,14 +2887,14 @@ $('strokeWidthCtl').onchange=()=>pushHist();
 $('strokeLayerSelect').onchange=e=>{
   const stroke=strokes.find(s=>s.id===selectedStrokeId);if(!stroke)return;
   const target=layers.find(l=>l.id===e.target.value);if(!target)return;
-  if(target.locked){setStatus('🔒 "'+target.name+'" is locked — unlock it first to move a stroke there.');syncStrokeLayerSelect(stroke);return;}
+  if(target.locked){setStatus('"'+target.name+'" is locked — unlock it first to move a stroke there.');syncStrokeLayerSelect(stroke);return;}
   const oldLayerId=stroke.layerId;
   stroke.layerId=target.id;
   activeLayerId=target.id;
   rebuildLayer(oldLayerId);rebuildLayer(target.id);
   renderLayersList();
   pushHist();redraw();
-  setStatus('📚 Moved to "'+target.name+'".');
+  setStatus('Moved to "'+target.name+'".');
 };
 // Loads the EXACT settings this stroke was drawn with into the active drawing brush — not just
 // "the same brush family", the actual numbers, so new strokes drawn next genuinely match it.
@@ -2904,13 +2904,13 @@ $('useThisBrushBtn').onclick=()=>{
   BrushEngine.setSettings(activeBrushId,strokeSettings(stroke));
   BrushEngine.touchRecent(activeBrushId);syncRecents();
   syncControlsFromSettings();syncActiveSwatches();syncActiveBrushRecipeLine();
-  setStatus('🖌️ Drawing with this stroke\'s exact brush recipe.');
+  setStatus('Drawing with this stroke\'s exact brush recipe.');
 };
 $('copyBrushStyleBtn').onclick=()=>{
   const stroke=strokes.find(s=>s.id===selectedStrokeId);if(!stroke)return;
   copiedBrushStyle={brushId:stroke.brushId,settings:{...strokeSettings(stroke)}};
   $('applyBrushStyleBtn').disabled=false;
-  setStatus('📋 Brush style copied — select another stroke and tap Apply Style.');
+  setStatus('Brush style copied — select another stroke and tap Apply Style.');
 };
 // Split out so a future multi-select can just loop this over several stroke ids without any
 // new command plumbing — see the brief's note on preparing for that rather than building a full
@@ -2925,7 +2925,7 @@ $('applyBrushStyleBtn').onclick=()=>{
   applyBrushStyleToStroke(selectedStrokeId,copiedBrushStyle);
   renderStrokeReassignSwatches();syncStrokeRecipeUI();
   pushHist();redraw();
-  setStatus('✅ Brush style applied.');
+  setStatus('Brush style applied.');
 };
 $('quickEditPathBtn').onclick=()=>{if(selectedStrokeId)enterEditPath(selectedStrokeId);};
 $('quickStrokeToolsBtn').onclick=()=>setStrokePanelOpen(true);
@@ -2952,13 +2952,13 @@ function startPaintInside(){
   if(colourLayer)activeLayerId=colourLayer.id;
   mode='draw';selected=null;selectedStrokeId=null;
   syncStrokeSelectionUI();syncMode();renderLayersList();syncPaintModePill();
-  setStatus('🎨 Paint Inside: draw loosely with Apple Pencil on "'+(getActiveLayer()?getActiveLayer().name:'')+'" — colour outside the shape stays hidden, the outline stays untouched.');
+  setStatus('Paint Inside: draw loosely with Apple Pencil on "'+(getActiveLayer()?getActiveLayer().name:'')+'" — colour outside the shape stays hidden, the outline stays untouched.');
   redraw();
 }
 function setFreePaintMode(){
   paintMode='free';paintInsideTargetId=null;
   syncPaintModePill();
-  setStatus('✏️ Free Paint: painting anywhere again.');
+  setStatus('Free Paint: painting anywhere again.');
 }
 $('paintInsideBtn').onclick=startPaintInside;
 $('paintModePill').onclick=setFreePaintMode;
@@ -2977,7 +2977,7 @@ function fillSelectedShape(){
   const fillStroke={id:crypto.randomUUID(),brushId:stroke.brushId,layerId,color:fillColor,fillColor,settings:null,points:pts,nodes:null,closed:true,clipStrokeId:null,shape:null};
   strokes.push(fillStroke);appendStrokeToLayer(fillStroke);
   pushHist();redraw();
-  setStatus('🎨 Filled shape on "'+(layers.find(l=>l.id===layerId)?layers.find(l=>l.id===layerId).name:'')+'".');
+  setStatus('Filled shape on "'+(layers.find(l=>l.id===layerId)?layers.find(l=>l.id===layerId).name:'')+'".');
 }
 $('fillShapeBtn').onclick=fillSelectedShape;
 // ---- Recolour an existing stroke (including outlines) directly — separate from the main brush
@@ -3017,7 +3017,7 @@ function disarmAreaFill(){
 }
 function syncAreaFillUI(){
   const btn=$('areaFillToggleBtn');if(!btn)return;
-  btn.textContent='🪣 Area Fill: '+(areaFillArmed?'On':'Off');
+  btn.textContent='Area Fill: '+(areaFillArmed?'On':'Off');
   btn.classList.toggle('active',areaFillArmed);
   canvas.style.cursor=areaFillArmed?'crosshair':'';
 }
@@ -3030,7 +3030,7 @@ function syncAreaFillLayerSelect(){
   sel.appendChild(def);
   layers.slice().reverse().forEach(l=>{
     const opt=document.createElement('option');
-    opt.value=l.id;opt.textContent=l.name+(l.locked?' 🔒':'');
+    opt.value=l.id;opt.textContent=l.name+(l.locked?' (locked)':'');
     sel.appendChild(opt);
   });
   sel.value=[...sel.options].some(o=>o.value===prev)?prev:'__default__';
@@ -3223,13 +3223,13 @@ function attemptAreaFillAt(clientX,clientY){
   const result=computeAreaFillPolygon(p.x,p.y,gapTolerance);
   if(!result.ok){
     const messages={
-      onLine:'🪣 That\'s right on a line — tap inside an enclosed area instead.',
-      open:'🪣 That area isn\'t fully enclosed, so filling it would flood the whole canvas — close the gap (or raise the gap tolerance) and try again.',
-      empty:'🪣 No drawn lines to fill against yet — sketch an enclosed shape first.',
-      offcanvas:'🪣 Tap inside the canvas.',
-      traceFailed:'🪣 Couldn\'t trace that area — try tapping somewhere else inside it.',
+      onLine:'That\'s right on a line — tap inside an enclosed area instead.',
+      open:'That area isn\'t fully enclosed, so filling it would flood the whole canvas — close the gap (or raise the gap tolerance) and try again.',
+      empty:'No drawn lines to fill against yet — sketch an enclosed shape first.',
+      offcanvas:'Tap inside the canvas.',
+      traceFailed:'Couldn\'t trace that area — try tapping somewhere else inside it.',
     };
-    setStatus(messages[result.reason]||'🪣 Couldn\'t fill that area.');
+    setStatus(messages[result.reason]||'Couldn\'t fill that area.');
     return;
   }
   const targetLayerId=getAreaFillTargetLayerId();
@@ -3243,7 +3243,7 @@ function attemptAreaFillAt(clientX,clientY){
   rebuildLayer(targetLayerId);
   renderLayersList();
   pushHist();redraw();
-  setStatus('🪣 Filled area on "'+(layers.find(l=>l.id===targetLayerId)||{}).name+'".');
+  setStatus('Filled area on "'+(layers.find(l=>l.id===targetLayerId)||{}).name+'".');
 }
 $('areaFillToggleBtn').onclick=()=>{
   areaFillArmed=!areaFillArmed;
@@ -3254,7 +3254,7 @@ $('areaFillToggleBtn').onclick=()=>{
     eraserActive=false;armedShapeType=null;syncShapeToolUI();disarmShapeMultiSelect();
     selected=null;selectedStrokeId=null;syncStrokeSelectionUI();
     syncAreaFillLayerSelect();
-    setStatus('🪣 Area Fill: tap inside any enclosed region to fill it.');
+    setStatus('Area Fill: tap inside any enclosed region to fill it.');
   }
   syncAreaFillUI();
 };
@@ -3333,13 +3333,13 @@ function drawBrushSample(c,brush,st,color){
 }
 window.addEventListener('resize',()=>renderBrushPreview());
 function selectBrush(id){eraserActive=false;activeBrushId=id;BrushEngine.touchRecent(id);syncRecents();syncControlsFromSettings();syncActiveSwatches();}
-$('eraserToggle').onclick=()=>{eraserActive=!eraserActive;if(eraserActive)disarmAreaFill();syncControlsFromSettings();syncActiveSwatches();setStatus(eraserActive?'🧹 Eraser: drag over a stroke on the active layer to erase just that part of it.':'✏️ Back to '+BrushEngine.getBrush(activeBrushId).name+'.');};
+$('eraserToggle').onclick=()=>{eraserActive=!eraserActive;if(eraserActive)disarmAreaFill();syncControlsFromSettings();syncActiveSwatches();setStatus(eraserActive?'Eraser: drag over a stroke on the active layer to erase just that part of it.':'Back to '+BrushEngine.getBrush(activeBrushId).name+'.');};
 $('continuousDrawToggle').onclick=()=>{
   continuousDrawMode=!continuousDrawMode;
-  $('continuousDrawToggle').textContent='🔗 Continuous Draw: '+(continuousDrawMode?'On':'Off');
+  $('continuousDrawToggle').textContent='Continuous Draw: '+(continuousDrawMode?'On':'Off');
   $('continuousDrawToggle').classList.toggle('active',continuousDrawMode);
   $('continuousDrawHint').style.display=continuousDrawMode?'block':'none';
-  setStatus(continuousDrawMode?'🔗 Continuous Draw on — starting a new stroke right where the last one ended extends it as one path.':'🔗 Continuous Draw off.');
+  setStatus(continuousDrawMode?'Continuous Draw on — starting a new stroke right where the last one ended extends it as one path.':'Continuous Draw off.');
 };
 $('brushSize').oninput=e=>{const v=+e.target.value;$('brushSizeVal').textContent=Math.round(v);patchCurrentSettings({size:v});};
 $('brushColor').oninput=e=>{currentColor=e.target.value;renderBrushPreview();};
@@ -3393,7 +3393,7 @@ function applyColorToTarget(hex){
     currentColor=hex;$('brushColor').value=hex;renderBrushPreview();
   }else if(colorTarget==='stroke'){
     const stroke=strokes.find(s=>s.id===selectedStrokeId);
-    if(!stroke){setStatus('🎨 Select a stroke first to recolour it.');return;}
+    if(!stroke){setStatus('Select a stroke first to recolour it.');return;}
     stroke.color=hex;if(stroke.fillColor)stroke.fillColor=hex;
     $('strokeColorInput').value=hex;
     rebuildLayer(stroke.layerId);redraw();pushHist();
@@ -3427,31 +3427,31 @@ $('acImageFile').onchange=e=>{
       acLastUploadedImg=img;
       $('acImagePreview').src=ev.target.result;$('acImagePreview').style.display='block';
       acExtractAndRender();
-      setStatus('🖼️ Colours extracted from image.');
+      setStatus('Colours extracted from image.');
     };
-    img.onerror=()=>setStatus('⚠️ Could not read that image.');
+    img.onerror=()=>setStatus('Could not read that image.');
     img.src=ev.target.result;
   };
   reader.readAsDataURL(file);
 };
 $('acUseRefImageBtn').onclick=()=>{
   const img=bgImg||(traces[0]&&traces[0].img);
-  if(!img){setStatus('🖼️ No background or trace image loaded yet — upload one, or use Upload Image above.');return;}
+  if(!img){setStatus('No background or trace image loaded yet — upload one, or use Upload Image above.');return;}
   acLastUploadedImg=img;
   $('acImagePreview').src=img.src;$('acImagePreview').style.display='block';
   acExtractAndRender();
-  setStatus('🖼️ Colours extracted from the loaded reference image.');
+  setStatus('Colours extracted from the loaded reference image.');
 };
 $('acImageCount').addEventListener('input',()=>{$('acImageCountVal').textContent=$('acImageCount').value;acExtractAndRender();});
 $('acSavePaletteBtn').onclick=()=>{
-  if(!acExtractedColours.length){setStatus('🖼️ Extract a palette from an image first.');return;}
+  if(!acExtractedColours.length){setStatus('Extract a palette from an image first.');return;}
   const nameInput=$('acPaletteName');
   const name=(nameInput.value||'').trim()||('Palette '+(savedPalettes.length+1));
   savedPalettes.push({id:crypto.randomUUID(),name,hexes:acExtractedColours.slice()});
   nameInput.value='';
   renderSavedPalettesList();
   scheduleAutosave();
-  setStatus('💾 Saved palette "'+name+'".');
+  setStatus('Saved palette "'+name+'".');
 };
 function renderSavedPalettesList(){
   const box=$('acSavedPalettesList');
@@ -3910,7 +3910,7 @@ function triggerHoldRecognition(){
   // makes it immune to the fitted boundary not landing exactly under the Pencil tip.
   holdAdjustAnchorPos={...currentPoints[currentPoints.length-1]};
   animateHoldSnap(currentPoints.slice(),correctedPoints);
-  setStatus('✨ Held — corrected to a clean '+(result.kind==='square'?'square':result.kind)+'. Release to keep it.');
+  setStatus('Held — corrected to a clean '+(result.kind==='square'?'square':result.kind)+'. Release to keep it.');
 }
 // Subtle "snap" feedback: a short cross-fade from the freehand stroke to the corrected geometry,
 // reusing renderStroke's existing alphaMul rather than a popup or any new UI. Purely visual —
@@ -4028,7 +4028,7 @@ makeFloatPanelDraggable('strokeActionsBar','strokeActionsBarHandle');
 function enterEditPath(strokeId){
   const stroke=strokes.find(s=>s.id===strokeId);if(!stroke)return;
   const layer=layers.find(l=>l.id===stroke.layerId);
-  if(layer&&layer.locked){setStatus('🔒 "'+layer.name+'" is locked.');return;}
+  if(layer&&layer.locked){setStatus('"'+layer.name+'" is locked.');return;}
   disarmAreaFill();disarmShapeMultiSelect();
   pathEditStrokeId=stroke.id;
   pathEditNodes=stroke.nodes?stroke.nodes.map(n=>({...n})):pointsToNodes(stroke.points,stroke.closed);
@@ -4259,7 +4259,7 @@ function syncPathEditBarButtons(){
   // at the selected node rather than splitting into two strokes, so the button reads "Open Shape"
   // there instead of "Break" to match what it actually does.
   $('breakPathBtn').disabled=!hasSel||(!pathEditClosed&&!isInterior);
-  $('breakPathBtn').textContent=pathEditClosed?'⭘ Open Shape':'✂ Break';
+  $('breakPathBtn').textContent=pathEditClosed?'⭘ Open Shape':'Break';
   $('simplifyPathBtn').disabled=pathEditNodes.length<=minNodes;
 }
 function closeSelectedPath(){
@@ -4285,12 +4285,12 @@ function breakPathAtSelectedNode(){
     // rather than letting the clip silently disappear with no explanation.
     const hasClippedPaint=strokes.some(s=>s.clipStrokeId===stroke.id);
     setStatus(hasClippedPaint
-      ?'🔓 Shape opened — its Paint Inside colour is kept but shown unclipped until you close the shape again.'
-      :'🔓 Shape opened at that node — Continue, Join and Close Shape are available again.');
+      ?'Shape opened — its Paint Inside colour is kept but shown unclipped until you close the shape again.'
+      :'Shape opened at that node — Continue, Join and Close Shape are available again.');
     return;
   }
   if(selectedNodeIndex<=0||selectedNodeIndex>=pathEditNodes.length-1){
-    setStatus('✂ Break Path needs an interior node — endpoints have nothing to split.');
+    setStatus('Break Path needs an interior node — endpoints have nothing to split.');
     return;
   }
   const nodesA=pathEditNodes.slice(0,selectedNodeIndex+1).map(n=>({...n}));
@@ -4304,7 +4304,7 @@ function breakPathAtSelectedNode(){
   selectedStrokeId=stroke.id;
   syncStrokeSelectionUI();
   pushHist();redraw();
-  setStatus('✂ Path broken into two separate strokes — same brush and layer.');
+  setStatus('Path broken into two separate strokes — same brush and layer.');
 }
 // Re-runs simplification on the CURRENT node set (not the original dense points) — a deliberate,
 // user-invoked, undoable reduction, distinct from the automatic gentle simplification already
@@ -4530,7 +4530,7 @@ bindTapButton($('joinPathBtn'),startJoinPath);
 bindTapButton($('closePathBtn'),closeSelectedPath);
 bindTapButton($('breakPathBtn'),breakPathAtSelectedNode);
 bindTapButton($('simplifyPathBtn'),simplifyCurrentPath);
-$('moreSettingsToggle').onclick=()=>{const box=$('moreSettings');const showing=box.style.display!=='none';box.style.display=showing?'none':'block';$('moreSettingsToggle').textContent=showing?'⚙️ More Settings':'⚙️ Hide Settings';};
+$('moreSettingsToggle').onclick=()=>{const box=$('moreSettings');const showing=box.style.display!=='none';box.style.display=showing?'none':'block';$('moreSettingsToggle').textContent=showing?'⚙ More Settings':'⚙ Hide Settings';};
 // ---- Make my own brush --------------------------------------------------------------------------
 let customDefs=[];try{customDefs=JSON.parse(localStorage.getItem('sp-customBrushes')||'[]')||[];}catch(e){customDefs=[];}
 function saveCustomDefs(){try{localStorage.setItem('sp-customBrushes',JSON.stringify(customDefs.map(stripDef)));}catch(e){console.warn('could not store custom brushes',e);}}
@@ -4621,21 +4621,21 @@ function bmRenderList(){
   customDefs.forEach(d=>{
     const row=document.createElement('div');row.style.cssText='display:flex;gap:6px;align-items:center;margin:4px 0;';
     const n=document.createElement('div');n.style.flex='1';n.textContent=d.name;
-    const e=document.createElement('button');e.className='btn mini';e.textContent='Edit';e.onclick=()=>{bmEditId=d.id;bmLoad(d);$('bmSave').textContent='💾 Save changes';};
+    const e=document.createElement('button');e.className='btn mini';e.textContent='Edit';e.onclick=()=>{bmEditId=d.id;bmLoad(d);$('bmSave').textContent='Save changes';};
     const x=document.createElement('button');x.className='btn mini danger';x.textContent='Delete';x.onclick=()=>{
       if(!confirm('Delete the brush "'+d.name+'"? Lines already drawn with it will fall back to the Smooth Pen look.'))return;
       customDefs=customDefs.filter(c=>c.id!==d.id);saveCustomDefs();BrushEngine.unregisterStampBrush(d.id);
       if(activeBrushId===d.id)activeBrushId='smoothPen';
       renderBrushFamilies();syncRecents();syncFavorites();syncControlsFromSettings();syncActiveSwatches();
       if(strokes.some(st=>st.brushId===d.id)){rebuildAllLayers();redraw();}
-      if(bmEditId===d.id){bmEditId=null;$('bmSave').textContent='💾 Save brush';}
+      if(bmEditId===d.id){bmEditId=null;$('bmSave').textContent='Save brush';}
       bmRenderList();scheduleAutosave();
     };
     row.appendChild(n);row.appendChild(e);row.appendChild(x);host.appendChild(row);
   });
 }
 function openBrushMaker(){
-  bmEditId=null;bmTipSrc=null;bmTipImg=null;bmGrainPreset=null;bmGrainSrc=null;bmGrainImg=null;bmDualSrc=null;bmDualImg=null;$('bmSave').textContent='💾 Save brush';
+  bmEditId=null;bmTipSrc=null;bmTipImg=null;bmGrainPreset=null;bmGrainSrc=null;bmGrainImg=null;bmDualSrc=null;bmDualImg=null;$('bmSave').textContent='Save brush';
   bmFillFrom();
   const cur=BrushEngine.getBrush(activeBrushId);
   const base=cur.stamp&&!cur.custom?BrushEngine.getBrush('smoothPen'):cur;
@@ -4706,14 +4706,14 @@ $('bmSave').onclick=()=>{
   renderBrushFamilies();syncRecents();syncFavorites();
   eraserActive=false;activeBrushId=d.id;BrushEngine.touchRecent(d.id);syncRecents();syncControlsFromSettings();syncActiveSwatches();
   if(strokes.some(st=>st.brushId===d.id)){rebuildAllLayers();redraw();}
-  bmEditId=d.id;bmRenderList();$('bmSave').textContent='💾 Save changes';
-  setStatus('🖌️ Brush "'+d.name+'" saved under Custom Brushes and selected.');scheduleAutosave();
+  bmEditId=d.id;bmRenderList();$('bmSave').textContent='Save changes';
+  setStatus('Brush "'+d.name+'" saved under Custom Brushes and selected.');scheduleAutosave();
 };
 registerCustomDefs(customDefs,true).then(()=>{renderBrushFamilies();syncRecents();syncFavorites();syncControlsFromSettings();syncActiveSwatches();});
 // One-time: the Smooth Pen is now a finer line by default (3 px); move any older remembered size across.
 try{if(!localStorage.getItem('sp-smoothpen-fine-v1')){BrushEngine.setSettings('smoothPen',{size:3});localStorage.setItem('sp-smoothpen-fine-v1','1');}}catch(e){}
 renderBrushFamilies();syncRecents();syncFavorites();syncControlsFromSettings();
-document.querySelectorAll('.layout-btn').forEach(b=>b.onclick=()=>{document.querySelectorAll('.layout-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');layout=b.dataset.layout;$('layoutPill').textContent='📍 '+b.textContent+' Mode';redraw();});$('tilingBtn').onclick=()=>{showTiling=!showTiling;$('tilingBtn').classList.toggle('active',showTiling);$('tilingBtn').textContent=showTiling?'Tiling On':'Tiling Off';redraw();};$('guidesBtn').onclick=()=>{showGuides=!showGuides;$('guidesBtn').classList.toggle('active',showGuides);sessionStorage.setItem('sp-showGuides',showGuides?'1':'0');redraw();};
+document.querySelectorAll('.layout-btn').forEach(b=>b.onclick=()=>{document.querySelectorAll('.layout-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');layout=b.dataset.layout;$('layoutPill').textContent=''+b.textContent+' Mode';redraw();});$('tilingBtn').onclick=()=>{showTiling=!showTiling;$('tilingBtn').classList.toggle('active',showTiling);$('tilingBtn').textContent=showTiling?'Tiling On':'Tiling Off';redraw();};$('guidesBtn').onclick=()=>{showGuides=!showGuides;$('guidesBtn').classList.toggle('active',showGuides);sessionStorage.setItem('sp-showGuides',showGuides?'1':'0');redraw();};
 $('motifScale').oninput=e=>{const m=getSel();if(!m)return;m.s=+e.target.value/100;$('motifScaleVal').textContent=e.target.value+'%';redraw();};$('motifScale').onchange=pushHist;$('rotL').onclick=()=>{const m=getSel();if(m){m.r-=15;pushHist();redraw();}};$('rotR').onclick=()=>{const m=getSel();if(m){m.r+=15;pushHist();redraw();}};$('flipH').onclick=()=>{const m=getSel();if(m){m.fx*=-1;pushHist();redraw();}};$('flipV').onclick=()=>{const m=getSel();if(m){m.fy*=-1;pushHist();redraw();}};$('deleteSel').onclick=()=>{placed=placed.filter(p=>p.id!==selected);selected=null;pushHist();redraw();updateSelectedControls();};
 
 // --- Non-destructive Motif editing: Motif Source (motifs[] entry, with .source = editable master
@@ -4736,13 +4736,13 @@ function makeIndependentMotif(){
  motifs.push(clone);
  m.motifId=clone.id;
  renderTray();pushHist();redraw();updateSelectedControls();
- setStatus('🔓 This instance now has its own independent motif — editing it won\'t affect the others.');
+ setStatus('This instance now has its own independent motif — editing it won\'t affect the others.');
 }
 function enterEditMotif(){
  if(editingMotifId)return;
  const m=getSel();if(!m||!m.motifId)return;
  const entry=motifs.find(x=>x.id===m.motifId);
- if(!entry||!entry.source){setStatus('⚠️ This motif has no editable source (captured before editable motifs existed) — it can only be placed, not edited.');return}
+ if(!entry||!entry.source){setStatus('This motif has no editable source (captured before editable motifs existed) — it can only be placed, not edited.');return}
  if(pathEditStrokeId)commitEditPath();
  if(joinPendingStrokeId)endJoinPick();
  armedShapeType=null;syncShapeToolUI();
@@ -4765,7 +4765,7 @@ function enterEditMotif(){
  mode='draw';syncMode();
  $('editMotifBar').style.display='inline-flex';$('editMotifBarName').textContent=entry.name;
  pushHist();redraw();
- setStatus('✏️ Editing motif "'+entry.name+'" — tap Done in the toolbar when finished.');
+ setStatus('Editing motif "'+entry.name+'" — tap Done in the toolbar when finished.');
 }
 function finishEditMotif(){
  if(!editingMotifId)return;
@@ -4797,7 +4797,7 @@ function finishEditMotif(){
  }else{
   // Motif was fully erased during editing — keep its OLD source/preview rather than destroying
   // the only remaining copy of the artwork.
-  if(entry)setStatus('⚠️ Motif looked empty — kept the previous version instead of erasing it.');
+  if(entry)setStatus('Motif looked empty — kept the previous version instead of erasing it.');
   finish();
  }
 }
@@ -4843,7 +4843,7 @@ function renderMotifSourcePreview(source){
 function openRecolour(){
   const m=getSel();if(!m||!m.motifId)return;
   const entry=motifs.find(x=>x.id===m.motifId);
-  if(!entry||!entry.source){setStatus('⚠️ This motif has no editable artwork to recolour (captured before editable motifs existed).');return;}
+  if(!entry||!entry.source){setStatus('This motif has no editable artwork to recolour (captured before editable motifs existed).');return;}
   recolourEntryId=entry.id;recolourMap={};
   renderRecolourRows(entry);
   $('recolourPopover').classList.add('open');
@@ -4869,11 +4869,11 @@ function applyRecolour(asNew){
   const entry=motifs.find(x=>x.id===recolourEntryId);if(!entry||!entry.source)return;
   if(!Object.keys(recolourMap).length){setStatus('Pick a new colour for at least one part first.');return;}
   const src2=recolouredSource(entry),preview=renderMotifSourcePreview(src2);
-  if(!preview){setStatus('⚠️ Could not re-render the motif.');return;}
+  if(!preview){setStatus('Could not re-render the motif.');return;}
   if(asNew){
     addMotif(preview.src,entry.name+' colourway',false,src2,false);
     $('recolourPopover').classList.remove('open');
-    setStatus('🎨 Saved a recoloured copy to the Motif Tray — the original is unchanged.');
+    setStatus('Saved a recoloured copy to the Motif Tray — the original is unchanged.');
     return;
   }
   const img=new Image();
@@ -4881,7 +4881,7 @@ function applyRecolour(asNew){
     entry.source=src2;entry.img=img;entry.src=preview.src;
     placed.forEach(p=>{if(p.motifId===entry.id)p.img=img;});
     recolourMap={};renderRecolourRows(entry);renderTray();pushHist();redraw();
-    setStatus('🎨 Motif recoloured everywhere it is used.');
+    setStatus('Motif recoloured everywhere it is used.');
   };
   img.src=preview.src;
 }
@@ -4895,14 +4895,14 @@ $('duplicateMotifBtn').onclick=duplicateMotifInstance;
 $('makeIndependentBtn').onclick=makeIndependentMotif;
 $('editMotifBar').onclick=finishEditMotif;
 $('motifInput').onchange=e=>Array.from(e.target.files).forEach(f=>{const r=new FileReader();r.onload=ev=>addMotif(ev.target.result,f.name,false);r.readAsDataURL(f);});
-$('bgInput').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{const img=new Image();img.onload=()=>{bgImg=img;bgShown=true;$('bgEmpty').style.display='none';$('bgControls').style.display='block';redraw();setStatus('🧱 Background pattern loaded.');scheduleAutosave();};img.src=ev.target.result;};r.readAsDataURL(f);e.target.value='';};
+$('bgInput').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{const img=new Image();img.onload=()=>{bgImg=img;bgShown=true;$('bgEmpty').style.display='none';$('bgControls').style.display='block';redraw();setStatus('Background pattern loaded.');scheduleAutosave();};img.src=ev.target.result;};r.readAsDataURL(f);e.target.value='';};
 $('bgOpacitySlider').oninput=e=>{bgOpacity=+e.target.value/100;$('bgOpacityVal').textContent=e.target.value+'%';redraw();scheduleAutosave();};
-$('bgToggle').onclick=()=>{bgShown=!bgShown;$('bgToggle').classList.toggle('active',bgShown);$('bgToggle').textContent=bgShown?'👁️ Shown':'🚫 Hidden';redraw();scheduleAutosave();};
+$('bgToggle').onclick=()=>{bgShown=!bgShown;$('bgToggle').classList.toggle('active',bgShown);$('bgToggle').textContent=bgShown?'Shown':'Hidden';redraw();scheduleAutosave();};
 $('bgClear').onclick=()=>{bgImg=null;$('bgEmpty').style.display='block';$('bgControls').style.display='none';redraw();scheduleAutosave();};
 $('traceInput').onchange=e=>Array.from(e.target.files).forEach(f=>{const r=new FileReader();r.onload=ev=>{const img=new Image();img.onload=()=>{traces.push({img,src:ev.target.result,name:f.name,x:W/2,y:H/2,scale:Math.min(TILE/img.width,TILE/img.height),opacity:.35});renderTraces();redraw();scheduleAutosave();};img.src=ev.target.result;};r.readAsDataURL(f);});
 function renderTraces(){const list=$('traceList');list.innerHTML='';traces.forEach((t,i)=>{const c=document.createElement('div');c.className='trace-card';c.innerHTML=`<img src="${t.src}"><div><div>${t.name}</div><div class="small">Trace ref · ${Math.round(t.opacity*100)}%</div></div><button class="x" style="position:static">×</button>`;c.querySelector('button').onclick=()=>{traces.splice(i,1);renderTraces();redraw();scheduleAutosave();};list.appendChild(c);});}
-$('traceOpacity').oninput=e=>{traces.forEach(t=>t.opacity=+e.target.value/100);$('traceOpacityVal').textContent=e.target.value+'%';renderTraces();redraw();scheduleAutosave();};$('traceScale').oninput=e=>{traces.forEach(t=>t.scale=+e.target.value/100);$('traceScaleVal').textContent=e.target.value+'%';redraw();scheduleAutosave();};$('traceFit').onclick=()=>{traces.forEach(t=>t.scale=Math.min(TILE/t.img.width,TILE/t.img.height));redraw();scheduleAutosave();};$('traceCentre').onclick=()=>{traces.forEach(t=>{t.x=W/2;t.y=H/2});redraw();scheduleAutosave();};$('traceLock').onclick=()=>{traceLocked=!traceLocked;setStatus(traceLocked?'🔒 Trace locked — drawing works normally.':'🔓 Trace Move: switch to Edit mode and drag the canvas to move the trace image. Drawing is unaffected. Tap again to lock it.');$('traceLock').textContent=traceLocked?'🔒 Locked':'🔓 Move';$('traceLock').classList.toggle('active',traceLocked)};$('traceClear').onclick=()=>{traces=[];renderTraces();redraw();scheduleAutosave();};
-// Trace Move mode (🔓): dragging the canvas moves the trace image under the pointer instead of drawing.
+$('traceOpacity').oninput=e=>{traces.forEach(t=>t.opacity=+e.target.value/100);$('traceOpacityVal').textContent=e.target.value+'%';renderTraces();redraw();scheduleAutosave();};$('traceScale').oninput=e=>{traces.forEach(t=>t.scale=+e.target.value/100);$('traceScaleVal').textContent=e.target.value+'%';redraw();scheduleAutosave();};$('traceFit').onclick=()=>{traces.forEach(t=>t.scale=Math.min(TILE/t.img.width,TILE/t.img.height));redraw();scheduleAutosave();};$('traceCentre').onclick=()=>{traces.forEach(t=>{t.x=W/2;t.y=H/2});redraw();scheduleAutosave();};$('traceLock').onclick=()=>{traceLocked=!traceLocked;setStatus(traceLocked?'Trace locked — drawing works normally.':'Trace Move: switch to Edit mode and drag the canvas to move the trace image. Drawing is unaffected. Tap again to lock it.');$('traceLock').textContent=traceLocked?'Locked':'Move';$('traceLock').classList.toggle('active',traceLocked)};$('traceClear').onclick=()=>{traces=[];renderTraces();redraw();scheduleAutosave();};
+// Trace Move mode (): dragging the canvas moves the trace image under the pointer instead of drawing.
 let traceDrag=null;
 function traceDragStart(e){
   const p=screenToCanvas(e.clientX,e.clientY);
@@ -4919,10 +4919,10 @@ canvas.addEventListener('pointermove',e=>{
 });
 function traceDragEnd(){if(!traceDrag)return;traceDrag=null;scheduleAutosave();redraw();}
 canvas.addEventListener('pointerup',traceDragEnd);canvas.addEventListener('pointercancel',traceDragEnd);
-function syncSymToggle(){const btn=$('symToggle');btn.textContent=symMode==='off'?'🦋 Symmetry Off':'🦋 '+symMode.charAt(0).toUpperCase()+symMode.slice(1);btn.classList.toggle('butterfly-on',symMode!=='off');}
+function syncSymToggle(){const btn=$('symToggle');btn.textContent=symMode==='off'?'Symmetry Off':''+symMode.charAt(0).toUpperCase()+symMode.slice(1);btn.classList.toggle('butterfly-on',symMode!=='off');}
 $('symToggle').onclick=()=>{$('symPopover').classList.toggle('open');};
 $('symClose').onclick=()=>{$('symPopover').classList.remove('open');};
-document.querySelectorAll('.sym-btn').forEach(b=>b.onclick=()=>{document.querySelectorAll('.sym-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');symMode=b.dataset.sym;syncSymToggle();updateSymAxis();redraw();setStatus(symMode==='off'?'🦋 Symmetry off.':'🦋 Symmetry '+b.textContent+' active — move the axis if you want it off-centre.');});$('symX').oninput=e=>{symX=+e.target.value;$('symXVal').textContent=Math.round(symX/W*100)+'%';updateSymAxis();redraw();};$('symY').oninput=e=>{symY=+e.target.value;$('symYVal').textContent=Math.round(symY/H*100)+'%';updateSymAxis();redraw();};$('symCentre').onclick=()=>{symX=W/2;symY=H/2;$('symX').value=symX;$('symY').value=symY;$('symXVal').textContent='50%';$('symYVal').textContent='50%';updateSymAxis();redraw();};
+document.querySelectorAll('.sym-btn').forEach(b=>b.onclick=()=>{document.querySelectorAll('.sym-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');symMode=b.dataset.sym;syncSymToggle();updateSymAxis();redraw();setStatus(symMode==='off'?'Symmetry off.':'Symmetry '+b.textContent+' active — move the axis if you want it off-centre.');});$('symX').oninput=e=>{symX=+e.target.value;$('symXVal').textContent=Math.round(symX/W*100)+'%';updateSymAxis();redraw();};$('symY').oninput=e=>{symY=+e.target.value;$('symYVal').textContent=Math.round(symY/H*100)+'%';updateSymAxis();redraw();};$('symCentre').onclick=()=>{symX=W/2;symY=H/2;$('symX').value=symX;$('symY').value=symY;$('symXVal').textContent='50%';$('symYVal').textContent='50%';updateSymAxis();redraw();};
 // ---- SVG export ---------------------------------------------------------------------------------
 // Strokes are stored as point lists that the brush engine stamps as soft dabs. SVG has no dabs, so
 // each stroke becomes one filled outline whose width follows the same size / pressure / taper rules
@@ -5012,15 +5012,15 @@ document.querySelectorAll('#svgPopover .svg-preset').forEach(b=>b.onclick=()=>{s
 $('svgSizeInput').oninput=e=>{const v=Math.round(+e.target.value);if(v>=64&&v<=20000){svgSize=v;document.querySelectorAll('#svgPopover .svg-preset').forEach(b=>b.classList.toggle('active',+b.dataset.size===svgSize));}};
 $('svgSaveBtn').onclick=()=>{
   const v=Math.round(+$('svgSizeInput').value);
-  if(!(v>=64&&v<=20000)){setStatus('⚠️ SVG size must be between 64 and 20000 px.');return;}
+  if(!(v>=64&&v<=20000)){setStatus('SVG size must be between 64 and 20000 px.');return;}
   svgSize=v;try{localStorage.setItem('sp-svgSize',String(v));}catch(e){}
   try{
     const svg=buildSvgExport(svgSize),blob=new Blob([svg],{type:'image/svg+xml'});
     saveFileBlob(blob,'pattern-sketch-tile-'+svgSize+'.svg');
     $('svgPopover').classList.remove('open');
     const skipped=placed.filter(p=>p.img).length+((bgImg&&bgShown)?1:0);
-    setStatus('🖋️ SVG saved at '+svgSize+' × '+svgSize+' px (vector only)'+(skipped?' — '+skipped+' picture'+(skipped===1?'':'s')+' (motif / background image) left out because they are not vector.':'.'));
-  }catch(err){console.error(err);setStatus('⚠️ Could not build the SVG: '+(err&&err.message||err));}
+    setStatus('SVG saved at '+svgSize+' × '+svgSize+' px (vector only)'+(skipped?' — '+skipped+' picture'+(skipped===1?'':'s')+' (motif / background image) left out because they are not vector.':'.'));
+  }catch(err){console.error(err);setStatus('Could not build the SVG: '+(err&&err.message||err));}
 };
 // ---- Pattern Brush maker --------------------------------------------------------------------------
 // Turns a vector path (the selected stroke, or every stroke on the active layer when none is
@@ -5098,8 +5098,8 @@ async function runBrushExport(kind){
       const files=[{name:base+'-shape.png',data:await bytes(sh)},{name:base+'-stamp.png',data:await bytes(st)},{name:'README.txt',data:new TextEncoder().encode(readme)}];
       saveFileBlob(makeZip(files),base+'-brush-pack.zip');
     }
-    setStatus('🖌️ Brush made from '+what+' ('+px+' px).');
-  }catch(err){console.error(err);setStatus('⚠️ Could not make the brush: '+(err&&err.message||err));}
+    setStatus('Brush made from '+what+' ('+px+' px).');
+  }catch(err){console.error(err);setStatus('Could not make the brush: '+(err&&err.message||err));}
 }
 $('brushShapeBtn').onclick=()=>runBrushExport('shape');
 $('brushStampBtn').onclick=()=>runBrushExport('stamp');
@@ -5243,20 +5243,20 @@ async function runBrushSetExport(kind){
       const plist='<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0">\n<dict>\n<key>brushes</key>\n<array>\n'+ids.map(i=>'<string>'+i+'</string>').join('\n')+'\n</array>\n<key>name</key>\n<string>'+esc(setName)+'</string>\n</dict>\n</plist>\n';
       files.unshift({name:'brushset.plist',data:new TextEncoder().encode(plist)});
       saveFileBlob(makeZip(files),base+'.brushset');
-      setStatus('🖌️ Brush set "'+setName+'" saved ('+items.length+' brush'+(items.length===1?'':'es')+'). Open it in Procreate and test before selling.');
+      setStatus('Brush set "'+setName+'" saved ('+items.length+' brush'+(items.length===1?'':'es')+'). Open it in Procreate and test before selling.');
     }else if(kind==='brushes'){
       const files=[];
       for(const it of items){const tip=imageTip(it.img,px);try{const bf=await procreateBrushFiles(it.name,tip);files.push({name:safeFileName(it.name)+'.brush',data:await blobBytes(makeZip(bf))});}finally{freeCanvas(tip);}}
       saveFileBlob(makeZip(files),base+'-brushes.zip');
-      setStatus('🖌️ '+items.length+' separate .brush file'+(items.length===1?'':'s')+' saved in a zip. Unzip, then tap each .brush to import it into Procreate.');
+      setStatus(''+items.length+' separate .brush file'+(items.length===1?'':'s')+' saved in a zip. Unzip, then tap each .brush to import it into Procreate.');
     }else{
       const files=[];
       for(const it of items){const f=safeFileName(it.name),tip=imageTip(it.img,px);try{const sh=shapeFromTip(tip);files.push({name:f+'-shape.png',data:await pngBytes(sh)});freeCanvas(sh);files.push({name:f+'-stamp.png',data:await pngBytes(tip)});}finally{freeCanvas(tip);}}
       files.push({name:'README.txt',data:new TextEncoder().encode('Pattern Sketch stamp pack: '+setName+'\r\n\r\n*-shape.png  white on black, '+px+' px: a Procreate Shape source.\r\n*-stamp.png  full colour on transparency.\r\n')});
       saveFileBlob(makeZip(files),base+'-png-pack.zip');
-      setStatus('🖌️ PNG pack saved ('+items.length+' motif'+(items.length===1?'':'s')+').');
+      setStatus('PNG pack saved ('+items.length+' motif'+(items.length===1?'':'s')+').');
     }
-  }catch(err){console.error(err);setStatus('⚠️ Could not build the brush set: '+(err&&err.message||err));}
+  }catch(err){console.error(err);setStatus('Could not build the brush set: '+(err&&err.message||err));}
 }
 $('brushSetBtn').onclick=()=>runBrushSetExport('brushset');
 $('brushFilesBtn').onclick=()=>runBrushSetExport('brushes');
@@ -5267,7 +5267,7 @@ $('exportBtn').onclick=()=>{updateComposite();const a=document.createElement('a'
   wrapOffs.forEach(([ox,oy])=>o.drawImage(compositeCanvas,0,0,W,H,ox-C,oy-C,W,H));
   placed.forEach(p=>{if(!p.img)return;wrapOffs.forEach(([ox,oy])=>{o.save();o.translate(p.x-C+ox,p.y-C+oy);o.rotate(p.r*Math.PI/180);o.scale(p.s*p.fx,p.s*p.fy);o.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);o.restore();});});a.href=out.toDataURL('image/png');a.click();};
 window.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='z'){e.shiftKey?redo():undo();}});
-function syncThemeToggleUI(){const light=document.body.classList.contains('theme-light');$('themeToggle').textContent=light?'🌙 Dark Mode':'☀️ Light Mode';}
+function syncThemeToggleUI(){const light=document.body.classList.contains('theme-light');$('themeToggle').textContent=light?'Dark Mode':'Light Mode';}
 $('themeToggle').onclick=()=>{const light=document.body.classList.toggle('theme-light');try{localStorage.setItem('pkmTheme',light?'light':'dark');}catch(e){}syncThemeToggleUI();};
 syncThemeToggleUI();
 // View popover: Symmetry/Tiling/Grid readout/Theme/Clear Drawing moved out of the primary
@@ -5278,10 +5278,10 @@ $('zoomPill').onclick=e=>{e.stopPropagation();$('zoomPopover').classList.toggle(
 $('zoomCloseBtn').onclick=()=>{$('zoomPopover').classList.remove('open');};
 $('zoomOutBtn').onclick=()=>zoomAboutCentre(zoom/1.25);
 $('zoomInBtn').onclick=()=>zoomAboutCentre(zoom*1.25);
-$('zoom100Btn').onclick=()=>{viewActual();$('zoomPopover').classList.remove('open');setStatus('🔍 100% — original tile centred.');};
-$('zoomFitBtn').onclick=()=>{viewFit();$('zoomPopover').classList.remove('open');setStatus('🔍 Fit to view — original tile centred.');};
-$('zoomResetBtn').onclick=()=>{viewReset();$('zoomPopover').classList.remove('open');setStatus('🔍 View reset — 0°, centred and fitted.');};
-$('strokePanelBtn').onclick=()=>{setStrokePanelOpen(!strokePanelOpen);if(strokePanelOpen&&!selectedStrokeId)setStatus('🖊️ Stroke panel on — select a stroke in Edit mode to use it.');};
+$('zoom100Btn').onclick=()=>{viewActual();$('zoomPopover').classList.remove('open');setStatus('100% — original tile centred.');};
+$('zoomFitBtn').onclick=()=>{viewFit();$('zoomPopover').classList.remove('open');setStatus('Fit to view — original tile centred.');};
+$('zoomResetBtn').onclick=()=>{viewReset();$('zoomPopover').classList.remove('open');setStatus('View reset — 0°, centred and fitted.');};
+$('strokePanelBtn').onclick=()=>{setStrokePanelOpen(!strokePanelOpen);if(strokePanelOpen&&!selectedStrokeId)setStatus('Stroke panel on — select a stroke in Edit mode to use it.');};
 $('strokePanelBtn').classList.toggle('active',strokePanelOpen);
 $('viewCloseBtn').onclick=()=>{$('viewPopover').classList.remove('open');};
 // ---- Collapsible left panel --------------------------------------------------------------------
@@ -5356,7 +5356,7 @@ function setSaveStatus(state,at){
   const pill=$('saveStatusPill');if(!pill)return;
   pill.classList.remove('saving','failed');
   if(state==='saving'){pill.classList.add('saving');pill.textContent='Saving…';}
-  else if(state==='failed'){pill.classList.add('failed');pill.textContent='⚠️ Save failed';}
+  else if(state==='failed'){pill.classList.add('failed');pill.textContent='Save failed';}
   else{
     lastSavedAt=at||Date.now();
     const d=new Date(lastSavedAt);
@@ -5429,7 +5429,7 @@ async function runAutosave(){
 async function quickSaveNow(){
   clearTimeout(autosaveTimer);autosaveBlocked=false;
   await runAutosave();
-  if(lastSavedAt)setStatus('💾 Project saved.');
+  if(lastSavedAt)setStatus('Project saved.');
 }
 async function fetchStoredDoc(){
   const db=await openDocDB();
@@ -5491,18 +5491,18 @@ async function applyDocObject(doc){
     }
     layout=doc.layout||'grid';activeTemplate=doc.activeTemplate||null;
     document.querySelectorAll('.layout-btn').forEach(x=>x.classList.toggle('active',x.dataset.layout===layout));
-    $('layoutPill').textContent='📍 '+layout+' Mode';
+    $('layoutPill').textContent=''+layout+' Mode';
     syncTemplateUI();
     bgOpacity=(doc.bgOpacity!=null)?doc.bgOpacity:1;bgShown=doc.bgShown!==false;
     if(doc.bgSrc){
       await new Promise(res=>{const img=new Image();img.onload=()=>{bgImg=img;res();};img.onerror=res;img.src=doc.bgSrc;});
       $('bgEmpty').style.display='none';$('bgControls').style.display='block';
       $('bgOpacitySlider').value=Math.round(bgOpacity*100);$('bgOpacityVal').textContent=Math.round(bgOpacity*100)+'%';
-      $('bgToggle').classList.toggle('active',bgShown);$('bgToggle').textContent=bgShown?'👁️ Shown':'🚫 Hidden';
+      $('bgToggle').classList.toggle('active',bgShown);$('bgToggle').textContent=bgShown?'Shown':'Hidden';
     }
     traces=[];
     traceLocked=true; // always reopen locked so a saved Move state can never get in the way
-    $('traceLock').textContent=traceLocked?'🔒 Locked':'🔓 Move';$('traceLock').classList.toggle('active',traceLocked);
+    $('traceLock').textContent=traceLocked?'Locked':'Move';$('traceLock').classList.toggle('active',traceLocked);
     for(const t of JSON.parse(doc.tracesJSON||'[]')){
       await new Promise(res=>{const img=new Image();img.onload=()=>{traces.push({img,src:t.src,name:t.name,x:t.x,y:t.y,scale:t.scale,opacity:t.opacity});res();};img.onerror=res;img.src=t.src;});
     }
@@ -5524,23 +5524,23 @@ function downloadProjectFile(){
   a.download='sketchpad-project-'+stamp+'.json';
   a.href=url;a.click();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
-  setStatus('⬇️ Project file downloaded — keep it somewhere safe as a backup.');
+  setStatus('Project file downloaded — keep it somewhere safe as a backup.');
 }
 async function openProjectFromFile(file){
   try{
     const text=await file.text();
     const doc=JSON.parse(text);
     const ok=await applyDocObject(doc);
-    if(!ok){setStatus('⚠️ That file had no readable project data.');return;}
+    if(!ok){setStatus('That file had no readable project data.');return;}
     if(!layers.length){layers=defaultLayers();activeLayerId=layers[layers.length-1].id;}
     renderLayersList();
     history=[];hIndex=-1;pushHist();redraw();updateBaseScale();
     $('restoreBanner').style.display='none';
     autosaveBlocked=false;scheduleAutosave();
-    setStatus('📂 Project loaded from file — '+strokes.length+' stroke'+(strokes.length===1?'':'s')+', '+motifs.length+' motif'+(motifs.length===1?'':'s')+'.');
+    setStatus('Project loaded from file — '+strokes.length+' stroke'+(strokes.length===1?'':'s')+', '+motifs.length+' motif'+(motifs.length===1?'':'s')+'.');
   }catch(e){
     console.warn('[sketchpad] open project failed',e);
-    setStatus('⚠️ Could not open that file — it may not be a valid Sketchpad project.');
+    setStatus('Could not open that file — it may not be a valid Sketchpad project.');
   }
 }
 $('quickSaveBtn').onclick=quickSaveNow;
@@ -5568,14 +5568,14 @@ async function maybeOfferRestore(){
     const ok=await applyDocObject(doc);
     if(ok){
       await afterRestoreApplied(doc);
-      $('restoreBannerText').textContent='📂 Restored your last session from ';
+      $('restoreBannerText').textContent='Restored your last session from ';
       $('restoreAcceptBtn').style.display='none';
       $('restoreBanner').style.display='flex';
-      setStatus('📂 Restored your last session — '+strokes.length+' stroke'+(strokes.length===1?'':'s')+', '+motifs.length+' motif'+(motifs.length===1?'':'s')+'.');
+      setStatus('Restored your last session — '+strokes.length+' stroke'+(strokes.length===1?'':'s')+', '+motifs.length+' motif'+(motifs.length===1?'':'s')+'.');
       setTimeout(()=>{if(pendingRestoreDoc===doc)$('restoreBanner').style.display='none';},9000);
       pendingRestoreDoc=null;
     }else{
-      $('restoreBannerText').textContent='⚠️ Could not restore your autosave from ';
+      $('restoreBannerText').textContent='Could not restore your autosave from ';
       $('restoreAcceptBtn').textContent='Retry';$('restoreAcceptBtn').style.display='';
       $('restoreBanner').style.display='flex';
     }
@@ -5584,20 +5584,20 @@ async function maybeOfferRestore(){
 $('restoreAcceptBtn').onclick=async()=>{
   if(!pendingRestoreDoc)return;
   const ok=await applyDocObject(pendingRestoreDoc);
-  if(ok){$('restoreBanner').style.display='none';await afterRestoreApplied(pendingRestoreDoc);setStatus('📂 Restored your last session — '+strokes.length+' stroke'+(strokes.length===1?'':'s')+', '+motifs.length+' motif'+(motifs.length===1?'':'s')+'.');pendingRestoreDoc=null;}
-  else setStatus('⚠️ Still could not restore it — use 🕘 Earlier saves, or Start Fresh (your autosave is kept as a backup).');
+  if(ok){$('restoreBanner').style.display='none';await afterRestoreApplied(pendingRestoreDoc);setStatus('Restored your last session — '+strokes.length+' stroke'+(strokes.length===1?'':'s')+', '+motifs.length+' motif'+(motifs.length===1?'':'s')+'.');pendingRestoreDoc=null;}
+  else setStatus('Still could not restore it — use Earlier saves, or Start Fresh (your autosave is kept as a backup).');
 };
 $('restoreDeclineBtn').onclick=async()=>{
   $('restoreBanner').style.display='none';
   try{const d=await fetchStoredDoc();if(d&&d.savedAt)await idbReq(DOC_STORE,'readwrite',st=>st.put(d,'backup:'+d.savedAt));}catch(e){}
   pendingRestoreDoc=null;
-  // Wipe the live canvas for a genuinely fresh start; the old session stays under 🕘 Earlier saves.
+  // Wipe the live canvas for a genuinely fresh start; the old session stays under Earlier saves.
   strokes=[];placed=[];motifs=[];traces=[];bgImg=null;layers=defaultLayers();activeLayerId=layers[layers.length-1].id;
   rebuildAllLayers();renderLayersList();renderTray();renderTraces();history=[];hIndex=-1;pushHist();redraw();
   autosaveBlocked=false;lastScore=0;lastBackupAt=Date.now();
-  setStatus('🆕 Starting fresh — your previous session is kept under 🕘 Earlier saves.');
+  setStatus('Starting fresh — your previous session is kept under Earlier saves.');
 };
-// 🕘 Earlier saves: the rolling backups made automatically before the autosave was overwritten.
+// Earlier saves: the rolling backups made automatically before the autosave was overwritten.
 $('backupsBtn').onclick=async()=>{
   const host=$('backupsList');host.innerHTML='Loading…';$('backupsPanel').style.display='block';
   try{
@@ -5612,8 +5612,8 @@ $('backupsBtn').onclick=async()=>{
         try{await runAutosave();}catch(e){}
         lastBackupAt=0;lastScore=Math.max(lastScore,1);
         const ok=await applyDocObject(b.doc);
-        if(ok){history=[];hIndex=-1;pushHist();redraw();updateBaseScale();autosaveBlocked=false;scheduleAutosave();$('backupsPanel').style.display='none';setStatus('🕘 Restored the save from '+new Date(b.at).toLocaleString()+'.');}
-        else setStatus('⚠️ That earlier save could not be opened.');
+        if(ok){history=[];hIndex=-1;pushHist();redraw();updateBaseScale();autosaveBlocked=false;scheduleAutosave();$('backupsPanel').style.display='none';setStatus('Restored the save from '+new Date(b.at).toLocaleString()+'.');}
+        else setStatus('That earlier save could not be opened.');
       };
       row.appendChild(t);row.appendChild(btn);host.appendChild(row);
     });
