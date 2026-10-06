@@ -299,13 +299,13 @@ button.pill:active{transform:scale(.97)}
       <div id="brushRecents" class="brush-family-row"></div>
       <div class="brush-family-title">Favourites</div>
       <div id="brushFavorites" class="brush-family-row"></div>
-      <button id="makeBrushBtn" class="btn mini" style="width:100%;margin:8px 0;">➕ Make my own brush</button>
+      <button id="makeBrushBtn" class="btn mini" style="width:100%;margin:8px 0;">＋ Create custom brush…</button>
       <div id="brushFamilies"></div>
       <button id="moreSettingsToggle" class="btn mini" style="width:100%;margin-top:10px;">⚙️ More Settings</button>
       <div id="moreSettings" style="display:none;">
         <div class="slider-row"><label>Smooth</label><input id="brushSmooth" type="range" min="0" max="90" value="30"><span id="brushSmoothVal">30%</span></div>
-        <div class="slider-row"><label>Pres→Width</label><input id="pressureWidth" type="range" min="0" max="100" value="50"><span id="pressureWidthVal">50%</span></div>
-        <div class="slider-row"><label>Pres→Opac</label><input id="pressureOpacity" type="range" min="0" max="100" value="10"><span id="pressureOpacityVal">10%</span></div>
+        <div class="slider-row"><label>Pressure → width</label><input id="pressureWidth" type="range" min="0" max="100" value="50"><span id="pressureWidthVal">50%</span></div>
+        <div class="slider-row"><label>Pressure → opacity</label><input id="pressureOpacity" type="range" min="0" max="100" value="10"><span id="pressureOpacityVal">10%</span></div>
         <div class="slider-row"><label>Spacing</label><input id="brushSpacingCtl" type="range" min="1" max="40" value="6"><span id="brushSpacingValCtl">6%</span></div>
         <div id="stampOptions" style="display:none;margin-top:6px;">
           <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:4px 0;"><input type="checkbox" id="stampFollow"> Turn stamps to follow the line</label>
@@ -508,24 +508,24 @@ button.pill:active{transform:scale(.97)}
   <main class="workspace">
     <div class="toolbar"><button id="undoBtn" class="tool-btn">↩️ Undo</button><button id="redoBtn" class="tool-btn">↪️ Redo</button><button id="zoomPill" class="pill" title="Zoom and view recovery">100% ▾</button><button id="resetRot" class="tool-btn">0° Rotation</button><button id="guidesBtn" class="tool-btn">📐 Guides</button><button id="strokePanelBtn" class="tool-btn" title="Show or hide the Stroke panel">🖊️ Stroke</button><button id="paintModePill" class="pill" style="display:none;cursor:pointer;">🎨 Paint Inside — tap for Free Paint</button><button id="editMotifBar" class="pill" style="display:none;cursor:pointer;background:var(--accentTeal);border:1px solid rgba(92,184,171,.5);font:inherit;">✏️ Editing: <span id="editMotifBarName"></span> — tap Done</button><div class="toolbar-spacer"></div><button id="quickSaveBtn" class="tool-btn">💾 Save</button><div id="saveStatusPill" class="pill" title="Autosave status">Saved</div><button id="downloadProjectBtn" class="tool-btn">⬇️ Download Project</button><button id="backupsBtn" class="tool-btn" title="Automatic earlier versions of your work">🕘 Earlier saves</button><label class="tool-btn" for="openProjectInput" style="cursor:pointer;">📂 Open Project</label><input id="openProjectInput" type="file" accept="application/json" style="display:none;"><button id="viewToggleBtn" class="tool-btn">⋯ View</button><button id="exportBtn" class="tool-btn primary">📸 Export</button><button id="exportSvgBtn" class="tool-btn" title="Export as SVG (vector)">🖋️ SVG</button></div>
     <div id="brushMakerPanel" style="display:none;position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:91;background:var(--sideBg);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:0 18px 50px rgba(0,0,0,.35);font-size:13.5px;width:min(480px,calc(100vw - 24px));max-height:calc(100vh - 90px);overflow:auto;">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:800;margin-bottom:8px;">🖌️ Make my own brush<button id="bmCancel" class="btn mini">Close</button></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:800;margin-bottom:8px;">🖌️ Create custom brush<button id="bmCancel" class="btn mini">Close</button></div>
       <div style="border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:8px;"><canvas id="bmPreview" style="position:static;display:block;width:100%;height:84px;transform:none;left:auto;top:auto;"></canvas></div>
       <div class="slider-row"><label>Name</label><input id="bmName" type="text" placeholder="My brush" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></div>
-      <div class="slider-row"><label>Start from</label><select id="bmFrom" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></select></div>
+      <div class="slider-row"><label>Based on</label><select id="bmFrom" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></select></div>
       <div id="bmLook">
-        <div class="slider-row"><label>Soft edge</label><input id="bmSoft" type="range" min="5" max="100" value="100"><span id="bmSoftVal"></span></div>
-        <div class="slider-row"><label>Grain</label><input id="bmGrain" type="range" min="0" max="80" value="0"><span id="bmGrainVal"></span></div>
-        <div class="slider-row"><label>Wobble</label><input id="bmWobble" type="range" min="0" max="100" value="0"><span id="bmWobbleVal"></span></div>
-        <label style="display:flex;gap:8px;align-items:center;margin:4px 0;"><input type="checkbox" id="bmTaper"> Taper the start and end to a point</label>
-        <label style="display:flex;gap:8px;align-items:center;margin:4px 0;"><input type="checkbox" id="bmMono"> Perfectly smooth monoline (ignores the options above and pressure)</label>
+        <div class="slider-row"><label>Edge softness</label><input id="bmSoft" type="range" min="5" max="100" value="100"><span id="bmSoftVal"></span></div>
+        <div class="slider-row"><label>Texture</label><input id="bmGrain" type="range" min="0" max="80" value="0"><span id="bmGrainVal"></span></div>
+        <div class="slider-row"><label>Variation</label><input id="bmWobble" type="range" min="0" max="100" value="0"><span id="bmWobbleVal"></span></div>
+        <label style="display:flex;gap:8px;align-items:center;margin:4px 0;"><input type="checkbox" id="bmTaper"> Taper start and end</label>
+        <label style="display:flex;gap:8px;align-items:center;margin:4px 0;"><input type="checkbox" id="bmMono"> Uniform monoline (constant width; ignores pressure and the options above)</label>
       </div>
       <div class="slider-row"><label>Size</label><input id="bmSize" type="range" min="1" max="120" value="20"><span id="bmSizeVal"></span></div>
       <div class="slider-row"><label>Opacity</label><input id="bmOpacity" type="range" min="1" max="100" value="100"><span id="bmOpacityVal"></span></div>
       <div class="slider-row"><label>Spacing</label><input id="bmSpacing" type="range" min="1" max="40" value="8"><span id="bmSpacingVal"></span></div>
-      <div class="slider-row"><label>Pres→Width</label><input id="bmPW" type="range" min="0" max="100" value="0"><span id="bmPWVal"></span></div>
-      <div class="slider-row"><label>Pres→Opac</label><input id="bmPO" type="range" min="0" max="100" value="0"><span id="bmPOVal"></span></div>
-      <div style="margin:8px 0;"><label class="btn mini" style="cursor:pointer;display:inline-block;">🖼️ Use a picture as the brush tip<input id="bmTip" type="file" accept="image/*" style="display:none;"></label> <button id="bmTipClear" class="btn mini" style="display:none;">Remove picture</button>
-        <div class="hint">A picture tip (PNG with a transparent background works best) is stamped along your line, like your Motif Brushes.</div></div>
+      <div class="slider-row"><label>Pressure → width</label><input id="bmPW" type="range" min="0" max="100" value="0"><span id="bmPWVal"></span></div>
+      <div class="slider-row"><label>Pressure → opacity</label><input id="bmPO" type="range" min="0" max="100" value="0"><span id="bmPOVal"></span></div>
+      <div style="margin:8px 0;"><label class="btn mini" style="cursor:pointer;display:inline-block;">🖼️ Use an image as the brush tip<input id="bmTip" type="file" accept="image/*" style="display:none;"></label> <button id="bmTipClear" class="btn mini" style="display:none;">Remove image</button>
+        <div class="hint">An image tip (a PNG with a transparent background works best) is stamped along the path, like your Motif Brushes.</div></div>
       <div class="row" style="margin-top:8px;"><button id="bmSave" class="btn primary" style="flex:1;">💾 Save brush</button></div>
       <div id="bmListWrap" style="margin-top:10px;"></div>
     </div>
@@ -1066,7 +1066,10 @@ function viewFit(){zoom=fitZoomFor(rot);panX=0;panY=0;applyTransform();}
 // Reset View: rotation 0°, tile centred, fitted.
 function viewReset(){rot=0;zoom=fitZoomFor(0);panX=0;panY=0;applyTransform();}
 
+let brushPreviewRaf=0;
+function scheduleBrushPreview(){if(brushPreviewRaf)return;brushPreviewRaf=requestAnimationFrame(()=>{brushPreviewRaf=0;try{renderBrushPreview();}catch(e){}});}
 function applyTransform(){
+  scheduleBrushPreview();
   constrainView();
   const newScale=computeRenderScale();
   if(newScale!==renderScale){
@@ -3271,13 +3274,16 @@ function drawBrushSample(c,brush,st,color){
   const lum=(()=>{const h=(col||'#000').replace('#','');const n=parseInt(h.length===3?h.split('').map(x=>x+x).join(''):h,16);return(0.299*(n>>16&255)+0.587*(n>>8&255)+0.114*(n&255));})();
   g.fillStyle=lum>200?'#6b6475':'#fffdf8';g.fillRect(0,0,cssW,cssH);
   if(eraser){g.fillStyle='#fff';g.fillRect(0,0,cssW,cssH);g.fillStyle='#8a7f8f';g.font='600 13px system-ui,sans-serif';g.textAlign='center';g.fillText('Eraser — removes strokes it crosses',cssW/2,cssH/2+4);return;}
-  const k=Math.min(1,(cssH*0.55)/Math.max(1,st.size)); // very large brushes are shown scaled down to fit
+  // true to the canvas: the preview uses the same on-screen scale the canvas is currently shown at,
+  // so a line looks as thick here as it will when drawn (very large brushes are shrunk to fit).
+  const onScreen=Math.max(0.05,(typeof zoom==='number'&&typeof baseScale==='number')?zoom*baseScale:1);
+  const k=Math.min(onScreen,(cssH*0.55)/Math.max(1,st.size));
   g.save();g.scale(k,k);
   const w=cssW/k,h=cssH/k,pts=[],N=70;
   for(let i=0;i<=N;i++){const t=i/N;pts.push({x:w*(0.08+0.84*t),y:h/2+Math.sin(t*Math.PI*2)*h*0.2,pressure:0.25+0.75*Math.sin(Math.PI*t)});}
   try{BrushEngine.renderStroke(g,{id:'brush-preview',brushId:brush.id,color:col,points:pts},brush,st);}catch(e){}
   g.restore();
-  if(k<1){g.fillStyle='#8a7f8f';g.font='600 10px system-ui,sans-serif';g.textAlign='right';g.fillText('shown smaller',cssW-6,cssH-5);}
+  if(k<onScreen-0.001){g.fillStyle='#8a7f8f';g.font='600 10px system-ui,sans-serif';g.textAlign='right';g.fillText('shown smaller',cssW-6,cssH-5);}
 }
 window.addEventListener('resize',()=>renderBrushPreview());
 function selectBrush(id){eraserActive=false;activeBrushId=id;BrushEngine.touchRecent(id);syncRecents();syncControlsFromSettings();syncActiveSwatches();}
@@ -4521,7 +4527,7 @@ function bmLoad(def){
   bmRefresh();
 }
 function bmFillFrom(){
-  const sel=$('bmFrom');sel.innerHTML='<option value="">— a plain round brush —</option>';
+  const sel=$('bmFrom');sel.innerHTML='<option value="">— Plain round brush —</option>';
   BrushEngine.BRUSHES.filter(b=>!b.stamp).forEach(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=b.name;sel.appendChild(o);});
 }
 function bmRenderList(){
@@ -4591,9 +4597,11 @@ $('bmSave').onclick=()=>{
   eraserActive=false;activeBrushId=d.id;BrushEngine.touchRecent(d.id);syncRecents();syncControlsFromSettings();syncActiveSwatches();
   if(strokes.some(st=>st.brushId===d.id)){rebuildAllLayers();redraw();}
   bmEditId=d.id;bmRenderList();$('bmSave').textContent='💾 Save changes';
-  setStatus('🖌️ Brush "'+d.name+'" saved under My Brushes and selected.');scheduleAutosave();
+  setStatus('🖌️ Brush "'+d.name+'" saved under Custom Brushes and selected.');scheduleAutosave();
 };
 registerCustomDefs(customDefs,true).then(()=>{renderBrushFamilies();syncRecents();syncFavorites();syncControlsFromSettings();syncActiveSwatches();});
+// One-time: the Smooth Pen is now a finer line by default (3 px); move any older remembered size across.
+try{if(!localStorage.getItem('sp-smoothpen-fine-v1')){BrushEngine.setSettings('smoothPen',{size:3});localStorage.setItem('sp-smoothpen-fine-v1','1');}}catch(e){}
 renderBrushFamilies();syncRecents();syncFavorites();syncControlsFromSettings();
 document.querySelectorAll('.layout-btn').forEach(b=>b.onclick=()=>{document.querySelectorAll('.layout-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');layout=b.dataset.layout;$('layoutPill').textContent='📍 '+b.textContent+' Mode';redraw();});$('tilingBtn').onclick=()=>{showTiling=!showTiling;$('tilingBtn').classList.toggle('active',showTiling);$('tilingBtn').textContent=showTiling?'Tiling On':'Tiling Off';redraw();};$('guidesBtn').onclick=()=>{showGuides=!showGuides;$('guidesBtn').classList.toggle('active',showGuides);sessionStorage.setItem('sp-showGuides',showGuides?'1':'0');redraw();};
 $('motifScale').oninput=e=>{const m=getSel();if(!m)return;m.s=+e.target.value/100;$('motifScaleVal').textContent=e.target.value+'%';redraw();};$('motifScale').onchange=pushHist;$('rotL').onclick=()=>{const m=getSel();if(m){m.r-=15;pushHist();redraw();}};$('rotR').onclick=()=>{const m=getSel();if(m){m.r+=15;pushHist();redraw();}};$('flipH').onclick=()=>{const m=getSel();if(m){m.fx*=-1;pushHist();redraw();}};$('flipV').onclick=()=>{const m=getSel();if(m){m.fy*=-1;pushHist();redraw();}};$('deleteSel').onclick=()=>{placed=placed.filter(p=>p.id!==selected);selected=null;pushHist();redraw();updateSelectedControls();};
