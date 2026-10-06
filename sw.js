@@ -1,7 +1,7 @@
 /* Pattern Sketch service worker: makes the web version work offline once opened.
  * Network-first, so you always get the newest files when online; falls back to the cache
  * when offline. Bump CACHE if you ever need to force-clear old files. */
-const CACHE = 'pattern-sketch-v33';
+const CACHE = 'pattern-sketch-v34';
 const FILES = [
   './', './index.html', './brush-engine.js', './polybool.min.js', './native-bridge.js',
   './manifest.webmanifest', './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png'

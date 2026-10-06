@@ -503,7 +503,7 @@ html.in-suite .suite-only{display:block!important}
   <div class="float-panel" id="strokeActionsBar" style="display:none;width:220px;">
     <div class="float-panel-handle" id="strokeActionsBarHandle">
       <span>✥ Stroke</span>
-      <span class="float-panel-handle-actions"><button id="strokeActionsDeleteTopBtn" class="btn mini danger float-panel-done">✕ Delete</button><span class="float-panel-grip" title="Drag to move">⠿</span></span>
+      <span class="float-panel-handle-actions"><button id="strokeActionsDoneBtn" class="btn mini primary float-panel-done">✓ Done</button><button id="strokeActionsDeleteTopBtn" class="btn mini danger float-panel-done">✕ Delete</button><span class="float-panel-grip" title="Drag to move">⠿</span></span>
     </div>
     <div class="sel-quick" style="display:flex;align-items:center;gap:10px;margin:6px 0 4px;"><input class="sel-colour color" type="color" value="#000000" title="Stroke colour" style="width:44px;height:36px;flex:none;"><span style="font-size:12.5px;opacity:.8;flex:none;">Size</span><input class="sel-width" type="range" min="1" max="120" value="6" style="flex:1;min-width:90px;"><span class="sel-width-val" style="min-width:26px;text-align:right;font-size:13px;">6</span></div>
     <div class="hint">Drag the shape on the canvas to move it. Geometry and appearance stay separate — these never change the brush.</div>
@@ -2907,6 +2907,8 @@ function deleteSelectedStroke(){
 $('deleteStrokeBtn').onclick=deleteSelectedStroke;
 $('strokeActionsDeleteTopBtn').onclick=deleteSelectedStroke;
 $('quickDeleteBtn').onclick=deleteSelectedStroke;
+// Done: deselect the stroke and close the Stroke panel so the canvas is clear again.
+$('strokeActionsDoneBtn').onclick=()=>{selectedStrokeId=null;selected=null;setStrokePanelOpen(false);if(typeof updateSelectedControls==='function')updateSelectedControls();redraw();setStatus('✓ Stroke edits finished.');};
 $('strokeActionsUndoBtn').onclick=undo;
 // Colour and size of the selected stroke: the sidebar section, the canvas bar, the Stroke panel and the
 // Edit Path panel all show the same two controls and stay in step with each other.
