@@ -223,6 +223,16 @@ html.in-suite .suite-only{display:block!important}
 .sidebar-toggle:active{transform:scale(.96)}
 /* View popover reuses .sym-pop's look, just anchored under its own (right-side) trigger instead
    of Symmetry's left-side one. */
+#brushSetList .brushset-row{display:flex;align-items:center;gap:8px;margin:6px 0}
+#brushSetList .brushset-row img{width:40px;height:40px;object-fit:contain;background:repeating-conic-gradient(#8884 0 25%,#0000 0 50%) 0 0/10px 10px;border-radius:6px;flex-shrink:0}
+#brushSetList .brushset-name{flex:1;min-width:0;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px}
+#brushSetList input[type=checkbox]{width:22px;height:22px;flex-shrink:0}
+#recolourPopover{left:auto;right:12px;width:300px;max-height:calc(100% - 80px);overflow:auto}
+#recolourPopover:before{left:auto;right:44px}
+.recolour-row{display:flex;align-items:center;gap:10px;margin:6px 0}
+.recolour-was{width:22px;height:22px;border-radius:6px;border:1px solid var(--line);flex-shrink:0}
+.recolour-label{flex:1;font-size:13px;font-weight:700}
+.recolour-row input[type=color]{width:56px;height:40px;padding:0;border:1px solid var(--btnBorder);border-radius:8px;background:var(--btnBg)}
 #svgPopover{left:auto;right:12px;width:300px}
 #svgPopover:before{left:auto;right:44px}
 #svgPopover .row .tool-btn{flex:1;min-height:44px}
@@ -350,10 +360,20 @@ html.in-suite .suite-only{display:block!important}
       <div class="hint">Turn a vector path into a brush tip. Uses the selected stroke (Edit mode), or every stroke on the active layer if none is selected.</div>
       <div class="slider-row" style="grid-template-columns:64px 1fr;"><label>Name</label><input id="brushNameInput" type="text" maxlength="40" placeholder="my-brush" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"></div>
       <div class="slider-row" style="grid-template-columns:64px 1fr;"><label>Size</label><select id="brushSizeSelect" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><option value="1024">1024 px</option><option value="2048" selected>2048 px (Procreate max)</option></select></div>
-      <button id="brushShapeBtn" class="btn mini" style="width:100%;margin-top:6px;min-height:40px;">⬇️ Shape PNG (black on white, Procreate)</button>
+      <button id="brushShapeBtn" class="btn mini" style="width:100%;margin-top:6px;min-height:40px;">⬇️ Shape PNG (white on black, Procreate)</button>
       <button id="brushStampBtn" class="btn mini" style="width:100%;margin-top:6px;min-height:40px;">⬇️ Colour stamp PNG (transparent)</button>
-      <button id="brushPackBtn" class="btn mini active" style="width:100%;margin-top:6px;min-height:40px;">⬇️ Brush pack (.zip with both PNGs)</button>
-      <div class="hint">In Procreate: Brush Studio &gt; Shape &gt; Edit &gt; Import, then pick the shape PNG.</div>
+      <button id="brushProcreateBtn" class="btn mini active" style="width:100%;margin-top:6px;min-height:40px;">⬇️ Procreate .brush (from this path)</button>
+      <button id="brushPackBtn" class="btn mini" style="width:100%;margin-top:6px;min-height:40px;">⬇️ PNG pack (.zip with both PNGs)</button>
+      <div class="hint">A .brush opens straight in Procreate. Or import the shape PNG: Brush Studio &gt; Shape &gt; Edit &gt; Import.</div>
+    </section>
+    <section class="section" id="brushSetSection"><div class="section-title">📦 Motif Brush Set</div>
+      <div class="hint">Turn your captured motifs into a Procreate brush set: one stamp brush per motif. Tick the motifs to include and rename them. Uses the size chosen above.</div>
+      <div class="slider-row" style="grid-template-columns:64px 1fr;"><label>Set</label><input id="brushSetNameInput" type="text" maxlength="40" placeholder="My Stamp Set" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"></div>
+      <div id="brushSetList"></div><div id="brushSetEmpty" class="hint">Capture a motif first (✂️ Capture) and it will appear here.</div>
+      <button id="brushSetBtn" class="btn mini active" style="width:100%;margin-top:6px;min-height:40px;">⬇️ Procreate brush set (.brushset)</button>
+      <button id="brushFilesBtn" class="btn mini" style="width:100%;margin-top:6px;min-height:40px;">⬇️ Separate .brush files (.zip)</button>
+      <button id="brushPngPackBtn" class="btn mini" style="width:100%;margin-top:6px;min-height:40px;">⬇️ PNG pack (.zip)</button>
+      <div class="hint">Open the .brushset in Procreate and try the brushes before you sell them.</div>
     </section>
     <section class="section" id="layersSection">
       <div class="section-title">📚 Layers</div>
@@ -366,7 +386,7 @@ html.in-suite .suite-only{display:block!important}
       <div class="hint">New strokes go onto the active (highlighted) layer. Tap a row to make it active, tap its name (or ✎ Rename) to rename it. Every layer works the same way: the names are just labels.</div>
     </section>
     <section class="section"><div class="section-title">📐 Repeat Layouts</div><div class="grid"><button class="layout-btn active" data-layout="grid">Grid</button><button class="layout-btn" data-layout="halfDrop">Half Drop</button><button class="layout-btn" data-layout="halfBrick">Half Brick</button><button class="layout-btn" data-layout="diamond">Diamond</button><button class="layout-btn" data-layout="ogee">Ogee</button><button class="layout-btn" data-layout="tossed">Tossed</button></div></section>
-    <section class="section"><div class="section-title">🔧 Selected Motif</div><div class="slider-row"><label>Size</label><input id="motifScale" type="range" min="15" max="300" value="100"><span id="motifScaleVal">100%</span></div><div class="row"><button id="rotL" class="btn mini">↺</button><button id="rotR" class="btn mini">↻</button><button id="flipH" class="btn mini">Flip H</button><button id="flipV" class="btn mini">Flip V</button><button id="deleteSel" class="btn mini danger">Delete</button></div><div class="row" style="margin-top:6px;"><button id="editMotifBtn" class="btn mini primary" style="flex:1 1 100%;display:none;">✏️ Edit Motif</button></div><div class="row" style="margin-top:6px;"><button id="duplicateMotifBtn" class="btn mini" style="flex:1 1 45%;display:none;">⧉ Duplicate</button><button id="makeIndependentBtn" class="btn mini" style="flex:1 1 45%;display:none;">🔓 Make Independent</button></div></section>
+    <section class="section"><div class="section-title">🔧 Selected Motif</div><div class="slider-row"><label>Size</label><input id="motifScale" type="range" min="15" max="300" value="100"><span id="motifScaleVal">100%</span></div><div class="row"><button id="rotL" class="btn mini">↺</button><button id="rotR" class="btn mini">↻</button><button id="flipH" class="btn mini">Flip H</button><button id="flipV" class="btn mini">Flip V</button><button id="deleteSel" class="btn mini danger">Delete</button></div><div class="row" style="margin-top:6px;"><button id="editMotifBtn" class="btn mini primary" style="flex:1 1 100%;display:none;">✏️ Edit Motif</button><button id="recolourBtn" class="btn mini" style="flex:1 1 100%;display:none;">🎨 Recolour Parts</button></div><div class="row" style="margin-top:6px;"><button id="duplicateMotifBtn" class="btn mini" style="flex:1 1 45%;display:none;">⧉ Duplicate</button><button id="makeIndependentBtn" class="btn mini" style="flex:1 1 45%;display:none;">🔓 Make Independent</button></div></section>
     <section class="section" id="alignSection">
       <div class="section-title">📐 Align Motifs</div>
       <button id="multiSelectToggle" class="btn mini" style="width:100%;">🔢 Multi-Select: Off</button>
@@ -495,7 +515,7 @@ html.in-suite .suite-only{display:block!important}
   <main class="workspace">
     <div class="toolbar"><button id="undoBtn" class="tool-btn">↩️ Undo</button><button id="redoBtn" class="tool-btn">↪️ Redo</button><button id="zoomPill" class="pill" title="Zoom and view recovery">100% ▾</button><button id="resetRot" class="tool-btn">0° Rotation</button><button id="guidesBtn" class="tool-btn">📐 Guides</button><button id="strokePanelBtn" class="tool-btn" title="Show or hide the Stroke panel">🖊️ Stroke</button><button id="paintModePill" class="pill" style="display:none;cursor:pointer;">🎨 Paint Inside — tap for Free Paint</button><button id="editMotifBar" class="pill" style="display:none;cursor:pointer;background:var(--accentTeal);border:1px solid rgba(92,184,171,.5);font:inherit;">✏️ Editing: <span id="editMotifBarName"></span> — tap Done</button><div class="toolbar-spacer"></div><button id="quickSaveBtn" class="tool-btn">💾 Save</button><div id="saveStatusPill" class="pill" title="Autosave status">Saved</div><button id="downloadProjectBtn" class="tool-btn">⬇️ Download Project</button><label class="tool-btn" for="openProjectInput" style="cursor:pointer;">📂 Open Project</label><input id="openProjectInput" type="file" accept="application/json" style="display:none;"><button id="viewToggleBtn" class="tool-btn">⋯ View</button><button id="exportBtn" class="tool-btn primary">📸 Export</button><button id="exportSvgBtn" class="tool-btn" title="Export as SVG (vector)">🖋️ SVG</button></div>
     <div id="restoreBanner" style="display:none;">📂 Autosaved session found from <span id="restoreBannerTime"></span>. <button id="restoreAcceptBtn" class="btn mini primary">Restore</button><button id="restoreDeclineBtn" class="btn mini">Start Fresh</button></div>
-    <div id="canvasViewportOuter" class="canvas-viewport-outer"><div id="canvasWrap" class="canvas-wrap"><div id="viewPopover" class="sym-pop"><div class="section-title">🧭 Canvas / View</div><button id="symToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">🦋 Symmetry Off</button><div class="row" style="margin-bottom:10px;"><button id="tilingBtn" class="tool-btn active" style="flex:1">Tiling On</button><div id="layoutPill" class="pill">📍 Grid Mode</div></div><button id="themeToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">☀️ Light Mode</button><button id="clearDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear Drawing &amp; Motifs</button><button id="clearAllDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear All Layers &amp; Motifs</button><button id="viewCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="zoomPopover" class="sym-pop"><div class="section-title">🔍 View <span id="zoomPopPct" class="small"></span></div><div class="zoom-row"><button id="zoomOutBtn" class="tool-btn" aria-label="Zoom out">−</button><button id="zoomInBtn" class="tool-btn" aria-label="Zoom in">+</button></div><button id="zoom100Btn" class="tool-btn" style="width:100%;margin-bottom:8px;">100% — actual size</button><button id="zoomFitBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">Fit to View</button><button id="zoomResetBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;">Reset View (0°, centre, fit)</button><div class="hint" style="margin-bottom:8px;">These always work, even if the canvas has scrolled out of sight.</div><button id="zoomCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="svgPopover" class="sym-pop"><div class="section-title">🖋️ Export SVG</div><div class="hint" style="margin-bottom:8px;">Vector strokes and fills only. Pictures (placed motifs, background image) are not vector, so they are left out.</div><div class="row" style="margin-bottom:8px;"><button class="tool-btn svg-preset" data-size="780">780</button><button class="tool-btn svg-preset" data-size="1800">1800</button><button class="tool-btn svg-preset" data-size="3600">3600</button></div><div class="slider-row" style="grid-template-columns:64px 1fr 30px;"><label>Size</label><input id="svgSizeInput" type="number" min="64" max="20000" step="1" value="3600" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><span>px</span></div><div class="hint" style="margin-bottom:8px;">Width and height of the square file. 3600 × 3600 is the usual pattern size. The artwork scales exactly.</div><button id="svgSaveBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;min-height:44px;">⬇️ Save SVG</button><button id="svgCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="symPopover" class="sym-pop"><div class="section-title">🦋 Symmetry</div><div class="grid"><button class="sym-btn btn active" data-sym="off">Off</button><button class="sym-btn btn" data-sym="vertical">Vertical</button><button class="sym-btn btn" data-sym="horizontal">Horizontal</button><button class="sym-btn btn" data-sym="quad">Quad</button><button class="sym-btn btn" data-sym="diamond">Diamond</button></div><div class="slider-row"><label>Axis X</label><input id="symX" type="range" min="0" max="1800" value="900"><span id="symXVal">50%</span></div><div class="slider-row"><label>Axis Y</label><input id="symY" type="range" min="0" max="1800" value="900"><span id="symYVal">50%</span></div><div class="row"><button id="symCentre" class="btn mini">Centre Axis</button><button id="symClose" class="btn mini">Done</button></div><div class="hint">Move the mirror point to make flowers, leaves and playful asymmetric symmetry.</div></div><canvas id="fabricCanvas" aria-hidden="true"></canvas><canvas id="canvas" width="1800" height="1800"></canvas><div id="tileOutline" aria-hidden="true"></div><div id="selectionBox" class="selection-box"><div id="resizeHandle" class="handle"></div><div id="rotateHandle" class="rotHandle"></div></div><div id="paintBBoxOverlay" class="selection-box" style="display:none;"><div id="paintResizeHandle" class="handle"></div><div id="paintRotateHandle" class="rotHandle"></div></div><div id="symAxis" class="sym-axis"></div><div id="rotateChip" class="rotate-chip">Canvas 0°</div><div id="pathNodeOverlay"></div></div></div>
+    <div id="canvasViewportOuter" class="canvas-viewport-outer"><div id="canvasWrap" class="canvas-wrap"><div id="viewPopover" class="sym-pop"><div class="section-title">🧭 Canvas / View</div><button id="symToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">🦋 Symmetry Off</button><div class="row" style="margin-bottom:10px;"><button id="tilingBtn" class="tool-btn active" style="flex:1">Tiling On</button><div id="layoutPill" class="pill">📍 Grid Mode</div></div><button id="themeToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">☀️ Light Mode</button><button id="clearDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear Drawing &amp; Motifs</button><button id="clearAllDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear All Layers &amp; Motifs</button><button id="viewCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="zoomPopover" class="sym-pop"><div class="section-title">🔍 View <span id="zoomPopPct" class="small"></span></div><div class="zoom-row"><button id="zoomOutBtn" class="tool-btn" aria-label="Zoom out">−</button><button id="zoomInBtn" class="tool-btn" aria-label="Zoom in">+</button></div><button id="zoom100Btn" class="tool-btn" style="width:100%;margin-bottom:8px;">100% — actual size</button><button id="zoomFitBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">Fit to View</button><button id="zoomResetBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;">Reset View (0°, centre, fit)</button><div class="hint" style="margin-bottom:8px;">These always work, even if the canvas has scrolled out of sight.</div><button id="zoomCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="svgPopover" class="sym-pop"><div class="section-title">🖋️ Export SVG</div><div class="hint" style="margin-bottom:8px;">Vector strokes and fills only. Pictures (placed motifs, background image) are not vector, so they are left out.</div><div class="row" style="margin-bottom:8px;"><button class="tool-btn svg-preset" data-size="780">780</button><button class="tool-btn svg-preset" data-size="1800">1800</button><button class="tool-btn svg-preset" data-size="3600">3600</button></div><div class="slider-row" style="grid-template-columns:64px 1fr 30px;"><label>Size</label><input id="svgSizeInput" type="number" min="64" max="20000" step="1" value="3600" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><span>px</span></div><div class="hint" style="margin-bottom:8px;">Width and height of the square file. 3600 × 3600 is the usual pattern size. The artwork scales exactly.</div><button id="svgSaveBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;min-height:44px;">⬇️ Save SVG</button><button id="svgCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="recolourPopover" class="sym-pop"><div class="section-title">🎨 Recolour Parts</div><div class="hint" style="margin-bottom:8px;">Motif: <b id="recolourName"></b>. Each row is one colour used in the motif. Pick a new colour for any of them.</div><div id="recolourRows"></div><button id="recolourApplyBtn" class="tool-btn primary" style="width:100%;margin:8px 0;min-height:44px;">Apply to this motif</button><button id="recolourNewBtn" class="tool-btn" style="width:100%;margin-bottom:8px;min-height:44px;">Save as new colourway</button><div class="row"><button id="recolourResetBtn" class="btn mini" style="flex:1">Reset</button><button id="recolourCloseBtn" class="btn mini" style="flex:1">✕ Close</button></div></div><div id="symPopover" class="sym-pop"><div class="section-title">🦋 Symmetry</div><div class="grid"><button class="sym-btn btn active" data-sym="off">Off</button><button class="sym-btn btn" data-sym="vertical">Vertical</button><button class="sym-btn btn" data-sym="horizontal">Horizontal</button><button class="sym-btn btn" data-sym="quad">Quad</button><button class="sym-btn btn" data-sym="diamond">Diamond</button></div><div class="slider-row"><label>Axis X</label><input id="symX" type="range" min="0" max="1800" value="900"><span id="symXVal">50%</span></div><div class="slider-row"><label>Axis Y</label><input id="symY" type="range" min="0" max="1800" value="900"><span id="symYVal">50%</span></div><div class="row"><button id="symCentre" class="btn mini">Centre Axis</button><button id="symClose" class="btn mini">Done</button></div><div class="hint">Move the mirror point to make flowers, leaves and playful asymmetric symmetry.</div></div><canvas id="fabricCanvas" aria-hidden="true"></canvas><canvas id="canvas" width="1800" height="1800"></canvas><div id="tileOutline" aria-hidden="true"></div><div id="selectionBox" class="selection-box"><div id="resizeHandle" class="handle"></div><div id="rotateHandle" class="rotHandle"></div></div><div id="paintBBoxOverlay" class="selection-box" style="display:none;"><div id="paintResizeHandle" class="handle"></div><div id="paintRotateHandle" class="rotHandle"></div></div><div id="symAxis" class="sym-axis"></div><div id="rotateChip" class="rotate-chip">Canvas 0°</div><div id="pathNodeOverlay"></div></div></div>
     <div id="status" class="status">✨ Apple Pencil draws | one finger protected | two fingers pan/pinch/rotate | two-finger tap Undo | three-finger tap Redo | Capture Motif saves drawing ✨</div>
   </main>
 </div>
@@ -1731,6 +1751,7 @@ function addMotif(src,name,placeNow=false,source=null,returnToDraw=false){
   img.src=src;
 }
 function renderTray(){
+  renderBrushSetList();
   const tray=$('motifTray');tray.innerHTML='';
   $('motifEmpty').style.display=motifs.length?'none':'block';
   motifs.forEach(m=>{
@@ -2369,11 +2390,13 @@ function updateSelectedControls(){
  const hasMotif=!!(m&&m.motifId);
  const entry=hasMotif?motifs.find(x=>x.id===m.motifId):null;
  $('editMotifBtn').style.display=hasMotif?'block':'none';
+ $('recolourBtn').style.display=hasMotif?'block':'none';
+ if(!hasMotif)$('recolourPopover').classList.remove('open');
  $('duplicateMotifBtn').style.display=hasMotif?'inline-block':'none';
  $('makeIndependentBtn').style.display=hasMotif?'inline-block':'none';
  if(hasMotif){
   const legacy=!entry||!entry.source;
-  $('editMotifBtn').disabled=legacy;
+  $('editMotifBtn').disabled=legacy;$('recolourBtn').disabled=legacy;
   $('editMotifBtn').title=legacy?'This motif was captured before editable sources existed — it has no editable artwork to return to.':'';
  }
  syncAlignUI();
@@ -4408,6 +4431,95 @@ function finishEditMotif(){
   finish();
  }
 }
+// ---- Recolour Parts ---------------------------------------------------------------------------------
+// A captured motif keeps its real vector strokes (entry.source). Recolouring lists each distinct
+// line / fill colour used in it, lets you pick a new colour per part, then re-renders the motif.
+// Apply updates the motif everywhere it is used; "Save as new colourway" keeps the original and adds
+// a recoloured copy to the tray (handy for selling the same motif in several palettes).
+let recolourEntryId=null,recolourMap={};
+function normHex(c){c=String(c||'').trim().toLowerCase();if(/^#[0-9a-f]{3}$/.test(c))c='#'+c[1]+c[1]+c[2]+c[2]+c[3]+c[3];return c;}
+function motifColourGroups(entry){
+  const list=JSON.parse(entry.source.strokesJSON),groups=new Map();
+  const add=(kind,c)=>{c=normHex(c);if(!/^#[0-9a-f]{6}$/.test(c))return;const key=kind+':'+c,g=groups.get(key)||{key,kind,color:c,count:0};g.count++;groups.set(key,g);};
+  list.forEach(s=>{if(s.brushId==='eraser')return;if(s.fillColor&&!s.regions)add('fill',s.fillColor);else add('line',s.color);});
+  return [...groups.values()];
+}
+function recolourStrokeList(list,map){
+  list.forEach(s=>{
+    if(s.brushId==='eraser')return;
+    if(s.fillColor&&!s.regions){const n=map['fill:'+normHex(s.fillColor)];if(n){s.fillColor=n;s.color=n;}}
+    else{const n=map['line:'+normHex(s.color)];if(n)s.color=n;}
+  });
+  return list;
+}
+// Renders a motif source to a preview by briefly swapping it into the live strokes/layers (the same
+// trick Edit Motif uses, so Paint Inside clips and layer opacity come out identical), then restoring.
+function renderMotifSourcePreview(source){
+  if(editingMotifId)return null;
+  const stash={strokesJSON:JSON.stringify(strokes),layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity}))),activeLayerId};
+  let preview=null;
+  try{
+    strokes=JSON.parse(source.strokesJSON);
+    applyLayerMeta(source.layersJSON?JSON.parse(source.layersJSON):[],null);
+    rebuildAllLayers();
+    preview=renderCurrentArtworkPreview();
+  }finally{
+    strokes=JSON.parse(stash.strokesJSON);
+    applyLayerMeta(JSON.parse(stash.layersJSON),stash.activeLayerId);
+    rebuildAllLayers();renderLayersList();
+  }
+  return preview;
+}
+function openRecolour(){
+  const m=getSel();if(!m||!m.motifId)return;
+  const entry=motifs.find(x=>x.id===m.motifId);
+  if(!entry||!entry.source){setStatus('⚠️ This motif has no editable artwork to recolour (captured before editable motifs existed).');return;}
+  recolourEntryId=entry.id;recolourMap={};
+  renderRecolourRows(entry);
+  $('recolourPopover').classList.add('open');
+}
+function renderRecolourRows(entry){
+  const host=$('recolourRows');host.innerHTML='';
+  const groups=motifColourGroups(entry);
+  $('recolourName').textContent=entry.name;
+  if(!groups.length){host.innerHTML='<div class="hint">No solid colours found in this motif.</div>';return;}
+  groups.forEach(g=>{
+    const row=document.createElement('div');row.className='recolour-row';
+    row.innerHTML='<span class="recolour-was" style="background:'+g.color+'"></span><span class="recolour-label">'+(g.kind==='fill'?'Fill':'Line')+' <span class="small">×'+g.count+'</span></span><input type="color" value="'+g.color+'" aria-label="New colour">';
+    const inp=row.querySelector('input');
+    inp.oninput=()=>{recolourMap[g.key]=inp.value;};
+    host.appendChild(row);
+  });
+}
+function recolouredSource(entry){
+  const list=recolourStrokeList(JSON.parse(entry.source.strokesJSON),recolourMap);
+  return {strokesJSON:JSON.stringify(list),layersJSON:entry.source.layersJSON,bounds:entry.source.bounds};
+}
+function applyRecolour(asNew){
+  const entry=motifs.find(x=>x.id===recolourEntryId);if(!entry||!entry.source)return;
+  if(!Object.keys(recolourMap).length){setStatus('Pick a new colour for at least one part first.');return;}
+  const src2=recolouredSource(entry),preview=renderMotifSourcePreview(src2);
+  if(!preview){setStatus('⚠️ Could not re-render the motif.');return;}
+  if(asNew){
+    addMotif(preview.src,entry.name+' colourway',false,src2,false);
+    $('recolourPopover').classList.remove('open');
+    setStatus('🎨 Saved a recoloured copy to the Motif Tray — the original is unchanged.');
+    return;
+  }
+  const img=new Image();
+  img.onload=()=>{
+    entry.source=src2;entry.img=img;entry.src=preview.src;
+    placed.forEach(p=>{if(p.motifId===entry.id)p.img=img;});
+    recolourMap={};renderRecolourRows(entry);renderTray();pushHist();redraw();
+    setStatus('🎨 Motif recoloured everywhere it is used.');
+  };
+  img.src=preview.src;
+}
+$('recolourBtn').onclick=openRecolour;
+$('recolourApplyBtn').onclick=()=>applyRecolour(false);
+$('recolourNewBtn').onclick=()=>applyRecolour(true);
+$('recolourResetBtn').onclick=()=>{const e=motifs.find(x=>x.id===recolourEntryId);recolourMap={};if(e)renderRecolourRows(e);};
+$('recolourCloseBtn').onclick=()=>$('recolourPopover').classList.remove('open');
 $('editMotifBtn').onclick=enterEditMotif;
 $('duplicateMotifBtn').onclick=duplicateMotifInstance;
 $('makeIndependentBtn').onclick=makeIndependentMotif;
@@ -4525,7 +4637,7 @@ $('svgSaveBtn').onclick=()=>{
 // ---- Pattern Brush maker --------------------------------------------------------------------------
 // Turns a vector path (the selected stroke, or every stroke on the active layer when none is
 // selected) into a brush tip image: a square, centred, padded render at up to 2048 px.
-//  - Shape PNG: black on white, the format Procreate's Brush Studio expects for a Shape source.
+//  - Shape PNG: white on black, the format Procreate's Brush Studio expects for a Shape source.
 //  - Colour stamp PNG: the artwork in its own colours on transparency (stamp / pattern brush use).
 //  - Brush pack .zip: both PNGs plus import instructions.
 function brushSourceStrokes(){
@@ -4553,12 +4665,8 @@ function renderBrushTip(list,px,mode){
   const a=art.getContext('2d');a.setTransform(k,0,0,k,px/2-cx*k,px/2-cy*k);
   list.forEach(s=>{const brush=BrushEngine.getBrush(s.brushId),settings=s.settings||BrushEngine.getSettings(s.brushId);renderStrokeClipped(a,s,brush,settings);});
   if(mode==='stamp')return art;
-  // Shape: ink becomes black, empty becomes white (alpha drives the darkness).
-  const out=document.createElement('canvas');out.width=px;out.height=px;
-  const o=out.getContext('2d');o.fillStyle='#fff';o.fillRect(0,0,px,px);
-  const id=a.getImageData(0,0,px,px),od=o.getImageData(0,0,px,px);
-  for(let i=0;i<id.data.length;i+=4){const al=id.data[i+3]/255,v=Math.round(255*(1-al));od.data[i]=v;od.data[i+1]=v;od.data[i+2]=v;od.data[i+3]=255;}
-  o.putImageData(od,0,0);return out;
+  // Shape: Procreate's format is WHITE art on a BLACK background (alpha drives the brightness).
+  return shapeFromTip(art);
 }
 function canvasToBlob(c){return new Promise(r=>c.toBlob(r,'image/png'));}
 let crcTable=null;
@@ -4589,12 +4697,13 @@ async function runBrushExport(kind){
   const px=+$('brushSizeSelect').value||2048,base=brushFileBase();
   try{
     if(kind==='shape'){const c=renderBrushTip(list,px,'shape');saveFileBlob(await canvasToBlob(c),base+'-shape.png');}
+    else if(kind==='brush'){const tip=renderBrushTip(list,px,'stamp'),nm=($('brushNameInput').value||'').trim()||'Pattern Brush';saveFileBlob(makeZip(await procreateBrushFiles(nm,tip)),base+'.brush');}
     else if(kind==='stamp'){const c=renderBrushTip(list,px,'stamp');saveFileBlob(await canvasToBlob(c),base+'-stamp.png');}
     else{
       const sh=renderBrushTip(list,px,'shape'),st=renderBrushTip(list,px,'stamp');
       const bytes=async c=>new Uint8Array(await (await canvasToBlob(c)).arrayBuffer());
       const readme='Pattern Sketch brush pack: '+base+'\r\n\r\n'+
-        base+'-shape.png  black on white, '+px+' x '+px+' px. Use as a Procreate Shape source.\r\n'+
+        base+'-shape.png  white on black, '+px+' x '+px+' px. Use as a Procreate Shape source.\r\n'+
         base+'-stamp.png  full colour on transparency, '+px+' x '+px+' px. Use as a stamp or in any app.\r\n\r\n'+
         'Procreate: Brushes > + (new brush) > Shape > Edit > Import > Source library / Photos / Files, then choose the shape PNG.\r\n'+
         'Then set Spacing, Size and Rotation in Brush Studio and tap Done. Add it to a set and Share to keep it.\r\n';
@@ -4607,6 +4716,153 @@ async function runBrushExport(kind){
 $('brushShapeBtn').onclick=()=>runBrushExport('shape');
 $('brushStampBtn').onclick=()=>runBrushExport('stamp');
 $('brushPackBtn').onclick=()=>runBrushExport('pack');
+$('brushProcreateBtn').onclick=()=>runBrushExport('brush');
+const PROCREATE_TPL={"main":{"top":1,"objects":["$null",{"d":{"burntEdgesBlendModeExtended":1,"plotJitterLongitudinalTiltAngle":{"f":0.10000000149011612},"minOpacity":{"f":0.0},"renderingRecursiveMixing":false,"plotJitterRoll":false,"previewPressureScale":{"f":1.0},"pencilTaperShape":{"f":0.0},"saturationJitterTiltAngle":{"f":0.10000000149011612},"dynamicsTiltGradation":{"f":0.0},"attackTilt":false,"shapeFilterMode":0,"shapeCountRoll":false,"plotJitterLongitudinal":{"f":0.0},"previewTiltAngleOffset":{"f":0.0},"secondaryColorTiltAngle":{"f":0.10000000149011612},"heightAmount":{"f":0.5},"dualBlendMode":0,"grainDepthJitter":{"f":0.0},"dynamicsPressureResponse":{"f":0.0},"hueJitterTilt":false,"importedFromABR":false,"extendedBlend2":0,"dynamicsRollSaturationParameters":{"u":56},"dynamicsMix":{"f":0.0},"maxSize":{"f":5.070474147796631},"dynamicsPressureSaturation":{"f":0.0},"dynamicsRollBleed":{"f":0.0},"shapeScatterRoll":false,"saturationJitterTilt":false,"dynamicsJitterSaturation":{"f":0.0},"dynamicsPressureOpacitySpeed":{"f":0.0},"bleedTiltAngle":{"f":0.10000000149011612},"jitterShapeRoundness":{"f":0.0},"textureContrast":{"f":0.0},"shapeCount":{"f":0.0},"attackTiltAngle":{"f":0.10000000149011612},"lightnessJitterTilt":false,"smudgeOpacity":{"f":0.800000011920929},"dynamicsPressureSizeSpeed":{"f":0.0},"alphaThreshold":false,"jitterStrokeSecondary":{"f":0.0},"plotSpacing":{"f":0.9258279204368591},"hueTiltAngle":{"f":0.10000000149011612},"textureScale":{"f":1.0},"shapeRollMode":0,"plotMovingAverageStabilization":{"f":0.0},"shapeRoundnessTiltAngle":{"f":0.10000000149011612},"renderingModulatedTransfer":true,"dynamicsPressureBleedSpeed":{"f":0.0},"jitterShapeRoundnessX":{"f":0.0},"secondaryColorJitterTilt":false,"blendMode":0,"shapeScatter":{"f":0.0},"dynamicsPressureSizeCurve":{"u":16},"bundledHeightPath":{"u":0},"secondaryColorJitterTiltAngle":{"f":0.10000000149011612},"shapeInverted":false,"dynamicsGlazedFlow":{"f":1.0},"textureDepthTilt":false,"plotJitterLongitudinalRollParameters":{"u":9},"shapeScatterRollParameters":{"u":5},"roughnessAmount":{"f":0.5},"plotSmoothing":{"f":0.0},"dynamicsPressureBleedCurve":{"u":24},"metallicGrainInverted":false,"dynamicsFalloff":{"f":0.0},"eraseSize":{"f":0.5},"burntEdgesAmount":{"f":0.0},"alphaThresholdAmount":{"f":0.0},"textureInverted":false,"savedSmudgeSizes":{"u":2},"pencilTaperOpacity":{"f":0.0},"plotJitterLongitudinalRoll":false,"dynamicsPressureShapeRoundness":{"f":1.0},"shapeAngle":{"f":0.0},"plotJitterTiltAngle":{"f":0.10000000149011612},"dynamicsTiltAngle":{"f":0.10000000149011612},"savedPaintSizes":{"u":2},"authorName":{"u":0},"dynamicsTiltOpacity":{"f":0.0},"pencilTaperSize":{"f":0.0},"dynamicsRollOpacityParameters":{"u":53},"dynamicsPressureOverall":{"u":48},"dynamicsJitterLightness":{"f":0.0},"oriented":true,"pencilTaperEndLength":{"f":0.0},"dynamicsRollOpacity":{"f":0.0},"dynamicsWetnessJitter":{"f":0.0},"textureDepthTiltAngle":{"f":0.10000000149011612},"shapeFlipYJitter":false,"maxOpacity":{"f":1.0},"name":{"u":0},"blendGammaCorrect":false,"wetEdgesAmount":{"f":0.0},"dynamicsRollBrightnessParameters":{"u":57},"minSize":{"f":0.46476712822914124},"saturationTiltAngle":{"f":0.10000000149011612},"dynamicsRollHue":{"f":0.0},"gradationTiltAngle":{"f":0.10000000149011612},"textureApplication":0,"plotFFTSmoothingAmount":{"f":0.0},"dynamicsRollBleedParameters":{"u":54},"pencilTipAnimation":true,"bundledMetallicPath":{"u":0},"previewWetMixEnabled":true,"plotJitterTilt":false,"plotSpacingJitter":{"f":0.0},"shapeCountTilt":false,"savedEraseOpacities":{"u":2},"bundledGrainPath":{"u":0},"hoverPressure":{"f":0.10000000149011612},"dynamicsPressureBrightnessCurve":{"u":40},"grainDepthMinimum":{"f":0.0},"dynamicsPressureSecondaryColor":{"f":0.0},"dynamicsRollSecondaryColor":{"f":0.0},"dynamicsJitterStrokeLightness":{"f":0.0},"grainBlendModeExtended":1,"taperSizeLinked":false,"plotFFTSmoothingBias":{"f":0.0},"dynamicsTiltBleed":{"f":0.0},"bundledRoughnessPath":{"u":0},"grainBlendMode":1,"extendedBlend":0,"paintOpacity":{"f":1.0},"dynamicsSmudgeAccumulation":{"f":0.49932271242141724},"dynamicsJitterHue":{"f":0.0},"dynamicsPressureSize":{"f":0.0},"dynamicsBlurJitter":{"f":0.0},"textureOffsetJitter":true,"grainOrientation":1,"dynamicsTiltShapeRoundness":{"f":1.0},"textureFilterMode":0,"dynamicsTiltSecondaryColor":{"f":0.0},"hoverFill":1,"dynamicsRollBrightness":{"f":0.0},"shapeRotation":{"f":0.0},"previewTiltEnabled":true,"dynamicsRollHueParameters":{"u":55},"stamp":true,"creationDate":{"u":60},"taperVersion":1,"pencilTaperStartLength":{"f":0.0},"dynamicsTiltCompression":{"f":1.0},"shapeFlipXJitter":false,"savedPaintOpacities":{"u":2},"dynamicsPressureHue":{"f":0.0},"shapeOrientation":1,"savedSmudgeOpacities":{"u":2},"previewPressureMinimum":{"f":0.0},"dynamicsJitterOpacity":{"f":0.0},"plotJitterRollParameters":{"u":8},"taperOpacity":{"f":0.0},"dynamicsWetAccumulation":{"f":0.75},"dynamicsRollSizeParameters":{"u":52},"dynamicsLoad":{"f":0.5},"dynamicsPressureSecondaryColorCurve":{"u":44},"dynamicsPressureShapeRoundnessCurve":{"u":20},"dynamicsTiltBrightness":{"f":0.0},"dynamicsPressureSmoothing":{"f":0.0},"darknessJitterTilt":false,"dynamicsTiltHue":{"f":0.0},"darknessJitterTiltAngle":{"f":0.10000000149011612},"dynamicsJitterStrokeHue":{"f":0.0},"previewRenderDisabled":false,"pencilTaperSizeLinked":false,"metallicAmount":{"f":0.0},"dynamicsRollSecondaryColorParameters":{"u":58},"$class":{"u":62},"plotSpacingSpeed":{"f":0.0},"dynamicsJitterSize":{"f":0.0},"smudgeSize":{"f":0.5},"dynamicsSpeedSize":{"f":0.0},"dynamicsRollSaturation":{"f":0.0},"taperShape":{"f":0.0},"dynamicsPressureOpacityCurve":{"u":10},"texturizedGrainFollowsCamera":true,"taperEndLength":{"f":0.0},"taperSize":{"f":0.0},"previewSize":{"f":0.30000001192092896},"shapeFilter":true,"eraseOpacity":{"f":1.0},"metallicScale":{"f":0.1599999964237213},"dynamicsPressureHueCurve":{"u":32},"shapeRoll":false,"roughnessScale":{"f":0.1599999964237213},"dynamicsPressureTransferModulationCurve":{"u":28},"shapeCountJitter":{"f":0.0},"plotJitterLongitudinalTilt":false,"textureRotation":{"f":0.0},"hoverOutline":0,"jitterSecondary":{"f":0.0},"heightScale":{"f":0.1599999964237213},"lightnessJitterTiltAngle":{"f":0.10000000149011612},"dynamicsPressureOpacityTransfer":{"f":1.0},"bundledShapePath":{"u":0},"sizeTiltAngle":{"f":0.10000000149011612},"color":{"u":4},"dynamicsTiltSaturation":{"f":0.0},"attackRoll":false,"attackRollParameters":{"u":59},"shapeAzimuth":false,"shapeRandomise":false,"dynamicsTiltSize":{"f":0.0},"dynamicsSpeedOpacity":{"f":0.0},"dynamicsPressureBleed":{"f":0.0},"plotSpacingVersion":1,"dynamicsPressureShapeRoundnessMinimum":{"f":1.0},"legacyNormalDual":false,"dualBlendModeExtended":0,"textureBrightness":{"f":0.0},"grainDepth":{"f":1.0},"shapeCountRollParameters":{"u":7},"dynamicsTiltShapeRoundnessMinimum":{"f":1.0},"textureFilter":true,"dynamicsPressureMix":{"f":0.0},"plotJitter":{"f":0.0},"shapeCountTiltAngle":{"f":0.10000000149011612},"textureMovement":{"f":1.0},"dynamicsRollSize":{"f":0.0},"dynamicsJitterStrokeSaturation":{"f":0.0},"textureOrientation":1,"dynamicsBlur":{"f":0.0},"roughnessGrainInverted":false,"brightnessTiltAngle":{"f":0.10000000149011612},"hueJitterTiltAngle":{"f":0.10000000149011612},"opacityTiltAngle":{"f":0.10000000149011612},"dynamicsPressureBrightness":{"f":0.0},"renderingMaxTransfer":true,"dynamicsPressureOpacity":{"f":0.0},"burntEdgesBlendMode":1,"dynamicsPressureSaturationCurve":{"u":36},"taperPressure":{"f":1.0},"paintSize":{"f":0.6144790053367615},"version":4,"savedEraseSizes":{"u":2},"shapeRoundness":{"f":1.0},"dynamicsJitterDarkness":{"f":0.0},"taperStartLength":{"f":0.0},"textureZoom":{"f":1.0},"dynamicsMixSoftening":{"f":0.0},"dynamicsJitterStrokeDarkness":{"f":0.0},"maxPressureSizeClamped":false}},{"d":{"NS.objects":{"a":[]},"$class":{"u":3}}},{"d":{"$classname":"NSArray","$classes":{"a":["NSArray","NSObject"]}}},{"b":"AAAAAAAAAAAAAAAAAAAAAA=="},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":6},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"$classname":"ValkyrieBrushRollParameters","$classes":{"a":["ValkyrieBrushRollParameters","NSObject"]}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":6},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":6},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":6},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"points":{"u":11},"$class":{"u":15}}},{"d":{"NS.objects":{"a":[{"u":12},{"u":13}]},"$class":{"u":14}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"$classname":"NSMutableArray","$classes":{"a":["NSMutableArray","NSArray","NSObject"]}}},{"d":{"$classname":"ValkyrieMagnitudinalCurve","$classes":{"a":["ValkyrieMagnitudinalCurve","NSObject"]}}},{"d":{"points":{"u":17},"$class":{"u":15}}},{"d":{"NS.objects":{"a":[{"u":18},{"u":19}]},"$class":{"u":14}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":21},"$class":{"u":15}}},{"d":{"NS.objects":{"a":[{"u":22},{"u":23}]},"$class":{"u":14}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":25},"$class":{"u":15}}},{"d":{"NS.objects":{"a":[{"u":26},{"u":27}]},"$class":{"u":14}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":29},"$class":{"u":15}}},{"d":{"NS.objects":{"a":[{"u":30},{"u":31}]},"$class":{"u":14}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":33},"$class":{"u":15}}},{"d":{"NS.objects":{"a":[{"u":34},{"u":35}]},"$class":{"u":14}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":37},"$class":{"u":15}}},{"d":{"NS.objects":{"a":[{"u":38},{"u":39}]},"$class":{"u":14}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":41},"$class":{"u":15}}},{"d":{"NS.objects":{"a":[{"u":42},{"u":43}]},"$class":{"u":14}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":45},"$class":{"u":15}}},{"d":{"NS.objects":{"a":[{"u":46},{"u":47}]},"$class":{"u":14}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":49},"$class":{"u":15}}},{"d":{"NS.objects":{"a":[{"u":50},{"u":51}]},"$class":{"u":14}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":6},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":6},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":6},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":6},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":6},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":6},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":6},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":6},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"NS.time":{"f":804152884.250536},"$class":{"u":61}}},{"d":{"$classname":"NSDate","$classes":{"a":["NSDate","NSObject"]}}},{"d":{"$classname":"SilicaBrush","$classes":{"a":["SilicaBrush","ValkyrieBrush","NSObject"]}}}]},"reset":{"top":1,"objects":["$null",{"d":{"burntEdgesBlendModeExtended":1,"plotJitterLongitudinalTiltAngle":{"f":0.10000000149011612},"minOpacity":{"f":0.0},"renderingRecursiveMixing":false,"plotJitterRoll":false,"previewPressureScale":{"f":1.0},"pencilTaperShape":{"f":0.0},"saturationJitterTiltAngle":{"f":0.10000000149011612},"dynamicsTiltGradation":{"f":0.0},"attackTilt":false,"shapeFilterMode":0,"shapeCountRoll":false,"plotJitterLongitudinal":{"f":0.0},"previewTiltAngleOffset":{"f":0.0},"secondaryColorTiltAngle":{"f":0.10000000149011612},"heightAmount":{"f":0.5},"dualBlendMode":0,"grainDepthJitter":{"f":0.0},"dynamicsPressureResponse":{"f":0.0},"hueJitterTilt":false,"importedFromABR":false,"extendedBlend2":0,"dynamicsRollSaturationParameters":{"u":57},"dynamicsMix":{"f":0.0},"maxSize":{"f":1.0},"dynamicsPressureSaturation":{"f":0.0},"dynamicsRollBleed":{"f":0.0},"shapeScatterRoll":false,"saturationJitterTilt":false,"dynamicsJitterSaturation":{"f":0.0},"dynamicsPressureOpacitySpeed":{"f":0.0},"bleedTiltAngle":{"f":0.10000000149011612},"jitterShapeRoundness":{"f":0.0},"textureContrast":{"f":0.0},"shapeCount":{"f":0.0},"attackTiltAngle":{"f":0.10000000149011612},"lightnessJitterTilt":false,"smudgeOpacity":{"f":0.800000011920929},"dynamicsPressureSizeSpeed":{"f":0.0},"alphaThreshold":false,"jitterStrokeSecondary":{"f":0.0},"plotSpacing":{"f":0.041999999433755875},"hueTiltAngle":{"f":0.10000000149011612},"textureScale":{"f":1.0},"shapeRollMode":0,"plotMovingAverageStabilization":{"f":0.0},"shapeRoundnessTiltAngle":{"f":0.10000000149011612},"renderingModulatedTransfer":false,"dynamicsPressureBleedSpeed":{"f":0.0},"jitterShapeRoundnessX":{"f":0.0},"secondaryColorJitterTilt":false,"blendMode":0,"shapeScatter":{"f":0.0},"dynamicsPressureSizeCurve":{"u":17},"bundledHeightPath":{"u":0},"secondaryColorJitterTiltAngle":{"f":0.10000000149011612},"shapeInverted":false,"dynamicsGlazedFlow":{"f":1.0},"textureDepthTilt":false,"plotJitterLongitudinalRollParameters":{"u":10},"shapeScatterRollParameters":{"u":6},"roughnessAmount":{"f":0.5},"plotSmoothing":{"f":0.0},"dynamicsPressureBleedCurve":{"u":25},"metallicGrainInverted":false,"dynamicsFalloff":{"f":0.0},"eraseSize":{"f":0.5},"burntEdgesAmount":{"f":0.0},"alphaThresholdAmount":{"f":0.0},"textureInverted":false,"savedSmudgeSizes":{"u":3},"pencilTaperOpacity":{"f":0.0},"plotJitterLongitudinalRoll":false,"dynamicsPressureShapeRoundness":{"f":1.0},"shapeAngle":{"f":0.0},"plotJitterTiltAngle":{"f":0.10000000149011612},"dynamicsTiltAngle":{"f":0.10000000149011612},"savedPaintSizes":{"u":3},"authorName":{"u":0},"dynamicsTiltOpacity":{"f":0.0},"pencilTaperSize":{"f":0.0},"dynamicsRollOpacityParameters":{"u":54},"dynamicsPressureOverall":{"u":49},"dynamicsJitterLightness":{"f":0.0},"oriented":true,"pencilTaperEndLength":{"f":0.0},"dynamicsRollOpacity":{"f":0.0},"dynamicsWetnessJitter":{"f":0.0},"textureDepthTiltAngle":{"f":0.10000000149011612},"shapeFlipYJitter":false,"maxOpacity":{"f":1.0},"name":{"u":0},"blendGammaCorrect":false,"wetEdgesAmount":{"f":0.0},"dynamicsRollBrightnessParameters":{"u":58},"minSize":{"f":0.0},"saturationTiltAngle":{"f":0.10000000149011612},"dynamicsRollHue":{"f":0.0},"gradationTiltAngle":{"f":0.10000000149011612},"textureApplication":0,"plotFFTSmoothingAmount":{"f":0.0},"dynamicsRollBleedParameters":{"u":55},"pencilTipAnimation":true,"bundledMetallicPath":{"u":0},"previewWetMixEnabled":true,"plotJitterTilt":false,"plotSpacingJitter":{"f":0.0},"shapeCountTilt":false,"savedEraseOpacities":{"u":3},"bundledGrainPath":{"u":0},"hoverPressure":{"f":0.10000000149011612},"dynamicsPressureBrightnessCurve":{"u":41},"grainDepthMinimum":{"f":0.0},"dynamicsPressureSecondaryColor":{"f":0.0},"dynamicsRollSecondaryColor":{"f":0.0},"dynamicsJitterStrokeLightness":{"f":0.0},"grainBlendModeExtended":1,"taperSizeLinked":false,"plotFFTSmoothingBias":{"f":0.0},"dynamicsTiltBleed":{"f":0.0},"bundledRoughnessPath":{"u":0},"grainBlendMode":1,"extendedBlend":0,"paintOpacity":{"f":1.0},"dynamicsSmudgeAccumulation":{"f":0.75},"dynamicsJitterHue":{"f":0.0},"dynamicsPressureSize":{"f":0.0},"dynamicsBlurJitter":{"f":0.0},"textureOffsetJitter":true,"grainOrientation":1,"dynamicsTiltShapeRoundness":{"f":1.0},"textureFilterMode":0,"dynamicsTiltSecondaryColor":{"f":0.0},"hoverFill":1,"dynamicsRollBrightness":{"f":0.0},"shapeRotation":{"f":0.0},"previewTiltEnabled":true,"dynamicsRollHueParameters":{"u":56},"stamp":false,"creationDate":{"u":61},"taperVersion":1,"pencilTaperStartLength":{"f":0.0},"dynamicsTiltCompression":{"f":1.0},"shapeFlipXJitter":false,"savedPaintOpacities":{"u":3},"dynamicsPressureHue":{"f":0.0},"shapeOrientation":1,"savedSmudgeOpacities":{"u":3},"previewPressureMinimum":{"f":0.0},"dynamicsJitterOpacity":{"f":0.0},"plotJitterRollParameters":{"u":9},"taperOpacity":{"f":0.0},"dynamicsWetAccumulation":{"f":0.75},"dynamicsRollSizeParameters":{"u":53},"dynamicsLoad":{"f":0.5},"dynamicsPressureSecondaryColorCurve":{"u":45},"dynamicsPressureShapeRoundnessCurve":{"u":21},"dynamicsTiltBrightness":{"f":0.0},"dynamicsPressureSmoothing":{"f":0.0},"darknessJitterTilt":false,"dynamicsTiltHue":{"f":0.0},"darknessJitterTiltAngle":{"f":0.10000000149011612},"dynamicsJitterStrokeHue":{"f":0.0},"previewRenderDisabled":false,"pencilTaperSizeLinked":false,"metallicAmount":{"f":0.0},"dynamicsRollSecondaryColorParameters":{"u":59},"$class":{"u":63},"plotSpacingSpeed":{"f":0.0},"dynamicsJitterSize":{"f":0.0},"smudgeSize":{"f":0.5},"dynamicsSpeedSize":{"f":0.0},"dynamicsRollSaturation":{"f":0.0},"taperShape":{"f":0.0},"dynamicsPressureOpacityCurve":{"u":11},"texturizedGrainFollowsCamera":true,"taperEndLength":{"f":0.0},"taperSize":{"f":0.0},"previewSize":{"f":0.30000001192092896},"shapeFilter":true,"eraseOpacity":{"f":1.0},"metallicScale":{"f":0.1599999964237213},"dynamicsPressureHueCurve":{"u":33},"shapeRoll":false,"roughnessScale":{"f":0.1599999964237213},"dynamicsPressureTransferModulationCurve":{"u":29},"shapeCountJitter":{"f":0.0},"plotJitterLongitudinalTilt":false,"textureRotation":{"f":0.0},"hoverOutline":0,"jitterSecondary":{"f":0.0},"heightScale":{"f":0.1599999964237213},"lightnessJitterTiltAngle":{"f":0.10000000149011612},"dynamicsPressureOpacityTransfer":{"f":1.0},"bundledShapePath":{"u":2},"sizeTiltAngle":{"f":0.10000000149011612},"color":{"u":5},"dynamicsTiltSaturation":{"f":0.0},"attackRoll":false,"attackRollParameters":{"u":60},"shapeAzimuth":false,"shapeRandomise":false,"dynamicsTiltSize":{"f":0.0},"dynamicsSpeedOpacity":{"f":0.0},"dynamicsPressureBleed":{"f":0.0},"plotSpacingVersion":1,"dynamicsPressureShapeRoundnessMinimum":{"f":1.0},"legacyNormalDual":false,"dualBlendModeExtended":0,"textureBrightness":{"f":0.0},"grainDepth":{"f":1.0},"shapeCountRollParameters":{"u":8},"dynamicsTiltShapeRoundnessMinimum":{"f":1.0},"textureFilter":true,"dynamicsPressureMix":{"f":0.0},"plotJitter":{"f":0.0},"shapeCountTiltAngle":{"f":0.10000000149011612},"textureMovement":{"f":1.0},"dynamicsRollSize":{"f":0.0},"dynamicsJitterStrokeSaturation":{"f":0.0},"textureOrientation":1,"dynamicsBlur":{"f":0.0},"roughnessGrainInverted":false,"brightnessTiltAngle":{"f":0.10000000149011612},"hueJitterTiltAngle":{"f":0.10000000149011612},"opacityTiltAngle":{"f":0.10000000149011612},"dynamicsPressureBrightness":{"f":0.0},"renderingMaxTransfer":false,"dynamicsPressureOpacity":{"f":0.0},"burntEdgesBlendMode":1,"dynamicsPressureSaturationCurve":{"u":37},"taperPressure":{"f":1.0},"paintSize":{"f":0.5},"version":4,"savedEraseSizes":{"u":3},"shapeRoundness":{"f":1.0},"dynamicsJitterDarkness":{"f":0.0},"taperStartLength":{"f":0.0},"textureZoom":{"f":1.0},"dynamicsMixSoftening":{"f":0.0},"dynamicsJitterStrokeDarkness":{"f":0.0},"maxPressureSizeClamped":false}},"Brush-Preset-Hard.png",{"d":{"NS.objects":{"a":[]},"$class":{"u":4}}},{"d":{"$classname":"NSArray","$classes":{"a":["NSArray","NSObject"]}}},{"b":"AAAAAAAAAAAAAAAAAAAAAA=="},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":7},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"$classname":"ValkyrieBrushRollParameters","$classes":{"a":["ValkyrieBrushRollParameters","NSObject"]}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":7},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":7},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":7},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"points":{"u":12},"$class":{"u":16}}},{"d":{"NS.objects":{"a":[{"u":13},{"u":14}]},"$class":{"u":15}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"$classname":"NSMutableArray","$classes":{"a":["NSMutableArray","NSArray","NSObject"]}}},{"d":{"$classname":"ValkyrieMagnitudinalCurve","$classes":{"a":["ValkyrieMagnitudinalCurve","NSObject"]}}},{"d":{"points":{"u":18},"$class":{"u":16}}},{"d":{"NS.objects":{"a":[{"u":19},{"u":20}]},"$class":{"u":15}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":22},"$class":{"u":16}}},{"d":{"NS.objects":{"a":[{"u":23},{"u":24}]},"$class":{"u":15}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":26},"$class":{"u":16}}},{"d":{"NS.objects":{"a":[{"u":27},{"u":28}]},"$class":{"u":15}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":30},"$class":{"u":16}}},{"d":{"NS.objects":{"a":[{"u":31},{"u":32}]},"$class":{"u":15}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":34},"$class":{"u":16}}},{"d":{"NS.objects":{"a":[{"u":35},{"u":36}]},"$class":{"u":15}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":38},"$class":{"u":16}}},{"d":{"NS.objects":{"a":[{"u":39},{"u":40}]},"$class":{"u":15}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":42},"$class":{"u":16}}},{"d":{"NS.objects":{"a":[{"u":43},{"u":44}]},"$class":{"u":15}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":46},"$class":{"u":16}}},{"d":{"NS.objects":{"a":[{"u":47},{"u":48}]},"$class":{"u":15}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":50},"$class":{"u":16}}},{"d":{"NS.objects":{"a":[{"u":51},{"u":52}]},"$class":{"u":15}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":7},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":7},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":7},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":7},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":7},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":7},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":7},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":7},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"NS.time":{"f":804152884.250536},"$class":{"u":62}}},{"d":{"$classname":"NSDate","$classes":{"a":["NSDate","NSObject"]}}},{"d":{"$classname":"SilicaBrush","$classes":{"a":["SilicaBrush","ValkyrieBrush","NSObject"]}}}]}};
+// ---- Procreate brush files ----------------------------------------------------------------------------
+// A Procreate .brush is a zip: Brush.archive (binary plist), Reset/Brush.archive, Shape.png (WHITE art
+// on BLACK, 2048 px), QuickLook/Thumbnail.png. Brush.archive here is built from the settings of a real
+// stamp brush made in Procreate (PROCREATE_TPL), with only the name, date and shape replaced — so the
+// stamp behaviour (spacing, size limits, orientation) matches a brush Procreate itself wrote.
+function bplistBuild(rootNode){
+  const objs=[],strIdx=new Map();
+  function add(node){
+    if(typeof node==='string'&&strIdx.has(node))return strIdx.get(node);
+    const idx=objs.length,o={};objs.push(o);
+    if(typeof node==='boolean'){o.t='bool';o.v=node;}
+    else if(typeof node==='number'){o.t='int';o.v=node;}
+    else if(typeof node==='string'){o.t='str';o.v=node;strIdx.set(node,idx);}
+    else if(node.u!==undefined){o.t='uid';o.v=node.u;}
+    else if(node.f!==undefined){o.t='real';o.v=node.f;}
+    else if(node.b!==undefined){o.t='data';o.v=Uint8Array.from(atob(node.b),c=>c.charCodeAt(0));}
+    else if(node.a){o.t='arr';o.r=node.a.map(add);}
+    else if(node.d){o.t='dict';const ks=Object.keys(node.d);o.kr=ks.map(add);o.r=ks.map(k=>add(node.d[k]));}
+    else throw new Error('bad plist node');
+    return idx;
+  }
+  add(rootNode);
+  const refSize=objs.length>255?2:1;
+  const out=[];let len=0;const push=b=>{out.push(b);len+=b.length;};
+  const intBytes=n=>{if(n<0){const d=new DataView(new ArrayBuffer(9));d.setUint8(0,0x13);d.setBigInt64(1,BigInt(n));return new Uint8Array(d.buffer);}
+    if(n<256)return Uint8Array.of(0x10,n);if(n<65536)return Uint8Array.of(0x11,n>>8,n&255);
+    if(n<4294967296)return Uint8Array.of(0x12,(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255);
+    const d=new DataView(new ArrayBuffer(9));d.setUint8(0,0x13);d.setBigUint64(1,BigInt(n));return new Uint8Array(d.buffer);};
+  const head=(type,n)=>n<15?Uint8Array.of(type|n):Uint8Array.from([type|0xF,...intBytes(n)]);
+  const refBytes=r=>refSize===1?[r]:[r>>8,r&255];
+  push(new TextEncoder().encode('bplist00'));
+  const offsets=[];
+  objs.forEach(o=>{
+    offsets.push(len);
+    if(o.t==='bool')push(Uint8Array.of(o.v?0x09:0x08));
+    else if(o.t==='int')push(intBytes(o.v));
+    else if(o.t==='real'){
+      if(Math.fround(o.v)===o.v){const d=new DataView(new ArrayBuffer(5));d.setUint8(0,0x22);d.setFloat32(1,o.v);push(new Uint8Array(d.buffer));}
+      else{const d=new DataView(new ArrayBuffer(9));d.setUint8(0,0x23);d.setFloat64(1,o.v);push(new Uint8Array(d.buffer));}
+    }
+    else if(o.t==='str'){
+      const ascii=/^[\x00-\x7f]*$/.test(o.v);
+      if(ascii){push(head(0x50,o.v.length));push(new TextEncoder().encode(o.v));}
+      else{const u=new Uint8Array(o.v.length*2);for(let i=0;i<o.v.length;i++){const c=o.v.charCodeAt(i);u[i*2]=c>>8;u[i*2+1]=c&255;}push(head(0x60,o.v.length));push(u);}
+    }
+    else if(o.t==='data'){push(head(0x40,o.v.length));push(o.v);}
+    else if(o.t==='uid'){push(o.v<256?Uint8Array.of(0x80,o.v):Uint8Array.of(0x81,o.v>>8,o.v&255));}
+    else if(o.t==='arr'){push(head(0xA0,o.r.length));push(Uint8Array.from(o.r.flatMap(refBytes)));}
+    else if(o.t==='dict'){push(head(0xD0,o.r.length));push(Uint8Array.from(o.kr.flatMap(refBytes)));push(Uint8Array.from(o.r.flatMap(refBytes)));}
+  });
+  const offSize=len<256?1:len<65536?2:len<16777216?3:4,tableAt=len;
+  offsets.forEach(of=>{const b=[];for(let i=offSize-1;i>=0;i--)b.push((of>>>(8*i))&255);push(Uint8Array.from(b));});
+  const tr=new DataView(new ArrayBuffer(32));
+  tr.setUint8(6,offSize);tr.setUint8(7,refSize);tr.setBigUint64(8,BigInt(objs.length));tr.setBigUint64(16,0n);tr.setBigUint64(24,BigInt(tableAt));
+  push(new Uint8Array(tr.buffer));
+  const res=new Uint8Array(len);let p=0;out.forEach(b=>{res.set(b,p);p+=b.length;});return res;
+}
+function procreateArchive(which,name){
+  const t=JSON.parse(JSON.stringify(PROCREATE_TPL[which])),objs=t.objects;
+  objs.push(name);objs[t.top].d.name={u:objs.length-1};
+  const dt=objs[t.top].d.creationDate;if(dt&&dt.u&&objs[dt.u].d&&objs[dt.u].d['NS.time'])objs[dt.u].d['NS.time']={f:Date.now()/1000-978307200};
+  return bplistBuild({d:{'$version':100000,'$archiver':'NSKeyedArchiver','$top':{d:{root:{u:t.top}}},'$objects':{a:objs}}});
+}
+// Tip canvases ---------------------------------------------------------------------------------------
+function imageTip(img,px){
+  const c=document.createElement('canvas');c.width=px;c.height=px;const g=c.getContext('2d');
+  const w=img.naturalWidth||img.width,h=img.naturalHeight||img.height,k=(px*0.88)/Math.max(w,h);
+  g.imageSmoothingQuality='high';g.drawImage(img,(px-w*k)/2,(px-h*k)/2,w*k,h*k);return c;
+}
+function shapeFromTip(tip){ // white art on black — Procreate's Shape format
+  const px=tip.width,o=document.createElement('canvas');o.width=px;o.height=px;const g=o.getContext('2d');
+  g.fillStyle='#000';g.fillRect(0,0,px,px);
+  const id=tip.getContext('2d').getImageData(0,0,px,px).data,od=g.getImageData(0,0,px,px);
+  for(let i=0;i<id.length;i+=4){const v=Math.round(255*id[i+3]/255);od.data[i]=v;od.data[i+1]=v;od.data[i+2]=v;od.data[i+3]=255;}
+  g.putImageData(od,0,0);return o;
+}
+function thumbFromTip(tip){ // 327 x 100 white-on-transparent preview strip
+  const c=document.createElement('canvas');c.width=327;c.height=100;const g=c.getContext('2d');
+  const m=document.createElement('canvas');m.width=tip.width;m.height=tip.height;const mg=m.getContext('2d');
+  mg.drawImage(tip,0,0);mg.globalCompositeOperation='source-in';mg.fillStyle='#fff';mg.fillRect(0,0,m.width,m.height);
+  g.imageSmoothingQuality='high';[0.2,0.5,0.8].forEach(f=>g.drawImage(m,327*f-40,10,80,80));return c;
+}
+async function pngBytes(c){return new Uint8Array(await (await canvasToBlob(c)).arrayBuffer());}
+async function procreateBrushFiles(name,tip){
+  const shape=shapeFromTip(tip);
+  return [
+    {name:'Brush.archive',data:procreateArchive('main',name)},
+    {name:'Reset/Brush.archive',data:procreateArchive('reset',name)},
+    {name:'Shape.png',data:await pngBytes(shape)},
+    {name:'QuickLook/Thumbnail.png',data:await pngBytes(thumbFromTip(tip))},
+  ];
+}
+function safeFileName(n){return String(n||'brush').trim().replace(/[^\w\- ]+/g,'').replace(/\s+/g,'-').slice(0,40)||'brush';}
+// One motif (or the selected vector path) -> one .brush ------------------------------------------------
+function motifBrushRows(){return motifs.filter(m=>m.img);}
+function renderBrushSetList(){
+  const host=$('brushSetList');if(!host)return;host.innerHTML='';
+  const list=motifBrushRows();
+  $('brushSetEmpty').style.display=list.length?'none':'block';
+  list.forEach(m=>{
+    const row=document.createElement('label');row.className='brushset-row';row.dataset.id=m.id;
+    row.innerHTML='<input type="checkbox" checked><img src="'+m.src+'" alt=""><input type="text" class="brushset-name" maxlength="40" value="'+escapeHtml(m.name)+'">';
+    row.querySelector('.brushset-name').onchange=e=>{const v=e.target.value.trim();if(v){m.name=v;renderTray();}};
+    host.appendChild(row);
+  });
+}
+function chosenBrushMotifs(){
+  return [...document.querySelectorAll('#brushSetList .brushset-row')].filter(r=>r.querySelector('input[type=checkbox]').checked)
+    .map(r=>{const m=motifs.find(x=>x.id===r.dataset.id);if(m)m.name=r.querySelector('.brushset-name').value.trim()||m.name;return m;}).filter(Boolean);
+}
+async function runBrushSetExport(kind){
+  const chosen=chosenBrushMotifs();
+  if(!chosen.length){setStatus('Tick at least one motif in the Motif Brush Set list (capture a motif first if the list is empty).');return;}
+  const px=+$('brushSizeSelect').value||2048,setName=($('brushSetNameInput').value||'').trim()||'Pattern Sketch Brushes',base=safeFileName(setName);
+  try{
+    const used=new Set(),items=[];
+    for(const m of chosen){
+      let nm=m.name,n=2;while(used.has(nm.toLowerCase()))nm=m.name+' '+(n++);used.add(nm.toLowerCase());
+      items.push({name:nm,tip:imageTip(m.img,px)});
+    }
+    if(kind==='brushset'){
+      const files=[],ids=[];
+      for(const it of items){const id=crypto.randomUUID().toUpperCase();ids.push(id);(await procreateBrushFiles(it.name,it.tip)).forEach(f=>files.push({name:id+'/'+f.name,data:f.data}));}
+      const esc=t=>t.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+      const plist='<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0">\n<dict>\n<key>brushes</key>\n<array>\n'+ids.map(i=>'<string>'+i+'</string>').join('\n')+'\n</array>\n<key>name</key>\n<string>'+esc(setName)+'</string>\n</dict>\n</plist>\n';
+      files.unshift({name:'brushset.plist',data:new TextEncoder().encode(plist)});
+      saveFileBlob(makeZip(files),base+'.brushset');
+      setStatus('🖌️ Brush set "'+setName+'" saved ('+items.length+' brush'+(items.length===1?'':'es')+'). Open it in Procreate and test before selling.');
+    }else if(kind==='brushes'){
+      const files=[];
+      for(const it of items){const bf=await procreateBrushFiles(it.name,it.tip);const bz=makeZip(bf);files.push({name:safeFileName(it.name)+'.brush',data:new Uint8Array(await bz.arrayBuffer())});}
+      saveFileBlob(makeZip(files),base+'-brushes.zip');
+      setStatus('🖌️ '+items.length+' separate .brush file'+(items.length===1?'':'s')+' saved in a zip. Unzip, then tap each .brush to import it into Procreate.');
+    }else{
+      const files=[];
+      for(const it of items){const f=safeFileName(it.name);files.push({name:f+'-shape.png',data:await pngBytes(shapeFromTip(it.tip))});files.push({name:f+'-stamp.png',data:await pngBytes(it.tip)});}
+      files.push({name:'README.txt',data:new TextEncoder().encode('Pattern Sketch stamp pack: '+setName+'\r\n\r\n*-shape.png  white on black, '+px+' px: a Procreate Shape source.\r\n*-stamp.png  full colour on transparency.\r\n')});
+      saveFileBlob(makeZip(files),base+'-png-pack.zip');
+      setStatus('🖌️ PNG pack saved ('+items.length+' motif'+(items.length===1?'':'s')+').');
+    }
+  }catch(err){console.error(err);setStatus('⚠️ Could not build the brush set: '+(err&&err.message||err));}
+}
+$('brushSetBtn').onclick=()=>runBrushSetExport('brushset');
+$('brushFilesBtn').onclick=()=>runBrushSetExport('brushes');
+$('brushPngPackBtn').onclick=()=>runBrushSetExport('png');
 $('exportBtn').onclick=()=>{updateComposite();const out=document.createElement('canvas');out.width=TILE;out.height=TILE;const o=out.getContext('2d');o.fillStyle='#fff';o.fillRect(0,0,TILE,TILE);if(bgImg&&bgShown){o.save();o.globalAlpha=bgOpacity;o.drawImage(bgImg,0,0,TILE,TILE);o.restore();}// Seamless export: the tile also receives the parts of its eight neighbouring repeats that spill
   // over its edges (same lattice as the on-screen repeat), so anything crossing an edge wraps round.
   const wrapOffs=[[0,0]];for(let ix=-1;ix<=1;ix++)for(let iy=-1;iy<=1;iy++){if(ix||iy)wrapOffs.push(tilePos(ix,iy));}
