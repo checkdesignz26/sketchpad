@@ -1513,6 +1513,7 @@ function flushEraserRebuild(){
 canvas.addEventListener('pointerdown',e=>{
   if(!isPen(e))return;
   if(captureAreaArmed){e.preventDefault();captureRectStart(e);return;}
+  if(!traceLocked&&traces.length&&!areaFillArmed&&!pathEditStrokeId){e.preventDefault();traceDragStart(e);return;}
   if(areaFillArmed){e.preventDefault();attemptAreaFillAt(e.clientX,e.clientY);return;}
   // While Edit Path is active, a canvas tap means something ENTIRELY different (select/insert a
   // node — see handlePathEditCanvasTap) and must never fall through to selectAt()/drawing below.
@@ -2280,6 +2281,7 @@ let dragMotif=null,dragStroke=null;
 canvas.addEventListener('pointerdown',e=>{
   if(mode!=='edit'||!isPen(e))return;
   if(captureAreaArmed)return;
+  if(!traceLocked&&traces.length&&!areaFillArmed&&!pathEditStrokeId)return; // Trace Move mode owns the drag
   if(areaFillArmed)return; // Area Fill owns canvas taps itself while armed — see the earlier pointerdown listener
   if(pathEditStrokeId)return; // Edit Path owns canvas taps itself — see the earlier pointerdown listener
   // Multi-Select (motifs) and Shape Tools' Add Shapes (strokes) both own canvas taps themselves
@@ -4640,7 +4642,24 @@ $('bgToggle').onclick=()=>{bgShown=!bgShown;$('bgToggle').classList.toggle('acti
 $('bgClear').onclick=()=>{bgImg=null;$('bgEmpty').style.display='block';$('bgControls').style.display='none';redraw();scheduleAutosave();};
 $('traceInput').onchange=e=>Array.from(e.target.files).forEach(f=>{const r=new FileReader();r.onload=ev=>{const img=new Image();img.onload=()=>{traces.push({img,src:ev.target.result,name:f.name,x:W/2,y:H/2,scale:Math.min(TILE/img.width,TILE/img.height),opacity:.35});renderTraces();redraw();scheduleAutosave();};img.src=ev.target.result;};r.readAsDataURL(f);});
 function renderTraces(){const list=$('traceList');list.innerHTML='';traces.forEach((t,i)=>{const c=document.createElement('div');c.className='trace-card';c.innerHTML=`<img src="${t.src}"><div><div>${t.name}</div><div class="small">Trace ref · ${Math.round(t.opacity*100)}%</div></div><button class="x" style="position:static">×</button>`;c.querySelector('button').onclick=()=>{traces.splice(i,1);renderTraces();redraw();scheduleAutosave();};list.appendChild(c);});}
-$('traceOpacity').oninput=e=>{traces.forEach(t=>t.opacity=+e.target.value/100);$('traceOpacityVal').textContent=e.target.value+'%';renderTraces();redraw();scheduleAutosave();};$('traceScale').oninput=e=>{traces.forEach(t=>t.scale=+e.target.value/100);$('traceScaleVal').textContent=e.target.value+'%';redraw();scheduleAutosave();};$('traceFit').onclick=()=>{traces.forEach(t=>t.scale=Math.min(TILE/t.img.width,TILE/t.img.height));redraw();scheduleAutosave();};$('traceCentre').onclick=()=>{traces.forEach(t=>{t.x=W/2;t.y=H/2});redraw();scheduleAutosave();};$('traceLock').onclick=()=>{traceLocked=!traceLocked;$('traceLock').textContent=traceLocked?'🔒 Locked':'🔓 Move';$('traceLock').classList.toggle('active',traceLocked)};$('traceClear').onclick=()=>{traces=[];renderTraces();redraw();scheduleAutosave();};
+$('traceOpacity').oninput=e=>{traces.forEach(t=>t.opacity=+e.target.value/100);$('traceOpacityVal').textContent=e.target.value+'%';renderTraces();redraw();scheduleAutosave();};$('traceScale').oninput=e=>{traces.forEach(t=>t.scale=+e.target.value/100);$('traceScaleVal').textContent=e.target.value+'%';redraw();scheduleAutosave();};$('traceFit').onclick=()=>{traces.forEach(t=>t.scale=Math.min(TILE/t.img.width,TILE/t.img.height));redraw();scheduleAutosave();};$('traceCentre').onclick=()=>{traces.forEach(t=>{t.x=W/2;t.y=H/2});redraw();scheduleAutosave();};$('traceLock').onclick=()=>{traceLocked=!traceLocked;setStatus(traceLocked?'🔒 Trace locked — drawing works normally.':'🔓 Trace Move: drag on the canvas to move the trace image. Tap again to lock it and draw.');$('traceLock').textContent=traceLocked?'🔒 Locked':'🔓 Move';$('traceLock').classList.toggle('active',traceLocked)};$('traceClear').onclick=()=>{traces=[];renderTraces();redraw();scheduleAutosave();};
+// Trace Move mode (🔓): dragging the canvas moves the trace image under the pointer instead of drawing.
+let traceDrag=null;
+function traceDragStart(e){
+  const p=screenToCanvas(e.clientX,e.clientY);
+  let t=null;
+  for(let i=traces.length-1;i>=0;i--){const q=traces[i];if(Math.abs(p.x-q.x)<=q.w/2&&Math.abs(p.y-q.y)<=q.h/2){t=q;break;}}
+  if(!t)t=traces[traces.length-1];
+  traceDrag={t,dx:t.x-p.x,dy:t.y-p.y};
+  try{canvas.setPointerCapture(e.pointerId);}catch(err){}
+}
+canvas.addEventListener('pointermove',e=>{
+  if(!traceDrag)return;
+  const p=screenToCanvas(e.clientX,e.clientY);
+  if(Number.isFinite(p.x)&&Number.isFinite(p.y)){traceDrag.t.x=p.x+traceDrag.dx;traceDrag.t.y=p.y+traceDrag.dy;redraw();}
+});
+function traceDragEnd(){if(!traceDrag)return;traceDrag=null;scheduleAutosave();redraw();}
+canvas.addEventListener('pointerup',traceDragEnd);canvas.addEventListener('pointercancel',traceDragEnd);
 function syncSymToggle(){const btn=$('symToggle');btn.textContent=symMode==='off'?'🦋 Symmetry Off':'🦋 '+symMode.charAt(0).toUpperCase()+symMode.slice(1);btn.classList.toggle('butterfly-on',symMode!=='off');}
 $('symToggle').onclick=()=>{$('symPopover').classList.toggle('open');};
 $('symClose').onclick=()=>{$('symPopover').classList.remove('open');};
