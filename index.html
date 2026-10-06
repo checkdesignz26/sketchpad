@@ -284,6 +284,7 @@ button.pill:active{transform:scale(.97)}
     <section class="section" id="brushSection">
       <div class="section-title">✏️ Draw</div>
       <div class="mode-switch"><button id="drawModeBtn" class="btn active">✏️ Draw</button><button id="editModeBtn" class="btn">↔️ Edit</button></div>
+      <div id="brushPreviewWrap" style="margin:8px 0 4px;border:1px solid var(--line);border-radius:12px;overflow:hidden;"><canvas id="brushPreview" style="position:static;display:block;width:100%;height:76px;max-width:100%;transform:none;left:auto;top:auto;"></canvas></div>
       <div class="brush-quickbar">
         <div class="slider-row"><label>Size</label><input id="brushSize" type="range" min="1" max="120" value="6"><span id="brushSizeVal">6</span></div>
         <div class="slider-row"><label>Opacity</label><input id="brushOpacity" type="range" min="1" max="100" value="100"><span id="brushOpacityVal">100%</span></div>
@@ -3229,8 +3230,30 @@ function syncControlsFromSettings(){
   $('stampOptions').style.display=isStamp?'block':'none';
   $('stampFollow').checked=!!s.follow;$('stampTint').checked=!!s.tint;
   syncActiveBrushRecipeLine();
+  renderBrushPreview();
 }
-function patchCurrentSettings(patch){BrushEngine.setSettings(currentBrushIdForSettings(),patch);syncActiveBrushRecipeLine();}
+function patchCurrentSettings(patch){BrushEngine.setSettings(currentBrushIdForSettings(),patch);syncActiveBrushRecipeLine();renderBrushPreview();}
+// Live brush preview: a sample stroke (with a pressure swell, so pressure settings show) drawn with
+// the selected brush, size, opacity, spacing and colour. Redrawn whenever any of those change.
+function renderBrushPreview(){
+  const c=$('brushPreview');if(!c)return;
+  const cssW=c.clientWidth||260,cssH=c.clientHeight||76,dpr=Math.min(2,window.devicePixelRatio||1);
+  if(c.width!==Math.round(cssW*dpr)||c.height!==Math.round(cssH*dpr)){c.width=Math.round(cssW*dpr);c.height=Math.round(cssH*dpr);}
+  const g=c.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,cssW,cssH);
+  const col=eraserActive?'#888888':currentColor;
+  const lum=(()=>{const h=(col||'#000').replace('#','');const n=parseInt(h.length===3?h.split('').map(x=>x+x).join(''):h,16);return(0.299*(n>>16&255)+0.587*(n>>8&255)+0.114*(n&255));})();
+  g.fillStyle=lum>200?'#6b6475':'#fffdf8';g.fillRect(0,0,cssW,cssH);
+  if(eraserActive){g.fillStyle='#fff';g.fillRect(0,0,cssW,cssH);g.fillStyle='#8a7f8f';g.font='600 13px system-ui,sans-serif';g.textAlign='center';g.fillText('Eraser — removes strokes it crosses',cssW/2,cssH/2+4);return;}
+  const brush=BrushEngine.getBrush(activeBrushId),st=BrushEngine.getSettings(activeBrushId);
+  const k=Math.min(1,(cssH*0.55)/Math.max(1,st.size)); // very large brushes are shown scaled down to fit
+  g.save();g.scale(k,k);
+  const w=cssW/k,h=cssH/k,pts=[],N=70;
+  for(let i=0;i<=N;i++){const t=i/N;pts.push({x:w*(0.08+0.84*t),y:h/2+Math.sin(t*Math.PI*2)*h*0.2,pressure:0.25+0.75*Math.sin(Math.PI*t)});}
+  try{BrushEngine.renderStroke(g,{id:'brush-preview',brushId:activeBrushId,color:col,points:pts},brush,st);}catch(e){}
+  g.restore();
+  if(k<1){g.fillStyle='#8a7f8f';g.font='600 10px system-ui,sans-serif';g.textAlign='right';g.fillText('shown smaller',cssW-6,cssH-5);}
+}
+window.addEventListener('resize',()=>renderBrushPreview());
 function selectBrush(id){eraserActive=false;activeBrushId=id;BrushEngine.touchRecent(id);syncRecents();syncControlsFromSettings();syncActiveSwatches();}
 $('eraserToggle').onclick=()=>{eraserActive=!eraserActive;if(eraserActive)disarmAreaFill();syncControlsFromSettings();syncActiveSwatches();setStatus(eraserActive?'🧹 Eraser: drag over a stroke on the active layer to erase just that part of it.':'✏️ Back to '+BrushEngine.getBrush(activeBrushId).name+'.');};
 $('continuousDrawToggle').onclick=()=>{
@@ -3241,7 +3264,7 @@ $('continuousDrawToggle').onclick=()=>{
   setStatus(continuousDrawMode?'🔗 Continuous Draw on — starting a new stroke right where the last one ended extends it as one path.':'🔗 Continuous Draw off.');
 };
 $('brushSize').oninput=e=>{const v=+e.target.value;$('brushSizeVal').textContent=Math.round(v);patchCurrentSettings({size:v});};
-$('brushColor').oninput=e=>{currentColor=e.target.value;};
+$('brushColor').oninput=e=>{currentColor=e.target.value;renderBrushPreview();};
 // ---- Adaptive Colour panel -------------------------------------------------------------------
 function makeAcSwatch(hex,title){
   const d=document.createElement('div');
@@ -3289,7 +3312,7 @@ document.querySelectorAll('.colour-target-btn').forEach(btn=>{btn.onclick=()=>{c
 // other target just loads the colour into that tool's OWN input, ready for its next explicit use.
 function applyColorToTarget(hex){
   if(colorTarget==='brush'){
-    currentColor=hex;$('brushColor').value=hex;
+    currentColor=hex;$('brushColor').value=hex;renderBrushPreview();
   }else if(colorTarget==='stroke'){
     const stroke=strokes.find(s=>s.id===selectedStrokeId);
     if(!stroke){setStatus('🎨 Select a stroke first to recolour it.');return;}
