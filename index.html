@@ -189,6 +189,13 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
 .sidebar-toggle:active{transform:scale(.96)}
 /* View popover reuses .sym-pop's look, just anchored under its own (right-side) trigger instead
    of Symmetry's left-side one. */
+button.pill{cursor:pointer;font:inherit;font-size:13px;font-weight:900;min-width:78px;text-align:center}
+button.pill:active{transform:scale(.97)}
+#zoomPopover{left:12px;top:12px;width:264px}
+#zoomPopover:before{display:none}
+#zoomPopover .zoom-row{display:flex;gap:8px;margin-bottom:8px}
+#zoomPopover .zoom-row .tool-btn{flex:1}
+#zoomPopover .tool-btn,#zoomPopover .btn{min-height:44px}
 #viewPopover{left:auto;right:12px}
 #viewPopover:before{left:auto;right:44px}
 /* Narrow viewports get tighter spacing only — text, buttons, sliders and controls stay at their
@@ -446,9 +453,9 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
   </div>
   <button id="sidebarToggleBtn" class="sidebar-toggle" title="Hide tools panel">‹</button>
   <main class="workspace">
-    <div class="toolbar"><button id="undoBtn" class="tool-btn">↩️ Undo</button><button id="redoBtn" class="tool-btn">↪️ Redo</button><div id="zoomPill" class="pill">100%</div><button id="resetRot" class="tool-btn">0° Rotation</button><button id="guidesBtn" class="tool-btn">📐 Guides</button><button id="paintModePill" class="pill" style="display:none;cursor:pointer;">🎨 Paint Inside — tap for Free Paint</button><button id="editMotifBar" class="pill" style="display:none;cursor:pointer;background:var(--accentTeal);border:1px solid rgba(92,184,171,.5);font:inherit;">✏️ Editing: <span id="editMotifBarName"></span> — tap Done</button><div class="toolbar-spacer"></div><button id="quickSaveBtn" class="tool-btn">💾 Save</button><div id="saveStatusPill" class="pill" title="Autosave status">Saved</div><button id="downloadProjectBtn" class="tool-btn">⬇️ Download Project</button><label class="tool-btn" for="openProjectInput" style="cursor:pointer;">📂 Open Project</label><input id="openProjectInput" type="file" accept="application/json" style="display:none;"><button id="viewToggleBtn" class="tool-btn">⋯ View</button><button id="exportBtn" class="tool-btn primary">📸 Export</button></div>
+    <div class="toolbar"><button id="undoBtn" class="tool-btn">↩️ Undo</button><button id="redoBtn" class="tool-btn">↪️ Redo</button><button id="zoomPill" class="pill" title="Zoom and view recovery">100% ▾</button><button id="resetRot" class="tool-btn">0° Rotation</button><button id="guidesBtn" class="tool-btn">📐 Guides</button><button id="paintModePill" class="pill" style="display:none;cursor:pointer;">🎨 Paint Inside — tap for Free Paint</button><button id="editMotifBar" class="pill" style="display:none;cursor:pointer;background:var(--accentTeal);border:1px solid rgba(92,184,171,.5);font:inherit;">✏️ Editing: <span id="editMotifBarName"></span> — tap Done</button><div class="toolbar-spacer"></div><button id="quickSaveBtn" class="tool-btn">💾 Save</button><div id="saveStatusPill" class="pill" title="Autosave status">Saved</div><button id="downloadProjectBtn" class="tool-btn">⬇️ Download Project</button><label class="tool-btn" for="openProjectInput" style="cursor:pointer;">📂 Open Project</label><input id="openProjectInput" type="file" accept="application/json" style="display:none;"><button id="viewToggleBtn" class="tool-btn">⋯ View</button><button id="exportBtn" class="tool-btn primary">📸 Export</button></div>
     <div id="restoreBanner" style="display:none;">📂 Autosaved session found from <span id="restoreBannerTime"></span>. <button id="restoreAcceptBtn" class="btn mini primary">Restore</button><button id="restoreDeclineBtn" class="btn mini">Start Fresh</button></div>
-    <div id="canvasViewportOuter" class="canvas-viewport-outer"><div id="canvasWrap" class="canvas-wrap"><div id="viewPopover" class="sym-pop"><div class="section-title">🧭 Canvas / View</div><button id="symToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">🦋 Symmetry Off</button><div class="row" style="margin-bottom:10px;"><button id="tilingBtn" class="tool-btn active" style="flex:1">Tiling On</button><div id="layoutPill" class="pill">📍 Grid Mode</div></div><button id="themeToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">☀️ Light Mode</button><button id="clearDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear Drawing &amp; Motifs</button><button id="clearAllDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear All Layers &amp; Motifs</button><button id="viewCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="symPopover" class="sym-pop"><div class="section-title">🦋 Symmetry</div><div class="grid"><button class="sym-btn btn active" data-sym="off">Off</button><button class="sym-btn btn" data-sym="vertical">Vertical</button><button class="sym-btn btn" data-sym="horizontal">Horizontal</button><button class="sym-btn btn" data-sym="quad">Quad</button><button class="sym-btn btn" data-sym="diamond">Diamond</button></div><div class="slider-row"><label>Axis X</label><input id="symX" type="range" min="0" max="1800" value="900"><span id="symXVal">50%</span></div><div class="slider-row"><label>Axis Y</label><input id="symY" type="range" min="0" max="1800" value="900"><span id="symYVal">50%</span></div><div class="row"><button id="symCentre" class="btn mini">Centre Axis</button><button id="symClose" class="btn mini">Done</button></div><div class="hint">Move the mirror point to make flowers, leaves and playful asymmetric symmetry.</div></div><canvas id="canvas" width="1800" height="1800"></canvas><div id="selectionBox" class="selection-box"><div id="resizeHandle" class="handle"></div><div id="rotateHandle" class="rotHandle"></div></div><div id="paintBBoxOverlay" class="selection-box" style="display:none;"><div id="paintResizeHandle" class="handle"></div><div id="paintRotateHandle" class="rotHandle"></div></div><div id="symAxis" class="sym-axis"></div><div id="rotateChip" class="rotate-chip">Canvas 0°</div><div id="pathNodeOverlay"></div></div></div>
+    <div id="canvasViewportOuter" class="canvas-viewport-outer"><div id="canvasWrap" class="canvas-wrap"><div id="viewPopover" class="sym-pop"><div class="section-title">🧭 Canvas / View</div><button id="symToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">🦋 Symmetry Off</button><div class="row" style="margin-bottom:10px;"><button id="tilingBtn" class="tool-btn active" style="flex:1">Tiling On</button><div id="layoutPill" class="pill">📍 Grid Mode</div></div><button id="themeToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">☀️ Light Mode</button><button id="clearDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear Drawing &amp; Motifs</button><button id="clearAllDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear All Layers &amp; Motifs</button><button id="viewCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="zoomPopover" class="sym-pop"><div class="section-title">🔍 View <span id="zoomPopPct" class="small"></span></div><div class="zoom-row"><button id="zoomOutBtn" class="tool-btn" aria-label="Zoom out">−</button><button id="zoomInBtn" class="tool-btn" aria-label="Zoom in">+</button></div><button id="zoom100Btn" class="tool-btn" style="width:100%;margin-bottom:8px;">100% — actual size</button><button id="zoomFitBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">Fit to View</button><button id="zoomResetBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;">Reset View (0°, centre, fit)</button><div class="hint" style="margin-bottom:8px;">These always work, even if the canvas has scrolled out of sight.</div><button id="zoomCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="symPopover" class="sym-pop"><div class="section-title">🦋 Symmetry</div><div class="grid"><button class="sym-btn btn active" data-sym="off">Off</button><button class="sym-btn btn" data-sym="vertical">Vertical</button><button class="sym-btn btn" data-sym="horizontal">Horizontal</button><button class="sym-btn btn" data-sym="quad">Quad</button><button class="sym-btn btn" data-sym="diamond">Diamond</button></div><div class="slider-row"><label>Axis X</label><input id="symX" type="range" min="0" max="1800" value="900"><span id="symXVal">50%</span></div><div class="slider-row"><label>Axis Y</label><input id="symY" type="range" min="0" max="1800" value="900"><span id="symYVal">50%</span></div><div class="row"><button id="symCentre" class="btn mini">Centre Axis</button><button id="symClose" class="btn mini">Done</button></div><div class="hint">Move the mirror point to make flowers, leaves and playful asymmetric symmetry.</div></div><canvas id="canvas" width="1800" height="1800"></canvas><div id="selectionBox" class="selection-box"><div id="resizeHandle" class="handle"></div><div id="rotateHandle" class="rotHandle"></div></div><div id="paintBBoxOverlay" class="selection-box" style="display:none;"><div id="paintResizeHandle" class="handle"></div><div id="paintRotateHandle" class="rotHandle"></div></div><div id="symAxis" class="sym-axis"></div><div id="rotateChip" class="rotate-chip">Canvas 0°</div><div id="pathNodeOverlay"></div></div></div>
     <div id="status" class="status">✨ Apple Pencil draws | one finger protected | two fingers pan/pinch/rotate | two-finger tap Undo | three-finger tap Redo | Capture Motif saves drawing ✨</div>
   </main>
 </div>
@@ -946,7 +953,45 @@ function commitRenderScale(newScale){
   // layer exists yet, when there's nothing to replay and nothing on screen anyway.
   if(layers.length){rebuildAllLayers();redraw();}
 }
+const MIN_ZOOM=.1,MAX_ZOOM=8;
+function clampZoom(z){return isFinite(z)?Math.min(MAX_ZOOM,Math.max(MIN_ZOOM,z)):1;}
+function wrapSize(){return {w:wrap.clientWidth,h:wrap.clientHeight};}
+function unprojectPoint(sx,sy,z,r,pX,pY){const s=z*baseScale,a=-r*Math.PI/180,c=Math.cos(a),n=Math.sin(a),dx=sx-pX,dy=sy-pY;return {x:(dx*c-dy*n)/s+W/2,y:(dx*n+dy*c)/s+H/2};}
+// Set zoom + rotation so that canvas point (cx,cy) lands exactly at screen position (sx,sy).
+// Pinch passes the point that was between the fingers when the gesture began, and the point
+// between the fingers NOW — so the artwork stays glued to the fingers instead of drifting.
+function setViewAnchored(z,r,cx,cy,sx,sy){
+  zoom=clampZoom(z);rot=r;
+  const s=zoom*baseScale,a=rot*Math.PI/180,c=Math.cos(a),n=Math.sin(a),dx=(cx-W/2)*s,dy=(cy-H/2)*s;
+  panX=sx-(dx*c-dy*n);panY=sy-(dx*n+dy*c);
+  applyTransform();
+}
+// Never let the tile be dragged/zoomed completely out of reach: some of it must stay on screen.
+function constrainView(){
+  if(!isFinite(zoom)||zoom<=0)zoom=1;if(!isFinite(rot))rot=0;if(!isFinite(panX))panX=0;if(!isFinite(panY))panY=0;
+  const {w,h}=wrapSize();if(w<=0||h<=0)return;
+  const s=zoom*baseScale,a=rot*Math.PI/180;
+  const ext=s*TILE/2*(Math.abs(Math.cos(a))+Math.abs(Math.sin(a)));
+  const keep=Math.min(120,ext*.5,Math.min(w,h)/4);
+  const limX=w/2+ext-keep,limY=h/2+ext-keep;
+  panX=Math.max(-limX,Math.min(limX,panX));panY=Math.max(-limY,Math.min(limY,panY));
+}
+function fitZoomFor(r){
+  const {w,h}=wrapSize();if(w<=0||h<=0)return 1;
+  const a=r*Math.PI/180,ext=TILE*(Math.abs(Math.cos(a))+Math.abs(Math.sin(a)));
+  return clampZoom(Math.min(w,h)*.94/(ext*baseScale));
+}
+function viewCentrePoint(){return unprojectPoint(0,0,zoom,rot,panX,panY);}
+function zoomAboutCentre(z){const p=viewCentrePoint();setViewAnchored(z,rot,p.x,p.y,0,0);}
+// 100%: exactly zoom 1, original tile centred (rotation untouched).
+function viewActual(){zoom=1;panX=0;panY=0;applyTransform();}
+// Fit to View: original tile centred and fully inside the drawing area (rotation untouched).
+function viewFit(){zoom=fitZoomFor(rot);panX=0;panY=0;applyTransform();}
+// Reset View: rotation 0°, tile centred, fitted.
+function viewReset(){rot=0;zoom=fitZoomFor(0);panX=0;panY=0;applyTransform();}
+
 function applyTransform(){
+  constrainView();
   const newScale=computeRenderScale();
   if(newScale!==renderScale){
     if(!layers.length){
@@ -961,7 +1006,7 @@ function applyTransform(){
       renderScaleTimer=setTimeout(()=>commitRenderScale(newScale),120);
     }
   }
-  canvas.style.transform=`translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom*baseScale}) rotate(${rot}deg)`;$('zoomPill').textContent=Math.round(zoom*100)+'%';$('rotateChip').textContent='Canvas '+Math.round(rot)+'°';updateSelectionBox();updatePaintBBoxOverlay();updateSymAxis();if(pathEditNodes)renderPathNodeOverlay();
+  canvas.style.transform=`translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom*baseScale}) rotate(${rot}deg)`;$('zoomPill').textContent=Math.round(zoom*100)+'% ▾';$('zoomPopPct').textContent='— '+Math.round(zoom*100)+'%';$('rotateChip').textContent='Canvas '+Math.round(rot)+'°';updateSelectionBox();updatePaintBBoxOverlay();updateSymAxis();if(pathEditNodes)renderPathNodeOverlay();
 }
 function screenToCanvas(x,y){const r=canvas.getBoundingClientRect();const cx=x-(r.left+r.width/2),cy=y-(r.top+r.height/2);const a=-rot*Math.PI/180;const s=zoom*baseScale;const ux=(cx*Math.cos(a)-cy*Math.sin(a))/s+W/2;const uy=(cx*Math.sin(a)+cy*Math.cos(a))/s+H/2;return {x:ux,y:uy};}
 function canvasToScreen(x,y){const rect=canvas.getBoundingClientRect(),wrapRect=wrap.getBoundingClientRect();const cx=rect.left+rect.width/2-wrapRect.left,cy=rect.top+rect.height/2-wrapRect.top;const a=rot*Math.PI/180;const s=zoom*baseScale;const px=(x-W/2)*s,py=(y-H/2)*s;return {x:cx+px*Math.cos(a)-py*Math.sin(a),y:cy+px*Math.sin(a)+py*Math.cos(a)};}
@@ -1512,9 +1557,13 @@ canvas.addEventListener('pointercancel',()=>{
 // is exactly why those controls stopped responding to a real tap/Apple
 // Pencil touch on iPad while still "working" under a mouse-driven click.
 function isUiTouchTarget(e){return !!(e.target&&e.target.closest&&e.target.closest('button,input,select,textarea,.sym-pop,.handle,.rotHandle'));}
-wrap.addEventListener('touchstart',e=>{if(isUiTouchTarget(e))return;e.preventDefault();const now=Date.now();touchState={n:e.touches.length,start:copyTouches(e.touches),last:copyTouches(e.touches),moved:false,time:now,zoom,panX,panY,rot};}, {passive:false});
-wrap.addEventListener('touchmove',e=>{if(isUiTouchTarget(e))return;e.preventDefault();if(!touchState)return;const cur=copyTouches(e.touches);touchState.moved=true;if(cur.length===1&&touchState.n===1){return}if(cur.length>=2&&touchState.start.length>=2){const s=touchState.start,c=cur;const sd=dist(s[0],s[1]),cd=dist(c[0],c[1]);const sa=ang(s[0],s[1]),ca=ang(c[0],c[1]);const sm=mid(s[0],s[1]),cm=mid(c[0],c[1]);zoom=Math.min(8,Math.max(.2,touchState.zoom*(cd/sd)));rot=touchState.rot+(ca-sa)*180/Math.PI;panX=touchState.panX+(cm.x-sm.x);panY=touchState.panY+(cm.y-sm.y);applyTransform();}}, {passive:false});
-wrap.addEventListener('touchend',e=>{if(isUiTouchTarget(e))return;e.preventDefault();if(!touchState)return;const dt=Date.now()-touchState.time;const tap=!touchState.moved&&dt<260;if(tap&&touchState.n===2){undo();lastTouchEnd=Date.now()}else if(tap&&touchState.n===3){redo();lastTouchEnd=Date.now()}touchState=null;}, {passive:false});
+wrap.addEventListener('touchstart',e=>{if(isUiTouchTarget(e))return;e.preventDefault();const now=Date.now();const start=copyTouches(e.touches);let anchor=null;if(start.length>=2){const m=mid(start[0],start[1]),r=wrap.getBoundingClientRect();anchor=unprojectPoint(m.x-(r.left+r.width/2),m.y-(r.top+r.height/2),zoom,rot,panX,panY);}touchState={n:e.touches.length,start,last:copyTouches(e.touches),moved:false,time:now,zoom,panX,panY,rot,anchor};}, {passive:false});
+// Two-finger pinch/rotate/pan: the canvas point that was between the fingers when the gesture began
+// is kept under the point between the fingers NOW (setViewAnchored), so zoom and rotation pivot on
+// the fingers instead of the canvas centre. Angle changes are wrapped to (-180°,180°] so crossing
+// the ±180° boundary can't jump, and a small dead zone stops a plain pinch from rotating the canvas.
+wrap.addEventListener('touchmove',e=>{if(isUiTouchTarget(e))return;e.preventDefault();if(!touchState)return;const cur=copyTouches(e.touches);touchState.moved=true;if(cur.length>=2&&touchState.start.length>=2&&touchState.anchor){const s=touchState.start,c=cur;const sd=dist(s[0],s[1]),cd=dist(c[0],c[1]);let da=ang(c[0],c[1])-ang(s[0],s[1]);da=Math.atan2(Math.sin(da),Math.cos(da));const DEAD=4*Math.PI/180;da=Math.sign(da)*Math.max(0,Math.abs(da)-DEAD);const cm=mid(c[0],c[1]),r=wrap.getBoundingClientRect();setViewAnchored(touchState.zoom*(cd/sd),touchState.rot+da*180/Math.PI,touchState.anchor.x,touchState.anchor.y,cm.x-(r.left+r.width/2),cm.y-(r.top+r.height/2));}}, {passive:false});
+wrap.addEventListener('touchend',e=>{if(isUiTouchTarget(e))return;e.preventDefault();if(!touchState)return;const dt=Date.now()-touchState.time;const tap=!touchState.moved&&dt<260;if(tap&&touchState.n===2){undo();lastTouchEnd=Date.now()}else if(tap&&touchState.n===3){redo();lastTouchEnd=Date.now()}if(touchState.moved&&Math.abs(rot)>180){rot=((rot+180)%360+360)%360-180;applyTransform();}touchState=null;}, {passive:false});
 function copyTouches(t){return Array.from(t).map(v=>({x:v.clientX,y:v.clientY}))}function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)||1}function ang(a,b){return Math.atan2(b.y-a.y,b.x-a.x)}function mid(a,b){return{x:(a.x+b.x)/2,y:(a.y+b.y)/2}}
 // Renders the CURRENT strokes (all visible layers, flattened) to a cropped PNG data URL — shared
 // by Capture Motif and by finishing an Edit Motif session, so a motif's preview is generated the
@@ -2458,7 +2507,7 @@ $('shapeMergeBtn').onclick=()=>runShapeOp('merge');
 $('shapeSubtractBtn').onclick=()=>runShapeOp('subtract');
 $('shapeIntersectBtn').onclick=()=>runShapeOp('intersect');
 function syncMode(){$('drawModeBtn').classList.toggle('active',mode==='draw');$('editModeBtn').classList.toggle('active',mode==='edit');canvas.style.cursor=mode==='draw'?'crosshair':'grab';setStatus(mode==='draw'?'✏️ Draw Mode: Apple Pencil draws, two fingers move the canvas.':'↔️ Edit Mode: tap motif with Pencil/mouse, then move, scale, rotate or flip.');}
-$('drawModeBtn').onclick=()=>{if(pathEditStrokeId)commitEditPath();if(joinPendingStrokeId)endJoinPick();disarmAreaFill();disarmShapeMultiSelect();armedShapeType=null;syncShapeToolUI();mode='draw';selected=null;selectedStrokeId=null;multiSelectMode=false;multiSelectIds=[];$('multiSelectToggle').textContent='🔢 Multi-Select: Off';$('multiSelectToggle').classList.remove('active');syncAlignUI();syncStrokeSelectionUI();syncMode();redraw()};$('editModeBtn').onclick=()=>{disarmAreaFill();armedShapeType=null;syncShapeToolUI();mode='edit';syncMode()};$('captureBtn').onclick=captureMotif;$('undoBtn').onclick=undo;$('redoBtn').onclick=redo;$('resetRot').onclick=()=>{rot=0;applyTransform()};
+$('drawModeBtn').onclick=()=>{if(pathEditStrokeId)commitEditPath();if(joinPendingStrokeId)endJoinPick();disarmAreaFill();disarmShapeMultiSelect();armedShapeType=null;syncShapeToolUI();mode='draw';selected=null;selectedStrokeId=null;multiSelectMode=false;multiSelectIds=[];$('multiSelectToggle').textContent='🔢 Multi-Select: Off';$('multiSelectToggle').classList.remove('active');syncAlignUI();syncStrokeSelectionUI();syncMode();redraw()};$('editModeBtn').onclick=()=>{disarmAreaFill();armedShapeType=null;syncShapeToolUI();mode='edit';syncMode()};$('captureBtn').onclick=captureMotif;$('undoBtn').onclick=undo;$('redoBtn').onclick=redo;$('resetRot').onclick=()=>{const q=viewCentrePoint();setViewAnchored(zoom,0,q.x,q.y,0,0)};
 // Clear Drawing only clears the ACTIVE layer's strokes — clearing the whole document across
 // every layer from one button would be far too easy to trigger by accident once layers are
 // holding genuinely different content (Sketch vs Colour vs Outline).
@@ -4260,6 +4309,13 @@ syncThemeToggleUI();
 // toolbar (only Undo/Redo/Zoom/Rotation/Guides/Export stay always-visible there) — same
 // open/close pattern as the pre-existing Symmetry popover, just its own trigger and panel.
 $('viewToggleBtn').onclick=()=>{$('viewPopover').classList.toggle('open');};
+$('zoomPill').onclick=e=>{e.stopPropagation();$('zoomPopover').classList.toggle('open');};
+$('zoomCloseBtn').onclick=()=>{$('zoomPopover').classList.remove('open');};
+$('zoomOutBtn').onclick=()=>zoomAboutCentre(zoom/1.25);
+$('zoomInBtn').onclick=()=>zoomAboutCentre(zoom*1.25);
+$('zoom100Btn').onclick=()=>{viewActual();$('zoomPopover').classList.remove('open');setStatus('🔍 100% — original tile centred.');};
+$('zoomFitBtn').onclick=()=>{viewFit();$('zoomPopover').classList.remove('open');setStatus('🔍 Fit to view — original tile centred.');};
+$('zoomResetBtn').onclick=()=>{viewReset();$('zoomPopover').classList.remove('open');setStatus('🔍 View reset — 0°, centred and fitted.');};
 $('viewCloseBtn').onclick=()=>{$('viewPopover').classList.remove('open');};
 // ---- Collapsible left panel --------------------------------------------------------------------
 // Purely a display:none toggle — nothing about the sidebar's contents, ids or bound handlers
@@ -4555,7 +4611,7 @@ window.__sketchpadCanvasToScreenAbs=(x,y)=>{
 // the (production, intentional) 120ms pinch-settle debounce so a test can assert on the
 // re-rendered result immediately instead of waiting out the debounce window.
 window.__sketchpadSetZoom=(z,skipDebounce)=>{
-  zoom=Math.min(8,Math.max(.2,z));
+  zoom=clampZoom(z);
   if(skipDebounce)clearTimeout(renderScaleTimer);
   applyTransform();
   if(skipDebounce){const ns=computeRenderScale();if(ns!==renderScale)commitRenderScale(ns);}
