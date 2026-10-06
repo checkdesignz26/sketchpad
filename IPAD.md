@@ -14,6 +14,16 @@ Native behaviour lives in `native-bridge.js` and only switches on inside the iPa
 - **Offline.** `npm run build:web` fails if `index.html` references anything over the network.
   Today it needs nothing external.
 
+## View and drawing improvements
+
+- **Fabric preview.** Zoom out and the repeat continues across the whole workspace (respects grid, half-drop,
+  half-brick and diamond). Your tile has a subtle outline. It is display only: exports are unchanged.
+- **Steady zoom.** Pinch is anchored between your fingers; the +/- buttons zoom about the centre of the workspace.
+- **View recovery.** Tap the zoom percentage (e.g. `100% ▾`): **100%**, **Fit to View**, **Reset View** (also resets rotation).
+  These work even if the canvas is completely off-screen.
+- **Stroke panel** only opens when you tap **🖊️ Stroke**; open/closed is remembered.
+- **Safe areas.** Toolbar sits below the iPad status bar in Safari and the installed app, portrait and landscape.
+
 ## Project files
 
 | File | Purpose |
