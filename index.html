@@ -146,6 +146,7 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
 .layer-row.active{border-color:var(--pink);box-shadow:0 0 0 2px rgba(255,142,214,.3)}
 .layer-row.locked{opacity:.7}
 .layer-icon-btn{border:0;background:transparent;font-size:14px;cursor:pointer;padding:2px;width:22px;flex-shrink:0;color:var(--text)}
+.layer-name-input{flex:1;min-width:0;font-size:16px;padding:4px 6px;border-radius:8px;border:1px solid var(--pink);background:var(--btnBg);color:var(--text)}
 .layer-name{flex:1;font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .layer-opacity{width:46px;flex-shrink:0}
 .recipe-text{font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:0;white-space:pre-line;background:var(--btnBg);border-radius:10px;padding:8px 10px}
@@ -188,6 +189,38 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
 .sidebar-toggle:active{transform:scale(.96)}
 /* View popover reuses .sym-pop's look, just anchored under its own (right-side) trigger instead
    of Symmetry's left-side one. */
+button.pill{cursor:pointer;font:inherit;font-size:13px;font-weight:900;min-width:78px;text-align:center}
+button.pill:active{transform:scale(.97)}
+#zoomPopover{left:12px;top:12px;width:264px}
+#zoomPopover:before{display:none}
+#zoomPopover .zoom-row{display:flex;gap:8px;margin-bottom:8px}
+#zoomPopover .zoom-row .tool-btn{flex:1}
+#zoomPopover .tool-btn,#zoomPopover .btn{min-height:44px}
+#strokePanelBtn.attention{box-shadow:0 0 0 3px var(--pink);animation:spPulse 1.2s ease-in-out infinite}
+@keyframes spPulse{50%{box-shadow:0 0 0 7px rgba(255,142,214,.15)}}
+#brushRecents,#brushFavorites{min-height:44px}
+.sidebar{overflow-anchor:none}
+/* Fabric preview: the repeat extended across the whole workspace, behind the real canvas. Purely a
+   rendered copy of the tile — it never takes input and never touches exports. */
+#fabricCanvas{left:0;top:0;width:100%;height:100%;transform:none;pointer-events:none;display:none}
+/* Subtle outline of the ORIGINAL editable tile. A DOM overlay (not canvas pixels) so it stays a
+   constant hair-line thickness at every zoom level without any redraw. */
+#tileOutline{position:absolute;left:50%;top:50%;width:780px;height:780px;pointer-events:none;box-sizing:content-box;
+  border:calc(2px / var(--vs,1)) solid rgba(65,70,130,.55);transform-origin:center center;z-index:1}
+#brushSetList .brushset-row{display:flex;align-items:center;gap:8px;margin:6px 0}
+#brushSetList .brushset-row img{width:40px;height:40px;object-fit:contain;background:repeating-conic-gradient(#8884 0 25%,#0000 0 50%) 0 0/10px 10px;border-radius:6px;flex-shrink:0}
+#brushSetList .brushset-name{flex:1;min-width:0;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px}
+#brushSetList input[type=checkbox]{width:22px;height:22px;flex-shrink:0}
+#recolourPopover{left:auto;right:12px;width:300px;max-height:calc(100% - 80px);overflow:auto}
+#recolourPopover:before{left:auto;right:44px}
+.recolour-row{display:flex;align-items:center;gap:10px;margin:6px 0}
+.recolour-was{width:22px;height:22px;border-radius:6px;border:1px solid var(--line);flex-shrink:0}
+.recolour-label{flex:1;font-size:13px;font-weight:700}
+.recolour-row input[type=color]{width:56px;height:40px;padding:0;border:1px solid var(--btnBorder);border-radius:8px;background:var(--btnBg)}
+#svgPopover{left:auto;right:12px;width:300px}
+#svgPopover:before{left:auto;right:44px}
+#svgPopover .row .tool-btn{flex:1;min-height:44px}
+#svgPopover .tool-btn.active{outline:2px solid var(--pink)}
 #viewPopover{left:auto;right:12px}
 #viewPopover:before{left:auto;right:44px}
 /* Narrow viewports get tighter spacing only — text, buttons, sliders and controls stay at their
@@ -217,7 +250,7 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
       <div class="section-title" style="font-size:11px;margin:10px 0 6px;">Colour target</div>
       <div class="grid" id="colourTargetRow">
         <button class="btn mini colour-target-btn active" data-target="brush">✏️ Brush</button>
-        <button class="btn mini colour-target-btn" data-target="stroke">🖊️ Stroke</button>
+        <button class="btn mini colour-target-btn" data-target="stroke">🖊️ Stroke tools</button>
         <button class="btn mini colour-target-btn" data-target="fill">🎨 Fill</button>
         <button class="btn mini colour-target-btn" data-target="areaFill">🪣 Area Fill</button>
       </div>
@@ -251,6 +284,7 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
     <section class="section" id="brushSection">
       <div class="section-title">✏️ Draw</div>
       <div class="mode-switch"><button id="drawModeBtn" class="btn active">✏️ Draw</button><button id="editModeBtn" class="btn">↔️ Edit</button></div>
+      <div id="brushPreviewWrap" style="margin:8px 0 4px;border:1px solid var(--line);border-radius:12px;overflow:hidden;"><canvas id="brushPreview" style="position:static;display:block;width:100%;height:76px;max-width:100%;transform:none;left:auto;top:auto;"></canvas></div>
       <div class="brush-quickbar">
         <div class="slider-row"><label>Size</label><input id="brushSize" type="range" min="1" max="120" value="6"><span id="brushSizeVal">6</span></div>
         <div class="slider-row"><label>Opacity</label><input id="brushOpacity" type="range" min="1" max="100" value="100"><span id="brushOpacityVal">100%</span></div>
@@ -265,16 +299,24 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
       <div id="brushRecents" class="brush-family-row"></div>
       <div class="brush-family-title">Favourites</div>
       <div id="brushFavorites" class="brush-family-row"></div>
+      <button id="makeBrushBtn" class="btn mini" style="width:100%;margin:8px 0;">＋ Create custom brush…</button>
       <div id="brushFamilies"></div>
       <button id="moreSettingsToggle" class="btn mini" style="width:100%;margin-top:10px;">⚙️ More Settings</button>
       <div id="moreSettings" style="display:none;">
         <div class="slider-row"><label>Smooth</label><input id="brushSmooth" type="range" min="0" max="90" value="30"><span id="brushSmoothVal">30%</span></div>
-        <div class="slider-row"><label>Pres→Width</label><input id="pressureWidth" type="range" min="0" max="100" value="50"><span id="pressureWidthVal">50%</span></div>
-        <div class="slider-row"><label>Pres→Opac</label><input id="pressureOpacity" type="range" min="0" max="100" value="10"><span id="pressureOpacityVal">10%</span></div>
+        <div class="slider-row"><label>Pressure → width</label><input id="pressureWidth" type="range" min="0" max="100" value="50"><span id="pressureWidthVal">50%</span></div>
+        <div class="slider-row"><label>Pressure → opacity</label><input id="pressureOpacity" type="range" min="0" max="100" value="10"><span id="pressureOpacityVal">10%</span></div>
         <div class="slider-row"><label>Spacing</label><input id="brushSpacingCtl" type="range" min="1" max="40" value="6"><span id="brushSpacingValCtl">6%</span></div>
+        <div id="stampOptions" style="display:none;margin-top:6px;">
+          <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:4px 0;"><input type="checkbox" id="stampFollow"> Turn stamps to follow the line</label>
+          <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:4px 0;"><input type="checkbox" id="stampTint"> Paint in one colour (tint with current colour)</label>
+          <div class="hint">Motif brush: Size is the motif's longest side, Spacing is the gap between stamps (100% = touching).</div>
+        </div>
       </div>
       <div id="activeBrushRecipe" class="hint" style="margin-top:8px;"></div>
       <button id="captureBtn" class="btn primary" style="width:100%;margin-top:10px;">✂️ Capture Motif</button>
+      <button id="captureAreaBtn" class="btn" style="width:100%;margin-top:6px;">▭ Capture Area — drag a box round just one drawing</button>
+      <div class="hint">Capture Motif takes everything you have drawn. Capture Area takes only what is inside the box you drag, and leaves the rest of your drawing alone.</div>
       <div class="hint">Apple Pencil draws. One finger no longer pans while drawing. Use two fingers to pan, pinch and rotate.</div>
     </section>
     <section class="section" id="shapesSection">
@@ -307,17 +349,37 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
       <div class="slider-row"><label>Into</label><select id="areaFillLayerSelect" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></select></div>
       <div id="areaFillHint" class="hint">Tap the Area Fill button, then tap inside any enclosed region (even one bounded by several separate strokes) to fill just that region as its own editable vector shape. Gap tolerance bridges small unintentional gaps in the outline.</div>
     </section>
+    <section class="section" id="brushMakerSection"><div class="section-title">🖌️ Pattern Brush</div>
+      <div class="hint">Turn a vector path into a brush tip. Uses the selected stroke (Edit mode), or every stroke on the active layer if none is selected.</div>
+      <div class="slider-row" style="grid-template-columns:64px 1fr;"><label>Name</label><input id="brushNameInput" type="text" maxlength="40" placeholder="my-brush" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"></div>
+      <div class="slider-row" style="grid-template-columns:64px 1fr;"><label>Size</label><select id="brushSizeSelect" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><option value="1024">1024 px</option><option value="2048" selected>2048 px (Procreate max)</option></select></div>
+      <button id="brushShapeBtn" class="btn mini" style="width:100%;margin-top:6px;min-height:40px;">⬇️ Shape PNG (white on black, Procreate)</button>
+      <button id="brushStampBtn" class="btn mini" style="width:100%;margin-top:6px;min-height:40px;">⬇️ Colour stamp PNG (transparent)</button>
+      <button id="brushProcreateBtn" class="btn mini active" style="width:100%;margin-top:6px;min-height:40px;">⬇️ Procreate .brush (from this path)</button>
+      <button id="brushPackBtn" class="btn mini" style="width:100%;margin-top:6px;min-height:40px;">⬇️ PNG pack (.zip with both PNGs)</button>
+      <div class="hint">A .brush opens straight in Procreate. Or import the shape PNG: Brush Studio &gt; Shape &gt; Edit &gt; Import.</div>
+    </section>
+    <section class="section" id="brushSetSection"><div class="section-title">📦 Motif Brush Set</div>
+      <div class="hint">Turn your captured motifs into a Procreate brush set: one stamp brush per motif. Tick the motifs to include and rename them. Uses the size chosen above.</div>
+      <div class="slider-row" style="grid-template-columns:64px 1fr;"><label>Set</label><input id="brushSetNameInput" type="text" maxlength="40" placeholder="My Stamp Set" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"></div>
+      <div id="brushSetList"></div><div id="brushSetEmpty" class="hint">Capture a motif first (✂️ Capture) and it will appear here.</div>
+      <button id="brushSetBtn" class="btn mini active" style="width:100%;margin-top:6px;min-height:40px;">⬇️ Procreate brush set (.brushset)</button>
+      <button id="brushFilesBtn" class="btn mini" style="width:100%;margin-top:6px;min-height:40px;">⬇️ Separate .brush files (.zip)</button>
+      <button id="brushPngPackBtn" class="btn mini" style="width:100%;margin-top:6px;min-height:40px;">⬇️ PNG pack (.zip)</button>
+      <div class="hint">Open the .brushset in Procreate and try the brushes before you sell them.</div>
+    </section>
     <section class="section" id="layersSection">
       <div class="section-title">📚 Layers</div>
       <div id="layersList"></div>
       <div class="row" style="margin-top:4px;">
         <button id="addLayerBtn" class="btn mini" style="flex:1">+ Add</button>
         <button id="duplicateLayerBtn" class="btn mini" style="flex:1">⧉ Duplicate</button>
+        <button id="renameLayerBtn" class="btn mini" style="flex:1">✎ Rename</button>
       </div>
       <div class="hint">New strokes go onto the active (highlighted) layer. Tap a row to make it active.</div>
     </section>
     <section class="section"><div class="section-title">📐 Repeat Layouts</div><div class="grid"><button class="layout-btn active" data-layout="grid">Grid</button><button class="layout-btn" data-layout="halfDrop">Half Drop</button><button class="layout-btn" data-layout="halfBrick">Half Brick</button><button class="layout-btn" data-layout="diamond">Diamond</button><button class="layout-btn" data-layout="ogee">Ogee</button><button class="layout-btn" data-layout="tossed">Tossed</button></div></section>
-    <section class="section"><div class="section-title">🔧 Selected Motif</div><div class="slider-row"><label>Size</label><input id="motifScale" type="range" min="15" max="300" value="100"><span id="motifScaleVal">100%</span></div><div class="row"><button id="rotL" class="btn mini">↺</button><button id="rotR" class="btn mini">↻</button><button id="flipH" class="btn mini">Flip H</button><button id="flipV" class="btn mini">Flip V</button><button id="deleteSel" class="btn mini danger">Delete</button></div><div class="row" style="margin-top:6px;"><button id="editMotifBtn" class="btn mini primary" style="flex:1 1 100%;display:none;">✏️ Edit Motif</button></div><div class="row" style="margin-top:6px;"><button id="duplicateMotifBtn" class="btn mini" style="flex:1 1 45%;display:none;">⧉ Duplicate</button><button id="makeIndependentBtn" class="btn mini" style="flex:1 1 45%;display:none;">🔓 Make Independent</button></div></section>
+    <section class="section"><div class="section-title">🔧 Selected Motif</div><div class="slider-row"><label>Size</label><input id="motifScale" type="range" min="15" max="300" value="100"><span id="motifScaleVal">100%</span></div><div class="row"><button id="rotL" class="btn mini">↺</button><button id="rotR" class="btn mini">↻</button><button id="flipH" class="btn mini">Flip H</button><button id="flipV" class="btn mini">Flip V</button><button id="deleteSel" class="btn mini danger">Delete</button></div><div class="row" style="margin-top:6px;"><button id="editMotifBtn" class="btn mini primary" style="flex:1 1 100%;display:none;">✏️ Edit Motif</button><button id="recolourBtn" class="btn mini" style="flex:1 1 100%;display:none;">🎨 Recolour Parts</button></div><div class="row" style="margin-top:6px;"><button id="duplicateMotifBtn" class="btn mini" style="flex:1 1 45%;display:none;">⧉ Duplicate</button><button id="makeIndependentBtn" class="btn mini" style="flex:1 1 45%;display:none;">🔓 Make Independent</button></div></section>
     <section class="section" id="alignSection">
       <div class="section-title">📐 Align Motifs</div>
       <button id="multiSelectToggle" class="btn mini" style="width:100%;">🔢 Multi-Select: Off</button>
@@ -437,6 +499,7 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
       <button id="shapeFlipHBtn" class="btn mini" style="flex:1">Flip H</button>
       <button id="shapeFlipVBtn" class="btn mini" style="flex:1">Flip V</button>
     </div>
+    <button id="actionsEditPathBtn" class="btn mini primary" style="width:100%;margin-top:6px;">✎ Edit Path</button>
     <button id="duplicateStrokeBtn" class="btn mini" style="width:100%;margin-top:6px;">⧉ Duplicate</button>
     <button id="joinStrokesBtn" class="btn mini" style="width:100%;margin-top:6px;">⋈ Join to Another Path</button>
     <button id="strokeActionsUndoBtn" class="btn mini" style="width:100%;margin-top:6px;">↩️ Undo</button>
@@ -444,9 +507,33 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
   </div>
   <button id="sidebarToggleBtn" class="sidebar-toggle" title="Hide tools panel">‹</button>
   <main class="workspace">
-    <div class="toolbar"><button id="undoBtn" class="tool-btn">↩️ Undo</button><button id="redoBtn" class="tool-btn">↪️ Redo</button><div id="zoomPill" class="pill">100%</div><button id="resetRot" class="tool-btn">0° Rotation</button><button id="guidesBtn" class="tool-btn">📐 Guides</button><button id="paintModePill" class="pill" style="display:none;cursor:pointer;">🎨 Paint Inside — tap for Free Paint</button><button id="editMotifBar" class="pill" style="display:none;cursor:pointer;background:var(--accentTeal);border:1px solid rgba(92,184,171,.5);font:inherit;">✏️ Editing: <span id="editMotifBarName"></span> — tap Done</button><div class="toolbar-spacer"></div><button id="quickSaveBtn" class="tool-btn">💾 Save</button><div id="saveStatusPill" class="pill" title="Autosave status">Saved</div><button id="downloadProjectBtn" class="tool-btn">⬇️ Download Project</button><label class="tool-btn" for="openProjectInput" style="cursor:pointer;">📂 Open Project</label><input id="openProjectInput" type="file" accept="application/json" style="display:none;"><button id="viewToggleBtn" class="tool-btn">⋯ View</button><button id="exportBtn" class="tool-btn primary">📸 Export</button></div>
-    <div id="restoreBanner" style="display:none;">📂 Autosaved session found from <span id="restoreBannerTime"></span>. <button id="restoreAcceptBtn" class="btn mini primary">Restore</button><button id="restoreDeclineBtn" class="btn mini">Start Fresh</button></div>
-    <div id="canvasViewportOuter" class="canvas-viewport-outer"><div id="canvasWrap" class="canvas-wrap"><div id="viewPopover" class="sym-pop"><div class="section-title">🧭 Canvas / View</div><button id="symToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">🦋 Symmetry Off</button><div class="row" style="margin-bottom:10px;"><button id="tilingBtn" class="tool-btn active" style="flex:1">Tiling On</button><div id="layoutPill" class="pill">📍 Grid Mode</div></div><button id="themeToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">☀️ Light Mode</button><button id="clearDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear Drawing</button><button id="viewCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="symPopover" class="sym-pop"><div class="section-title">🦋 Symmetry</div><div class="grid"><button class="sym-btn btn active" data-sym="off">Off</button><button class="sym-btn btn" data-sym="vertical">Vertical</button><button class="sym-btn btn" data-sym="horizontal">Horizontal</button><button class="sym-btn btn" data-sym="quad">Quad</button><button class="sym-btn btn" data-sym="diamond">Diamond</button></div><div class="slider-row"><label>Axis X</label><input id="symX" type="range" min="0" max="1800" value="900"><span id="symXVal">50%</span></div><div class="slider-row"><label>Axis Y</label><input id="symY" type="range" min="0" max="1800" value="900"><span id="symYVal">50%</span></div><div class="row"><button id="symCentre" class="btn mini">Centre Axis</button><button id="symClose" class="btn mini">Done</button></div><div class="hint">Move the mirror point to make flowers, leaves and playful asymmetric symmetry.</div></div><canvas id="canvas" width="1800" height="1800"></canvas><div id="selectionBox" class="selection-box"><div id="resizeHandle" class="handle"></div><div id="rotateHandle" class="rotHandle"></div></div><div id="paintBBoxOverlay" class="selection-box" style="display:none;"><div id="paintResizeHandle" class="handle"></div><div id="paintRotateHandle" class="rotHandle"></div></div><div id="symAxis" class="sym-axis"></div><div id="rotateChip" class="rotate-chip">Canvas 0°</div><div id="pathNodeOverlay"></div></div></div>
+    <div class="toolbar"><button id="undoBtn" class="tool-btn">↩️ Undo</button><button id="redoBtn" class="tool-btn">↪️ Redo</button><button id="zoomPill" class="pill" title="Zoom and view recovery">100% ▾</button><button id="resetRot" class="tool-btn">0° Rotation</button><button id="guidesBtn" class="tool-btn">📐 Guides</button><button id="strokePanelBtn" class="tool-btn" title="Show or hide the Stroke panel">🖊️ Stroke</button><button id="paintModePill" class="pill" style="display:none;cursor:pointer;">🎨 Paint Inside — tap for Free Paint</button><button id="editMotifBar" class="pill" style="display:none;cursor:pointer;background:var(--accentTeal);border:1px solid rgba(92,184,171,.5);font:inherit;">✏️ Editing: <span id="editMotifBarName"></span> — tap Done</button><div class="toolbar-spacer"></div><button id="quickSaveBtn" class="tool-btn">💾 Save</button><div id="saveStatusPill" class="pill" title="Autosave status">Saved</div><button id="downloadProjectBtn" class="tool-btn">⬇️ Download Project</button><button id="backupsBtn" class="tool-btn" title="Automatic earlier versions of your work">🕘 Earlier saves</button><label class="tool-btn" for="openProjectInput" style="cursor:pointer;">📂 Open Project</label><input id="openProjectInput" type="file" accept="application/json" style="display:none;"><button id="viewToggleBtn" class="tool-btn">⋯ View</button><button id="exportBtn" class="tool-btn primary">📸 Export</button><button id="exportSvgBtn" class="tool-btn" title="Export as SVG (vector)">🖋️ SVG</button></div>
+    <div id="quickEditBar" style="display:none;position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:60;gap:8px;background:var(--sideBg);border:1px solid var(--line);border-radius:999px;padding:6px 8px;box-shadow:0 8px 28px rgba(0,0,0,.3);"><button id="quickEditPathBtn" class="btn mini primary">✎ Edit Path</button><button id="quickStrokeToolsBtn" class="btn mini">🖊️ Stroke tools</button></div>
+    <div id="brushMakerPanel" style="display:none;position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:91;background:var(--sideBg);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:0 18px 50px rgba(0,0,0,.35);font-size:13.5px;width:min(480px,calc(100vw - 24px));max-height:calc(100vh - 90px);overflow:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:800;margin-bottom:8px;">🖌️ Create custom brush<button id="bmCancel" class="btn mini">Close</button></div>
+      <div style="border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:8px;"><canvas id="bmPreview" style="position:static;display:block;width:100%;height:84px;transform:none;left:auto;top:auto;"></canvas></div>
+      <div class="slider-row"><label>Name</label><input id="bmName" type="text" placeholder="My brush" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></div>
+      <div class="slider-row"><label>Based on</label><select id="bmFrom" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></select></div>
+      <div id="bmLook">
+        <div class="slider-row"><label>Edge softness</label><input id="bmSoft" type="range" min="5" max="100" value="100"><span id="bmSoftVal"></span></div>
+        <div class="slider-row"><label>Texture</label><input id="bmGrain" type="range" min="0" max="80" value="0"><span id="bmGrainVal"></span></div>
+        <div class="slider-row"><label>Variation</label><input id="bmWobble" type="range" min="0" max="100" value="0"><span id="bmWobbleVal"></span></div>
+        <label style="display:flex;gap:8px;align-items:center;margin:4px 0;"><input type="checkbox" id="bmTaper"> Taper start and end</label>
+        <label style="display:flex;gap:8px;align-items:center;margin:4px 0;"><input type="checkbox" id="bmMono"> Uniform monoline (constant width; ignores pressure and the options above)</label>
+      </div>
+      <div class="slider-row"><label>Size</label><input id="bmSize" type="range" min="1" max="120" value="20"><span id="bmSizeVal"></span></div>
+      <div class="slider-row"><label>Opacity</label><input id="bmOpacity" type="range" min="1" max="100" value="100"><span id="bmOpacityVal"></span></div>
+      <div class="slider-row"><label>Spacing</label><input id="bmSpacing" type="range" min="1" max="40" value="8"><span id="bmSpacingVal"></span></div>
+      <div class="slider-row"><label>Pressure → width</label><input id="bmPW" type="range" min="0" max="100" value="0"><span id="bmPWVal"></span></div>
+      <div class="slider-row"><label>Pressure → opacity</label><input id="bmPO" type="range" min="0" max="100" value="0"><span id="bmPOVal"></span></div>
+      <div style="margin:8px 0;"><label class="btn mini" style="cursor:pointer;display:inline-block;">🖼️ Use an image as the brush tip<input id="bmTip" type="file" accept="image/*" style="display:none;"></label> <button id="bmTipClear" class="btn mini" style="display:none;">Remove image</button>
+        <div class="hint">An image tip (a PNG with a transparent background works best) is stamped along the path, like your Motif Brushes.</div></div>
+      <div class="row" style="margin-top:8px;"><button id="bmSave" class="btn primary" style="flex:1;">💾 Save brush</button></div>
+      <div id="bmListWrap" style="margin-top:10px;"></div>
+    </div>
+    <div id="backupsPanel" style="display:none;position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:90;background:var(--sideBg);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:0 18px 50px rgba(0,0,0,.35);font-size:13.5px;max-width:min(560px,calc(100vw - 24px));max-height:70vh;overflow:auto;"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:800;margin-bottom:6px;">🕘 Earlier saves<button id="backupsClose" class="btn mini">Close</button></div><div id="backupsList"></div></div>
+    <div id="restoreBanner" style="display:none;"><span id="restoreBannerText">📂 Autosaved session found from </span><span id="restoreBannerTime"></span>. <button id="restoreAcceptBtn" class="btn mini primary">Restore</button><button id="restoreDeclineBtn" class="btn mini">Start Fresh</button></div>
+    <div id="canvasViewportOuter" class="canvas-viewport-outer"><div id="canvasWrap" class="canvas-wrap"><div id="viewPopover" class="sym-pop"><div class="section-title">🧭 Canvas / View</div><button id="symToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">🦋 Symmetry Off</button><div class="row" style="margin-bottom:10px;"><button id="tilingBtn" class="tool-btn active" style="flex:1">Tiling On</button><div id="layoutPill" class="pill">📍 Grid Mode</div></div><button id="themeToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">☀️ Light Mode</button><button id="clearDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear Drawing &amp; Motifs</button><button id="clearAllDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear All Layers &amp; Motifs</button><button id="viewCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="zoomPopover" class="sym-pop"><div class="section-title">🔍 View <span id="zoomPopPct" class="small"></span></div><div class="zoom-row"><button id="zoomOutBtn" class="tool-btn" aria-label="Zoom out">−</button><button id="zoomInBtn" class="tool-btn" aria-label="Zoom in">+</button></div><button id="zoom100Btn" class="tool-btn" style="width:100%;margin-bottom:8px;">100% — actual size</button><button id="zoomFitBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">Fit to View</button><button id="zoomResetBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;">Reset View (0°, centre, fit)</button><div class="hint" style="margin-bottom:8px;">These always work, even if the canvas has scrolled out of sight.</div><button id="zoomCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="svgPopover" class="sym-pop"><div class="section-title">🖋️ Export SVG</div><div class="hint" style="margin-bottom:8px;">Vector strokes and fills only. Pictures (placed motifs, background image) are not vector, so they are left out.</div><div class="row" style="margin-bottom:8px;"><button class="tool-btn svg-preset" data-size="780">780</button><button class="tool-btn svg-preset" data-size="1800">1800</button><button class="tool-btn svg-preset" data-size="3600">3600</button></div><div class="slider-row" style="grid-template-columns:64px 1fr 30px;"><label>Size</label><input id="svgSizeInput" type="number" min="64" max="20000" step="1" value="3600" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><span>px</span></div><div class="hint" style="margin-bottom:8px;">Width and height of the square file. 3600 × 3600 is the usual pattern size. The artwork scales exactly.</div><button id="svgSaveBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;min-height:44px;">⬇️ Save SVG</button><button id="svgCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="recolourPopover" class="sym-pop"><div class="section-title">🎨 Recolour Parts</div><div class="hint" style="margin-bottom:8px;">Motif: <b id="recolourName"></b>. Each row is one colour used in the motif. Pick a new colour for any of them.</div><div id="recolourRows"></div><button id="recolourApplyBtn" class="tool-btn primary" style="width:100%;margin:8px 0;min-height:44px;">Apply to this motif</button><button id="recolourNewBtn" class="tool-btn" style="width:100%;margin-bottom:8px;min-height:44px;">Save as new colourway</button><div class="row"><button id="recolourResetBtn" class="btn mini" style="flex:1">Reset</button><button id="recolourCloseBtn" class="btn mini" style="flex:1">✕ Close</button></div></div><div id="symPopover" class="sym-pop"><div class="section-title">🦋 Symmetry</div><div class="grid"><button class="sym-btn btn active" data-sym="off">Off</button><button class="sym-btn btn" data-sym="vertical">Vertical</button><button class="sym-btn btn" data-sym="horizontal">Horizontal</button><button class="sym-btn btn" data-sym="quad">Quad</button><button class="sym-btn btn" data-sym="diamond">Diamond</button></div><div class="slider-row"><label>Axis X</label><input id="symX" type="range" min="0" max="1800" value="900"><span id="symXVal">50%</span></div><div class="slider-row"><label>Axis Y</label><input id="symY" type="range" min="0" max="1800" value="900"><span id="symYVal">50%</span></div><div class="row"><button id="symCentre" class="btn mini">Centre Axis</button><button id="symClose" class="btn mini">Done</button></div><div class="hint">Move the mirror point to make flowers, leaves and playful asymmetric symmetry.</div></div><canvas id="fabricCanvas" aria-hidden="true"></canvas><canvas id="canvas" width="1800" height="1800"></canvas><div id="tileOutline" aria-hidden="true"></div><div id="selectionBox" class="selection-box"><div id="resizeHandle" class="handle"></div><div id="rotateHandle" class="rotHandle"></div></div><div id="paintBBoxOverlay" class="selection-box" style="display:none;"><div id="paintResizeHandle" class="handle"></div><div id="paintRotateHandle" class="rotHandle"></div></div><div id="symAxis" class="sym-axis"></div><div id="rotateChip" class="rotate-chip">Canvas 0°</div><div id="pathNodeOverlay"></div></div></div>
     <div id="status" class="status">✨ Apple Pencil draws | one finger protected | two fingers pan/pinch/rotate | two-finger tap Undo | three-finger tap Redo | Capture Motif saves drawing ✨</div>
   </main>
 </div>
@@ -461,7 +548,7 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
 <script>
 (()=>{
 'use strict';
-const canvas=document.getElementById('canvas'),ctx=canvas.getContext('2d'),wrap=document.getElementById('canvasWrap'),viewportOuter=document.getElementById('canvasViewportOuter');
+const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),wrap=document.getElementById('canvasWrap'),viewportOuter=document.getElementById('canvasViewportOuter');let ctx=mainCtx; // ctx is briefly pointed at the fabric tile's context while it is rendered (see rebuildFabricTile)
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
 // Perf: updateComposite/updateDisplayComposite flatten EVERY visible layer's full-resolution
 // canvas every time they run. redraw() used to call both unconditionally on every single
@@ -545,11 +632,11 @@ let pathEditStrokeId=null,pathEditNodes=null,pathEditClosed=false,selectedNodeIn
 // Edit Path's own current tool: 'select' (tap a node to select it, drag to move — tapping bare
 // canvas/path never adds a node) or 'addNode' (tap directly on the path to insert a node at the
 // exact tapped location; an existing node still takes priority if the tap is also close to one).
-let pathEditTool='select';
+let pathEditTool='select';let pathEditInitial=null;
 let continueStrokeId=null,continueBasePoints=null; // Continue Path: next drawn stroke extends this one instead of starting a new one
 let continuousDrawMode=false; // Continuous Draw toggle: auto-continue a nearby stroke's end instead of starting a new one — see findContinuousDrawTarget
 let joinPendingStrokeId=null,joinPendingFromEnd=false; // Join Path: waiting for a tap on another stroke's endpoint
-let areaFillArmed=false; // Vector Area Fill: next canvas tap fills the enclosed region under it instead of drawing/selecting
+let captureAreaArmed=false,captureRect=null;let areaFillArmed=false; // Vector Area Fill: next canvas tap fills the enclosed region under it instead of drawing/selecting
 // ---- Adaptive Colour (ported from Pattern Playground's "colour mode" panel) --------------------
 // colorTarget tracks which control a tapped swatch writes into — 'brush' (next raster/vector
 // stroke), 'stroke' (the currently selected stroke, recoloured immediately — same as using the
@@ -944,7 +1031,48 @@ function commitRenderScale(newScale){
   // layer exists yet, when there's nothing to replay and nothing on screen anyway.
   if(layers.length){rebuildAllLayers();redraw();}
 }
+const MIN_ZOOM=.1,MAX_ZOOM=8;
+function clampZoom(z){return isFinite(z)?Math.min(MAX_ZOOM,Math.max(MIN_ZOOM,z)):1;}
+function wrapSize(){return {w:wrap.clientWidth,h:wrap.clientHeight};}
+function unprojectPoint(sx,sy,z,r,pX,pY){const s=z*baseScale,a=-r*Math.PI/180,c=Math.cos(a),n=Math.sin(a),dx=sx-pX,dy=sy-pY;return {x:(dx*c-dy*n)/s+W/2,y:(dx*n+dy*c)/s+H/2};}
+// Set zoom + rotation so that canvas point (cx,cy) lands exactly at screen position (sx,sy).
+// Pinch passes the point that was between the fingers when the gesture began, and the point
+// between the fingers NOW — so the artwork stays glued to the fingers instead of drifting.
+function setViewAnchored(z,r,cx,cy,sx,sy){
+  zoom=clampZoom(z);rot=r;
+  const s=zoom*baseScale,a=rot*Math.PI/180,c=Math.cos(a),n=Math.sin(a),dx=(cx-W/2)*s,dy=(cy-H/2)*s;
+  panX=sx-(dx*c-dy*n);panY=sy-(dx*n+dy*c);
+  applyTransform();
+}
+// Never let the tile be dragged/zoomed completely out of reach: some of it must stay on screen.
+function constrainView(){
+  if(!isFinite(zoom)||zoom<=0)zoom=1;if(!isFinite(rot))rot=0;if(!isFinite(panX))panX=0;if(!isFinite(panY))panY=0;
+  const {w,h}=wrapSize();if(w<=0||h<=0)return;
+  const s=zoom*baseScale,a=rot*Math.PI/180;
+  const ext=s*TILE/2*(Math.abs(Math.cos(a))+Math.abs(Math.sin(a)));
+  const keep=Math.min(120,ext*.5,Math.min(w,h)/4);
+  const limX=w/2+ext-keep,limY=h/2+ext-keep;
+  panX=Math.max(-limX,Math.min(limX,panX));panY=Math.max(-limY,Math.min(limY,panY));
+}
+function fitZoomFor(r){
+  const {w,h}=wrapSize();if(w<=0||h<=0)return 1;
+  const a=r*Math.PI/180,ext=TILE*(Math.abs(Math.cos(a))+Math.abs(Math.sin(a)));
+  return clampZoom(Math.min(w,h)*.94/(ext*baseScale));
+}
+function viewCentrePoint(){return unprojectPoint(0,0,zoom,rot,panX,panY);}
+function zoomAboutCentre(z){const p=viewCentrePoint();setViewAnchored(z,rot,p.x,p.y,0,0);}
+// 100%: exactly zoom 1, original tile centred (rotation untouched).
+function viewActual(){zoom=1;panX=0;panY=0;applyTransform();}
+// Fit to View: original tile centred and fully inside the drawing area (rotation untouched).
+function viewFit(){zoom=fitZoomFor(rot);panX=0;panY=0;applyTransform();}
+// Reset View: rotation 0°, tile centred, fitted.
+function viewReset(){rot=0;zoom=fitZoomFor(0);panX=0;panY=0;applyTransform();}
+
+let brushPreviewRaf=0;
+function scheduleBrushPreview(){if(brushPreviewRaf)return;brushPreviewRaf=requestAnimationFrame(()=>{brushPreviewRaf=0;try{renderBrushPreview();}catch(e){}});}
 function applyTransform(){
+  scheduleBrushPreview();
+  constrainView();
   const newScale=computeRenderScale();
   if(newScale!==renderScale){
     if(!layers.length){
@@ -959,11 +1087,76 @@ function applyTransform(){
       renderScaleTimer=setTimeout(()=>commitRenderScale(newScale),120);
     }
   }
-  canvas.style.transform=`translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom*baseScale}) rotate(${rot}deg)`;$('zoomPill').textContent=Math.round(zoom*100)+'%';$('rotateChip').textContent='Canvas '+Math.round(rot)+'°';updateSelectionBox();updatePaintBBoxOverlay();updateSymAxis();if(pathEditNodes)renderPathNodeOverlay();
+  canvas.style.transform=`translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom*baseScale}) rotate(${rot}deg)`;$('zoomPill').textContent=Math.round(zoom*100)+'% ▾';$('zoomPopPct').textContent='— '+Math.round(zoom*100)+'%';{const to=$('tileOutline');to.style.setProperty('--vs',zoom*baseScale);to.style.transform=`translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom*baseScale}) rotate(${rot}deg)`;}$('rotateChip').textContent='Canvas '+Math.round(rot)+'°';updateSelectionBox();updatePaintBBoxOverlay();updateSymAxis();if(pathEditNodes)renderPathNodeOverlay();paintFabric();
 }
 function screenToCanvas(x,y){const r=canvas.getBoundingClientRect();const cx=x-(r.left+r.width/2),cy=y-(r.top+r.height/2);const a=-rot*Math.PI/180;const s=zoom*baseScale;const ux=(cx*Math.cos(a)-cy*Math.sin(a))/s+W/2;const uy=(cx*Math.sin(a)+cy*Math.cos(a))/s+H/2;return {x:ux,y:uy};}
 function canvasToScreen(x,y){const rect=canvas.getBoundingClientRect(),wrapRect=wrap.getBoundingClientRect();const cx=rect.left+rect.width/2-wrapRect.left,cy=rect.top+rect.height/2-wrapRect.top;const a=rot*Math.PI/180;const s=zoom*baseScale;const px=(x-W/2)*s,py=(y-H/2)*s;return {x:cx+px*Math.cos(a)-py*Math.sin(a),y:cy+px*Math.sin(a)+py*Math.cos(a)};}
-function redraw(){if(redraw._q)return;redraw._q=requestAnimationFrame(()=>{redraw._q=0;if(compositeDirty){updateComposite();updateDisplayComposite();compositeDirty=false;}ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);drawBackground();drawTraces();if(showTiling)drawTiles();else{ctx.drawImage(displayCanvas,0,0,W,H);if(liveActive)ctx.drawImage(liveLayer,0,0);}drawPlaced();drawMultiSelectHighlights();drawShapeToolsHighlights();drawStrokeSelection();drawTileBoundary();if(showGuides)drawGuides();updateSelectionBox();updatePaintBBoxOverlay();});}
+// ---- Fabric preview ---------------------------------------------------------------------------
+// The real canvas only holds a few repeats (it is a fixed 1800-unit bitmap). When the view is
+// zoomed out past that, this extra canvas — behind the real one, never receiving input — tiles a
+// small snapshot of the tile across the whole workspace using the same layout lattice. The snapshot
+// is rendered with the SAME draw code as the real canvas (background, artwork, motifs, live
+// stroke), so surrounding repeats update live; it holds no artwork of its own and exports never
+// read it. It is skipped entirely whenever the real canvas already covers the workspace.
+const fabricCanvas=document.getElementById('fabricCanvas'),fctx=fabricCanvas.getContext('2d');
+const fabricTile=document.createElement('canvas'),ftctx=fabricTile.getContext('2d');
+let fabricTilePx=0,fabricTileDirty=true,fabricShown=false,fabricLast=0,fabricTimer=0;
+function fabricSnapPx(n){return Math.max(96,Math.min(1024,Math.pow(2,Math.ceil(Math.log2(Math.max(1,n))))));}
+function rebuildFabricTile(px){
+  if(fabricTile.width!==px||fabricTile.height!==px){fabricTile.width=px;fabricTile.height=px;}
+  const k=px/TILE,saved=ctx;
+  ctx=ftctx;
+  try{
+    ftctx.setTransform(1,0,0,1,0,0);ftctx.clearRect(0,0,px,px);
+    ftctx.setTransform(k,0,0,k,-C*k,-C*k);
+    ftctx.save();ftctx.beginPath();ftctx.rect(C,C,TILE,TILE);ftctx.clip();
+    ftctx.fillStyle='#fff';ftctx.fillRect(C,C,TILE,TILE);
+    drawBackground();
+    drawTiles();
+    drawPlaced();
+    ftctx.restore();
+  }finally{ctx=saved;}
+  fabricTilePx=px;fabricTileDirty=false;
+}
+function fabricContentChanged(){
+  fabricTileDirty=true;
+  if(!fabricShown||fabricTimer||drawing)return; // no repeat-preview work while a stroke is being drawn; it catches up on pen-up
+  fabricTimer=setTimeout(()=>{fabricTimer=0;paintFabric();},Math.max(0,33-(performance.now()-fabricLast)));
+}
+function paintFabric(){
+  const vw=wrap.clientWidth,vh=wrap.clientHeight;
+  if(!showTiling||vw<=0||vh<=0||!layers.length){fabricCanvas.style.display='none';fabricShown=false;return;}
+  // Canvas-space bounding box of the visible workspace.
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  for(const [sx,sy] of [[-vw/2,-vh/2],[vw/2,-vh/2],[-vw/2,vh/2],[vw/2,vh/2]]){
+    const q=unprojectPoint(sx,sy,zoom,rot,panX,panY);
+    if(q.x<minX)minX=q.x;if(q.x>maxX)maxX=q.x;if(q.y<minY)minY=q.y;if(q.y>maxY)maxY=q.y;
+  }
+  if(minX>=0&&minY>=0&&maxX<=W&&maxY<=H){fabricCanvas.style.display='none';fabricShown=false;return;} // real canvas already covers it
+  fabricCanvas.style.display='block';fabricShown=true;
+  const dpr=Math.min(window.devicePixelRatio||1,2),pw=Math.round(vw*dpr),ph=Math.round(vh*dpr);
+  if(fabricCanvas.width!==pw||fabricCanvas.height!==ph){fabricCanvas.width=pw;fabricCanvas.height=ph;}
+  const s=zoom*baseScale,want=fabricSnapPx(TILE*s*dpr);
+  if(fabricTileDirty||want!==fabricTilePx)rebuildFabricTile(want);
+  const a=rot*Math.PI/180,cos=Math.cos(a),sin=Math.sin(a);
+  fctx.setTransform(1,0,0,1,0,0);fctx.clearRect(0,0,pw,ph);
+  fctx.setTransform(dpr*s*cos,dpr*s*sin,-dpr*s*sin,dpr*s*cos,dpr*(vw/2+panX-s*(cos*W/2-sin*H/2)),dpr*(vh/2+panY-s*(sin*W/2+cos*H/2)));
+  fctx.imageSmoothingEnabled=true;
+  const eps=.5/(s*dpr); // overlap neighbouring tiles by half a device pixel so no hairline seams show
+  const iyLo=Math.floor((minY-C)/TILE)-2,iyHi=Math.ceil((maxY-C)/TILE)+2;
+  let drawn=0;
+  for(let iy=iyLo;iy<=iyHi&&drawn<900;iy++){
+    const rowShift=layout==='diamond'?iy*TILE/2:(layout==='halfBrick'&&iy%2)?TILE/2:0;
+    const ixLo=Math.floor((minX-C-rowShift)/TILE)-1,ixHi=Math.ceil((maxX-C-rowShift)/TILE)+1;
+    for(let ix=ixLo;ix<=ixHi&&drawn<900;ix++){
+      const [ox,oy]=tilePos(ix,iy),x=C+ox,y=C+oy;
+      if(x>maxX||x+TILE<minX||y>maxY||y+TILE<minY)continue;
+      fctx.drawImage(fabricTile,x-eps,y-eps,TILE+2*eps,TILE+2*eps);drawn++;
+    }
+  }
+  fabricLast=performance.now();
+}
+function redraw(){if(redraw._q)return;redraw._q=requestAnimationFrame(()=>{redraw._q=0;if(pathEditStrokeId&&pathEditNodes&&!liveActive&&!drawing)renderPathLivePreview();if(compositeDirty){updateComposite();updateDisplayComposite();compositeDirty=false;}ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);drawBackground();drawTraces();if(showTiling)drawTiles();else{ctx.drawImage(displayCanvas,0,0,W,H);if(liveActive)ctx.drawImage(liveLayer,0,0);}drawPlaced();drawMultiSelectHighlights();drawShapeToolsHighlights();drawStrokeSelection();drawTileBoundary();if(showGuides)drawGuides();updateSelectionBox();updatePaintBBoxOverlay();fabricContentChanged();});}
 // A pattern (e.g. exported from Magic Builder) loaded as the base of the design - unlike Trace
 // Reference (a non-exported, freely-scaled/positioned tracing guide), this is sized to exactly
 // fill the guide-square tile, tiles using the same repeat offsets as the hand-drawn layer/motifs
@@ -972,9 +1165,10 @@ function drawBackground(){if(!bgImg||!bgShown)return;ctx.save();ctx.globalAlpha=
 // The tile boundary itself is always visible — it's how the camera-window view reads as "this is
 // the editable tile, everything outside it is a repeat edge-clone", independent of the optional
 // grid/guides overlay (which is off by default and purely a drawing aid).
-function drawTileBoundary(){ctx.save();ctx.strokeStyle='rgba(65,70,130,.62)';ctx.lineWidth=5;ctx.strokeRect(C,C,TILE,TILE);ctx.restore();}
+function drawTileBoundary(){/* now the #tileOutline DOM overlay (constant thickness at any zoom) */}
 function drawGuides(){ctx.save();ctx.strokeStyle='rgba(54,60,110,.18)';ctx.lineWidth=3;for(let x=C;x<=C+TILE;x+=TILE/4){ctx.beginPath();ctx.moveTo(x,C);ctx.lineTo(x,C+TILE);ctx.stroke()}for(let y=C;y<=C+TILE;y+=TILE/4){ctx.beginPath();ctx.moveTo(C,y);ctx.lineTo(C+TILE,y);ctx.stroke()}if(symMode!=='off'){ctx.strokeStyle='rgba(223,111,165,.75)';ctx.lineWidth=3;ctx.setLineDash([14,10]);if(symMode==='vertical'||symMode==='quad'||symMode==='diamond'){ctx.beginPath();ctx.moveTo(symX,C);ctx.lineTo(symX,C+TILE);ctx.stroke()}if(symMode==='horizontal'||symMode==='quad'||symMode==='diamond'){ctx.beginPath();ctx.moveTo(C,symY);ctx.lineTo(C+TILE,symY);ctx.stroke()}if(symMode==='diamond'){ctx.beginPath();ctx.moveTo(C,symY-(symX-C));ctx.lineTo(C+TILE,symY+(C+TILE-symX));ctx.stroke();ctx.beginPath();ctx.moveTo(C,symY+(symX-C));ctx.lineTo(C+TILE,symY-(C+TILE-symX));ctx.stroke();}}ctx.restore();}
 function drawTraces(){traces.forEach(t=>{ctx.save();ctx.globalAlpha=t.opacity;t.w=t.img.width*t.scale;t.h=t.img.height*t.scale;ctx.drawImage(t.img,t.x-t.w/2,t.y-t.h/2,t.w,t.h);ctx.restore();});}
+function tilePos(ix,iy){let ox=ix*TILE,oy=iy*TILE;if(layout==='halfDrop'&&ix%2)oy+=TILE/2;if(layout==='halfBrick'&&iy%2)ox+=TILE/2;if(layout==='diamond'){ox+=iy*TILE/2}return [ox,oy];}
 function offsets(){let arr=[[0,0]];if(!showTiling)return arr;for(let ix=-1;ix<=1;ix++)for(let iy=-1;iy<=1;iy++){let ox=ix*TILE,oy=iy*TILE;if(layout==='halfDrop'&&ix%2)oy+=TILE/2;if(layout==='halfBrick'&&iy%2)ox+=TILE/2;if(layout==='diamond'){ox+=iy*TILE/2}if(!(ix===0&&iy===0))arr.push([ox,oy]);}return arr;}
 function drawTiles(){offsets().forEach(([ox,oy])=>{ctx.drawImage(displayCanvas,ox,oy,W,H);if(liveActive)ctx.drawImage(liveLayer,ox,oy);});}
 // Point-to-polyline distance, used for both stroke picking (selectAt) and eraser hit-testing
@@ -1148,6 +1342,14 @@ function renderLivePreviewIncremental(){
   // Clipped, not a cheaper approximation) — clip() is a native, near-free canvas op, so there's no
   // real cost to paying for full-quality clipping on every incremental slice while drawing.
   const clipStrokeId=(paintMode==='inside')?paintInsideTargetId:null;
+  if(brush.stamp){ // stamps depend on spacing along the whole line, so redraw it all each time
+    lctx.clearRect(0,0,W,H);
+    symmetryTransforms().forEach(tf=>{
+      const pts=currentPoints.map(pt=>{const t=tf(pt);return{x:t.x,y:t.y,pressure:pt.pressure};});
+      renderStrokeClipped(lctx,{id:currentStrokeId,brushId:activeBrushId,color:currentColor,points:pts,clipStrokeId},brush,settings);
+    });
+    lastRenderedIndex=currentPoints.length;return;
+  }
   symmetryTransforms().forEach(tf=>{
     const pts=slice.map(pt=>{const t=tf(pt);return{x:t.x,y:t.y,pressure:pt.pressure};});
     renderStrokeClipped(lctx,{id:currentStrokeId,brushId:activeBrushId,color:currentColor,points:pts,clipStrokeId},brush,settings);
@@ -1158,8 +1360,8 @@ function renderLivePreviewIncremental(){
 // just applied here so the SAME smoothed points end up both in the live preview and in what
 // gets committed — smoothing only at commit time (after the stroke already looked different
 // while being drawn) would make the line visibly "jump" the instant the pencil lifts.
-function pushRawPoint(x,y,pressure){
-  const amount=currentSettings().smoothing/100;
+function pushRawPoint(x,y,pressure,amountOverride){
+  const amount=amountOverride!=null?amountOverride:currentSettings().smoothing/100;
   let tx=x,ty=y;
   if(smoothLast&&amount>0){tx=smoothLast.x+(x-smoothLast.x)*(1-amount);ty=smoothLast.y+(y-smoothLast.y)*(1-amount);}
   smoothLast={x:tx,y:ty};
@@ -1310,6 +1512,8 @@ function flushEraserRebuild(){
 }
 canvas.addEventListener('pointerdown',e=>{
   if(!isPen(e))return;
+  if(captureAreaArmed){e.preventDefault();captureRectStart(e);return;}
+  if(!traceLocked&&mode==='edit'&&traces.length&&!areaFillArmed&&!pathEditStrokeId){e.preventDefault();traceDragStart(e);return;}
   if(areaFillArmed){e.preventDefault();attemptAreaFillAt(e.clientX,e.clientY);return;}
   // While Edit Path is active, a canvas tap means something ENTIRELY different (select/insert a
   // node — see handlePathEditCanvasTap) and must never fall through to selectAt()/drawing below.
@@ -1321,6 +1525,13 @@ canvas.addEventListener('pointerdown',e=>{
   if(mode==='edit'){selectAt(e.clientX,e.clientY);return}
   const layer=getActiveLayer();
   if(!layer||layer.locked){setStatus('🔒 "'+(layer?layer.name:'')+'" is locked — unlock it in Layers to draw.');return;}
+  // Drawing on a hidden (or fully transparent) layer used to look exactly like "my stroke disappears
+  // when I lift the pen": it was drawn, just onto a layer nobody could see. Reveal it instead.
+  if(layer.visible===false||layer.opacity<10){
+    layer.visible=true;if(layer.opacity<10)layer.opacity=100;
+    compositeDirty=true;renderLayersList();
+    setStatus('👁️ "'+layer.name+'" was hidden, so it is now shown — otherwise your stroke would be invisible.');
+  }
   e.preventDefault();try{canvas.setPointerCapture(e.pointerId);}catch(err){} // capture is best-effort — a stroke must still start even if it's refused
   const p=screenToCanvas(e.clientX,e.clientY),pressure=(e.pressure&&e.pressure>0)?e.pressure:.5;
   if(armedShapeType){
@@ -1405,7 +1616,14 @@ canvas.addEventListener('pointermove',e=>{
     return;
   }
   if(holdTriggered){adjustHeldShape(p);return;} // shape already snapped this gesture — Pencil now adjusts it, not freehand
-  pushRawPoint(p.x,p.y,pressure);
+  // Safari merges several Pencil samples into one pointermove when the page is busy; feeding every
+  // merged sample keeps curves smooth. Smoothing is split across them (a^(1/n)) so the stroke
+  // follows the Pencil with the same lag as before.
+  const co=(e.getCoalescedEvents&&e.getCoalescedEvents())||[];
+  if(co.length>1){
+    const a=currentSettings().smoothing/100,per=a>0?Math.pow(a,1/co.length):0;
+    co.forEach(ce=>{const q=screenToCanvas(ce.clientX,ce.clientY);pushRawPoint(q.x,q.y,(ce.pressure&&ce.pressure>0)?ce.pressure:.5,per);});
+  }else pushRawPoint(p.x,p.y,pressure);
   renderLivePreviewIncremental();redraw();
   if(!continueStrokeId)maybeArmHoldTimer(p); // Draw + Hold only applies to a plain freehand gesture, never Continue Path
 });
@@ -1430,7 +1648,7 @@ canvas.addEventListener('pointerup',e=>{
     mode='edit';syncMode();syncStrokeSelectionUI();
     BrushEngine.touchRecent(stroke.brushId);syncRecents();
     pushHist();redraw();
-    setStatus('🔷 Shape created and selected — resize/rotate below, or Convert to Path to edit nodes.');
+    setStatus('🔷 Shape created and selected — tap 🖊️ Stroke in the toolbar to resize/rotate it or Convert to Path.');
     return;
   }
   if(eraserActive){
@@ -1485,6 +1703,7 @@ canvas.addEventListener('pointerup',e=>{
   pushHist();redraw();
 });
 canvas.addEventListener('pointercancel',()=>{
+  if(pathEditStrokeId&&!drawing)return; // a stray cancel (palm/gesture) must not wipe Edit Path's live stroke
   drawing=false;currentPoints=[];liveActive=false;lctx.clearRect(0,0,W,H);
   if(eraserGestureActive){
     // Unlike other gestures, the eraser already mutated `strokes` live (for on-screen feedback
@@ -1509,9 +1728,13 @@ canvas.addEventListener('pointercancel',()=>{
 // is exactly why those controls stopped responding to a real tap/Apple
 // Pencil touch on iPad while still "working" under a mouse-driven click.
 function isUiTouchTarget(e){return !!(e.target&&e.target.closest&&e.target.closest('button,input,select,textarea,.sym-pop,.handle,.rotHandle'));}
-wrap.addEventListener('touchstart',e=>{if(isUiTouchTarget(e))return;e.preventDefault();const now=Date.now();touchState={n:e.touches.length,start:copyTouches(e.touches),last:copyTouches(e.touches),moved:false,time:now,zoom,panX,panY,rot};}, {passive:false});
-wrap.addEventListener('touchmove',e=>{if(isUiTouchTarget(e))return;e.preventDefault();if(!touchState)return;const cur=copyTouches(e.touches);touchState.moved=true;if(cur.length===1&&touchState.n===1){return}if(cur.length>=2&&touchState.start.length>=2){const s=touchState.start,c=cur;const sd=dist(s[0],s[1]),cd=dist(c[0],c[1]);const sa=ang(s[0],s[1]),ca=ang(c[0],c[1]);const sm=mid(s[0],s[1]),cm=mid(c[0],c[1]);zoom=Math.min(8,Math.max(.2,touchState.zoom*(cd/sd)));rot=touchState.rot+(ca-sa)*180/Math.PI;panX=touchState.panX+(cm.x-sm.x);panY=touchState.panY+(cm.y-sm.y);applyTransform();}}, {passive:false});
-wrap.addEventListener('touchend',e=>{if(isUiTouchTarget(e))return;e.preventDefault();if(!touchState)return;const dt=Date.now()-touchState.time;const tap=!touchState.moved&&dt<260;if(tap&&touchState.n===2){undo();lastTouchEnd=Date.now()}else if(tap&&touchState.n===3){redo();lastTouchEnd=Date.now()}touchState=null;}, {passive:false});
+wrap.addEventListener('touchstart',e=>{if(isUiTouchTarget(e))return;e.preventDefault();const now=Date.now();const start=copyTouches(e.touches);let anchor=null;if(start.length>=2){const m=mid(start[0],start[1]),r=wrap.getBoundingClientRect();anchor=unprojectPoint(m.x-(r.left+r.width/2),m.y-(r.top+r.height/2),zoom,rot,panX,panY);}touchState={n:e.touches.length,start,last:copyTouches(e.touches),moved:false,time:now,zoom,panX,panY,rot,anchor};}, {passive:false});
+// Two-finger pinch/rotate/pan: the canvas point that was between the fingers when the gesture began
+// is kept under the point between the fingers NOW (setViewAnchored), so zoom and rotation pivot on
+// the fingers instead of the canvas centre. Angle changes are wrapped to (-180°,180°] so crossing
+// the ±180° boundary can't jump, and a small dead zone stops a plain pinch from rotating the canvas.
+wrap.addEventListener('touchmove',e=>{if(isUiTouchTarget(e))return;e.preventDefault();if(!touchState)return;const cur=copyTouches(e.touches);touchState.moved=true;if(cur.length>=2&&touchState.start.length>=2&&touchState.anchor){const s=touchState.start,c=cur;const sd=dist(s[0],s[1]),cd=dist(c[0],c[1]);let da=ang(c[0],c[1])-ang(s[0],s[1]);da=Math.atan2(Math.sin(da),Math.cos(da));const DEAD=4*Math.PI/180;da=Math.sign(da)*Math.max(0,Math.abs(da)-DEAD);const cm=mid(c[0],c[1]),r=wrap.getBoundingClientRect();setViewAnchored(touchState.zoom*(cd/sd),touchState.rot+da*180/Math.PI,touchState.anchor.x,touchState.anchor.y,cm.x-(r.left+r.width/2),cm.y-(r.top+r.height/2));}}, {passive:false});
+wrap.addEventListener('touchend',e=>{if(isUiTouchTarget(e))return;e.preventDefault();if(!touchState)return;const dt=Date.now()-touchState.time;const tap=!touchState.moved&&dt<260;if(tap&&touchState.n===2){undo();lastTouchEnd=Date.now()}else if(tap&&touchState.n===3){redo();lastTouchEnd=Date.now()}if(touchState.moved&&Math.abs(rot)>180){rot=((rot+180)%360+360)%360-180;applyTransform();}touchState=null;}, {passive:false});
 function copyTouches(t){return Array.from(t).map(v=>({x:v.clientX,y:v.clientY}))}function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)||1}function ang(a,b){return Math.atan2(b.y-a.y,b.x-a.x)}function mid(a,b){return{x:(a.x+b.x)/2,y:(a.y+b.y)/2}}
 // Renders the CURRENT strokes (all visible layers, flattened) to a cropped PNG data URL — shared
 // by Capture Motif and by finishing an Edit Motif session, so a motif's preview is generated the
@@ -1532,9 +1755,11 @@ function renderCurrentArtworkPreview(){
 // with its nodes/shape/brushId/settings/pressure/closed/clipStrokeId exactly as drawn, plus the
 // layer structure Paint Inside relies on) is captured into entry.source BEFORE the canvas is
 // cleared, so Edit Motif can hand it straight back later with nothing lost or baked into pixels.
-function captureMotif(){
+function captureMotif(subset){
+  const allStrokes=strokes;
+  if(subset){strokes=subset;rebuildAllLayers();}
   const preview=renderCurrentArtworkPreview();
-  if(!preview){setStatus('Nothing to capture yet — draw with Apple Pencil first.');return}
+  if(!preview){if(subset){strokes=allStrokes;rebuildAllLayers();}setStatus('Nothing to capture yet — draw with Apple Pencil first.');return}
   const source={
     strokesJSON:JSON.stringify(strokes),
     layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity}))),
@@ -1543,8 +1768,8 @@ function captureMotif(){
   // returnToDraw=true: the user was mid-drawing when they captured — see the comment on
   // placeMotif() for why capture must NOT silently strand the canvas in Edit Mode afterward.
   addMotif(preview.src,'Motif '+(motifs.length+1),true,source,true);
-  strokes=[];rebuildAllLayers();selectedStrokeId=null;syncStrokeSelectionUI();pushHist();redraw();
-  setStatus('✂️ Captured as an editable motif and cleared the canvas — select it and tap Edit Motif any time to return to it.');
+  strokes=subset?allStrokes.filter(st=>!subset.includes(st)):[];rebuildAllLayers();selectedStrokeId=null;syncStrokeSelectionUI();pushHist();redraw();
+  setStatus(subset?'✂️ Captured just that drawing as an editable motif — the rest of your drawing is still on the canvas.':'✂️ Captured as an editable motif and cleared the canvas — select it and tap Edit Motif any time to return to it.');
 }
 // Every motif gets a stable id (never a bare array index — placed[] instances and Edit Motif both
 // need something that survives another motif being deleted/reordered ahead of it). `source` is
@@ -1561,7 +1786,21 @@ function addMotif(src,name,placeNow=false,source=null,returnToDraw=false){
   };
   img.src=src;
 }
+// Every captured motif doubles as a brush ("Motif Brushes" in the brush panel): draw a line and
+// the motif is stamped along it. Kept in step with the motif list from renderTray.
+function syncStampBrushes(){
+  let changed=false;
+  const want=new Map(motifs.filter(m=>m.img&&(m.img.naturalWidth||m.img.width)).map(m=>['stamp:'+m.id,m]));
+  BrushEngine.BRUSHES.filter(b=>b.stamp&&String(b.id).startsWith('stamp:')&&!want.has(b.id)).map(b=>b.id).forEach(id=>{BrushEngine.unregisterStampBrush(id);changed=true;if(activeBrushId===id){activeBrushId='smoothPen';}});
+  want.forEach((m,id)=>{const b=BrushEngine.BRUSHES.find(x=>x.id===id);if(!b||b.stampImg!==m.img||b.name!==m.name){BrushEngine.registerStampBrush(id,m.name,m.img);changed=true;}});
+  if(changed){
+    try{renderBrushFamilies();syncRecents();syncFavorites();syncControlsFromSettings();if(typeof renderStrokeReassignSwatches==='function'&&selectedStrokeId)renderStrokeReassignSwatches();}catch(e){console.warn(e);}
+    if(strokes.some(st=>String(st.brushId).startsWith('stamp:'))){try{rebuildAllLayers();redraw();}catch(e){}}
+  }
+}
 function renderTray(){
+  syncStampBrushes();
+  renderBrushSetList();
   const tray=$('motifTray');tray.innerHTML='';
   $('motifEmpty').style.display=motifs.length?'none':'block';
   motifs.forEach(m=>{
@@ -1690,10 +1929,23 @@ function distanceToMultiPolyline(px,py,regions){
   regions.forEach(pts=>{const d=distanceToPolyline(px,py,pts);if(d<best)best=d;});
   return best;
 }
+// The Stroke panel (sidebar section + floating actions bar) is shown ONLY when the person has
+// turned it on with the toolbar's Stroke button — selecting or creating a stroke never opens it,
+// and the on/off choice is remembered between sessions.
+let strokePanelOpen=false;try{strokePanelOpen=localStorage.getItem('sp-strokePanelOpen')==='1';}catch(e){}
+function setStrokePanelOpen(on){
+  strokePanelOpen=!!on;
+  try{localStorage.setItem('sp-strokePanelOpen',strokePanelOpen?'1':'0');}catch(e){}
+  const b=$('strokePanelBtn');if(b)b.classList.toggle('active',strokePanelOpen);
+  syncStrokeSelectionUI();
+}
 function syncStrokeSelectionUI(){
+  { // nudge: a stroke is selected in Edit mode but its tools (Edit Path, resize, colour...) are closed
+    const sb=$('strokePanelBtn');if(sb)sb.classList.toggle('attention',!!(selectedStrokeId&&!strokePanelOpen&&mode==='edit'));
+  }
   const section=$('strokeSelectSection');
   if(!section)return;
-  section.style.display=selectedStrokeId?'block':'none';
+  section.style.display=(selectedStrokeId&&strokePanelOpen)?'block':'none';
   if(selectedStrokeId){renderStrokeReassignSwatches();syncStrokeRecipeUI();}
   if(typeof syncColourTargetUI==='function')syncColourTargetUI();
   if(typeof syncShapeToolsUI==='function')syncShapeToolsUI();
@@ -1729,7 +1981,7 @@ function syncStrokeSelectionUI(){
   if(editPathBtnEl){
     const isPaint=!!(stroke&&stroke.clipStrokeId);
     const isMultiRegion=!!(stroke&&stroke.regions&&stroke.regions.length>1);
-    editPathBtnEl.disabled=!stroke||isPaint||isMultiRegion;
+    editPathBtnEl.disabled=!stroke||isPaint||isMultiRegion;{const a=$('actionsEditPathBtn');if(a)a.disabled=editPathBtnEl.disabled;}
     editPathBtnEl.title=isPaint?'Painted content is edited by dragging its bounding-box handles on the canvas, not as individual nodes.'
       :isMultiRegion?'This shape has a hole or several separate pieces — node editing a multi-piece Shape Tools result isn\'t supported yet. It\'s still a real, movable, recolourable vector shape.'
       :'';
@@ -1747,12 +1999,21 @@ function syncStrokeSelectionUI(){
   // the whole-stroke Move/Transform panel has nothing useful to add until it ends.
   const actionsBar=$('strokeActionsBar');
   if(actionsBar){
-    if(selectedStrokeId&&!pathEditStrokeId&&!joinPendingStrokeId){
+    if(selectedStrokeId&&strokePanelOpen&&!pathEditStrokeId&&!joinPendingStrokeId){
       const wasHidden=actionsBar.style.display==='none';
       actionsBar.style.display='block';
       if(wasHidden){const vr=viewportOuter.getBoundingClientRect();positionFloatPanel('strokeActionsBar',vr.left+16,vr.bottom-420);}
     }else{
       actionsBar.style.display='none';
+    }
+  }
+  { // one-tap shortcut: a selected stroke in Edit mode offers Edit Path without opening the sidebar
+    const q=$('quickEditBar');
+    if(q){
+      const okPath=!!(stroke&&!stroke.clipStrokeId&&!(stroke.regions&&stroke.regions.length>1));
+      const show=!!(selectedStrokeId&&mode==='edit'&&!pathEditStrokeId&&!joinPendingStrokeId&&okPath);
+      q.style.display=show?'flex':'none';
+      const t=$('quickStrokeToolsBtn');if(t)t.style.display=strokePanelOpen?'none':'';
     }
   }
   updatePaintBBoxOverlay();
@@ -1959,7 +2220,7 @@ function renderLayersList(){
       +'<button type="button" class="layer-icon-btn layer-del" title="Delete">✕</button>';
     row.querySelector('.layer-vis').onclick=e=>{e.stopPropagation();layer.visible=!layer.visible;compositeDirty=true;renderLayersList();pushHist();redraw();};
     row.querySelector('.layer-lock').onclick=e=>{e.stopPropagation();layer.locked=!layer.locked;renderLayersList();pushHist();};
-    row.querySelector('.layer-name').onclick=e=>{e.stopPropagation();const name=prompt('Rename layer',layer.name);if(name&&name.trim()){layer.name=name.trim();renderLayersList();pushHist();}};
+    row.querySelector('.layer-name').onclick=e=>{e.stopPropagation();activeLayerId=layer.id;startLayerRename(layer.id);};
     const opacityInput=row.querySelector('.layer-opacity');
     opacityInput.oninput=e=>{layer.opacity=+e.target.value;compositeDirty=true;redraw();};
     opacityInput.onchange=()=>pushHist();
@@ -1971,6 +2232,23 @@ function renderLayersList(){
     host.appendChild(row);
   });
   syncAreaFillLayerSelect();
+}
+// Inline rename (no prompt() dialog, which iPad web-apps can suppress): swaps the row's name for a
+// text box; Return or tapping away saves, Escape cancels.
+function startLayerRename(id){
+  const layer=layers.find(l=>l.id===id);if(!layer)return;
+  renderLayersList();
+  const rows=[...document.querySelectorAll('#layersList .layer-row')];
+  const row=rows[layers.slice().reverse().findIndex(l=>l.id===id)];if(!row)return;
+  const nameEl=row.querySelector('.layer-name');
+  const input=document.createElement('input');input.type='text';input.className='layer-name-input';input.value=layer.name;input.maxLength=40;
+  nameEl.replaceWith(input);
+  let done=false;
+  const finish=save=>{if(done)return;done=true;const v=input.value.trim();if(save&&v&&v!==layer.name){layer.name=v;pushHist();setStatus('✎ Renamed to "'+v+'".');}renderLayersList();};
+  input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();finish(true);}else if(e.key==='Escape')finish(false);});
+  input.addEventListener('blur',()=>finish(true));
+  input.addEventListener('click',e=>e.stopPropagation());
+  input.focus();input.select();
 }
 function moveLayer(id,dir){
   const i=layers.findIndex(l=>l.id===id);if(i<0)return;
@@ -1997,6 +2275,7 @@ $('addLayerBtn').onclick=()=>{
   renderLayersList();pushHist();redraw();
   setStatus('📚 Added "'+layer.name+'" — new strokes go here now.');
 };
+$('renameLayerBtn').onclick=()=>{const l=getActiveLayer();if(l)startLayerRename(l.id);};
 $('duplicateLayerBtn').onclick=()=>{
   const src=getActiveLayer();if(!src)return;
   const copy=makeLayer(src.name+' copy');
@@ -2016,6 +2295,8 @@ $('duplicateLayerBtn').onclick=()=>{
 let dragMotif=null,dragStroke=null;
 canvas.addEventListener('pointerdown',e=>{
   if(mode!=='edit'||!isPen(e))return;
+  if(captureAreaArmed)return;
+  if(!traceLocked&&traces.length&&!areaFillArmed&&!pathEditStrokeId)return; // Trace Move mode owns the drag (Edit mode only)
   if(areaFillArmed)return; // Area Fill owns canvas taps itself while armed — see the earlier pointerdown listener
   if(pathEditStrokeId)return; // Edit Path owns canvas taps itself — see the earlier pointerdown listener
   // Multi-Select (motifs) and Shape Tools' Add Shapes (strokes) both own canvas taps themselves
@@ -2171,11 +2452,13 @@ function updateSelectedControls(){
  const hasMotif=!!(m&&m.motifId);
  const entry=hasMotif?motifs.find(x=>x.id===m.motifId):null;
  $('editMotifBtn').style.display=hasMotif?'block':'none';
+ $('recolourBtn').style.display=hasMotif?'block':'none';
+ if(!hasMotif)$('recolourPopover').classList.remove('open');
  $('duplicateMotifBtn').style.display=hasMotif?'inline-block':'none';
  $('makeIndependentBtn').style.display=hasMotif?'inline-block':'none';
  if(hasMotif){
   const legacy=!entry||!entry.source;
-  $('editMotifBtn').disabled=legacy;
+  $('editMotifBtn').disabled=legacy;$('recolourBtn').disabled=legacy;
   $('editMotifBtn').title=legacy?'This motif was captured before editable sources existed — it has no editable artwork to return to.':'';
  }
  syncAlignUI();
@@ -2436,17 +2719,72 @@ $('shapeMultiSelectToggle').onclick=()=>{
 $('shapeMergeBtn').onclick=()=>runShapeOp('merge');
 $('shapeSubtractBtn').onclick=()=>runShapeOp('subtract');
 $('shapeIntersectBtn').onclick=()=>runShapeOp('intersect');
-function syncMode(){$('drawModeBtn').classList.toggle('active',mode==='draw');$('editModeBtn').classList.toggle('active',mode==='edit');canvas.style.cursor=mode==='draw'?'crosshair':'grab';setStatus(mode==='draw'?'✏️ Draw Mode: Apple Pencil draws, two fingers move the canvas.':'↔️ Edit Mode: tap motif with Pencil/mouse, then move, scale, rotate or flip.');}
-$('drawModeBtn').onclick=()=>{if(pathEditStrokeId)commitEditPath();if(joinPendingStrokeId)endJoinPick();disarmAreaFill();disarmShapeMultiSelect();armedShapeType=null;syncShapeToolUI();mode='draw';selected=null;selectedStrokeId=null;multiSelectMode=false;multiSelectIds=[];$('multiSelectToggle').textContent='🔢 Multi-Select: Off';$('multiSelectToggle').classList.remove('active');syncAlignUI();syncStrokeSelectionUI();syncMode();redraw()};$('editModeBtn').onclick=()=>{disarmAreaFill();armedShapeType=null;syncShapeToolUI();mode='edit';syncMode()};$('captureBtn').onclick=captureMotif;$('undoBtn').onclick=undo;$('redoBtn').onclick=redo;$('resetRot').onclick=()=>{rot=0;applyTransform()};
+function syncMode(){$('drawModeBtn').classList.toggle('active',mode==='draw');$('editModeBtn').classList.toggle('active',mode==='edit');canvas.style.cursor=mode==='draw'?'crosshair':'grab';setStatus(mode==='draw'?'✏️ Draw Mode: Apple Pencil draws, two fingers move the canvas.':'↔️ Edit Mode: tap motif with Pencil/mouse, then move, scale, rotate or flip.');;if(typeof syncStrokeSelectionUI==='function')syncStrokeSelectionUI();}
+$('drawModeBtn').onclick=()=>{if(pathEditStrokeId)commitEditPath();if(joinPendingStrokeId)endJoinPick();disarmAreaFill();disarmShapeMultiSelect();armedShapeType=null;syncShapeToolUI();mode='draw';selected=null;selectedStrokeId=null;multiSelectMode=false;multiSelectIds=[];$('multiSelectToggle').textContent='🔢 Multi-Select: Off';$('multiSelectToggle').classList.remove('active');syncAlignUI();syncStrokeSelectionUI();syncMode();redraw()};$('editModeBtn').onclick=()=>{disarmAreaFill();armedShapeType=null;syncShapeToolUI();mode='edit';syncMode()};$('captureBtn').onclick=()=>captureMotif();
+// Capture Area: drag a box on the canvas; only strokes inside it become the motif.
+function setCaptureArea(on){
+  captureAreaArmed=on;captureRect=null;
+  const b=$('captureAreaBtn');b.classList.toggle('active',on);b.textContent=on?'▭ Drag a box round the drawing… (tap to cancel)':'▭ Capture Area — drag a box round just one drawing';
+  canvas.style.cursor=on?'crosshair':'';
+  const o=$('captureRectBox');if(o&&!on)o.style.display='none';
+  if(on){if(pathEditStrokeId)commitEditPath();setStatus('▭ Drag a box round the drawing you want to capture.');}
+}
+$('captureAreaBtn').onclick=()=>setCaptureArea(!captureAreaArmed);
+function captureRectStart(e){
+  captureRect={x0:e.clientX,y0:e.clientY,x1:e.clientX,y1:e.clientY,id:e.pointerId};
+  try{canvas.setPointerCapture(e.pointerId);}catch(err){}
+  let box=$('captureRectBox');
+  if(!box){box=document.createElement('div');box.id='captureRectBox';box.style.cssText='position:fixed;border:2px dashed #e0609a;background:rgba(224,96,154,.12);pointer-events:none;z-index:9999;display:none;';document.body.appendChild(box);}
+  box.style.display='block';captureRectDraw();
+}
+function captureRectDraw(){
+  const r=captureRect,box=$('captureRectBox');if(!r||!box)return;
+  box.style.left=Math.min(r.x0,r.x1)+'px';box.style.top=Math.min(r.y0,r.y1)+'px';box.style.width=Math.abs(r.x1-r.x0)+'px';box.style.height=Math.abs(r.y1-r.y0)+'px';
+}
+canvas.addEventListener('pointermove',e=>{if(captureAreaArmed&&captureRect){captureRect.x1=e.clientX;captureRect.y1=e.clientY;captureRectDraw();}});
+canvas.addEventListener('pointerup',e=>{
+  if(!captureAreaArmed||!captureRect)return;
+  const r=captureRect;captureRect=null;captureRect=null;$('captureRectBox').style.display='none';
+  if(Math.abs(r.x1-r.x0)<12||Math.abs(r.y1-r.y0)<12){setStatus('▭ Drag a bigger box round the drawing.');return;}
+  const a=screenToCanvas(r.x0,r.y0),b=screenToCanvas(r.x1,r.y1);
+  const minX=Math.min(a.x,b.x),maxX=Math.max(a.x,b.x),minY=Math.min(a.y,b.y),maxY=Math.max(a.y,b.y);
+  const ids=new Set();
+  strokes.forEach(st=>{if(!st.points||!st.points.length)return;const bb=strokeBBox(st);if(bb.cx>=minX&&bb.cx<=maxX&&bb.cy>=minY&&bb.cy<=maxY)ids.add(st.id);});
+  // Paint-Inside strokes travel with the shape that holds them, and the other way round.
+  strokes.forEach(st=>{if(ids.has(st.id)&&st.clipStrokeId)ids.add(st.clipStrokeId);});
+  strokes.forEach(st=>{if(st.clipStrokeId&&ids.has(st.clipStrokeId))ids.add(st.id);});
+  const subset=strokes.filter(st=>ids.has(st.id));
+  if(!subset.length){setStatus('▭ Nothing inside that box — try again, or tap the button to cancel.');return;}
+  setCaptureArea(false);
+  captureMotif(subset);
+});
+$('captureBtn').dataset.ok=1;$('undoBtn').onclick=undo;$('redoBtn').onclick=redo;$('resetRot').onclick=()=>{const q=viewCentrePoint();setViewAnchored(zoom,0,q.x,q.y,0,0)};
 // Clear Drawing only clears the ACTIVE layer's strokes — clearing the whole document across
 // every layer from one button would be far too easy to trigger by accident once layers are
 // holding genuinely different content (Sketch vs Colour vs Outline).
+function closeViewPopover(){$('viewPopover').classList.remove('open');}
 $('clearDrawing').onclick=()=>{
-  const layer=getActiveLayer();if(!layer)return;
-  if(layer.locked){setStatus('🔒 "'+layer.name+'" is locked.');return;}
-  strokes=strokes.filter(s=>s.layerId!==layer.id);
-  rebuildLayer(layer.id);selectedStrokeId=null;syncStrokeSelectionUI();pushHist();redraw();
-  setStatus('🧹 Cleared "'+layer.name+'".');
+  const layer=getActiveLayer();if(!layer){closeViewPopover();return;}
+  closeViewPopover();
+  const locked=layer.locked;
+  const n=locked?0:strokes.filter(s=>s.layerId===layer.id).length,m=placed.length;
+  if(!n&&!m){setStatus(locked?'🔒 "'+layer.name+'" is locked, so nothing was cleared.':(strokes.length?'Nothing to clear on "'+layer.name+'". Your drawing is on other layers (use Clear All Layers).':'Nothing to clear.'));return;}
+  if(n){strokes=strokes.filter(s=>s.layerId!==layer.id);rebuildLayer(layer.id);}
+  placed=[];selected=null;selectedStrokeId=null;multiSelectIds=[];
+  compositeDirty=true;syncStrokeSelectionUI();pushHist();redraw();scheduleAutosave();
+  setStatus('🧹 Cleared '+n+' stroke'+(n===1?'':'s')+' on "'+layer.name+'"'+(m?' and '+m+' motif'+(m===1?'':'s'):'')+'. Tap Undo to bring it back.');
+};
+$('clearAllDrawing').onclick=()=>{
+  closeViewPopover();
+  const unlocked=layers.filter(l=>!l.locked);
+  const ids=new Set(unlocked.map(l=>l.id));
+  const n=strokes.filter(s=>ids.has(s.layerId)).length;
+  if(!n&&!placed.length){setStatus('Nothing to clear.');return;}
+  if(!confirm('Clear every unlocked layer and all placed motifs? You can Undo afterwards.'))return;
+  strokes=strokes.filter(s=>!ids.has(s.layerId));
+  placed=[];selected=null;selectedStrokeId=null;multiSelectIds=[];
+  unlocked.forEach(l=>rebuildLayer(l.id));compositeDirty=true;syncStrokeSelectionUI();pushHist();redraw();scheduleAutosave();
+  setStatus('🧹 Cleared all unlocked layers and motifs. Tap Undo to bring it back.');
 };
 // ---- Shape Tool panel ---------------------------------------------------------------------------
 function syncShapeToolUI(){
@@ -2557,6 +2895,9 @@ $('applyBrushStyleBtn').onclick=()=>{
   pushHist();redraw();
   setStatus('✅ Brush style applied.');
 };
+$('quickEditPathBtn').onclick=()=>{if(selectedStrokeId)enterEditPath(selectedStrokeId);};
+$('quickStrokeToolsBtn').onclick=()=>setStrokePanelOpen(true);
+$('actionsEditPathBtn').onclick=()=>{if(selectedStrokeId)enterEditPath(selectedStrokeId);};
 $('editPathBtn').onclick=()=>{if(selectedStrokeId)enterEditPath(selectedStrokeId);};
 // ---- Paint Inside -----------------------------------------------------------------------------
 // Free Paint (default) is completely untouched normal painting. Paint Inside tags every new
@@ -2893,7 +3234,9 @@ syncAreaFillUI();
 function makeBrushSwatch(b){
   const btn=document.createElement('button');
   btn.type='button';btn.className='brush-swatch'+(b.id===activeBrushId&&!eraserActive?' active':'');
-  btn.dataset.brush=b.id;btn.textContent=b.name;
+  btn.dataset.brush=b.id;
+  if(b.stamp&&b.stampCanvas){const th=document.createElement('img');th.src=b.stampCanvas.toDataURL();th.style.cssText='height:26px;max-width:40px;object-fit:contain;display:block;margin:0 auto 2px;';btn.appendChild(th);}
+  btn.appendChild(document.createTextNode(b.name));
   const star=document.createElement('span');
   star.className='fav-star'+(BrushEngine.isFavorite(b.id)?' active':'');star.textContent='★';
   star.onclick=ev=>{ev.stopPropagation();BrushEngine.toggleFavorite(b.id);syncFavorites();star.classList.toggle('active',BrushEngine.isFavorite(b.id));};
@@ -2904,14 +3247,15 @@ function makeBrushSwatch(b){
 function renderBrushFamilies(){
   const host=$('brushFamilies');host.innerHTML='';
   BrushEngine.FAMILY_ORDER.forEach(fam=>{
+    if(!BrushEngine.BRUSHES.some(b=>b.family===fam))return;
     const title=document.createElement('div');title.className='brush-family-title';title.textContent=BrushEngine.FAMILY_LABEL[fam];host.appendChild(title);
     const row=document.createElement('div');row.className='brush-family-row';
     BrushEngine.BRUSHES.filter(b=>b.family===fam).forEach(b=>row.appendChild(makeBrushSwatch(b)));
     host.appendChild(row);
   });
 }
-function syncRecents(){const host=$('brushRecents');const ids=BrushEngine.getRecents();if(!ids.length){host.innerHTML='<div class="hint" style="margin:0;">Brushes you use appear here.</div>';return}host.innerHTML='';ids.forEach(id=>{const b=BrushEngine.getBrush(id);if(b)host.appendChild(makeBrushSwatch(b));});}
-function syncFavorites(){const host=$('brushFavorites');const ids=BrushEngine.getFavorites();if(!ids.length){host.innerHTML='<div class="hint" style="margin:0;">Tap ★ on a brush to favourite it.</div>';return}host.innerHTML='';ids.forEach(id=>{const b=BrushEngine.getBrush(id);if(b)host.appendChild(makeBrushSwatch(b));});}
+function syncRecents(){const host=$('brushRecents');const ids=BrushEngine.getRecents().filter(id=>BrushEngine.BRUSHES.some(x=>x.id===id));if(!ids.length){host.innerHTML='<div class="hint" style="margin:0;">Brushes you use appear here.</div>';return}host.innerHTML='';ids.forEach(id=>{const b=BrushEngine.getBrush(id);if(b)host.appendChild(makeBrushSwatch(b));});}
+function syncFavorites(){const host=$('brushFavorites');const ids=BrushEngine.getFavorites().filter(id=>BrushEngine.BRUSHES.some(x=>x.id===id));if(!ids.length){host.innerHTML='<div class="hint" style="margin:0;">Tap ★ on a brush to favourite it.</div>';return}host.innerHTML='';ids.forEach(id=>{const b=BrushEngine.getBrush(id);if(b)host.appendChild(makeBrushSwatch(b));});}
 function syncActiveSwatches(){document.querySelectorAll('.brush-swatch').forEach(el=>el.classList.toggle('active',!eraserActive&&el.dataset.brush===activeBrushId));$('eraserToggle').classList.toggle('active',eraserActive);}
 function syncControlsFromSettings(){
   const s=currentSettings();
@@ -2920,10 +3264,42 @@ function syncControlsFromSettings(){
   $('brushSmooth').value=s.smoothing;$('brushSmoothVal').textContent=Math.round(s.smoothing)+'%';
   $('pressureWidth').value=s.pressureWidth;$('pressureWidthVal').textContent=Math.round(s.pressureWidth)+'%';
   $('pressureOpacity').value=s.pressureOpacity;$('pressureOpacityVal').textContent=Math.round(s.pressureOpacity)+'%';
-  $('brushSpacingCtl').value=s.spacing;$('brushSpacingValCtl').textContent=Math.round(s.spacing)+'%';
+  const isStamp=!eraserActive&&!!BrushEngine.getBrush(activeBrushId).stamp;
+  $('brushSize').max=isStamp?400:120;$('brushSpacingCtl').max=isStamp?250:40;
+  $('brushSize').value=s.size;$('brushSpacingCtl').value=s.spacing;
+  $('brushSizeVal').textContent=Math.round(s.size);$('brushSpacingValCtl').textContent=Math.round(s.spacing)+'%';
+  $('stampOptions').style.display=isStamp?'block':'none';
+  $('stampFollow').checked=!!s.follow;$('stampTint').checked=!!s.tint;
   syncActiveBrushRecipeLine();
+  renderBrushPreview();
 }
-function patchCurrentSettings(patch){BrushEngine.setSettings(currentBrushIdForSettings(),patch);syncActiveBrushRecipeLine();}
+function patchCurrentSettings(patch){BrushEngine.setSettings(currentBrushIdForSettings(),patch);syncActiveBrushRecipeLine();renderBrushPreview();}
+// Live brush preview: a sample stroke (with a pressure swell, so pressure settings show) drawn with
+// the selected brush, size, opacity, spacing and colour. Redrawn whenever any of those change.
+function renderBrushPreview(){
+  const c=$('brushPreview');if(!c)return;
+  drawBrushSample(c,eraserActive?null:BrushEngine.getBrush(activeBrushId),eraserActive?null:BrushEngine.getSettings(activeBrushId),currentColor);
+}
+function drawBrushSample(c,brush,st,color){
+  const cssW=c.clientWidth||260,cssH=c.clientHeight||76,dpr=Math.min(2,window.devicePixelRatio||1);
+  if(c.width!==Math.round(cssW*dpr)||c.height!==Math.round(cssH*dpr)){c.width=Math.round(cssW*dpr);c.height=Math.round(cssH*dpr);}
+  const g=c.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,cssW,cssH);
+  const eraser=!brush,col=eraser?'#888888':color;
+  const lum=(()=>{const h=(col||'#000').replace('#','');const n=parseInt(h.length===3?h.split('').map(x=>x+x).join(''):h,16);return(0.299*(n>>16&255)+0.587*(n>>8&255)+0.114*(n&255));})();
+  g.fillStyle=lum>200?'#6b6475':'#fffdf8';g.fillRect(0,0,cssW,cssH);
+  if(eraser){g.fillStyle='#fff';g.fillRect(0,0,cssW,cssH);g.fillStyle='#8a7f8f';g.font='600 13px system-ui,sans-serif';g.textAlign='center';g.fillText('Eraser — removes strokes it crosses',cssW/2,cssH/2+4);return;}
+  // true to the canvas: the preview uses the same on-screen scale the canvas is currently shown at,
+  // so a line looks as thick here as it will when drawn (very large brushes are shrunk to fit).
+  const onScreen=Math.max(0.05,(typeof zoom==='number'&&typeof baseScale==='number')?zoom*baseScale:1);
+  const k=Math.min(onScreen,(cssH*0.55)/Math.max(1,st.size));
+  g.save();g.scale(k,k);
+  const w=cssW/k,h=cssH/k,pts=[],N=70;
+  for(let i=0;i<=N;i++){const t=i/N;pts.push({x:w*(0.08+0.84*t),y:h/2+Math.sin(t*Math.PI*2)*h*0.2,pressure:0.25+0.75*Math.sin(Math.PI*t)});}
+  try{BrushEngine.renderStroke(g,{id:'brush-preview',brushId:brush.id,color:col,points:pts},brush,st);}catch(e){}
+  g.restore();
+  if(k<onScreen-0.001){g.fillStyle='#8a7f8f';g.font='600 10px system-ui,sans-serif';g.textAlign='right';g.fillText('shown smaller',cssW-6,cssH-5);}
+}
+window.addEventListener('resize',()=>renderBrushPreview());
 function selectBrush(id){eraserActive=false;activeBrushId=id;BrushEngine.touchRecent(id);syncRecents();syncControlsFromSettings();syncActiveSwatches();}
 $('eraserToggle').onclick=()=>{eraserActive=!eraserActive;if(eraserActive)disarmAreaFill();syncControlsFromSettings();syncActiveSwatches();setStatus(eraserActive?'🧹 Eraser: drag over a stroke on the active layer to erase just that part of it.':'✏️ Back to '+BrushEngine.getBrush(activeBrushId).name+'.');};
 $('continuousDrawToggle').onclick=()=>{
@@ -2934,7 +3310,7 @@ $('continuousDrawToggle').onclick=()=>{
   setStatus(continuousDrawMode?'🔗 Continuous Draw on — starting a new stroke right where the last one ended extends it as one path.':'🔗 Continuous Draw off.');
 };
 $('brushSize').oninput=e=>{const v=+e.target.value;$('brushSizeVal').textContent=Math.round(v);patchCurrentSettings({size:v});};
-$('brushColor').oninput=e=>{currentColor=e.target.value;};
+$('brushColor').oninput=e=>{currentColor=e.target.value;renderBrushPreview();};
 // ---- Adaptive Colour panel -------------------------------------------------------------------
 function makeAcSwatch(hex,title){
   const d=document.createElement('div');
@@ -2982,7 +3358,7 @@ document.querySelectorAll('.colour-target-btn').forEach(btn=>{btn.onclick=()=>{c
 // other target just loads the colour into that tool's OWN input, ready for its next explicit use.
 function applyColorToTarget(hex){
   if(colorTarget==='brush'){
-    currentColor=hex;$('brushColor').value=hex;
+    currentColor=hex;$('brushColor').value=hex;renderBrushPreview();
   }else if(colorTarget==='stroke'){
     const stroke=strokes.find(s=>s.id===selectedStrokeId);
     if(!stroke){setStatus('🎨 Select a stroke first to recolour it.');return;}
@@ -3068,6 +3444,7 @@ $('brushOpacity').oninput=e=>{const v=+e.target.value;$('brushOpacityVal').textC
 $('brushSmooth').oninput=e=>{const v=+e.target.value;$('brushSmoothVal').textContent=Math.round(v)+'%';patchCurrentSettings({smoothing:v});};
 $('pressureWidth').oninput=e=>{const v=+e.target.value;$('pressureWidthVal').textContent=Math.round(v)+'%';patchCurrentSettings({pressureWidth:v});};
 $('pressureOpacity').oninput=e=>{const v=+e.target.value;$('pressureOpacityVal').textContent=Math.round(v)+'%';patchCurrentSettings({pressureOpacity:v});};
+$('stampFollow').onchange=e=>patchCurrentSettings({follow:e.target.checked?1:0});$('stampTint').onchange=e=>patchCurrentSettings({tint:e.target.checked?1:0});
 $('brushSpacingCtl').oninput=e=>{const v=+e.target.value;$('brushSpacingValCtl').textContent=Math.round(v)+'%';patchCurrentSettings({spacing:v});};
 
 // ---- Node / path editing ------------------------------------------------------------------
@@ -3113,7 +3490,7 @@ function pointsToNodes(points,closed){
   // small loops) on a complex hand-drawn stroke the instant Edit Path was entered, before the
   // user had touched anything. 5 keeps noticeably more of the original shape while still cutting
   // a dense resampled polyline down to a manageable, actually-draggable handful of nodes.
-  const simplified=closed?rdpSimplifyClosedLoop(src,5):rdpSimplify(src,5);
+  const simplified=closed?rdpSimplifyClosedLoop(src,1.5):rdpSimplify(src,1.5); // tight fit: Edit Path must not change how the line looks
   return simplified.map(p=>({x:p.x,y:p.y,pressure:p.pressure,type:'smooth'}));
 }
 function catmullRom(p0,p1,p2,p3,t){const t2=t*t,t3=t2*t;return 0.5*((2*p1)+(-p0+p2)*t+(2*p0-5*p1+4*p2-p3)*t2+(-p0+3*p1-3*p2+p3)*t3);}
@@ -3624,6 +4001,7 @@ function enterEditPath(strokeId){
   pathEditStrokeId=stroke.id;
   pathEditNodes=stroke.nodes?stroke.nodes.map(n=>({...n})):pointsToNodes(stroke.points,stroke.closed);
   pathEditClosed=!!stroke.closed;
+  pathEditInitial=JSON.stringify([pathEditClosed,pathEditNodes.map(n=>[Math.round(n.x*100),Math.round(n.y*100),n.type])]);
   selectedNodeIndex=null;
   pathEditTool='select';
   $('pathSelectToolBtn').classList.add('active');$('pathAddNodeToolBtn').classList.remove('active');
@@ -3631,7 +4009,7 @@ function enterEditPath(strokeId){
   // there's only ever one visible outline, never a "ghost" of the original underneath it. Safe
   // to do now that commitEditPath is wrapped in try/finally and always restores this layer.
   rebuildLayerDimmed(stroke.layerId,stroke.id,0);
-  renderPathLivePreview();
+  renderPathLivePreview();redraw();
   $('pathEditBar').style.display='block';$('pathEditBar').classList.add('open');
   // Defaults to the top-right of the CANVAS viewport itself (not the raw window — see
   // clampFloatPanelPos) the FIRST time it's opened this session; after that it reopens wherever
@@ -3682,7 +4060,10 @@ function commitEditPath(){
   try{
     if(stroke&&pathEditNodes&&pathEditNodes.length){
       const allFinite=pathEditNodes.every(n=>Number.isFinite(n.x)&&Number.isFinite(n.y)&&Number.isFinite(n.pressure));
-      if(allFinite){
+      const unchanged=pathEditInitial===JSON.stringify([pathEditClosed,pathEditNodes.map(n=>[Math.round(n.x*100),Math.round(n.y*100),n.type])]);
+      if(unchanged){
+        // Nothing was moved: leave the stroke exactly as it was drawn.
+      }else if(allFinite){
         stroke.nodes=pathEditNodes.map(n=>({...n}));
         stroke.closed=pathEditClosed;
         stroke.points=nodesToPoints(stroke.nodes,stroke.closed);
@@ -3795,7 +4176,21 @@ function handlePathEditCanvasTap(e){
     if(selectedNodeIndex!==nearestIdx){selectedNodeIndex=nearestIdx;renderPathNodeOverlay();syncPathEditBarButtons();}
     return;
   }
-  if(pathEditTool!=='addNode')return; // Select tool: a miss on bare canvas/path is simply a no-op
+  if(pathEditTool!=='addNode'){
+    // Select tool: tapping a DIFFERENT line moves Edit Path straight onto it (no need to press
+    // Edit Path again). A tap on bare canvas is still a no-op.
+    const lockedIds=new Set(layers.filter(l=>l.locked).map(l=>l.id));
+    let best=null,bestDist=Infinity;
+    strokes.forEach(st=>{
+      if(st.id===pathEditStrokeId||lockedIds.has(st.layerId)||st.clipStrokeId||st.regions||!st.points||st.points.length<2)return;
+      const settings=st.settings||BrushEngine.getSettings(st.brushId);
+      const tol=Math.max((settings.size||6)/2+2,16/s); // ~16 screen px at any zoom
+      const d=distanceToPolyline(p.x,p.y,st.points);
+      if(d<tol&&d<bestDist){bestDist=d;best=st;}
+    });
+    if(best){const id=best.id;commitEditPath();selectedStrokeId=id;selected=null;syncStrokeSelectionUI();enterEditPath(id);}
+    return;
+  }
   const hit=findInsertionOnPath(p.x,p.y);
   const insertRadiusCanvas=22/s;
   if(!hit||hit.dist>insertRadiusCanvas)return; // tapped well away from the path — do nothing
@@ -4104,6 +4499,123 @@ bindTapButton($('closePathBtn'),closeSelectedPath);
 bindTapButton($('breakPathBtn'),breakPathAtSelectedNode);
 bindTapButton($('simplifyPathBtn'),simplifyCurrentPath);
 $('moreSettingsToggle').onclick=()=>{const box=$('moreSettings');const showing=box.style.display!=='none';box.style.display=showing?'none':'block';$('moreSettingsToggle').textContent=showing?'⚙️ More Settings':'⚙️ Hide Settings';};
+// ---- Make my own brush --------------------------------------------------------------------------
+let customDefs=[];try{customDefs=JSON.parse(localStorage.getItem('sp-customBrushes')||'[]')||[];}catch(e){customDefs=[];}
+function saveCustomDefs(){try{localStorage.setItem('sp-customBrushes',JSON.stringify(customDefs));}catch(e){console.warn('could not store custom brushes',e);}}
+function loadTipImage(def){return new Promise(res=>{if(!def.tipSrc){res();return;}const img=new Image();img.onload=()=>{def.tipImg=img;res();};img.onerror=()=>res();img.src=def.tipSrc;});}
+async function registerCustomDefs(list,thenRebuild){
+  for(const d of list){await loadTipImage(d);BrushEngine.registerCustomBrush(d);}
+  if(thenRebuild&&strokes.some(st=>String(st.brushId).startsWith('custom:'))){try{rebuildAllLayers();redraw();}catch(e){}}
+}
+function serialCustomDefs(){return customDefs.map(d=>{const c={...d};delete c.tipImg;return c;});}
+let bmEditId=null,bmTipSrc=null,bmTipImg=null;
+function bmDef(){
+  const g=id=>+$(id).value;
+  return {id:bmEditId||('custom:'+crypto.randomUUID()),name:($('bmName').value||'').trim()||'My brush',
+    softness:g('bmSoft'),grain:g('bmGrain'),wobble:g('bmWobble'),taper:$('bmTaper').checked,mono:$('bmMono').checked,
+    tipSrc:bmTipSrc||null,tipImg:bmTipImg||null,
+    defaults:{size:g('bmSize'),opacity:g('bmOpacity'),smoothing:30,pressureWidth:g('bmPW'),pressureOpacity:g('bmPO'),spacing:g('bmSpacing')}};
+}
+function bmShowVals(){
+  [['bmSoft','%'],['bmGrain','%'],['bmWobble','%'],['bmSize',''],['bmOpacity','%'],['bmSpacing','%'],['bmPW','%'],['bmPO','%']].forEach(([id,u])=>{$(id+'Val').textContent=Math.round(+$(id).value)+u;});
+  $('bmLook').style.display=bmTipImg?'none':'block';
+  $('bmTipClear').style.display=bmTipImg?'inline-block':'none';
+}
+function bmRefresh(){
+  bmShowVals();
+  const d=bmDef();let b=null;
+  try{b=BrushEngine.makeCustomBrush(d);}catch(e){}
+  if(!b)return;
+  const st=Object.assign({},b.defaults,b.lock||{});
+  drawBrushSample($('bmPreview'),b,st,currentColor);
+}
+function bmLoad(def){
+  $('bmName').value=def.name||'';
+  $('bmSoft').value=def.softness==null?100:def.softness;$('bmGrain').value=def.grain||0;$('bmWobble').value=def.wobble||0;
+  $('bmTaper').checked=!!def.taper;$('bmMono').checked=!!def.mono;
+  const d=def.defaults||{};
+  $('bmSize').max=def.tipSrc?300:120;$('bmSpacing').max=def.tipSrc?250:40;
+  $('bmSize').value=d.size!=null?d.size:20;$('bmOpacity').value=d.opacity!=null?d.opacity:100;$('bmSpacing').value=d.spacing!=null?d.spacing:8;
+  $('bmPW').value=d.pressureWidth||0;$('bmPO').value=d.pressureOpacity||0;
+  bmTipSrc=def.tipSrc||null;bmTipImg=def.tipImg||null;
+  bmRefresh();
+}
+function bmFillFrom(){
+  const sel=$('bmFrom');sel.innerHTML='<option value="">— Plain round brush —</option>';
+  BrushEngine.BRUSHES.filter(b=>!b.stamp).forEach(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=b.name;sel.appendChild(o);});
+}
+function bmRenderList(){
+  const host=$('bmListWrap');host.innerHTML='';
+  if(!customDefs.length)return;
+  const t=document.createElement('div');t.style.cssText='font-weight:800;margin-bottom:4px;';t.textContent='Your brushes';host.appendChild(t);
+  customDefs.forEach(d=>{
+    const row=document.createElement('div');row.style.cssText='display:flex;gap:6px;align-items:center;margin:4px 0;';
+    const n=document.createElement('div');n.style.flex='1';n.textContent=d.name;
+    const e=document.createElement('button');e.className='btn mini';e.textContent='Edit';e.onclick=()=>{bmEditId=d.id;bmLoad(d);$('bmSave').textContent='💾 Save changes';};
+    const x=document.createElement('button');x.className='btn mini danger';x.textContent='Delete';x.onclick=()=>{
+      if(!confirm('Delete the brush "'+d.name+'"? Lines already drawn with it will fall back to the Smooth Pen look.'))return;
+      customDefs=customDefs.filter(c=>c.id!==d.id);saveCustomDefs();BrushEngine.unregisterStampBrush(d.id);
+      if(activeBrushId===d.id)activeBrushId='smoothPen';
+      renderBrushFamilies();syncRecents();syncFavorites();syncControlsFromSettings();syncActiveSwatches();
+      if(strokes.some(st=>st.brushId===d.id)){rebuildAllLayers();redraw();}
+      if(bmEditId===d.id){bmEditId=null;$('bmSave').textContent='💾 Save brush';}
+      bmRenderList();scheduleAutosave();
+    };
+    row.appendChild(n);row.appendChild(e);row.appendChild(x);host.appendChild(row);
+  });
+}
+function openBrushMaker(){
+  bmEditId=null;bmTipSrc=null;bmTipImg=null;$('bmSave').textContent='💾 Save brush';
+  bmFillFrom();
+  const cur=BrushEngine.getBrush(activeBrushId);
+  const base=cur.stamp&&!cur.custom?BrushEngine.getBrush('smoothPen'):cur;
+  if(cur.custom&&cur.def&&cur.def.tipSrc){bmLoad({...cur.def,name:''});}
+  else{
+    $('bmFrom').value=base.custom?'':base.id;
+    bmLoad({name:'',softness:Math.round((base.hardness==null?1:base.hardness)*100),grain:Math.round((base.streaky||0)*100),wobble:Math.round((base.jitter||0)*100),taper:base.taper==='both',mono:!!base.path,defaults:BrushEngine.getSettings(base.id)});
+  }
+  bmRenderList();$('brushMakerPanel').style.display='block';bmRefresh();
+}
+$('makeBrushBtn').onclick=openBrushMaker;
+$('bmCancel').onclick=()=>{$('brushMakerPanel').style.display='none';};
+$('bmFrom').onchange=e=>{const id=e.target.value;const b=id?BrushEngine.getBrush(id):null;bmTipSrc=null;bmTipImg=null;$('bmSize').max=120;$('bmSpacing').max=40;
+  if(!b){bmLoad({name:$('bmName').value,softness:100,grain:0,wobble:0,taper:false,mono:false,defaults:{size:20,opacity:100,spacing:8,pressureWidth:0,pressureOpacity:0}});return;}
+  bmLoad({name:$('bmName').value,softness:Math.round((b.hardness==null?1:b.hardness)*100),grain:Math.round((b.streaky||0)*100),wobble:Math.round((b.jitter||0)*100),taper:b.taper==='both',mono:!!b.path,defaults:BrushEngine.getSettings(b.id)});};
+['bmSoft','bmGrain','bmWobble','bmSize','bmOpacity','bmSpacing','bmPW','bmPO'].forEach(id=>$(id).oninput=bmRefresh);
+['bmTaper','bmMono'].forEach(id=>$(id).onchange=bmRefresh);
+$('bmName').oninput=()=>{};
+$('bmTip').onchange=e=>{
+  const f=e.target.files&&e.target.files[0];e.target.value='';if(!f)return;
+  const r=new FileReader();r.onload=ev=>{
+    const img=new Image();img.onload=()=>{
+      // keep the stored tip small: at most 384px on its longest side
+      const k=Math.min(1,384/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.width*k));c.height=Math.max(1,Math.round(img.height*k));
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      const src=c.toDataURL('image/png'),i2=new Image();
+      i2.onload=()=>{bmTipSrc=src;bmTipImg=i2;if(!($('bmName').value||'').trim())$('bmName').value=f.name.replace(/\.[^.]+$/,'');
+        $('bmSize').max=300;$('bmSpacing').max=250;$('bmSize').value=90;$('bmSpacing').value=100;$('bmOpacity').value=100;$('bmPW').value=0;$('bmPO').value=0;bmRefresh();};
+      i2.src=src;
+    };img.src=ev.target.result;
+  };r.readAsDataURL(f);
+};
+$('bmTipClear').onclick=()=>{bmTipSrc=null;bmTipImg=null;$('bmSize').max=120;$('bmSpacing').max=40;$('bmSize').value=20;$('bmSpacing').value=8;bmRefresh();};
+$('bmSave').onclick=()=>{
+  const d=bmDef();
+  const i=customDefs.findIndex(c=>c.id===d.id);
+  if(i>=0)customDefs[i]=d;else customDefs.push(d);
+  saveCustomDefs();
+  BrushEngine.registerCustomBrush(d);
+  // a brand-new brush starts from exactly the sliders chosen here (remembered settings of an edited one are replaced too)
+  BrushEngine.setSettings(d.id,Object.assign({},d.defaults));
+  renderBrushFamilies();syncRecents();syncFavorites();
+  eraserActive=false;activeBrushId=d.id;BrushEngine.touchRecent(d.id);syncRecents();syncControlsFromSettings();syncActiveSwatches();
+  if(strokes.some(st=>st.brushId===d.id)){rebuildAllLayers();redraw();}
+  bmEditId=d.id;bmRenderList();$('bmSave').textContent='💾 Save changes';
+  setStatus('🖌️ Brush "'+d.name+'" saved under Custom Brushes and selected.');scheduleAutosave();
+};
+registerCustomDefs(customDefs,true).then(()=>{renderBrushFamilies();syncRecents();syncFavorites();syncControlsFromSettings();syncActiveSwatches();});
+// One-time: the Smooth Pen is now a finer line by default (3 px); move any older remembered size across.
+try{if(!localStorage.getItem('sp-smoothpen-fine-v1')){BrushEngine.setSettings('smoothPen',{size:3});localStorage.setItem('sp-smoothpen-fine-v1','1');}}catch(e){}
 renderBrushFamilies();syncRecents();syncFavorites();syncControlsFromSettings();
 document.querySelectorAll('.layout-btn').forEach(b=>b.onclick=()=>{document.querySelectorAll('.layout-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');layout=b.dataset.layout;$('layoutPill').textContent='📍 '+b.textContent+' Mode';redraw();});$('tilingBtn').onclick=()=>{showTiling=!showTiling;$('tilingBtn').classList.toggle('active',showTiling);$('tilingBtn').textContent=showTiling?'Tiling On':'Tiling Off';redraw();};$('guidesBtn').onclick=()=>{showGuides=!showGuides;$('guidesBtn').classList.toggle('active',showGuides);sessionStorage.setItem('sp-showGuides',showGuides?'1':'0');redraw();};
 $('motifScale').oninput=e=>{const m=getSel();if(!m)return;m.s=+e.target.value/100;$('motifScaleVal').textContent=e.target.value+'%';redraw();};$('motifScale').onchange=pushHist;$('rotL').onclick=()=>{const m=getSel();if(m){m.r-=15;pushHist();redraw();}};$('rotR').onclick=()=>{const m=getSel();if(m){m.r+=15;pushHist();redraw();}};$('flipH').onclick=()=>{const m=getSel();if(m){m.fx*=-1;pushHist();redraw();}};$('flipV').onclick=()=>{const m=getSel();if(m){m.fy*=-1;pushHist();redraw();}};$('deleteSel').onclick=()=>{placed=placed.filter(p=>p.id!==selected);selected=null;pushHist();redraw();updateSelectedControls();};
@@ -4193,6 +4705,95 @@ function finishEditMotif(){
   finish();
  }
 }
+// ---- Recolour Parts ---------------------------------------------------------------------------------
+// A captured motif keeps its real vector strokes (entry.source). Recolouring lists each distinct
+// line / fill colour used in it, lets you pick a new colour per part, then re-renders the motif.
+// Apply updates the motif everywhere it is used; "Save as new colourway" keeps the original and adds
+// a recoloured copy to the tray (handy for selling the same motif in several palettes).
+let recolourEntryId=null,recolourMap={};
+function normHex(c){c=String(c||'').trim().toLowerCase();if(/^#[0-9a-f]{3}$/.test(c))c='#'+c[1]+c[1]+c[2]+c[2]+c[3]+c[3];return c;}
+function motifColourGroups(entry){
+  const list=JSON.parse(entry.source.strokesJSON),groups=new Map();
+  const add=(kind,c)=>{c=normHex(c);if(!/^#[0-9a-f]{6}$/.test(c))return;const key=kind+':'+c,g=groups.get(key)||{key,kind,color:c,count:0};g.count++;groups.set(key,g);};
+  list.forEach(s=>{if(s.brushId==='eraser')return;if(s.fillColor&&!s.regions)add('fill',s.fillColor);else add('line',s.color);});
+  return [...groups.values()];
+}
+function recolourStrokeList(list,map){
+  list.forEach(s=>{
+    if(s.brushId==='eraser')return;
+    if(s.fillColor&&!s.regions){const n=map['fill:'+normHex(s.fillColor)];if(n){s.fillColor=n;s.color=n;}}
+    else{const n=map['line:'+normHex(s.color)];if(n)s.color=n;}
+  });
+  return list;
+}
+// Renders a motif source to a preview by briefly swapping it into the live strokes/layers (the same
+// trick Edit Motif uses, so Paint Inside clips and layer opacity come out identical), then restoring.
+function renderMotifSourcePreview(source){
+  if(editingMotifId)return null;
+  const stash={strokesJSON:JSON.stringify(strokes),layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity}))),activeLayerId};
+  let preview=null;
+  try{
+    strokes=JSON.parse(source.strokesJSON);
+    applyLayerMeta(source.layersJSON?JSON.parse(source.layersJSON):[],null);
+    rebuildAllLayers();
+    preview=renderCurrentArtworkPreview();
+  }finally{
+    strokes=JSON.parse(stash.strokesJSON);
+    applyLayerMeta(JSON.parse(stash.layersJSON),stash.activeLayerId);
+    rebuildAllLayers();renderLayersList();
+  }
+  return preview;
+}
+function openRecolour(){
+  const m=getSel();if(!m||!m.motifId)return;
+  const entry=motifs.find(x=>x.id===m.motifId);
+  if(!entry||!entry.source){setStatus('⚠️ This motif has no editable artwork to recolour (captured before editable motifs existed).');return;}
+  recolourEntryId=entry.id;recolourMap={};
+  renderRecolourRows(entry);
+  $('recolourPopover').classList.add('open');
+}
+function renderRecolourRows(entry){
+  const host=$('recolourRows');host.innerHTML='';
+  const groups=motifColourGroups(entry);
+  $('recolourName').textContent=entry.name;
+  if(!groups.length){host.innerHTML='<div class="hint">No solid colours found in this motif.</div>';return;}
+  groups.forEach(g=>{
+    const row=document.createElement('div');row.className='recolour-row';
+    row.innerHTML='<span class="recolour-was" style="background:'+g.color+'"></span><span class="recolour-label">'+(g.kind==='fill'?'Fill':'Line')+' <span class="small">×'+g.count+'</span></span><input type="color" value="'+g.color+'" aria-label="New colour">';
+    const inp=row.querySelector('input');
+    inp.oninput=()=>{recolourMap[g.key]=inp.value;};
+    host.appendChild(row);
+  });
+}
+function recolouredSource(entry){
+  const list=recolourStrokeList(JSON.parse(entry.source.strokesJSON),recolourMap);
+  return {strokesJSON:JSON.stringify(list),layersJSON:entry.source.layersJSON,bounds:entry.source.bounds};
+}
+function applyRecolour(asNew){
+  const entry=motifs.find(x=>x.id===recolourEntryId);if(!entry||!entry.source)return;
+  if(!Object.keys(recolourMap).length){setStatus('Pick a new colour for at least one part first.');return;}
+  const src2=recolouredSource(entry),preview=renderMotifSourcePreview(src2);
+  if(!preview){setStatus('⚠️ Could not re-render the motif.');return;}
+  if(asNew){
+    addMotif(preview.src,entry.name+' colourway',false,src2,false);
+    $('recolourPopover').classList.remove('open');
+    setStatus('🎨 Saved a recoloured copy to the Motif Tray — the original is unchanged.');
+    return;
+  }
+  const img=new Image();
+  img.onload=()=>{
+    entry.source=src2;entry.img=img;entry.src=preview.src;
+    placed.forEach(p=>{if(p.motifId===entry.id)p.img=img;});
+    recolourMap={};renderRecolourRows(entry);renderTray();pushHist();redraw();
+    setStatus('🎨 Motif recoloured everywhere it is used.');
+  };
+  img.src=preview.src;
+}
+$('recolourBtn').onclick=openRecolour;
+$('recolourApplyBtn').onclick=()=>applyRecolour(false);
+$('recolourNewBtn').onclick=()=>applyRecolour(true);
+$('recolourResetBtn').onclick=()=>{const e=motifs.find(x=>x.id===recolourEntryId);recolourMap={};if(e)renderRecolourRows(e);};
+$('recolourCloseBtn').onclick=()=>$('recolourPopover').classList.remove('open');
 $('editMotifBtn').onclick=enterEditMotif;
 $('duplicateMotifBtn').onclick=duplicateMotifInstance;
 $('makeIndependentBtn').onclick=makeIndependentMotif;
@@ -4204,12 +4805,371 @@ $('bgToggle').onclick=()=>{bgShown=!bgShown;$('bgToggle').classList.toggle('acti
 $('bgClear').onclick=()=>{bgImg=null;$('bgEmpty').style.display='block';$('bgControls').style.display='none';redraw();scheduleAutosave();};
 $('traceInput').onchange=e=>Array.from(e.target.files).forEach(f=>{const r=new FileReader();r.onload=ev=>{const img=new Image();img.onload=()=>{traces.push({img,src:ev.target.result,name:f.name,x:W/2,y:H/2,scale:Math.min(TILE/img.width,TILE/img.height),opacity:.35});renderTraces();redraw();scheduleAutosave();};img.src=ev.target.result;};r.readAsDataURL(f);});
 function renderTraces(){const list=$('traceList');list.innerHTML='';traces.forEach((t,i)=>{const c=document.createElement('div');c.className='trace-card';c.innerHTML=`<img src="${t.src}"><div><div>${t.name}</div><div class="small">Trace ref · ${Math.round(t.opacity*100)}%</div></div><button class="x" style="position:static">×</button>`;c.querySelector('button').onclick=()=>{traces.splice(i,1);renderTraces();redraw();scheduleAutosave();};list.appendChild(c);});}
-$('traceOpacity').oninput=e=>{traces.forEach(t=>t.opacity=+e.target.value/100);$('traceOpacityVal').textContent=e.target.value+'%';renderTraces();redraw();scheduleAutosave();};$('traceScale').oninput=e=>{traces.forEach(t=>t.scale=+e.target.value/100);$('traceScaleVal').textContent=e.target.value+'%';redraw();scheduleAutosave();};$('traceFit').onclick=()=>{traces.forEach(t=>t.scale=Math.min(TILE/t.img.width,TILE/t.img.height));redraw();scheduleAutosave();};$('traceCentre').onclick=()=>{traces.forEach(t=>{t.x=W/2;t.y=H/2});redraw();scheduleAutosave();};$('traceLock').onclick=()=>{traceLocked=!traceLocked;$('traceLock').textContent=traceLocked?'🔒 Locked':'🔓 Move';$('traceLock').classList.toggle('active',traceLocked)};$('traceClear').onclick=()=>{traces=[];renderTraces();redraw();scheduleAutosave();};
+$('traceOpacity').oninput=e=>{traces.forEach(t=>t.opacity=+e.target.value/100);$('traceOpacityVal').textContent=e.target.value+'%';renderTraces();redraw();scheduleAutosave();};$('traceScale').oninput=e=>{traces.forEach(t=>t.scale=+e.target.value/100);$('traceScaleVal').textContent=e.target.value+'%';redraw();scheduleAutosave();};$('traceFit').onclick=()=>{traces.forEach(t=>t.scale=Math.min(TILE/t.img.width,TILE/t.img.height));redraw();scheduleAutosave();};$('traceCentre').onclick=()=>{traces.forEach(t=>{t.x=W/2;t.y=H/2});redraw();scheduleAutosave();};$('traceLock').onclick=()=>{traceLocked=!traceLocked;setStatus(traceLocked?'🔒 Trace locked — drawing works normally.':'🔓 Trace Move: switch to Edit mode and drag the canvas to move the trace image. Drawing is unaffected. Tap again to lock it.');$('traceLock').textContent=traceLocked?'🔒 Locked':'🔓 Move';$('traceLock').classList.toggle('active',traceLocked)};$('traceClear').onclick=()=>{traces=[];renderTraces();redraw();scheduleAutosave();};
+// Trace Move mode (🔓): dragging the canvas moves the trace image under the pointer instead of drawing.
+let traceDrag=null;
+function traceDragStart(e){
+  const p=screenToCanvas(e.clientX,e.clientY);
+  let t=null;
+  for(let i=traces.length-1;i>=0;i--){const q=traces[i];if(Math.abs(p.x-q.x)<=q.w/2&&Math.abs(p.y-q.y)<=q.h/2){t=q;break;}}
+  if(!t)t=traces[traces.length-1];
+  traceDrag={t,dx:t.x-p.x,dy:t.y-p.y};
+  try{canvas.setPointerCapture(e.pointerId);}catch(err){}
+}
+canvas.addEventListener('pointermove',e=>{
+  if(!traceDrag)return;
+  const p=screenToCanvas(e.clientX,e.clientY);
+  if(Number.isFinite(p.x)&&Number.isFinite(p.y)){traceDrag.t.x=p.x+traceDrag.dx;traceDrag.t.y=p.y+traceDrag.dy;redraw();}
+});
+function traceDragEnd(){if(!traceDrag)return;traceDrag=null;scheduleAutosave();redraw();}
+canvas.addEventListener('pointerup',traceDragEnd);canvas.addEventListener('pointercancel',traceDragEnd);
 function syncSymToggle(){const btn=$('symToggle');btn.textContent=symMode==='off'?'🦋 Symmetry Off':'🦋 '+symMode.charAt(0).toUpperCase()+symMode.slice(1);btn.classList.toggle('butterfly-on',symMode!=='off');}
 $('symToggle').onclick=()=>{$('symPopover').classList.toggle('open');};
 $('symClose').onclick=()=>{$('symPopover').classList.remove('open');};
 document.querySelectorAll('.sym-btn').forEach(b=>b.onclick=()=>{document.querySelectorAll('.sym-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');symMode=b.dataset.sym;syncSymToggle();updateSymAxis();redraw();setStatus(symMode==='off'?'🦋 Symmetry off.':'🦋 Symmetry '+b.textContent+' active — move the axis if you want it off-centre.');});$('symX').oninput=e=>{symX=+e.target.value;$('symXVal').textContent=Math.round(symX/W*100)+'%';updateSymAxis();redraw();};$('symY').oninput=e=>{symY=+e.target.value;$('symYVal').textContent=Math.round(symY/H*100)+'%';updateSymAxis();redraw();};$('symCentre').onclick=()=>{symX=W/2;symY=H/2;$('symX').value=symX;$('symY').value=symY;$('symXVal').textContent='50%';$('symYVal').textContent='50%';updateSymAxis();redraw();};
-$('exportBtn').onclick=()=>{updateComposite();const a=document.createElement('a');a.download='pattern-playground-tile.png';const out=document.createElement('canvas');out.width=TILE;out.height=TILE;const o=out.getContext('2d');o.fillStyle='#fff';o.fillRect(0,0,TILE,TILE);if(bgImg&&bgShown){o.save();o.globalAlpha=bgOpacity;o.drawImage(bgImg,0,0,TILE,TILE);o.restore();}o.drawImage(compositeCanvas,C,C,TILE,TILE,0,0,TILE,TILE);placed.forEach(p=>{if(!p.img)return;o.save();o.translate(p.x-C,p.y-C);o.rotate(p.r*Math.PI/180);o.scale(p.s*p.fx,p.s*p.fy);o.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);o.restore();});a.href=out.toDataURL('image/png');a.click();};
+// ---- SVG export ---------------------------------------------------------------------------------
+// Strokes are stored as point lists that the brush engine stamps as soft dabs. SVG has no dabs, so
+// each stroke becomes one filled outline whose width follows the same size / pressure / taper rules
+// (so it looks like the drawing), while grain, jitter and soft edges are simplified. Fill Shapes are
+// exact vectors. Every layer becomes a named group; the eight neighbouring repeats are included as
+// <use> copies so the tile still wraps seamlessly. Pictures (placed motifs, background image) are
+// NOT vector, so they are deliberately left out of the SVG. `size` is the width/height in px of the
+// file; the drawing itself scales exactly because the viewBox stays the 780-unit tile.
+function svgNum(n){return String(Math.round(n*100)/100);}
+function svgEsc(t){return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function svgColor(c){c=String(c||'#000000');if(/^rgba?\(/i.test(c)){const m=c.match(/[\d.]+/g)||[0,0,0];return {fill:'rgb('+Math.round(m[0])+','+Math.round(m[1])+','+Math.round(m[2])+')',alpha:m[3]!=null?+m[3]:1};}return {fill:c,alpha:1};}
+function svgPoly(pts){return 'M'+pts.map(p=>svgNum(p.x)+' '+svgNum(p.y)).join('L')+'Z';}
+function svgStrokeOutline(stroke,settings,brush){
+  if(brush&&brush.stamp)return null; // motif-brush strokes are pictures, not vector outlines
+  const pts=BrushEngine.resample(stroke.points,Math.max(1,(settings.spacing/100)*Math.max(4,settings.size)));
+  const n=pts.length;if(!n)return null;
+  let opSum=0;
+  const rs=pts.map((pt,i)=>{
+    const wm=BrushEngine.pressureFactor(pt.pressure,settings.pressureWidth);
+    opSum+=BrushEngine.pressureFactor(pt.pressure,settings.pressureOpacity);
+    let tm=1;if(brush.taper==='both'){const edge=Math.min(i,n-1-i),tl=Math.max(2,Math.round(n*0.12));if(edge<tl)tm=Math.max(.12,edge/tl);}
+    return Math.max(.3,(settings.size/2)*wm*tm);
+  });
+  const opacity=Math.max(0,Math.min(1,(settings.opacity/100)*(opSum/n)));
+  if(n===1)return {d:'M'+svgNum(pts[0].x-rs[0])+' '+svgNum(pts[0].y)+'a'+svgNum(rs[0])+' '+svgNum(rs[0])+' 0 1 0 '+svgNum(rs[0]*2)+' 0a'+svgNum(rs[0])+' '+svgNum(rs[0])+' 0 1 0 '+svgNum(-rs[0]*2)+' 0Z',opacity};
+  const L=[],R=[];
+  for(let i=0;i<n;i++){
+    const a=pts[Math.max(0,i-1)],b=pts[Math.min(n-1,i+1)];
+    let tx=b.x-a.x,ty=b.y-a.y;const tl=Math.hypot(tx,ty)||1;tx/=tl;ty/=tl;
+    L.push({x:pts[i].x-ty*rs[i],y:pts[i].y+tx*rs[i]});R.push({x:pts[i].x+ty*rs[i],y:pts[i].y-tx*rs[i]});
+  }
+  let d=svgPoly(L.concat(R.reverse()));
+  // round caps
+  [[pts[0],rs[0]],[pts[n-1],rs[n-1]]].forEach(([p,r])=>{d+='M'+svgNum(p.x-r)+' '+svgNum(p.y)+'a'+svgNum(r)+' '+svgNum(r)+' 0 1 0 '+svgNum(r*2)+' 0a'+svgNum(r)+' '+svgNum(r)+' 0 1 0 '+svgNum(-r*2)+' 0Z';});
+  return {d,opacity};
+}
+function svgStrokeMarkup(stroke,clipIds){
+  if(stroke.brushId==='eraser')return '';
+  const brush=BrushEngine.getBrush(stroke.brushId),settings=stroke.settings||BrushEngine.getSettings(stroke.brushId);
+  let clip='';
+  if(stroke.clipStrokeId&&clipIds[stroke.clipStrokeId])clip=' clip-path="url(#'+clipIds[stroke.clipStrokeId]+')"';
+  if(stroke.regions){
+    return stroke.regions.filter(r=>r&&r.length>=2).map(r=>svgStrokeMarkup({...stroke,regions:null,points:r,clipStrokeId:null},clipIds)).join('');
+  }
+  if(stroke.fillColor){
+    const fp=stroke.nodes?nodesToPoints(stroke.nodes,true):stroke.points;
+    if(!fp||fp.length<3)return '';
+    const c=svgColor(stroke.fillColor),op=(stroke.fillOpacity!=null?stroke.fillOpacity:1)*c.alpha;
+    return '<path d="'+svgPoly(fp)+'" fill="'+svgEsc(c.fill)+'"'+(op<1?' fill-opacity="'+svgNum(op)+'"':'')+clip+'/>';
+  }
+  const o=svgStrokeOutline(stroke,settings,brush);if(!o)return '';
+  const c=svgColor(stroke.color),op=o.opacity*c.alpha;
+  return '<path d="'+o.d+'" fill="'+svgEsc(c.fill)+'" fill-rule="nonzero"'+(op<.995?' fill-opacity="'+svgNum(op)+'"':'')+clip+'/>';
+}
+function buildSvgExport(size){
+  const clipIds={},defs=[];
+  strokes.forEach(s=>{
+    if(!s.clipStrokeId||clipIds[s.clipStrokeId])return;
+    const t=findClipTargetStroke(s.clipStrokeId);if(!t)return;
+    const pts=t.nodes?nodesToPoints(t.nodes,true):t.points;if(!pts||pts.length<3)return;
+    const id='clip-'+Object.keys(clipIds).length;clipIds[s.clipStrokeId]=id;
+    defs.push('<clipPath id="'+id+'"><path d="'+svgPoly(pts)+'"/></clipPath>');
+  });
+  const lat=[];for(let ix=-1;ix<=1;ix++)for(let iy=-1;iy<=1;iy++){if(ix||iy)lat.push(tilePos(ix,iy));}
+  const useCopies=id=>lat.map(([ox,oy])=>'<use href="#'+id+'" transform="translate('+svgNum(ox)+' '+svgNum(oy)+')"/>').join('');
+  const out=[];
+  out.push('<rect id="background" x="'+C+'" y="'+C+'" width="'+TILE+'" height="'+TILE+'" fill="#ffffff"/>');
+  let li=0;
+  layers.forEach(layer=>{
+    if(!layer.visible)return;
+    const body=strokes.filter(s=>s.layerId===layer.id).map(s=>svgStrokeMarkup(s,clipIds)).join('');
+    if(!body)return;
+    li++;const id='art-'+li;
+    out.push('<g id="layer-'+li+'" data-name="'+svgEsc(layer.name)+'" inkscape:groupmode="layer" inkscape:label="'+svgEsc(layer.name)+'"'+(layer.opacity<100?' opacity="'+svgNum(layer.opacity/100)+'"':'')+'><g id="'+id+'">'+body+'</g>'+useCopies(id)+'</g>');
+  });
+  return '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="'+size+'" height="'+size+'" viewBox="0 0 '+TILE+' '+TILE+'">\n<defs>'+defs.join('')+'<clipPath id="tile"><rect x="0" y="0" width="'+TILE+'" height="'+TILE+'"/></clipPath></defs>\n<g clip-path="url(#tile)"><g transform="translate('+(-C)+' '+(-C)+')">\n'+out.join('\n')+'\n</g></g>\n</svg>\n';
+}
+let svgSize=3600;try{const v=+localStorage.getItem('sp-svgSize');if(v>=64&&v<=20000)svgSize=Math.round(v);}catch(e){}
+function saveFileBlob(blob,name){
+  if(window.SketchpadNative)return SketchpadNative.saveBlob(blob,name);
+  const a=document.createElement('a');a.download=name;a.href=URL.createObjectURL(blob);document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function syncSvgSizeUI(){$('svgSizeInput').value=svgSize;document.querySelectorAll('#svgPopover .svg-preset').forEach(b=>b.classList.toggle('active',+b.dataset.size===svgSize));}
+$('exportSvgBtn').onclick=e=>{e.stopPropagation();syncSvgSizeUI();$('svgPopover').classList.toggle('open');};
+$('svgCloseBtn').onclick=()=>$('svgPopover').classList.remove('open');
+document.querySelectorAll('#svgPopover .svg-preset').forEach(b=>b.onclick=()=>{svgSize=+b.dataset.size;syncSvgSizeUI();});
+$('svgSizeInput').oninput=e=>{const v=Math.round(+e.target.value);if(v>=64&&v<=20000){svgSize=v;document.querySelectorAll('#svgPopover .svg-preset').forEach(b=>b.classList.toggle('active',+b.dataset.size===svgSize));}};
+$('svgSaveBtn').onclick=()=>{
+  const v=Math.round(+$('svgSizeInput').value);
+  if(!(v>=64&&v<=20000)){setStatus('⚠️ SVG size must be between 64 and 20000 px.');return;}
+  svgSize=v;try{localStorage.setItem('sp-svgSize',String(v));}catch(e){}
+  try{
+    const svg=buildSvgExport(svgSize),blob=new Blob([svg],{type:'image/svg+xml'});
+    saveFileBlob(blob,'pattern-sketch-tile-'+svgSize+'.svg');
+    $('svgPopover').classList.remove('open');
+    const skipped=placed.filter(p=>p.img).length+((bgImg&&bgShown)?1:0);
+    setStatus('🖋️ SVG saved at '+svgSize+' × '+svgSize+' px (vector only)'+(skipped?' — '+skipped+' picture'+(skipped===1?'':'s')+' (motif / background image) left out because they are not vector.':'.'));
+  }catch(err){console.error(err);setStatus('⚠️ Could not build the SVG: '+(err&&err.message||err));}
+};
+// ---- Pattern Brush maker --------------------------------------------------------------------------
+// Turns a vector path (the selected stroke, or every stroke on the active layer when none is
+// selected) into a brush tip image: a square, centred, padded render at up to 2048 px.
+//  - Shape PNG: white on black, the format Procreate's Brush Studio expects for a Shape source.
+//  - Colour stamp PNG: the artwork in its own colours on transparency (stamp / pattern brush use).
+//  - Brush pack .zip: both PNGs plus import instructions.
+function brushSourceStrokes(){
+  let list=selectedStrokeId?strokes.filter(s=>s.id===selectedStrokeId):[];
+  let what='the selected stroke';
+  if(!list.length){const l=getActiveLayer();list=l?strokes.filter(s=>s.layerId===l.id):[];what='every stroke on "'+(l?l.name:'the layer')+'"';}
+  return {list:list.filter(s=>s.brushId!=='eraser'),what};
+}
+function strokeBounds(list){
+  let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+  const add=(pts,pad)=>{(pts||[]).forEach(p=>{if(p.x-pad<x0)x0=p.x-pad;if(p.y-pad<y0)y0=p.y-pad;if(p.x+pad>x1)x1=p.x+pad;if(p.y+pad>y1)y1=p.y+pad;});};
+  list.forEach(s=>{
+    const st=s.settings||BrushEngine.getSettings(s.brushId),pad=s.fillColor?1:Math.max(1,(st.size||10)/2+2);
+    if(s.regions)s.regions.forEach(r=>add(r,pad));
+    else if(s.fillColor)add(s.nodes?nodesToPoints(s.nodes,true):s.points,pad);
+    else add(s.points,pad);
+  });
+  return isFinite(x0)?{x0,y0,x1,y1}:null;
+}
+function renderBrushTip(list,px,mode){
+  const bb=strokeBounds(list);if(!bb)return null;
+  const side=Math.max(bb.x1-bb.x0,bb.y1-bb.y0,8),margin=side*0.06,k=px/(side+margin*2);
+  const cx=(bb.x0+bb.x1)/2,cy=(bb.y0+bb.y1)/2;
+  const art=document.createElement('canvas');art.width=px;art.height=px;
+  const a=art.getContext('2d');a.setTransform(k,0,0,k,px/2-cx*k,px/2-cy*k);
+  list.forEach(s=>{const brush=BrushEngine.getBrush(s.brushId),settings=s.settings||BrushEngine.getSettings(s.brushId);renderStrokeClipped(a,s,brush,settings);});
+  if(mode==='stamp')return art;
+  // Shape: Procreate's format is WHITE art on a BLACK background (alpha drives the brightness).
+  return shapeFromTip(art);
+}
+function canvasToBlob(c){return new Promise(r=>c.toBlob(r,'image/png'));}
+let crcTable=null;
+function crc32(u8){if(!crcTable){crcTable=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;crcTable[n]=c>>>0;}}let c=0xFFFFFFFF;for(let i=0;i<u8.length;i++)c=crcTable[(c^u8[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
+// Minimal "stored" (uncompressed) zip writer — PNGs are already compressed, so nothing is lost.
+function makeZip(files){
+  const enc=new TextEncoder(),parts=[],central=[];let offset=0;
+  const d=new Date(),dosT=(d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1),dosD=((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate();
+  files.forEach(f=>{
+    const name=enc.encode(f.name),crc=crc32(f.data),sz=f.data.length;
+    const lh=new DataView(new ArrayBuffer(30));
+    lh.setUint32(0,0x04034b50,true);lh.setUint16(4,20,true);lh.setUint16(6,0x0800,true);lh.setUint16(8,0,true);lh.setUint16(10,dosT,true);lh.setUint16(12,dosD,true);lh.setUint32(14,crc,true);lh.setUint32(18,sz,true);lh.setUint32(22,sz,true);lh.setUint16(26,name.length,true);lh.setUint16(28,0,true);
+    parts.push(new Uint8Array(lh.buffer),name,f.data);
+    const ch=new DataView(new ArrayBuffer(46));
+    ch.setUint32(0,0x02014b50,true);ch.setUint16(4,20,true);ch.setUint16(6,20,true);ch.setUint16(8,0x0800,true);ch.setUint16(10,0,true);ch.setUint16(12,dosT,true);ch.setUint16(14,dosD,true);ch.setUint32(16,crc,true);ch.setUint32(20,sz,true);ch.setUint32(24,sz,true);ch.setUint16(28,name.length,true);ch.setUint32(42,offset,true);
+    central.push(new Uint8Array(ch.buffer),name);
+    offset+=30+name.length+sz;
+  });
+  const cdSize=central.reduce((n,p)=>n+p.length,0);
+  const end=new DataView(new ArrayBuffer(22));
+  end.setUint32(0,0x06054b50,true);end.setUint16(8,files.length,true);end.setUint16(10,files.length,true);end.setUint32(12,cdSize,true);end.setUint32(16,offset,true);
+  return new Blob(parts.concat(central,[new Uint8Array(end.buffer)]),{type:'application/zip'});
+}
+function brushFileBase(){const n=($('brushNameInput').value||'').trim().replace(/[^\w\- ]+/g,'').replace(/\s+/g,'-').slice(0,40);return n||'pattern-brush';}
+async function runBrushExport(kind){
+  const {list,what}=brushSourceStrokes();
+  if(!list.length){setStatus('Draw a path first, or select one (Edit mode), then make a brush from it.');return;}
+  const px=+$('brushSizeSelect').value||2048,base=brushFileBase();
+  try{
+    if(kind==='shape'){const c=renderBrushTip(list,px,'shape');saveFileBlob(await canvasToBlob(c),base+'-shape.png');}
+    else if(kind==='brush'){const tip=renderBrushTip(list,px,'stamp'),nm=($('brushNameInput').value||'').trim()||'Pattern Brush';saveFileBlob(makeZip(await procreateBrushFiles(nm,tip)),base+'.brush');}
+    else if(kind==='stamp'){const c=renderBrushTip(list,px,'stamp');saveFileBlob(await canvasToBlob(c),base+'-stamp.png');}
+    else{
+      const sh=renderBrushTip(list,px,'shape'),st=renderBrushTip(list,px,'stamp');
+      const bytes=c=>pngBytes(c);
+      const readme='Pattern Sketch brush pack: '+base+'\r\n\r\n'+
+        base+'-shape.png  white on black, '+px+' x '+px+' px. Use as a Procreate Shape source.\r\n'+
+        base+'-stamp.png  full colour on transparency, '+px+' x '+px+' px. Use as a stamp or in any app.\r\n\r\n'+
+        'Procreate: Brushes > + (new brush) > Shape > Edit > Import > Source library / Photos / Files, then choose the shape PNG.\r\n'+
+        'Then set Spacing, Size and Rotation in Brush Studio and tap Done. Add it to a set and Share to keep it.\r\n';
+      const files=[{name:base+'-shape.png',data:await bytes(sh)},{name:base+'-stamp.png',data:await bytes(st)},{name:'README.txt',data:new TextEncoder().encode(readme)}];
+      saveFileBlob(makeZip(files),base+'-brush-pack.zip');
+    }
+    setStatus('🖌️ Brush made from '+what+' ('+px+' px).');
+  }catch(err){console.error(err);setStatus('⚠️ Could not make the brush: '+(err&&err.message||err));}
+}
+$('brushShapeBtn').onclick=()=>runBrushExport('shape');
+$('brushStampBtn').onclick=()=>runBrushExport('stamp');
+$('brushPackBtn').onclick=()=>runBrushExport('pack');
+$('brushProcreateBtn').onclick=()=>runBrushExport('brush');
+const PROCREATE_TPL={"main":{"top":1,"objects":["$null",{"d":{"burntEdgesBlendModeExtended":1,"plotJitterLongitudinalTiltAngle":{"f":0.10000000149011612},"minOpacity":{"f":0.0},"renderingRecursiveMixing":false,"plotJitterRoll":false,"previewPressureScale":{"f":1.0},"pencilTaperShape":{"f":0.0},"saturationJitterTiltAngle":{"f":0.10000000149011612},"dynamicsTiltGradation":{"f":0.0},"attackTilt":false,"shapeFilterMode":0,"shapeCountRoll":false,"plotJitterLongitudinal":{"f":0.0},"previewTiltAngleOffset":{"f":0.0},"secondaryColorTiltAngle":{"f":0.10000000149011612},"heightAmount":{"f":0.5},"dualBlendMode":0,"grainDepthJitter":{"f":0.0},"dynamicsPressureResponse":{"f":0.0},"hueJitterTilt":false,"importedFromABR":false,"extendedBlend2":0,"dynamicsRollSaturationParameters":{"u":56},"dynamicsMix":{"f":0.0},"maxSize":{"f":5.070474147796631},"dynamicsPressureSaturation":{"f":0.0},"dynamicsRollBleed":{"f":0.0},"shapeScatterRoll":false,"saturationJitterTilt":false,"dynamicsJitterSaturation":{"f":0.0},"dynamicsPressureOpacitySpeed":{"f":0.0},"bleedTiltAngle":{"f":0.10000000149011612},"jitterShapeRoundness":{"f":0.0},"textureContrast":{"f":0.0},"shapeCount":{"f":0.0},"attackTiltAngle":{"f":0.10000000149011612},"lightnessJitterTilt":false,"smudgeOpacity":{"f":0.800000011920929},"dynamicsPressureSizeSpeed":{"f":0.0},"alphaThreshold":false,"jitterStrokeSecondary":{"f":0.0},"plotSpacing":{"f":0.9258279204368591},"hueTiltAngle":{"f":0.10000000149011612},"textureScale":{"f":1.0},"shapeRollMode":0,"plotMovingAverageStabilization":{"f":0.0},"shapeRoundnessTiltAngle":{"f":0.10000000149011612},"renderingModulatedTransfer":true,"dynamicsPressureBleedSpeed":{"f":0.0},"jitterShapeRoundnessX":{"f":0.0},"secondaryColorJitterTilt":false,"blendMode":0,"shapeScatter":{"f":0.0},"dynamicsPressureSizeCurve":{"u":16},"bundledHeightPath":{"u":0},"secondaryColorJitterTiltAngle":{"f":0.10000000149011612},"shapeInverted":false,"dynamicsGlazedFlow":{"f":1.0},"textureDepthTilt":false,"plotJitterLongitudinalRollParameters":{"u":9},"shapeScatterRollParameters":{"u":5},"roughnessAmount":{"f":0.5},"plotSmoothing":{"f":0.0},"dynamicsPressureBleedCurve":{"u":24},"metallicGrainInverted":false,"dynamicsFalloff":{"f":0.0},"eraseSize":{"f":0.5},"burntEdgesAmount":{"f":0.0},"alphaThresholdAmount":{"f":0.0},"textureInverted":false,"savedSmudgeSizes":{"u":2},"pencilTaperOpacity":{"f":0.0},"plotJitterLongitudinalRoll":false,"dynamicsPressureShapeRoundness":{"f":1.0},"shapeAngle":{"f":0.0},"plotJitterTiltAngle":{"f":0.10000000149011612},"dynamicsTiltAngle":{"f":0.10000000149011612},"savedPaintSizes":{"u":2},"authorName":{"u":0},"dynamicsTiltOpacity":{"f":0.0},"pencilTaperSize":{"f":0.0},"dynamicsRollOpacityParameters":{"u":53},"dynamicsPressureOverall":{"u":48},"dynamicsJitterLightness":{"f":0.0},"oriented":true,"pencilTaperEndLength":{"f":0.0},"dynamicsRollOpacity":{"f":0.0},"dynamicsWetnessJitter":{"f":0.0},"textureDepthTiltAngle":{"f":0.10000000149011612},"shapeFlipYJitter":false,"maxOpacity":{"f":1.0},"name":{"u":0},"blendGammaCorrect":false,"wetEdgesAmount":{"f":0.0},"dynamicsRollBrightnessParameters":{"u":57},"minSize":{"f":0.46476712822914124},"saturationTiltAngle":{"f":0.10000000149011612},"dynamicsRollHue":{"f":0.0},"gradationTiltAngle":{"f":0.10000000149011612},"textureApplication":0,"plotFFTSmoothingAmount":{"f":0.0},"dynamicsRollBleedParameters":{"u":54},"pencilTipAnimation":true,"bundledMetallicPath":{"u":0},"previewWetMixEnabled":true,"plotJitterTilt":false,"plotSpacingJitter":{"f":0.0},"shapeCountTilt":false,"savedEraseOpacities":{"u":2},"bundledGrainPath":{"u":0},"hoverPressure":{"f":0.10000000149011612},"dynamicsPressureBrightnessCurve":{"u":40},"grainDepthMinimum":{"f":0.0},"dynamicsPressureSecondaryColor":{"f":0.0},"dynamicsRollSecondaryColor":{"f":0.0},"dynamicsJitterStrokeLightness":{"f":0.0},"grainBlendModeExtended":1,"taperSizeLinked":false,"plotFFTSmoothingBias":{"f":0.0},"dynamicsTiltBleed":{"f":0.0},"bundledRoughnessPath":{"u":0},"grainBlendMode":1,"extendedBlend":0,"paintOpacity":{"f":1.0},"dynamicsSmudgeAccumulation":{"f":0.49932271242141724},"dynamicsJitterHue":{"f":0.0},"dynamicsPressureSize":{"f":0.0},"dynamicsBlurJitter":{"f":0.0},"textureOffsetJitter":true,"grainOrientation":1,"dynamicsTiltShapeRoundness":{"f":1.0},"textureFilterMode":0,"dynamicsTiltSecondaryColor":{"f":0.0},"hoverFill":1,"dynamicsRollBrightness":{"f":0.0},"shapeRotation":{"f":0.0},"previewTiltEnabled":true,"dynamicsRollHueParameters":{"u":55},"stamp":true,"creationDate":{"u":60},"taperVersion":1,"pencilTaperStartLength":{"f":0.0},"dynamicsTiltCompression":{"f":1.0},"shapeFlipXJitter":false,"savedPaintOpacities":{"u":2},"dynamicsPressureHue":{"f":0.0},"shapeOrientation":1,"savedSmudgeOpacities":{"u":2},"previewPressureMinimum":{"f":0.0},"dynamicsJitterOpacity":{"f":0.0},"plotJitterRollParameters":{"u":8},"taperOpacity":{"f":0.0},"dynamicsWetAccumulation":{"f":0.75},"dynamicsRollSizeParameters":{"u":52},"dynamicsLoad":{"f":0.5},"dynamicsPressureSecondaryColorCurve":{"u":44},"dynamicsPressureShapeRoundnessCurve":{"u":20},"dynamicsTiltBrightness":{"f":0.0},"dynamicsPressureSmoothing":{"f":0.0},"darknessJitterTilt":false,"dynamicsTiltHue":{"f":0.0},"darknessJitterTiltAngle":{"f":0.10000000149011612},"dynamicsJitterStrokeHue":{"f":0.0},"previewRenderDisabled":false,"pencilTaperSizeLinked":false,"metallicAmount":{"f":0.0},"dynamicsRollSecondaryColorParameters":{"u":58},"$class":{"u":62},"plotSpacingSpeed":{"f":0.0},"dynamicsJitterSize":{"f":0.0},"smudgeSize":{"f":0.5},"dynamicsSpeedSize":{"f":0.0},"dynamicsRollSaturation":{"f":0.0},"taperShape":{"f":0.0},"dynamicsPressureOpacityCurve":{"u":10},"texturizedGrainFollowsCamera":true,"taperEndLength":{"f":0.0},"taperSize":{"f":0.0},"previewSize":{"f":0.30000001192092896},"shapeFilter":true,"eraseOpacity":{"f":1.0},"metallicScale":{"f":0.1599999964237213},"dynamicsPressureHueCurve":{"u":32},"shapeRoll":false,"roughnessScale":{"f":0.1599999964237213},"dynamicsPressureTransferModulationCurve":{"u":28},"shapeCountJitter":{"f":0.0},"plotJitterLongitudinalTilt":false,"textureRotation":{"f":0.0},"hoverOutline":0,"jitterSecondary":{"f":0.0},"heightScale":{"f":0.1599999964237213},"lightnessJitterTiltAngle":{"f":0.10000000149011612},"dynamicsPressureOpacityTransfer":{"f":1.0},"bundledShapePath":{"u":0},"sizeTiltAngle":{"f":0.10000000149011612},"color":{"u":4},"dynamicsTiltSaturation":{"f":0.0},"attackRoll":false,"attackRollParameters":{"u":59},"shapeAzimuth":false,"shapeRandomise":false,"dynamicsTiltSize":{"f":0.0},"dynamicsSpeedOpacity":{"f":0.0},"dynamicsPressureBleed":{"f":0.0},"plotSpacingVersion":1,"dynamicsPressureShapeRoundnessMinimum":{"f":1.0},"legacyNormalDual":false,"dualBlendModeExtended":0,"textureBrightness":{"f":0.0},"grainDepth":{"f":1.0},"shapeCountRollParameters":{"u":7},"dynamicsTiltShapeRoundnessMinimum":{"f":1.0},"textureFilter":true,"dynamicsPressureMix":{"f":0.0},"plotJitter":{"f":0.0},"shapeCountTiltAngle":{"f":0.10000000149011612},"textureMovement":{"f":1.0},"dynamicsRollSize":{"f":0.0},"dynamicsJitterStrokeSaturation":{"f":0.0},"textureOrientation":1,"dynamicsBlur":{"f":0.0},"roughnessGrainInverted":false,"brightnessTiltAngle":{"f":0.10000000149011612},"hueJitterTiltAngle":{"f":0.10000000149011612},"opacityTiltAngle":{"f":0.10000000149011612},"dynamicsPressureBrightness":{"f":0.0},"renderingMaxTransfer":true,"dynamicsPressureOpacity":{"f":0.0},"burntEdgesBlendMode":1,"dynamicsPressureSaturationCurve":{"u":36},"taperPressure":{"f":1.0},"paintSize":{"f":0.6144790053367615},"version":4,"savedEraseSizes":{"u":2},"shapeRoundness":{"f":1.0},"dynamicsJitterDarkness":{"f":0.0},"taperStartLength":{"f":0.0},"textureZoom":{"f":1.0},"dynamicsMixSoftening":{"f":0.0},"dynamicsJitterStrokeDarkness":{"f":0.0},"maxPressureSizeClamped":false}},{"d":{"NS.objects":{"a":[]},"$class":{"u":3}}},{"d":{"$classname":"NSArray","$classes":{"a":["NSArray","NSObject"]}}},{"b":"AAAAAAAAAAAAAAAAAAAAAA=="},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":6},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"$classname":"ValkyrieBrushRollParameters","$classes":{"a":["ValkyrieBrushRollParameters","NSObject"]}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":6},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":6},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":6},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"points":{"u":11},"$class":{"u":15}}},{"d":{"NS.objects":{"a":[{"u":12},{"u":13}]},"$class":{"u":14}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"$classname":"NSMutableArray","$classes":{"a":["NSMutableArray","NSArray","NSObject"]}}},{"d":{"$classname":"ValkyrieMagnitudinalCurve","$classes":{"a":["ValkyrieMagnitudinalCurve","NSObject"]}}},{"d":{"points":{"u":17},"$class":{"u":15}}},{"d":{"NS.objects":{"a":[{"u":18},{"u":19}]},"$class":{"u":14}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":21},"$class":{"u":15}}},{"d":{"NS.objects":{"a":[{"u":22},{"u":23}]},"$class":{"u":14}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":25},"$class":{"u":15}}},{"d":{"NS.objects":{"a":[{"u":26},{"u":27}]},"$class":{"u":14}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":29},"$class":{"u":15}}},{"d":{"NS.objects":{"a":[{"u":30},{"u":31}]},"$class":{"u":14}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":33},"$class":{"u":15}}},{"d":{"NS.objects":{"a":[{"u":34},{"u":35}]},"$class":{"u":14}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":37},"$class":{"u":15}}},{"d":{"NS.objects":{"a":[{"u":38},{"u":39}]},"$class":{"u":14}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":41},"$class":{"u":15}}},{"d":{"NS.objects":{"a":[{"u":42},{"u":43}]},"$class":{"u":14}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":45},"$class":{"u":15}}},{"d":{"NS.objects":{"a":[{"u":46},{"u":47}]},"$class":{"u":14}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":49},"$class":{"u":15}}},{"d":{"NS.objects":{"a":[{"u":50},{"u":51}]},"$class":{"u":14}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":6},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":6},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":6},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":6},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":6},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":6},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":6},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":6},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"NS.time":{"f":804152884.250536},"$class":{"u":61}}},{"d":{"$classname":"NSDate","$classes":{"a":["NSDate","NSObject"]}}},{"d":{"$classname":"SilicaBrush","$classes":{"a":["SilicaBrush","ValkyrieBrush","NSObject"]}}}]},"reset":{"top":1,"objects":["$null",{"d":{"burntEdgesBlendModeExtended":1,"plotJitterLongitudinalTiltAngle":{"f":0.10000000149011612},"minOpacity":{"f":0.0},"renderingRecursiveMixing":false,"plotJitterRoll":false,"previewPressureScale":{"f":1.0},"pencilTaperShape":{"f":0.0},"saturationJitterTiltAngle":{"f":0.10000000149011612},"dynamicsTiltGradation":{"f":0.0},"attackTilt":false,"shapeFilterMode":0,"shapeCountRoll":false,"plotJitterLongitudinal":{"f":0.0},"previewTiltAngleOffset":{"f":0.0},"secondaryColorTiltAngle":{"f":0.10000000149011612},"heightAmount":{"f":0.5},"dualBlendMode":0,"grainDepthJitter":{"f":0.0},"dynamicsPressureResponse":{"f":0.0},"hueJitterTilt":false,"importedFromABR":false,"extendedBlend2":0,"dynamicsRollSaturationParameters":{"u":57},"dynamicsMix":{"f":0.0},"maxSize":{"f":1.0},"dynamicsPressureSaturation":{"f":0.0},"dynamicsRollBleed":{"f":0.0},"shapeScatterRoll":false,"saturationJitterTilt":false,"dynamicsJitterSaturation":{"f":0.0},"dynamicsPressureOpacitySpeed":{"f":0.0},"bleedTiltAngle":{"f":0.10000000149011612},"jitterShapeRoundness":{"f":0.0},"textureContrast":{"f":0.0},"shapeCount":{"f":0.0},"attackTiltAngle":{"f":0.10000000149011612},"lightnessJitterTilt":false,"smudgeOpacity":{"f":0.800000011920929},"dynamicsPressureSizeSpeed":{"f":0.0},"alphaThreshold":false,"jitterStrokeSecondary":{"f":0.0},"plotSpacing":{"f":0.041999999433755875},"hueTiltAngle":{"f":0.10000000149011612},"textureScale":{"f":1.0},"shapeRollMode":0,"plotMovingAverageStabilization":{"f":0.0},"shapeRoundnessTiltAngle":{"f":0.10000000149011612},"renderingModulatedTransfer":false,"dynamicsPressureBleedSpeed":{"f":0.0},"jitterShapeRoundnessX":{"f":0.0},"secondaryColorJitterTilt":false,"blendMode":0,"shapeScatter":{"f":0.0},"dynamicsPressureSizeCurve":{"u":17},"bundledHeightPath":{"u":0},"secondaryColorJitterTiltAngle":{"f":0.10000000149011612},"shapeInverted":false,"dynamicsGlazedFlow":{"f":1.0},"textureDepthTilt":false,"plotJitterLongitudinalRollParameters":{"u":10},"shapeScatterRollParameters":{"u":6},"roughnessAmount":{"f":0.5},"plotSmoothing":{"f":0.0},"dynamicsPressureBleedCurve":{"u":25},"metallicGrainInverted":false,"dynamicsFalloff":{"f":0.0},"eraseSize":{"f":0.5},"burntEdgesAmount":{"f":0.0},"alphaThresholdAmount":{"f":0.0},"textureInverted":false,"savedSmudgeSizes":{"u":3},"pencilTaperOpacity":{"f":0.0},"plotJitterLongitudinalRoll":false,"dynamicsPressureShapeRoundness":{"f":1.0},"shapeAngle":{"f":0.0},"plotJitterTiltAngle":{"f":0.10000000149011612},"dynamicsTiltAngle":{"f":0.10000000149011612},"savedPaintSizes":{"u":3},"authorName":{"u":0},"dynamicsTiltOpacity":{"f":0.0},"pencilTaperSize":{"f":0.0},"dynamicsRollOpacityParameters":{"u":54},"dynamicsPressureOverall":{"u":49},"dynamicsJitterLightness":{"f":0.0},"oriented":true,"pencilTaperEndLength":{"f":0.0},"dynamicsRollOpacity":{"f":0.0},"dynamicsWetnessJitter":{"f":0.0},"textureDepthTiltAngle":{"f":0.10000000149011612},"shapeFlipYJitter":false,"maxOpacity":{"f":1.0},"name":{"u":0},"blendGammaCorrect":false,"wetEdgesAmount":{"f":0.0},"dynamicsRollBrightnessParameters":{"u":58},"minSize":{"f":0.0},"saturationTiltAngle":{"f":0.10000000149011612},"dynamicsRollHue":{"f":0.0},"gradationTiltAngle":{"f":0.10000000149011612},"textureApplication":0,"plotFFTSmoothingAmount":{"f":0.0},"dynamicsRollBleedParameters":{"u":55},"pencilTipAnimation":true,"bundledMetallicPath":{"u":0},"previewWetMixEnabled":true,"plotJitterTilt":false,"plotSpacingJitter":{"f":0.0},"shapeCountTilt":false,"savedEraseOpacities":{"u":3},"bundledGrainPath":{"u":0},"hoverPressure":{"f":0.10000000149011612},"dynamicsPressureBrightnessCurve":{"u":41},"grainDepthMinimum":{"f":0.0},"dynamicsPressureSecondaryColor":{"f":0.0},"dynamicsRollSecondaryColor":{"f":0.0},"dynamicsJitterStrokeLightness":{"f":0.0},"grainBlendModeExtended":1,"taperSizeLinked":false,"plotFFTSmoothingBias":{"f":0.0},"dynamicsTiltBleed":{"f":0.0},"bundledRoughnessPath":{"u":0},"grainBlendMode":1,"extendedBlend":0,"paintOpacity":{"f":1.0},"dynamicsSmudgeAccumulation":{"f":0.75},"dynamicsJitterHue":{"f":0.0},"dynamicsPressureSize":{"f":0.0},"dynamicsBlurJitter":{"f":0.0},"textureOffsetJitter":true,"grainOrientation":1,"dynamicsTiltShapeRoundness":{"f":1.0},"textureFilterMode":0,"dynamicsTiltSecondaryColor":{"f":0.0},"hoverFill":1,"dynamicsRollBrightness":{"f":0.0},"shapeRotation":{"f":0.0},"previewTiltEnabled":true,"dynamicsRollHueParameters":{"u":56},"stamp":false,"creationDate":{"u":61},"taperVersion":1,"pencilTaperStartLength":{"f":0.0},"dynamicsTiltCompression":{"f":1.0},"shapeFlipXJitter":false,"savedPaintOpacities":{"u":3},"dynamicsPressureHue":{"f":0.0},"shapeOrientation":1,"savedSmudgeOpacities":{"u":3},"previewPressureMinimum":{"f":0.0},"dynamicsJitterOpacity":{"f":0.0},"plotJitterRollParameters":{"u":9},"taperOpacity":{"f":0.0},"dynamicsWetAccumulation":{"f":0.75},"dynamicsRollSizeParameters":{"u":53},"dynamicsLoad":{"f":0.5},"dynamicsPressureSecondaryColorCurve":{"u":45},"dynamicsPressureShapeRoundnessCurve":{"u":21},"dynamicsTiltBrightness":{"f":0.0},"dynamicsPressureSmoothing":{"f":0.0},"darknessJitterTilt":false,"dynamicsTiltHue":{"f":0.0},"darknessJitterTiltAngle":{"f":0.10000000149011612},"dynamicsJitterStrokeHue":{"f":0.0},"previewRenderDisabled":false,"pencilTaperSizeLinked":false,"metallicAmount":{"f":0.0},"dynamicsRollSecondaryColorParameters":{"u":59},"$class":{"u":63},"plotSpacingSpeed":{"f":0.0},"dynamicsJitterSize":{"f":0.0},"smudgeSize":{"f":0.5},"dynamicsSpeedSize":{"f":0.0},"dynamicsRollSaturation":{"f":0.0},"taperShape":{"f":0.0},"dynamicsPressureOpacityCurve":{"u":11},"texturizedGrainFollowsCamera":true,"taperEndLength":{"f":0.0},"taperSize":{"f":0.0},"previewSize":{"f":0.30000001192092896},"shapeFilter":true,"eraseOpacity":{"f":1.0},"metallicScale":{"f":0.1599999964237213},"dynamicsPressureHueCurve":{"u":33},"shapeRoll":false,"roughnessScale":{"f":0.1599999964237213},"dynamicsPressureTransferModulationCurve":{"u":29},"shapeCountJitter":{"f":0.0},"plotJitterLongitudinalTilt":false,"textureRotation":{"f":0.0},"hoverOutline":0,"jitterSecondary":{"f":0.0},"heightScale":{"f":0.1599999964237213},"lightnessJitterTiltAngle":{"f":0.10000000149011612},"dynamicsPressureOpacityTransfer":{"f":1.0},"bundledShapePath":{"u":2},"sizeTiltAngle":{"f":0.10000000149011612},"color":{"u":5},"dynamicsTiltSaturation":{"f":0.0},"attackRoll":false,"attackRollParameters":{"u":60},"shapeAzimuth":false,"shapeRandomise":false,"dynamicsTiltSize":{"f":0.0},"dynamicsSpeedOpacity":{"f":0.0},"dynamicsPressureBleed":{"f":0.0},"plotSpacingVersion":1,"dynamicsPressureShapeRoundnessMinimum":{"f":1.0},"legacyNormalDual":false,"dualBlendModeExtended":0,"textureBrightness":{"f":0.0},"grainDepth":{"f":1.0},"shapeCountRollParameters":{"u":8},"dynamicsTiltShapeRoundnessMinimum":{"f":1.0},"textureFilter":true,"dynamicsPressureMix":{"f":0.0},"plotJitter":{"f":0.0},"shapeCountTiltAngle":{"f":0.10000000149011612},"textureMovement":{"f":1.0},"dynamicsRollSize":{"f":0.0},"dynamicsJitterStrokeSaturation":{"f":0.0},"textureOrientation":1,"dynamicsBlur":{"f":0.0},"roughnessGrainInverted":false,"brightnessTiltAngle":{"f":0.10000000149011612},"hueJitterTiltAngle":{"f":0.10000000149011612},"opacityTiltAngle":{"f":0.10000000149011612},"dynamicsPressureBrightness":{"f":0.0},"renderingMaxTransfer":false,"dynamicsPressureOpacity":{"f":0.0},"burntEdgesBlendMode":1,"dynamicsPressureSaturationCurve":{"u":37},"taperPressure":{"f":1.0},"paintSize":{"f":0.5},"version":4,"savedEraseSizes":{"u":3},"shapeRoundness":{"f":1.0},"dynamicsJitterDarkness":{"f":0.0},"taperStartLength":{"f":0.0},"textureZoom":{"f":1.0},"dynamicsMixSoftening":{"f":0.0},"dynamicsJitterStrokeDarkness":{"f":0.0},"maxPressureSizeClamped":false}},"Brush-Preset-Hard.png",{"d":{"NS.objects":{"a":[]},"$class":{"u":4}}},{"d":{"$classname":"NSArray","$classes":{"a":["NSArray","NSObject"]}}},{"b":"AAAAAAAAAAAAAAAAAAAAAA=="},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":7},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"$classname":"ValkyrieBrushRollParameters","$classes":{"a":["ValkyrieBrushRollParameters","NSObject"]}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":7},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":7},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":7},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"points":{"u":12},"$class":{"u":16}}},{"d":{"NS.objects":{"a":[{"u":13},{"u":14}]},"$class":{"u":15}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"$classname":"NSMutableArray","$classes":{"a":["NSMutableArray","NSArray","NSObject"]}}},{"d":{"$classname":"ValkyrieMagnitudinalCurve","$classes":{"a":["ValkyrieMagnitudinalCurve","NSObject"]}}},{"d":{"points":{"u":18},"$class":{"u":16}}},{"d":{"NS.objects":{"a":[{"u":19},{"u":20}]},"$class":{"u":15}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":22},"$class":{"u":16}}},{"d":{"NS.objects":{"a":[{"u":23},{"u":24}]},"$class":{"u":15}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":26},"$class":{"u":16}}},{"d":{"NS.objects":{"a":[{"u":27},{"u":28}]},"$class":{"u":15}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":30},"$class":{"u":16}}},{"d":{"NS.objects":{"a":[{"u":31},{"u":32}]},"$class":{"u":15}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":34},"$class":{"u":16}}},{"d":{"NS.objects":{"a":[{"u":35},{"u":36}]},"$class":{"u":15}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":38},"$class":{"u":16}}},{"d":{"NS.objects":{"a":[{"u":39},{"u":40}]},"$class":{"u":15}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":42},"$class":{"u":16}}},{"d":{"NS.objects":{"a":[{"u":43},{"u":44}]},"$class":{"u":15}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":46},"$class":{"u":16}}},{"d":{"NS.objects":{"a":[{"u":47},{"u":48}]},"$class":{"u":15}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"points":{"u":50},"$class":{"u":16}}},{"d":{"NS.objects":{"a":[{"u":51},{"u":52}]},"$class":{"u":15}}},"{0.000000, 0.000000}","{1.000000, 1.000000}",{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":7},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":7},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":7},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":7},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":7},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":7},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":7},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"activationFalloff":{"f":1.5707963705062866},"activationOrigin":{"f":3.1415927410125732},"$class":{"u":7},"mode":1,"activationRange":{"f":3.1415927410125732}}},{"d":{"NS.time":{"f":804152884.250536},"$class":{"u":62}}},{"d":{"$classname":"NSDate","$classes":{"a":["NSDate","NSObject"]}}},{"d":{"$classname":"SilicaBrush","$classes":{"a":["SilicaBrush","ValkyrieBrush","NSObject"]}}}]}};
+// ---- Procreate brush files ----------------------------------------------------------------------------
+// A Procreate .brush is a zip: Brush.archive (binary plist), Reset/Brush.archive, Shape.png (WHITE art
+// on BLACK, 2048 px), QuickLook/Thumbnail.png. Brush.archive here is built from the settings of a real
+// stamp brush made in Procreate (PROCREATE_TPL), with only the name, date and shape replaced — so the
+// stamp behaviour (spacing, size limits, orientation) matches a brush Procreate itself wrote.
+function bplistBuild(rootNode){
+  const objs=[],strIdx=new Map();
+  function add(node){
+    if(typeof node==='string'&&strIdx.has(node))return strIdx.get(node);
+    const idx=objs.length,o={};objs.push(o);
+    if(typeof node==='boolean'){o.t='bool';o.v=node;}
+    else if(typeof node==='number'){o.t='int';o.v=node;}
+    else if(typeof node==='string'){o.t='str';o.v=node;strIdx.set(node,idx);}
+    else if(node.u!==undefined){o.t='uid';o.v=node.u;}
+    else if(node.f!==undefined){o.t='real';o.v=node.f;}
+    else if(node.b!==undefined){o.t='data';o.v=Uint8Array.from(atob(node.b),c=>c.charCodeAt(0));}
+    else if(node.a){o.t='arr';o.r=node.a.map(add);}
+    else if(node.d){o.t='dict';const ks=Object.keys(node.d);o.kr=ks.map(add);o.r=ks.map(k=>add(node.d[k]));}
+    else throw new Error('bad plist node');
+    return idx;
+  }
+  add(rootNode);
+  const refSize=objs.length>255?2:1;
+  const out=[];let len=0;const push=b=>{out.push(b);len+=b.length;};
+  const intBytes=n=>{if(n<0){const d=new DataView(new ArrayBuffer(9));d.setUint8(0,0x13);d.setBigInt64(1,BigInt(n));return new Uint8Array(d.buffer);}
+    if(n<256)return Uint8Array.of(0x10,n);if(n<65536)return Uint8Array.of(0x11,n>>8,n&255);
+    if(n<4294967296)return Uint8Array.of(0x12,(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255);
+    const d=new DataView(new ArrayBuffer(9));d.setUint8(0,0x13);d.setBigUint64(1,BigInt(n));return new Uint8Array(d.buffer);};
+  const head=(type,n)=>n<15?Uint8Array.of(type|n):Uint8Array.from([type|0xF,...intBytes(n)]);
+  const refBytes=r=>refSize===1?[r]:[r>>8,r&255];
+  push(new TextEncoder().encode('bplist00'));
+  const offsets=[];
+  objs.forEach(o=>{
+    offsets.push(len);
+    if(o.t==='bool')push(Uint8Array.of(o.v?0x09:0x08));
+    else if(o.t==='int')push(intBytes(o.v));
+    else if(o.t==='real'){
+      if(Math.fround(o.v)===o.v){const d=new DataView(new ArrayBuffer(5));d.setUint8(0,0x22);d.setFloat32(1,o.v);push(new Uint8Array(d.buffer));}
+      else{const d=new DataView(new ArrayBuffer(9));d.setUint8(0,0x23);d.setFloat64(1,o.v);push(new Uint8Array(d.buffer));}
+    }
+    else if(o.t==='str'){
+      const ascii=/^[\x00-\x7f]*$/.test(o.v);
+      if(ascii){push(head(0x50,o.v.length));push(new TextEncoder().encode(o.v));}
+      else{const u=new Uint8Array(o.v.length*2);for(let i=0;i<o.v.length;i++){const c=o.v.charCodeAt(i);u[i*2]=c>>8;u[i*2+1]=c&255;}push(head(0x60,o.v.length));push(u);}
+    }
+    else if(o.t==='data'){push(head(0x40,o.v.length));push(o.v);}
+    else if(o.t==='uid'){push(o.v<256?Uint8Array.of(0x80,o.v):Uint8Array.of(0x81,o.v>>8,o.v&255));}
+    else if(o.t==='arr'){push(head(0xA0,o.r.length));push(Uint8Array.from(o.r.flatMap(refBytes)));}
+    else if(o.t==='dict'){push(head(0xD0,o.r.length));push(Uint8Array.from(o.kr.flatMap(refBytes)));push(Uint8Array.from(o.r.flatMap(refBytes)));}
+  });
+  const offSize=len<256?1:len<65536?2:len<16777216?3:4,tableAt=len;
+  offsets.forEach(of=>{const b=[];for(let i=offSize-1;i>=0;i--)b.push((of>>>(8*i))&255);push(Uint8Array.from(b));});
+  const tr=new DataView(new ArrayBuffer(32));
+  tr.setUint8(6,offSize);tr.setUint8(7,refSize);tr.setBigUint64(8,BigInt(objs.length));tr.setBigUint64(16,0n);tr.setBigUint64(24,BigInt(tableAt));
+  push(new Uint8Array(tr.buffer));
+  const res=new Uint8Array(len);let p=0;out.forEach(b=>{res.set(b,p);p+=b.length;});return res;
+}
+function procreateArchive(which,name){
+  const t=JSON.parse(JSON.stringify(PROCREATE_TPL[which])),objs=t.objects;
+  objs.push(name);objs[t.top].d.name={u:objs.length-1};
+  const dt=objs[t.top].d.creationDate;if(dt&&dt.u&&objs[dt.u].d&&objs[dt.u].d['NS.time'])objs[dt.u].d['NS.time']={f:Date.now()/1000-978307200};
+  return bplistBuild({d:{'$version':100000,'$archiver':'NSKeyedArchiver','$top':{d:{root:{u:t.top}}},'$objects':{a:objs}}});
+}
+// Tip canvases ---------------------------------------------------------------------------------------
+function imageTip(img,px){
+  const c=document.createElement('canvas');c.width=px;c.height=px;const g=c.getContext('2d');
+  const w=img.naturalWidth||img.width,h=img.naturalHeight||img.height,k=(px*0.88)/Math.max(w,h);
+  g.imageSmoothingQuality='high';g.drawImage(img,(px-w*k)/2,(px-h*k)/2,w*k,h*k);return c;
+}
+function shapeFromTip(tip){ // white art on black — Procreate's Shape format
+  const px=tip.width,o=document.createElement('canvas');o.width=px;o.height=px;const g=o.getContext('2d');
+  g.fillStyle='#000';g.fillRect(0,0,px,px);
+  const id=tip.getContext('2d').getImageData(0,0,px,px).data,od=g.getImageData(0,0,px,px);
+  for(let i=0;i<id.length;i+=4){const v=Math.round(255*id[i+3]/255);od.data[i]=v;od.data[i+1]=v;od.data[i+2]=v;od.data[i+3]=255;}
+  g.putImageData(od,0,0);return o;
+}
+function thumbFromTip(tip){ // 327 x 100 white-on-transparent preview strip
+  const c=document.createElement('canvas');c.width=327;c.height=100;const g=c.getContext('2d');
+  const m=document.createElement('canvas');m.width=tip.width;m.height=tip.height;const mg=m.getContext('2d');
+  mg.drawImage(tip,0,0);mg.globalCompositeOperation='source-in';mg.fillStyle='#fff';mg.fillRect(0,0,m.width,m.height);
+  g.imageSmoothingQuality='high';[0.2,0.5,0.8].forEach(f=>g.drawImage(m,327*f-40,10,80,80));return c;
+}
+function blobBytes(b){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(new Uint8Array(fr.result));fr.onerror=()=>rej(fr.error||new Error('read failed'));fr.readAsArrayBuffer(b);});}
+function freeCanvas(c){try{c.width=1;c.height=1;}catch(e){}} // hand the pixel memory back (iPad Safari runs out quickly with several 2048px canvases)
+async function pngBytes(c){
+  for(let tries=0;tries<3;tries++){
+    try{
+      const b=await canvasToBlob(c);if(!b)throw new Error('could not encode the image');
+      return new Uint8Array(await new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=()=>rej(fr.error||new Error('read failed'));fr.readAsArrayBuffer(b);}));
+    }catch(e){if(tries===2)throw e;await new Promise(r=>setTimeout(r,150));}
+  }
+}
+async function procreateBrushFiles(name,tip){
+  const shape=shapeFromTip(tip),shapeBytes=await pngBytes(shape);freeCanvas(shape);
+  const thumb=thumbFromTip(tip),thumbBytes=await pngBytes(thumb);freeCanvas(thumb);
+  return [
+    {name:'Brush.archive',data:procreateArchive('main',name)},
+    {name:'Reset/Brush.archive',data:procreateArchive('reset',name)},
+    {name:'Shape.png',data:shapeBytes},
+    {name:'QuickLook/Thumbnail.png',data:thumbBytes},
+  ];
+}
+function safeFileName(n){return String(n||'brush').trim().replace(/[^\w\- ]+/g,'').replace(/\s+/g,'-').slice(0,40)||'brush';}
+// One motif (or the selected vector path) -> one .brush ------------------------------------------------
+function motifBrushRows(){return motifs.filter(m=>m.img);}
+function renderBrushSetList(){
+  const host=$('brushSetList');if(!host)return;host.innerHTML='';
+  const list=motifBrushRows();
+  $('brushSetEmpty').style.display=list.length?'none':'block';
+  list.forEach(m=>{
+    const row=document.createElement('label');row.className='brushset-row';row.dataset.id=m.id;
+    row.innerHTML='<input type="checkbox" checked><img src="'+m.src+'" alt=""><input type="text" class="brushset-name" maxlength="40" value="'+escapeHtml(m.name)+'">';
+    row.querySelector('.brushset-name').onchange=e=>{const v=e.target.value.trim();if(v){m.name=v;renderTray();}};
+    host.appendChild(row);
+  });
+}
+function chosenBrushMotifs(){
+  return [...document.querySelectorAll('#brushSetList .brushset-row')].filter(r=>r.querySelector('input[type=checkbox]').checked)
+    .map(r=>{const m=motifs.find(x=>x.id===r.dataset.id);if(m)m.name=r.querySelector('.brushset-name').value.trim()||m.name;return m;}).filter(Boolean);
+}
+async function runBrushSetExport(kind){
+  const chosen=chosenBrushMotifs();
+  if(!chosen.length){setStatus('Tick at least one motif in the Motif Brush Set list (capture a motif first if the list is empty).');return;}
+  const px=+$('brushSizeSelect').value||2048,setName=($('brushSetNameInput').value||'').trim()||'Pattern Sketch Brushes',base=safeFileName(setName);
+  try{
+    const used=new Set(),items=[];
+    for(const m of chosen){
+      let nm=m.name,n=2;while(used.has(nm.toLowerCase()))nm=m.name+' '+(n++);used.add(nm.toLowerCase());
+      items.push({name:nm,img:m.img});
+    }
+    if(kind==='brushset'){
+      const files=[],ids=[];
+      for(const it of items){const id=crypto.randomUUID().toUpperCase();ids.push(id);const tip=imageTip(it.img,px);try{(await procreateBrushFiles(it.name,tip)).forEach(f=>files.push({name:id+'/'+f.name,data:f.data}));}finally{freeCanvas(tip);}}
+      const esc=t=>t.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+      const plist='<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0">\n<dict>\n<key>brushes</key>\n<array>\n'+ids.map(i=>'<string>'+i+'</string>').join('\n')+'\n</array>\n<key>name</key>\n<string>'+esc(setName)+'</string>\n</dict>\n</plist>\n';
+      files.unshift({name:'brushset.plist',data:new TextEncoder().encode(plist)});
+      saveFileBlob(makeZip(files),base+'.brushset');
+      setStatus('🖌️ Brush set "'+setName+'" saved ('+items.length+' brush'+(items.length===1?'':'es')+'). Open it in Procreate and test before selling.');
+    }else if(kind==='brushes'){
+      const files=[];
+      for(const it of items){const tip=imageTip(it.img,px);try{const bf=await procreateBrushFiles(it.name,tip);files.push({name:safeFileName(it.name)+'.brush',data:await blobBytes(makeZip(bf))});}finally{freeCanvas(tip);}}
+      saveFileBlob(makeZip(files),base+'-brushes.zip');
+      setStatus('🖌️ '+items.length+' separate .brush file'+(items.length===1?'':'s')+' saved in a zip. Unzip, then tap each .brush to import it into Procreate.');
+    }else{
+      const files=[];
+      for(const it of items){const f=safeFileName(it.name),tip=imageTip(it.img,px);try{const sh=shapeFromTip(tip);files.push({name:f+'-shape.png',data:await pngBytes(sh)});freeCanvas(sh);files.push({name:f+'-stamp.png',data:await pngBytes(tip)});}finally{freeCanvas(tip);}}
+      files.push({name:'README.txt',data:new TextEncoder().encode('Pattern Sketch stamp pack: '+setName+'\r\n\r\n*-shape.png  white on black, '+px+' px: a Procreate Shape source.\r\n*-stamp.png  full colour on transparency.\r\n')});
+      saveFileBlob(makeZip(files),base+'-png-pack.zip');
+      setStatus('🖌️ PNG pack saved ('+items.length+' motif'+(items.length===1?'':'s')+').');
+    }
+  }catch(err){console.error(err);setStatus('⚠️ Could not build the brush set: '+(err&&err.message||err));}
+}
+$('brushSetBtn').onclick=()=>runBrushSetExport('brushset');
+$('brushFilesBtn').onclick=()=>runBrushSetExport('brushes');
+$('brushPngPackBtn').onclick=()=>runBrushSetExport('png');
+$('exportBtn').onclick=()=>{updateComposite();const a=document.createElement('a');a.download='pattern-playground-tile.png';const out=document.createElement('canvas');out.width=TILE;out.height=TILE;const o=out.getContext('2d');o.fillStyle='#fff';o.fillRect(0,0,TILE,TILE);if(bgImg&&bgShown){o.save();o.globalAlpha=bgOpacity;o.drawImage(bgImg,0,0,TILE,TILE);o.restore();}// Seamless export: the tile also receives the parts of its eight neighbouring repeats that spill
+  // over its edges (same lattice as the on-screen repeat), so anything crossing an edge wraps round.
+  const wrapOffs=[[0,0]];for(let ix=-1;ix<=1;ix++)for(let iy=-1;iy<=1;iy++){if(ix||iy)wrapOffs.push(tilePos(ix,iy));}
+  wrapOffs.forEach(([ox,oy])=>o.drawImage(compositeCanvas,0,0,W,H,ox-C,oy-C,W,H));
+  placed.forEach(p=>{if(!p.img)return;wrapOffs.forEach(([ox,oy])=>{o.save();o.translate(p.x-C+ox,p.y-C+oy);o.rotate(p.r*Math.PI/180);o.scale(p.s*p.fx,p.s*p.fy);o.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);o.restore();});});a.href=out.toDataURL('image/png');a.click();};
 window.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='z'){e.shiftKey?redo():undo();}});
 function syncThemeToggleUI(){const light=document.body.classList.contains('theme-light');$('themeToggle').textContent=light?'🌙 Dark Mode':'☀️ Light Mode';}
 $('themeToggle').onclick=()=>{const light=document.body.classList.toggle('theme-light');try{localStorage.setItem('pkmTheme',light?'light':'dark');}catch(e){}syncThemeToggleUI();};
@@ -4218,6 +5178,15 @@ syncThemeToggleUI();
 // toolbar (only Undo/Redo/Zoom/Rotation/Guides/Export stay always-visible there) — same
 // open/close pattern as the pre-existing Symmetry popover, just its own trigger and panel.
 $('viewToggleBtn').onclick=()=>{$('viewPopover').classList.toggle('open');};
+$('zoomPill').onclick=e=>{e.stopPropagation();$('zoomPopover').classList.toggle('open');};
+$('zoomCloseBtn').onclick=()=>{$('zoomPopover').classList.remove('open');};
+$('zoomOutBtn').onclick=()=>zoomAboutCentre(zoom/1.25);
+$('zoomInBtn').onclick=()=>zoomAboutCentre(zoom*1.25);
+$('zoom100Btn').onclick=()=>{viewActual();$('zoomPopover').classList.remove('open');setStatus('🔍 100% — original tile centred.');};
+$('zoomFitBtn').onclick=()=>{viewFit();$('zoomPopover').classList.remove('open');setStatus('🔍 Fit to view — original tile centred.');};
+$('zoomResetBtn').onclick=()=>{viewReset();$('zoomPopover').classList.remove('open');setStatus('🔍 View reset — 0°, centred and fitted.');};
+$('strokePanelBtn').onclick=()=>{setStrokePanelOpen(!strokePanelOpen);if(strokePanelOpen&&!selectedStrokeId)setStatus('🖊️ Stroke panel on — select a stroke in Edit mode to use it.');};
+$('strokePanelBtn').classList.toggle('active',strokePanelOpen);
 $('viewCloseBtn').onclick=()=>{$('viewPopover').classList.remove('open');};
 // ---- Collapsible left panel --------------------------------------------------------------------
 // Purely a display:none toggle — nothing about the sidebar's contents, ids or bound handlers
@@ -4313,17 +5282,45 @@ function buildDocObject(){
     bgSrc:bgImg?bgImg.src:null,bgOpacity,bgShown,
     tracesJSON:JSON.stringify(traces.map(t=>({src:t.src,name:t.name,x:t.x,y:t.y,scale:t.scale,opacity:t.opacity}))),
     traceLocked,
+    customBrushes:serialCustomDefs(),
     layout,activeTemplate,
     savedPalettes:savedPalettes.map(p=>({id:p.id,name:p.name,hexes:p.hexes.slice()})),
     savedAt:Date.now(),
   };
 }
+// ---- Autosave safety net -----------------------------------------------------------------
+// The single "current" autosave used to be overwritten blindly, so one early autosave of a nearly
+// empty canvas (e.g. opening the app and drawing before restoring) destroyed the real session.
+// Now: (1) the stored session is restored automatically on launch and autosave stays OFF until
+// that has happened, and (2) before "current" is overwritten, the old copy is kept as a rolling
+// backup whenever it is 10+ minutes old or the new state is much smaller than it.
+let autosaveBlocked=true,lastScore=0,lastBackupAt=0;
+function docScore(d){return d?((d.strokesJSON||'').length+(d.placedJSON||'').length+(d.motifs||[]).reduce((n,m)=>n+(m.src||'').length+5000,0)):0;}
+function idbReq(store,mode,fn){return openDocDB().then(db=>new Promise((res,rej)=>{const tx=db.transaction(store,mode);const r=fn(tx.objectStore(store));tx.oncomplete=()=>res(r&&r.result);tx.onerror=()=>rej(tx.error);}));}
 async function persistDocToIDB(doc){
-  const db=await openDocDB();
-  await new Promise((res,rej)=>{const tx=db.transaction(DOC_STORE,'readwrite');tx.objectStore(DOC_STORE).put(doc,DOC_KEY);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);});
+  const score=docScore(doc);
+  if(lastScore>0&&(Date.now()-lastBackupAt>600000||score<lastScore*0.6)){
+    try{
+      const existing=await fetchStoredDoc();
+      if(existing&&existing.savedAt){
+        await idbReq(DOC_STORE,'readwrite',st=>st.put(existing,'backup:'+existing.savedAt));
+        lastBackupAt=Date.now();
+        const keys=(await idbReq(DOC_STORE,'readonly',st=>st.getAllKeys())||[]).filter(k=>String(k).startsWith('backup:')).sort();
+        for(const k of keys.slice(0,Math.max(0,keys.length-8)))await idbReq(DOC_STORE,'readwrite',st=>st.delete(k));
+      }
+    }catch(e){console.warn('[sketchpad] backup failed',e);}
+  }
+  await idbReq(DOC_STORE,'readwrite',st=>st.put(doc,DOC_KEY));
+  lastScore=score;
+}
+async function listBackups(){
+  const keys=((await idbReq(DOC_STORE,'readonly',st=>st.getAllKeys()))||[]).filter(k=>String(k).startsWith('backup:')).sort().reverse();
+  const out=[];
+  for(const k of keys){const d=await idbReq(DOC_STORE,'readonly',st=>st.get(k));if(!d)continue;let n=0;try{n=JSON.parse(d.strokesJSON||'[]').length;}catch(e){}out.push({key:k,doc:d,strokes:n,motifs:(d.motifs||[]).length,at:d.savedAt});}
+  return out;
 }
 let autosaveTimer=null;
-function scheduleAutosave(){clearTimeout(autosaveTimer);autosaveTimer=setTimeout(runAutosave,1200);}
+function scheduleAutosave(){if(autosaveBlocked)return;clearTimeout(autosaveTimer);autosaveTimer=setTimeout(runAutosave,1200);}
 async function runAutosave(){
   setSaveStatus('saving');
   try{
@@ -4334,7 +5331,7 @@ async function runAutosave(){
 // Quick Save bypasses the debounce for an explicit, immediate "save right now" — the button
 // exists precisely so the user isn't left guessing whether the debounced autosave has caught up.
 async function quickSaveNow(){
-  clearTimeout(autosaveTimer);
+  clearTimeout(autosaveTimer);autosaveBlocked=false;
   await runAutosave();
   if(lastSavedAt)setStatus('💾 Project saved.');
 }
@@ -4349,6 +5346,12 @@ async function fetchStoredDoc(){
 async function applyDocObject(doc){
   try{
     if(!doc)return false;
+    if(Array.isArray(doc.customBrushes)&&doc.customBrushes.length){
+      const add=doc.customBrushes.filter(d=>d&&d.id&&!customDefs.some(c=>c.id===d.id));
+      customDefs=customDefs.concat(add);saveCustomDefs();
+      await registerCustomDefs(customDefs,false);
+      renderBrushFamilies();syncActiveSwatches();
+    }
     motifs=[];
     // Legacy saves stored motifs as {src,name} only — no id, no editable source. Assign a fresh
     // id in load order so placed[] (below) has something stable to resolve against, but leave
@@ -4402,7 +5405,7 @@ async function applyDocObject(doc){
       $('bgToggle').classList.toggle('active',bgShown);$('bgToggle').textContent=bgShown?'👁️ Shown':'🚫 Hidden';
     }
     traces=[];
-    traceLocked=doc.traceLocked!==false;
+    traceLocked=true; // always reopen locked so a saved Move state can never get in the way
     $('traceLock').textContent=traceLocked?'🔒 Locked':'🔓 Move';$('traceLock').classList.toggle('active',traceLocked);
     for(const t of JSON.parse(doc.tracesJSON||'[]')){
       await new Promise(res=>{const img=new Image();img.onload=()=>{traces.push({img,src:t.src,name:t.name,x:t.x,y:t.y,scale:t.scale,opacity:t.opacity});res();};img.onerror=res;img.src=t.src;});
@@ -4437,7 +5440,7 @@ async function openProjectFromFile(file){
     renderLayersList();
     history=[];hIndex=-1;pushHist();redraw();updateBaseScale();
     $('restoreBanner').style.display='none';
-    scheduleAutosave();
+    autosaveBlocked=false;scheduleAutosave();
     setStatus('📂 Project loaded from file — '+strokes.length+' stroke'+(strokes.length===1?'':'s')+', '+motifs.length+' motif'+(motifs.length===1?'':'s')+'.');
   }catch(e){
     console.warn('[sketchpad] open project failed',e);
@@ -4452,31 +5455,75 @@ $('openProjectInput').onchange=(e)=>{
   if(file)openProjectFromFile(file);
 };
 let pendingRestoreDoc=null;
+async function afterRestoreApplied(doc){
+  history=[];hIndex=-1;pushHist();redraw();updateBaseScale();
+  setSaveStatus('saved',doc.savedAt);
+  autosaveBlocked=false;lastScore=docScore(doc);
+}
+// Launch: restore the stored session automatically (no choice to miss), and keep autosave off until
+// that has finished so an empty canvas can never overwrite it. If restoring fails the stored copy
+// is left untouched and the banner offers Retry / Start Fresh.
 async function maybeOfferRestore(){
   try{
     const doc=await fetchStoredDoc();
-    if(!doc||!doc.savedAt)return;
-    pendingRestoreDoc=doc;
+    if(!doc||!doc.savedAt){autosaveBlocked=false;return;}
+    pendingRestoreDoc=doc;lastScore=docScore(doc);
     $('restoreBannerTime').textContent=new Date(doc.savedAt).toLocaleString();
-    $('restoreBanner').style.display='flex';
+    const ok=await applyDocObject(doc);
+    if(ok){
+      await afterRestoreApplied(doc);
+      $('restoreBannerText').textContent='📂 Restored your last session from ';
+      $('restoreAcceptBtn').style.display='none';
+      $('restoreBanner').style.display='flex';
+      setStatus('📂 Restored your last session — '+strokes.length+' stroke'+(strokes.length===1?'':'s')+', '+motifs.length+' motif'+(motifs.length===1?'':'s')+'.');
+      setTimeout(()=>{if(pendingRestoreDoc===doc)$('restoreBanner').style.display='none';},9000);
+      pendingRestoreDoc=null;
+    }else{
+      $('restoreBannerText').textContent='⚠️ Could not restore your autosave from ';
+      $('restoreAcceptBtn').textContent='Retry';$('restoreAcceptBtn').style.display='';
+      $('restoreBanner').style.display='flex';
+    }
   }catch(e){console.warn('[sketchpad] restore check failed',e);}
 }
 $('restoreAcceptBtn').onclick=async()=>{
   if(!pendingRestoreDoc)return;
   const ok=await applyDocObject(pendingRestoreDoc);
-  $('restoreBanner').style.display='none';
-  if(ok){
-    history=[];hIndex=-1;pushHist();redraw();updateBaseScale();
-    setSaveStatus('saved',pendingRestoreDoc.savedAt);
-    setStatus('📂 Restored your last session — '+strokes.length+' stroke'+(strokes.length===1?'':'s')+', '+motifs.length+' motif'+(motifs.length===1?'':'s')+'.');
-  }
-  pendingRestoreDoc=null;
+  if(ok){$('restoreBanner').style.display='none';await afterRestoreApplied(pendingRestoreDoc);setStatus('📂 Restored your last session — '+strokes.length+' stroke'+(strokes.length===1?'':'s')+', '+motifs.length+' motif'+(motifs.length===1?'':'s')+'.');pendingRestoreDoc=null;}
+  else setStatus('⚠️ Still could not restore it — use 🕘 Earlier saves, or Start Fresh (your autosave is kept as a backup).');
 };
-$('restoreDeclineBtn').onclick=()=>{
+$('restoreDeclineBtn').onclick=async()=>{
   $('restoreBanner').style.display='none';
+  try{const d=await fetchStoredDoc();if(d&&d.savedAt)await idbReq(DOC_STORE,'readwrite',st=>st.put(d,'backup:'+d.savedAt));}catch(e){}
   pendingRestoreDoc=null;
-  setStatus('🆕 Starting fresh — your previous autosave is kept until you save over it.');
+  // Wipe the live canvas for a genuinely fresh start; the old session stays under 🕘 Earlier saves.
+  strokes=[];placed=[];motifs=[];traces=[];bgImg=null;layers=defaultLayers();activeLayerId=layers[layers.length-1].id;
+  rebuildAllLayers();renderLayersList();renderTray();renderTraces();history=[];hIndex=-1;pushHist();redraw();
+  autosaveBlocked=false;lastScore=0;lastBackupAt=Date.now();
+  setStatus('🆕 Starting fresh — your previous session is kept under 🕘 Earlier saves.');
 };
+// 🕘 Earlier saves: the rolling backups made automatically before the autosave was overwritten.
+$('backupsBtn').onclick=async()=>{
+  const host=$('backupsList');host.innerHTML='Loading…';$('backupsPanel').style.display='block';
+  try{
+    const list=await listBackups();host.innerHTML='';
+    if(!list.length){host.textContent='No earlier saves yet — they appear automatically as you work.';return;}
+    list.forEach(b=>{
+      const row=document.createElement('div');row.style.cssText='display:flex;gap:8px;align-items:center;margin:6px 0;';
+      const t=document.createElement('div');t.style.flex='1';t.textContent=new Date(b.at).toLocaleString()+' — '+b.strokes+' stroke'+(b.strokes===1?'':'s')+', '+b.motifs+' motif'+(b.motifs===1?'':'s');
+      const btn=document.createElement('button');btn.className='btn mini primary';btn.textContent='Restore';
+      btn.onclick=async()=>{
+        if(!confirm('Replace what is on the canvas now with this earlier save? (Your current work is kept as a backup first.)'))return;
+        try{await runAutosave();}catch(e){}
+        lastBackupAt=0;lastScore=Math.max(lastScore,1);
+        const ok=await applyDocObject(b.doc);
+        if(ok){history=[];hIndex=-1;pushHist();redraw();updateBaseScale();autosaveBlocked=false;scheduleAutosave();$('backupsPanel').style.display='none';setStatus('🕘 Restored the save from '+new Date(b.at).toLocaleString()+'.');}
+        else setStatus('⚠️ That earlier save could not be opened.');
+      };
+      row.appendChild(t);row.appendChild(btn);host.appendChild(row);
+    });
+  }catch(e){host.textContent='Could not read earlier saves.';}
+};
+$('backupsClose').onclick=()=>{$('backupsPanel').style.display='none';};
 async function boot(){
   applyTransform();
   $('guidesBtn').classList.toggle('active',showGuides);
@@ -4513,7 +5560,7 @@ window.__sketchpadCanvasToScreenAbs=(x,y)=>{
 // the (production, intentional) 120ms pinch-settle debounce so a test can assert on the
 // re-rendered result immediately instead of waiting out the debounce window.
 window.__sketchpadSetZoom=(z,skipDebounce)=>{
-  zoom=Math.min(8,Math.max(.2,z));
+  zoom=clampZoom(z);
   if(skipDebounce)clearTimeout(renderScaleTimer);
   applyTransform();
   if(skipDebounce){const ns=computeRenderScale();if(ns!==renderScale)commitRenderScale(ns);}

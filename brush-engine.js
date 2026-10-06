@@ -58,8 +58,11 @@
   const BRUSHES = [
     // -- Inking (vector) --
     { id: 'smoothPen', name: 'Smooth Pen', family: 'inking', renderMode: 'vector',
-      defaults: { size: 6, opacity: 100, smoothing: 35, pressureWidth: 55, pressureOpacity: 10, spacing: 6 },
-      hardness: 1, jitter: 0, streaky: 0, taper: 'none' },
+      defaults: { size: 3, opacity: 100, smoothing: 35, pressureWidth: 0, pressureOpacity: 0, spacing: 6 },
+      // Monoline pen: one constant width and opacity whatever the Pencil pressure (forced, so settings
+      // saved before this change cannot bring pressure variation back).
+      lock: { pressureWidth: 0, pressureOpacity: 0 },
+      hardness: 1, jitter: 0, streaky: 0, taper: 'none', path: true },
     { id: 'technicalPen', name: 'Technical Pen', family: 'inking', renderMode: 'vector',
       defaults: { size: 4, opacity: 100, smoothing: 45, pressureWidth: 5, pressureOpacity: 0, spacing: 5 },
       hardness: 1, jitter: 0, streaky: 0, taper: 'none' },
@@ -104,8 +107,8 @@
       hardness: 0.6, jitter: 0.25, streaky: 0.3, taper: 'none' },
   ];
 
-  const FAMILY_ORDER = ['inking', 'pencil', 'marker', 'paint'];
-  const FAMILY_LABEL = { inking: 'Inking', pencil: 'Pencil', marker: 'Marker', paint: 'Paint / Texture' };
+  const FAMILY_ORDER = ['inking', 'pencil', 'marker', 'paint', 'custom', 'stamp'];
+  const FAMILY_LABEL = { inking: 'Inking', pencil: 'Pencil', marker: 'Marker', paint: 'Paint / Texture', custom: 'Custom Brushes', stamp: 'Motif Brushes' };
 
   const ERASER = { id: 'eraser', name: 'Eraser', family: 'eraser', renderMode: 'raster',
     defaults: { size: 26, opacity: 100, smoothing: 15, pressureWidth: 30, pressureOpacity: 0, spacing: 6 },
@@ -115,6 +118,61 @@
   byId.set(ERASER.id, ERASER);
 
   function getBrush(id) { return byId.get(id) || BRUSHES[0]; }
+  // ---- Motif (stamp) brushes ----------------------------------------------
+  // A captured motif becomes a brush: the stroke is still an ordinary retained path, but it is
+  // drawn by stamping the motif's picture along it. Registered at runtime by the app.
+  function registerStampBrush(id, name, img, noRegister) {
+    const max = 512, w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+    if (!w || !h) return null;
+    const k = Math.min(1, max / Math.max(w, h));
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+    const g = c.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(img, 0, 0, c.width, c.height);
+    const old = byId.get(id);
+    const brush = {
+      id, name, family: 'stamp', renderMode: 'vector', stamp: true, stampImg: img, stampCanvas: c, tinted: {},
+      defaults: { size: 90, opacity: 100, smoothing: 35, pressureWidth: 0, pressureOpacity: 0, spacing: 100, follow: 0, tint: 0 },
+      hardness: 1, jitter: 0, streaky: 0, taper: 'none',
+    };
+    if (noRegister) return brush;
+    if (old) { BRUSHES[BRUSHES.indexOf(old)] = brush; } else { BRUSHES.push(brush); }
+    byId.set(id, brush);
+    return brush;
+  }
+  // ---- User-made brushes ---------------------------------------------------
+  // def: { id, name, softness(0-100), grain(0-80), wobble(0-100), taper, mono, tipImg?, defaults:{size,opacity,smoothing,pressureWidth,pressureOpacity,spacing,...} }
+  function makeCustomBrush(def) {
+    const d = Object.assign({ size: 20, opacity: 100, smoothing: 30, pressureWidth: 0, pressureOpacity: 0, spacing: 8 }, def.defaults || {});
+    if (def.tipImg) {
+      const b = registerStampBrush(def.id, def.name, def.tipImg, true);
+      if (!b) return null;
+      b.family = 'custom'; b.custom = true; b.def = def;
+      b.defaults = Object.assign({}, b.defaults, d, { follow: d.follow || 0, tint: d.tint || 0 });
+      return b;
+    }
+    const brush = {
+      id: def.id, name: def.name, family: 'custom', renderMode: 'vector', custom: true, def,
+      defaults: d,
+      hardness: Math.max(0.05, Math.min(1, (def.softness == null ? 100 : def.softness) / 100)),
+      jitter: Math.max(0, Math.min(1, (def.wobble || 0) / 100)),
+      streaky: Math.max(0, Math.min(0.9, (def.grain || 0) / 100)),
+      taper: def.taper ? 'both' : 'none',
+    };
+    if (def.mono) { brush.path = true; brush.hardness = 1; brush.jitter = 0; brush.streaky = 0; brush.taper = 'none'; brush.lock = { pressureWidth: 0, pressureOpacity: 0 }; }
+    return brush;
+  }
+  function registerCustomBrush(def) {
+    const b = makeCustomBrush(def); if (!b) return null;
+    const old = byId.get(def.id);
+    if (old) BRUSHES[BRUSHES.indexOf(old)] = b; else BRUSHES.push(b);
+    byId.set(def.id, b);
+    return b;
+  }
+  function unregisterStampBrush(id) {
+    const old = byId.get(id); if (!old) return;
+    BRUSHES.splice(BRUSHES.indexOf(old), 1); byId.delete(id);
+  }
+
   function isVector(brushOrId) {
     const b = typeof brushOrId === 'string' ? getBrush(brushOrId) : brushOrId;
     return b.renderMode === 'vector';
@@ -144,7 +202,7 @@
 
   function getSettings(brushId) {
     const brush = getBrush(brushId);
-    return Object.assign({}, brush.defaults, settingsStore[brushId] || {});
+    return Object.assign({}, brush.defaults, settingsStore[brushId] || {}, brush.lock || {});
   }
   function setSettings(brushId, patch) {
     settingsStore[brushId] = Object.assign({}, getSettings(brushId), patch);
@@ -258,6 +316,77 @@
     return out;
   }
 
+  // Monoline pens: one true anti-aliased curved path (round caps/joins) instead of
+  // stamped dabs, so edges stay perfectly smooth at any zoom.
+  function renderPathStroke(ctx, stroke, settings, alphaMul) {
+    const src = stroke.points, color = stroke.color || '#000000';
+    const pts = [src[0]];
+    for (let i = 1; i < src.length; i++) {
+      const l = pts[pts.length - 1];
+      if (Math.hypot(src[i].x - l.x, src[i].y - l.y) >= 0.3) pts.push(src[i]);
+    }
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, Math.min(1, (settings.opacity / 100) * alphaMul));
+    ctx.strokeStyle = color; ctx.fillStyle = color;
+    ctx.lineWidth = settings.size; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    if (pts.length < 2) {
+      ctx.beginPath(); ctx.arc(pts[0].x, pts[0].y, settings.size / 2, 0, Math.PI * 2); ctx.fill();
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length - 1; i++) {
+        const mx = (pts[i].x + pts[i + 1].x) / 2, my = (pts[i].y + pts[i + 1].y) / 2;
+        ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
+      }
+      const e = pts[pts.length - 1];
+      ctx.lineTo(e.x, e.y);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // Motif brush: stamp the motif picture along the path. size = the motif's longest side in canvas px.
+  function renderStampStroke(ctx, stroke, brush, settings, alphaMul) {
+    const src = brush.stampCanvas; if (!src) return;
+    let img = src;
+    if (settings.tint) {
+      const key = stroke.color || '#000000';
+      img = brush.tinted[key];
+      if (!img) {
+        img = document.createElement('canvas'); img.width = src.width; img.height = src.height;
+        const g = img.getContext('2d'); g.drawImage(src, 0, 0);
+        g.globalCompositeOperation = 'source-in'; g.fillStyle = key; g.fillRect(0, 0, img.width, img.height);
+        brush.tinted[key] = img;
+      }
+    }
+    const pts0 = stroke.points; if (!pts0 || !pts0.length) return;
+    const spacingPx = Math.max(2, (settings.spacing / 100) * settings.size);
+    let pts = pts0.length < 2 ? pts0.slice() : resample(pts0, spacingPx);
+    if (pts.length > 2) {
+      const a = pts[pts.length - 1], b = pts[pts.length - 2];
+      if (Math.hypot(a.x - b.x, a.y - b.y) < spacingPx * 0.5) pts.pop();
+    }
+    const longest = Math.max(src.width, src.height);
+    ctx.save();
+    for (let i = 0; i < pts.length; i++) {
+      const pt = pts[i];
+      const sz = settings.size * pressureFactor(pt.pressure, settings.pressureWidth);
+      const op = (settings.opacity / 100) * pressureFactor(pt.pressure, settings.pressureOpacity) * alphaMul;
+      if (sz <= 0.5 || op <= 0) continue;
+      const k = sz / longest, w = src.width * k, h = src.height * k;
+      ctx.globalAlpha = Math.max(0, Math.min(1, op));
+      ctx.save();
+      ctx.translate(pt.x, pt.y);
+      if (settings.follow && pts.length > 1) {
+        const p0 = pts[Math.max(0, i - 1)], p1 = pts[Math.min(pts.length - 1, i + 1)];
+        ctx.rotate(Math.atan2(p1.y - p0.y, p1.x - p0.x));
+      }
+      ctx.drawImage(img, -w / 2, -h / 2, w, h);
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
   // Renders one stroke (vector or, called from the app's raster path,
   // one in-progress raster segment) onto `ctx` using `brush`'s current
   // settings. This is the single function both the vector replay path
@@ -266,7 +395,14 @@
     if (!stroke.points || stroke.points.length === 0) return;
     if (alphaMul === undefined) alphaMul = 1;
     if (alphaMul <= 0) return; // fully hidden — skip dabs entirely rather than stamp at opacity 0
-    const spacingPx = Math.max(1, (settings.spacing / 100) * Math.max(4, settings.size));
+    if (brush.path) { renderPathStroke(ctx, stroke, settings, alphaMul); return; }
+    if (brush.stamp) { renderStampStroke(ctx, stroke, brush, settings, alphaMul); return; }
+    let spacingPx = Math.max(1, (settings.spacing / 100) * Math.max(4, settings.size));
+    // Thin brushes: a 1-unit minimum gap is wider than the dab itself at size ~1-3 (and wider still
+    // when light pressure shrinks it), so the stroke breaks into visible dots, worst when zoomed in.
+    // Cap the gap to a fraction of the dab's narrowest width; sizes of ~3.5+ are unchanged.
+    const narrow = Math.max(0.35, 1 - settings.pressureWidth / 100);
+    spacingPx = Math.max(0.2, Math.min(spacingPx, settings.size * narrow * 0.6));
     const pts = resample(stroke.points, spacingPx);
     const rand = seededRandom(stroke.id || 'live');
     const n = pts.length;
@@ -320,7 +456,7 @@
 
   global.BrushEngine = {
     BRUSHES, FAMILY_ORDER, FAMILY_LABEL, ERASER,
-    getBrush, isVector,
+    getBrush, isVector, registerStampBrush, unregisterStampBrush, makeCustomBrush, registerCustomBrush,
     getSettings, setSettings,
     touchRecent, getRecents,
     isFavorite, toggleFavorite, getFavorites,
