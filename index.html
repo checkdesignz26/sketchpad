@@ -1526,6 +1526,13 @@ canvas.addEventListener('pointerdown',e=>{
   if(mode==='edit'){selectAt(e.clientX,e.clientY);return}
   const layer=getActiveLayer();
   if(!layer||layer.locked){setStatus('🔒 "'+(layer?layer.name:'')+'" is locked — unlock it in Layers to draw.');return;}
+  // Drawing on a hidden (or fully transparent) layer used to look exactly like "my stroke disappears
+  // when I lift the pen": it was drawn, just onto a layer nobody could see. Reveal it instead.
+  if(layer.visible===false||layer.opacity<10){
+    layer.visible=true;if(layer.opacity<10)layer.opacity=100;
+    compositeDirty=true;renderLayersList();
+    setStatus('👁️ "'+layer.name+'" was hidden, so it is now shown — otherwise your stroke would be invisible.');
+  }
   e.preventDefault();try{canvas.setPointerCapture(e.pointerId);}catch(err){} // capture is best-effort — a stroke must still start even if it's refused
   const p=screenToCanvas(e.clientX,e.clientY),pressure=(e.pressure&&e.pressure>0)?e.pressure:.5;
   if(armedShapeType){
