@@ -141,6 +141,19 @@
   }
   // ---- User-made brushes ---------------------------------------------------
   // def: { id, name, softness(0-100), grain(0-80), wobble(0-100), taper, mono, tipImg?, defaults:{size,opacity,smoothing,pressureWidth,pressureOpacity,spacing,...} }
+  function applyFx(b, def) {
+    const fx = def.fx || {};
+    let ts = fx.taperStart, te = fx.taperEnd;
+    if (ts == null && te == null && def.taper) { ts = te = 12; }
+    ts = Math.max(0, Math.min(60, ts || 0)); te = Math.max(0, Math.min(60, te || 0));
+    b.taperS = ts / 100; b.taperE = te / 100; b.taper = (ts > 0 || te > 0) ? 'both' : 'none';
+    const c = fx.color || {};
+    b.cdyn = { h: c.h || 0, s: c.s || 0, b: c.b || 0 };
+    const grain = fx.grain && (def.grainImg) ? Object.assign({}, fx.grain, { img: def.grainImg }) : null;
+    const dual = fx.dual && fx.dual.on ? Object.assign({}, fx.dual, { img: def.dualImg || null }) : null;
+    b.fx = { grain, blend: fx.blend || 'source-over', dual };
+    return b;
+  }
   function makeCustomBrush(def) {
     const d = Object.assign({ size: 20, opacity: 100, smoothing: 30, pressureWidth: 0, pressureOpacity: 0, spacing: 8 }, def.defaults || {});
     if (def.tipImg) {
@@ -148,7 +161,7 @@
       if (!b) return null;
       b.family = 'custom'; b.custom = true; b.def = def;
       b.defaults = Object.assign({}, b.defaults, d, { follow: d.follow || 0, tint: d.tint || 0 });
-      return b;
+      return applyFx(b, def);
     }
     const brush = {
       id: def.id, name: def.name, family: 'custom', renderMode: 'vector', custom: true, def,
@@ -156,9 +169,14 @@
       hardness: Math.max(0.05, Math.min(1, (def.softness == null ? 100 : def.softness) / 100)),
       jitter: Math.max(0, Math.min(1, (def.wobble || 0) / 100)),
       streaky: Math.max(0, Math.min(0.9, (def.grain || 0) / 100)),
-      taper: def.taper ? 'both' : 'none',
+      taper: 'none',
     };
-    if (def.mono) { brush.path = true; brush.hardness = 1; brush.jitter = 0; brush.streaky = 0; brush.taper = 'none'; brush.lock = { pressureWidth: 0, pressureOpacity: 0 }; }
+    applyFx(brush, def);
+    if (def.mono) {
+      brush.hardness = 1; brush.jitter = 0; brush.streaky = 0; brush.lock = { pressureWidth: 0, pressureOpacity: 0 };
+      // a true monoline path cannot narrow, so a tapered monoline is drawn as hard dabs instead
+      if (brush.taper === 'none') { brush.path = true; brush.cdyn = { h: 0, s: 0, b: 0 }; }
+    }
     return brush;
   }
   function registerCustomBrush(def) {
@@ -367,10 +385,25 @@
       if (Math.hypot(a.x - b.x, a.y - b.y) < spacingPx * 0.5) pts.pop();
     }
     const longest = Math.max(src.width, src.height);
+    const sBase = (settings.tint && hasCdyn(brush)) ? hexToHsl(stroke.color || '#000000') : null;
+    let variants = null;
+    if (sBase) { const r0 = seededRandom((stroke.id || 'live') + 'v'); variants = []; for (let v = 0; v < 8; v++) variants.push(dynColor(sBase, brush.cdyn, r0)); }
+    const rv = seededRandom((stroke.id || 'live') + 'p');
     ctx.save();
     for (let i = 0; i < pts.length; i++) {
       const pt = pts[i];
-      const sz = settings.size * pressureFactor(pt.pressure, settings.pressureWidth);
+      if (variants) {
+        const key = variants[Math.floor(rv() * 8)];
+        let tv = brush.tinted[key];
+        if (!tv) {
+          tv = document.createElement('canvas'); tv.width = src.width; tv.height = src.height;
+          const g = tv.getContext('2d'); g.drawImage(src, 0, 0);
+          g.globalCompositeOperation = 'source-in'; g.fillStyle = key; g.fillRect(0, 0, tv.width, tv.height);
+          brush.tinted[key] = tv;
+        }
+        img = tv;
+      }
+      const sz = settings.size * pressureFactor(pt.pressure, settings.pressureWidth) * taperAt(brush, i, pts.length);
       const op = (settings.opacity / 100) * pressureFactor(pt.pressure, settings.pressureOpacity) * alphaMul;
       if (sz <= 0.5 || op <= 0) continue;
       const k = sz / longest, w = src.width * k, h = src.height * k;
@@ -395,6 +428,10 @@
     if (!stroke.points || stroke.points.length === 0) return;
     if (alphaMul === undefined) alphaMul = 1;
     if (alphaMul <= 0) return; // fully hidden — skip dabs entirely rather than stamp at opacity 0
+    if (brush.fx && fxActive(brush)) { renderWithFx(ctx, stroke, brush, settings, alphaMul); return; }
+    renderBase(ctx, stroke, brush, settings, alphaMul);
+  }
+  function renderBase(ctx, stroke, brush, settings, alphaMul) {
     if (brush.path) { renderPathStroke(ctx, stroke, settings, alphaMul); return; }
     if (brush.stamp) { renderStampStroke(ctx, stroke, brush, settings, alphaMul); return; }
     let spacingPx = Math.max(1, (settings.spacing / 100) * Math.max(4, settings.size));
@@ -405,16 +442,15 @@
     spacingPx = Math.max(0.2, Math.min(spacingPx, settings.size * narrow * 0.6));
     const pts = resample(stroke.points, spacingPx);
     const rand = seededRandom(stroke.id || 'live');
+    const baseHsl = hasCdyn(brush) ? hexToHsl(stroke.color || '#000000') : null;
+    const cdyn = !!baseHsl, rand2 = cdyn ? seededRandom((stroke.id || 'live') + 'c') : null;
     const n = pts.length;
+    const hold = Math.max(1, Math.round(settings.size * 0.2 / spacingPx));
+    let curCol = stroke.color || '#000000';
     pts.forEach((pt, i) => {
       const widthMul = pressureFactor(pt.pressure, settings.pressureWidth);
       const opMul = pressureFactor(pt.pressure, settings.pressureOpacity);
-      let taperMul = 1;
-      if (brush.taper === 'both') {
-        const edge = Math.min(i, n - 1 - i);
-        const taperLen = Math.max(2, Math.round(n * 0.12));
-        if (edge < taperLen) taperMul = Math.max(0.12, edge / taperLen);
-      }
+      const taperMul = taperAt(brush, i, n);
       let radius = (settings.size / 2) * widthMul * taperMul;
       let opacity = (settings.opacity / 100) * opMul * alphaMul;
       if (brush.jitter > 0) {
@@ -428,8 +464,136 @@
         x += (rand() - 0.5) * jr;
         y += (rand() - 0.5) * jr;
       }
-      stampDab(ctx, x, y, radius, opacity, stroke.color || '#000000', brush.hardness);
+      stampDab(ctx, x, y, radius, opacity, (cdyn && i % hold === 0 ? (curCol = dynColor(baseHsl, brush.cdyn, rand2)) : curCol), brush.hardness);
     });
+  }
+
+  // ---- Taper (separate start / end lengths, as a fraction of the stroke) ----
+  function taperAt(brush, i, n) {
+    let ts, te;
+    if (brush.taperS != null || brush.taperE != null) { ts = brush.taperS || 0; te = brush.taperE || 0; }
+    else if (brush.taper === 'both') { ts = te = 0.12; }
+    else return 1;
+    let m = 1;
+    if (ts > 0) { const len = Math.max(2, Math.round(n * ts)); if (i < len) m = Math.min(m, Math.max(0.12, i / len)); }
+    if (te > 0) { const len = Math.max(2, Math.round(n * te)), e = n - 1 - i; if (e < len) m = Math.min(m, Math.max(0.12, e / len)); }
+    return m;
+  }
+
+  // ---- Colour dynamics (per-dab hue / saturation / brightness variation) ----
+  function hexToHsl(hex) {
+    if (!hex || hex.charAt(0) !== '#') return null;
+    let h = hex.slice(1); if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+    const r = parseInt(h.slice(0, 2), 16) / 255, g = parseInt(h.slice(2, 4), 16) / 255, b = parseInt(h.slice(4, 6), 16) / 255;
+    if (isNaN(r + g + b)) return null;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
+    let hh = 0, ss = 0;
+    if (d) {
+      ss = d / (1 - Math.abs(2 * l - 1));
+      if (mx === r) hh = ((g - b) / d) % 6; else if (mx === g) hh = (b - r) / d + 2; else hh = (r - g) / d + 4;
+      hh *= 60; if (hh < 0) hh += 360;
+    }
+    return { h: hh, s: ss, l };
+  }
+  function hslToHex(h, s, l) {
+    h = ((h % 360) + 360) % 360; s = Math.max(0, Math.min(1, s)); l = Math.max(0, Math.min(1, l));
+    const c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = l - c / 2;
+    let r = 0, g = 0, b = 0;
+    if (h < 60) { r = c; g = x; } else if (h < 120) { r = x; g = c; } else if (h < 180) { g = c; b = x; }
+    else if (h < 240) { g = x; b = c; } else if (h < 300) { r = x; b = c; } else { r = c; b = x; }
+    const to = (v) => ('0' + Math.round((v + m) * 255).toString(16)).slice(-2);
+    return '#' + to(r) + to(g) + to(b);
+  }
+  // cd = {h,s,b} each 0..100
+  function dynColor(base, cd, rand) {
+    const j = () => rand() * 2 - 1;
+    return hslToHex(base.h + j() * (cd.h / 100) * 60, base.s + j() * (cd.s / 100) * 0.5, base.l + j() * (cd.b / 100) * 0.35);
+  }
+  function hasCdyn(brush) { const c = brush.cdyn; return !!(c && (c.h > 0 || c.s > 0 || c.b > 0)); }
+
+  // ---- Grain, blend and dual-brush layers -----------------------------------
+  // A brush using any of these is drawn into a small scratch canvas covering just the stroke, then
+  // shaped (grain / second tip multiply the coverage) and composited with its blend mode.
+  function makeGrainMask(brush) {
+    const g = brush.fx && brush.fx.grain; if (!g || !g.img) return null;
+    if (brush._grainMask && brush._grainMask.src === g.img) return brush._grainMask.canvas;
+    const img = g.img, w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+    if (!w || !h) return null;
+    const k = Math.min(1, 512 / Math.max(w, h)), cw = Math.max(1, Math.round(w * k)), ch = Math.max(1, Math.round(h * k));
+    const c = document.createElement('canvas'); c.width = cw; c.height = ch;
+    const x = c.getContext('2d'); x.drawImage(img, 0, 0, cw, ch);
+    let d; try { d = x.getImageData(0, 0, cw, ch); } catch (e) { return null; }
+    const depth = Math.max(0, Math.min(1, (g.depth == null ? 70 : g.depth) / 100));
+    for (let i = 0; i < d.data.length; i += 4) {
+      let lum = (0.299 * d.data[i] + 0.587 * d.data[i + 1] + 0.114 * d.data[i + 2]) / 255;
+      const a = d.data[i + 3] / 255; lum = lum * a + (1 - a); // transparent = full paint
+      if (g.invert) lum = 1 - lum;
+      if (g.contrast) lum = Math.max(0, Math.min(1, (lum - 0.5) * (1 + g.contrast / 50) + 0.5));
+      d.data[i] = d.data[i + 1] = d.data[i + 2] = 0;
+      d.data[i + 3] = Math.round(((1 - depth) + depth * lum) * 255);
+    }
+    x.putImageData(d, 0, 0);
+    brush._grainMask = { src: g.img, canvas: c };
+    return c;
+  }
+  function fxActive(brush) {
+    const f = brush.fx; if (!f) return false;
+    return !!((f.grain && f.grain.img) || (f.blend && f.blend !== 'source-over') || (f.dual && f.dual.on));
+  }
+  function renderWithFx(ctx, stroke, brush, settings, alphaMul) {
+    const f = brush.fx, pts = stroke.points;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (let i = 0; i < pts.length; i++) { const p = pts[i]; if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x; if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y; }
+    const pad = settings.size * ((f.dual && f.dual.on ? 1 + (f.dual.scatter || 0) / 100 : 1)) + 4;
+    const bx = Math.floor(minX - pad), by = Math.floor(minY - pad), bw = Math.ceil(maxX - minX + pad * 2), bh = Math.ceil(maxY - minY + pad * 2);
+    const m = ctx.getTransform ? ctx.getTransform() : { a: 1, b: 0 };
+    let sc = Math.hypot(m.a, m.b) || 1;
+    const MAXPX = 12e6;
+    if (bw * bh * sc * sc > MAXPX) sc = Math.sqrt(MAXPX / (bw * bh));
+    const W = Math.max(1, Math.round(bw * sc)), H = Math.max(1, Math.round(bh * sc));
+    const tmp = document.createElement('canvas'); tmp.width = W; tmp.height = H;
+    const t = tmp.getContext('2d');
+    t.setTransform(W / bw, 0, 0, H / bh, -bx * (W / bw), -by * (H / bh));
+    renderBase(t, stroke, brush, settings, alphaMul);
+    if (f.grain && f.grain.img) {
+      const mask = makeGrainMask(brush);
+      if (mask) {
+        const pat = t.createPattern(mask, 'repeat');
+        const gs = Math.max(0.05, (f.grain.scale == null ? 100 : f.grain.scale) / 100);
+        const ox = f.grain.moving ? pts[0].x : 0, oy = f.grain.moving ? pts[0].y : 0;
+        if (pat.setTransform && typeof DOMMatrix !== 'undefined') pat.setTransform(new DOMMatrix().translate(ox, oy).scale(gs));
+        t.save(); t.globalCompositeOperation = 'destination-in'; t.fillStyle = pat; t.fillRect(bx, by, bw, bh); t.restore();
+      }
+    }
+    if (f.dual && f.dual.on) {
+      const mk = document.createElement('canvas'); mk.width = W; mk.height = H;
+      const q = mk.getContext('2d'); q.setTransform(W / bw, 0, 0, H / bh, -bx * (W / bw), -by * (H / bh));
+      const d = f.dual, rr = seededRandom((stroke.id || 'live') + 'd');
+      const dsize = Math.max(1, settings.size * (d.size || 40) / 100);
+      const step = Math.max(0.6, dsize * Math.max(0.05, (d.spacing || 50) / 100));
+      const line = resample(pts, step);
+      const sp = settings.size * (d.scatter || 0) / 100;
+      q.fillStyle = '#000';
+      for (let i = 0; i < line.length; i++) {
+        const cnt = Math.max(1, Math.round(d.count || 1));
+        for (let c = 0; c < cnt; c++) {
+          const x = line[i].x + (rr() - 0.5) * 2 * sp, y = line[i].y + (rr() - 0.5) * 2 * sp;
+          if (d.img) {
+            const iw = d.img.naturalWidth || d.img.width, ih = d.img.naturalHeight || d.img.height, kk = dsize / Math.max(iw, ih);
+            q.save(); q.translate(x, y); q.rotate(rr() * Math.PI * 2); q.drawImage(d.img, -iw * kk / 2, -ih * kk / 2, iw * kk, ih * kk); q.restore();
+          } else {
+            const soft = Math.max(0.05, Math.min(1, (d.soft == null ? 100 : d.soft) / 100));
+            if (soft >= 0.98) { q.beginPath(); q.arc(x, y, dsize / 2, 0, Math.PI * 2); q.fill(); }
+            else { const gr = q.createRadialGradient(x, y, dsize / 2 * soft, x, y, dsize / 2); gr.addColorStop(0, '#000'); gr.addColorStop(1, 'rgba(0,0,0,0)'); q.fillStyle = gr; q.beginPath(); q.arc(x, y, dsize / 2, 0, Math.PI * 2); q.fill(); q.fillStyle = '#000'; }
+          }
+        }
+      }
+      t.save(); t.setTransform(1, 0, 0, 1, 0, 0); t.globalCompositeOperation = 'destination-in'; t.drawImage(mk, 0, 0); t.restore();
+    }
+    ctx.save();
+    if (f.blend && f.blend !== 'source-over') ctx.globalCompositeOperation = f.blend;
+    ctx.drawImage(tmp, bx, by, bw, bh);
+    ctx.restore();
   }
 
   // Smooths a raw captured point list before it's committed as a
@@ -456,7 +620,7 @@
 
   global.BrushEngine = {
     BRUSHES, FAMILY_ORDER, FAMILY_LABEL, ERASER,
-    getBrush, isVector, registerStampBrush, unregisterStampBrush, makeCustomBrush, registerCustomBrush,
+    getBrush, isVector, taperAt, registerStampBrush, unregisterStampBrush, makeCustomBrush, registerCustomBrush,
     getSettings, setSettings,
     touchRecent, getRecents,
     isFavorite, toggleFavorite, getFavorites,

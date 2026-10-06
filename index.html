@@ -518,9 +518,11 @@ button.pill:active{transform:scale(.97)}
         <div class="slider-row"><label>Edge softness</label><input id="bmSoft" type="range" min="5" max="100" value="100"><span id="bmSoftVal"></span></div>
         <div class="slider-row"><label>Texture</label><input id="bmGrain" type="range" min="0" max="80" value="0"><span id="bmGrainVal"></span></div>
         <div class="slider-row"><label>Variation</label><input id="bmWobble" type="range" min="0" max="100" value="0"><span id="bmWobbleVal"></span></div>
-        <label style="display:flex;gap:8px;align-items:center;margin:4px 0;"><input type="checkbox" id="bmTaper"> Taper start and end</label>
         <label style="display:flex;gap:8px;align-items:center;margin:4px 0;"><input type="checkbox" id="bmMono"> Uniform monoline (constant width; ignores pressure and the options above)</label>
       </div>
+      <div class="slider-row"><label>Taper — start</label><input id="bmTaperS" type="range" min="0" max="60" value="0"><span id="bmTaperSVal"></span></div>
+      <div class="slider-row"><label>Taper — end</label><input id="bmTaperE" type="range" min="0" max="60" value="0"><span id="bmTaperEVal"></span></div>
+      <div class="hint">Taper length is a percentage of the stroke. A tapered monoline is drawn as a solid brush.</div>
       <div class="slider-row"><label>Size</label><input id="bmSize" type="range" min="1" max="120" value="20"><span id="bmSizeVal"></span></div>
       <div class="slider-row"><label>Opacity</label><input id="bmOpacity" type="range" min="1" max="100" value="100"><span id="bmOpacityVal"></span></div>
       <div class="slider-row"><label>Spacing</label><input id="bmSpacing" type="range" min="1" max="40" value="8"><span id="bmSpacingVal"></span></div>
@@ -528,6 +530,36 @@ button.pill:active{transform:scale(.97)}
       <div class="slider-row"><label>Pressure → opacity</label><input id="bmPO" type="range" min="0" max="100" value="0"><span id="bmPOVal"></span></div>
       <div style="margin:8px 0;"><label class="btn mini" style="cursor:pointer;display:inline-block;">🖼️ Use an image as the brush tip<input id="bmTip" type="file" accept="image/*" style="display:none;"></label> <button id="bmTipClear" class="btn mini" style="display:none;">Remove image</button>
         <div class="hint">An image tip (a PNG with a transparent background works best) is stamped along the path, like your Motif Brushes.</div></div>
+      <details id="bmGrainBox" style="margin:6px 0;"><summary style="cursor:pointer;font-weight:700;">Grain texture</summary>
+        <div class="slider-row"><label>Texture</label><select id="bmGrainSel" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"><option value="">None</option><option value="paper">Paper</option><option value="grit">Grit</option><option value="weave">Canvas weave</option><option value="custom">Your own image…</option></select></div>
+        <div style="margin:4px 0;"><label class="btn mini" style="cursor:pointer;display:inline-block;">🖼️ Choose grain image<input id="bmGrainFile" type="file" accept="image/*" style="display:none;"></label> <span id="bmGrainName" class="hint" style="display:inline;"></span>
+          <div class="hint">Any picture works — light areas let the colour through, dark areas hold it back. Greyscale textures give the cleanest result.</div></div>
+        <div id="bmGrainCtl">
+          <div class="slider-row"><label>Depth</label><input id="bmGDepth" type="range" min="0" max="100" value="70"><span id="bmGDepthVal"></span></div>
+          <div class="slider-row"><label>Scale</label><input id="bmGScale" type="range" min="10" max="400" value="100"><span id="bmGScaleVal"></span></div>
+          <div class="slider-row"><label>Contrast</label><input id="bmGContrast" type="range" min="0" max="100" value="0"><span id="bmGContrastVal"></span></div>
+          <label style="display:flex;gap:8px;align-items:center;margin:4px 0;"><input type="checkbox" id="bmGInvert"> Invert grain</label>
+          <label style="display:flex;gap:8px;align-items:center;margin:4px 0;"><input type="checkbox" id="bmGMoving"> Grain moves with the stroke (otherwise it stays fixed to the canvas)</label>
+        </div></details>
+      <details id="bmBlendBox" style="margin:6px 0;"><summary style="cursor:pointer;font-weight:700;">Blending</summary>
+        <div class="slider-row"><label>Blend mode</label><select id="bmBlend" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"><option value="source-over">Normal</option><option value="multiply">Multiply</option><option value="darken">Darken</option><option value="screen">Screen</option><option value="lighten">Lighten</option><option value="overlay">Overlay</option><option value="soft-light">Soft light</option><option value="hard-light">Hard light</option><option value="color-dodge">Colour dodge</option><option value="color-burn">Colour burn</option><option value="difference">Difference</option><option value="hue">Hue</option><option value="color">Colour</option></select></div>
+        <div class="hint">The brush blends with whatever is already on the same layer. Colours can look different on a transparent layer.</div></details>
+      <details id="bmColorBox" style="margin:6px 0;"><summary style="cursor:pointer;font-weight:700;">Colour variation</summary>
+        <div class="slider-row"><label>Hue</label><input id="bmCH" type="range" min="0" max="100" value="0"><span id="bmCHVal"></span></div>
+        <div class="slider-row"><label>Saturation</label><input id="bmCS" type="range" min="0" max="100" value="0"><span id="bmCSVal"></span></div>
+        <div class="slider-row"><label>Brightness</label><input id="bmCB" type="range" min="0" max="100" value="0"><span id="bmCBVal"></span></div>
+        <div class="hint">Each mark along the stroke shifts slightly from your chosen colour. Not available for a uniform monoline; picture tips need “Colour with current colour” switched on.</div></details>
+      <details id="bmDualBox" style="margin:6px 0;"><summary style="cursor:pointer;font-weight:700;">Dual brush</summary>
+        <label style="display:flex;gap:8px;align-items:center;margin:4px 0;"><input type="checkbox" id="bmDualOn"> Shape the stroke with a second brush tip</label>
+        <div id="bmDualCtl">
+          <div class="slider-row"><label>Tip size</label><input id="bmDSize" type="range" min="5" max="200" value="25"><span id="bmDSizeVal"></span></div>
+          <div class="slider-row"><label>Spacing</label><input id="bmDSpacing" type="range" min="5" max="300" value="30"><span id="bmDSpacingVal"></span></div>
+          <div class="slider-row"><label>Scatter</label><input id="bmDScatter" type="range" min="0" max="200" value="45"><span id="bmDScatterVal"></span></div>
+          <div class="slider-row"><label>Count</label><input id="bmDCount" type="range" min="1" max="6" value="3"><span id="bmDCountVal"></span></div>
+          <div class="slider-row"><label>Softness</label><input id="bmDSoft" type="range" min="5" max="100" value="100"><span id="bmDSoftVal"></span></div>
+          <div style="margin:4px 0;"><label class="btn mini" style="cursor:pointer;display:inline-block;">🖼️ Use an image for the second tip<input id="bmDualFile" type="file" accept="image/*" style="display:none;"></label> <button id="bmDualClear" class="btn mini" style="display:none;">Remove image</button></div>
+          <div class="hint">Only the parts of the stroke that overlap the second tip are kept, which gives speckled, bristly or stippled marks.</div>
+        </div></details>
       <div class="row" style="margin-top:8px;"><button id="bmSave" class="btn primary" style="flex:1;">💾 Save brush</button></div>
       <div id="bmListWrap" style="margin-top:10px;"></div>
     </div>
@@ -1342,7 +1374,7 @@ function renderLivePreviewIncremental(){
   // Clipped, not a cheaper approximation) — clip() is a native, near-free canvas op, so there's no
   // real cost to paying for full-quality clipping on every incremental slice while drawing.
   const clipStrokeId=(paintMode==='inside')?paintInsideTargetId:null;
-  if(brush.stamp){ // stamps depend on spacing along the whole line, so redraw it all each time
+  if(brush.stamp||(brush.fx&&(brush.fx.grain||brush.fx.dual||(brush.fx.blend&&brush.fx.blend!=='source-over')))){ // stamps (and grain/dual/blend brushes) depend on the whole line along the whole line, so redraw it all each time
     lctx.clearRect(0,0,W,H);
     symmetryTransforms().forEach(tf=>{
       const pts=currentPoints.map(pt=>{const t=tf(pt);return{x:t.x,y:t.y,pressure:pt.pressure};});
@@ -4032,7 +4064,7 @@ function renderPathLivePreview(){
   // preview's own natural taper. Edit Path's live view renders at full, uniform width instead, so
   // the actual node structure stays unambiguous while editing; the committed stroke still tapers
   // normally the moment Done bakes it back through the ordinary (non-preview) render path.
-  const previewBrush=(brush.taper&&brush.taper!=='none')?{...brush,taper:'none'}:brush;
+  const previewBrush=(brush.taper&&brush.taper!=='none')?{...brush,taper:'none',taperS:0,taperE:0}:brush;
   BrushEngine.renderStroke(lctx,{...stroke,points:nodesToPoints(pathEditNodes,pathEditClosed)},previewBrush,settings);
   liveActive=true;
 }
@@ -4501,25 +4533,55 @@ bindTapButton($('simplifyPathBtn'),simplifyCurrentPath);
 $('moreSettingsToggle').onclick=()=>{const box=$('moreSettings');const showing=box.style.display!=='none';box.style.display=showing?'none':'block';$('moreSettingsToggle').textContent=showing?'⚙️ More Settings':'⚙️ Hide Settings';};
 // ---- Make my own brush --------------------------------------------------------------------------
 let customDefs=[];try{customDefs=JSON.parse(localStorage.getItem('sp-customBrushes')||'[]')||[];}catch(e){customDefs=[];}
-function saveCustomDefs(){try{localStorage.setItem('sp-customBrushes',JSON.stringify(customDefs));}catch(e){console.warn('could not store custom brushes',e);}}
+function saveCustomDefs(){try{localStorage.setItem('sp-customBrushes',JSON.stringify(customDefs.map(stripDef)));}catch(e){console.warn('could not store custom brushes',e);}}
+// ---- grain presets (generated, so only a name is stored) ----
+function makeGrainPreset(kind){
+  const N=256,c=document.createElement('canvas');c.width=c.height=N;const g=c.getContext('2d'),im=g.createImageData(N,N);
+  let sd=kind==='paper'?11:kind==='grit'?23:37;const rnd=()=>{sd=(sd*1664525+1013904223)|0;return (sd>>>0)/4294967296;};
+  const base=new Float32Array(N*N);for(let i=0;i<base.length;i++)base[i]=rnd();
+  const at=(x,y)=>base[((y+N)%N)*N+((x+N)%N)];
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+    let v;
+    if(kind==='paper'){v=(at(x,y)+at(x+1,y)+at(x,y+1)+at(x+1,y+1))/4;v=Math.max(0,Math.min(1,(v-0.5)*2.2+0.62));}
+    else if(kind==='grit'){v=at(x,y)<0.3?0.05+at(x+3,y+7)*0.4:1;}
+    else{const w=0.5+0.25*Math.sin(x*Math.PI/3)+0.25*Math.sin(y*Math.PI/3);v=Math.max(0,Math.min(1,0.35+0.5*w*(0.75+0.25*at(x,y))));}
+    const k=(y*N+x)*4;im.data[k]=im.data[k+1]=im.data[k+2]=Math.round(v*255);im.data[k+3]=255;
+  }
+  g.putImageData(im,0,0);return c;
+}
+function loadDefImg(src){return new Promise(res=>{if(!src){res(null);return;}const i=new Image();i.onload=()=>res(i);i.onerror=()=>res(null);i.src=src;});}
+async function loadFxImages(def){
+  def.grainImg=def.grainPreset?makeGrainPreset(def.grainPreset):(def.grainSrc?await loadDefImg(def.grainSrc):null);
+  def.dualImg=def.dualSrc?await loadDefImg(def.dualSrc):null;
+}
 function loadTipImage(def){return new Promise(res=>{if(!def.tipSrc){res();return;}const img=new Image();img.onload=()=>{def.tipImg=img;res();};img.onerror=()=>res();img.src=def.tipSrc;});}
 async function registerCustomDefs(list,thenRebuild){
-  for(const d of list){await loadTipImage(d);BrushEngine.registerCustomBrush(d);}
+  for(const d of list){await loadTipImage(d);await loadFxImages(d);BrushEngine.registerCustomBrush(d);}
   if(thenRebuild&&strokes.some(st=>String(st.brushId).startsWith('custom:'))){try{rebuildAllLayers();redraw();}catch(e){}}
 }
-function serialCustomDefs(){return customDefs.map(d=>{const c={...d};delete c.tipImg;return c;});}
-let bmEditId=null,bmTipSrc=null,bmTipImg=null;
+function stripDef(d){const c={...d};delete c.tipImg;delete c.grainImg;delete c.dualImg;return c;}
+function serialCustomDefs(){return customDefs.map(stripDef);}
+let bmEditId=null,bmTipSrc=null,bmTipImg=null,bmGrainPreset=null,bmGrainSrc=null,bmGrainImg=null,bmDualSrc=null,bmDualImg=null;
 function bmDef(){
   const g=id=>+$(id).value;
   return {id:bmEditId||('custom:'+crypto.randomUUID()),name:($('bmName').value||'').trim()||'My brush',
-    softness:g('bmSoft'),grain:g('bmGrain'),wobble:g('bmWobble'),taper:$('bmTaper').checked,mono:$('bmMono').checked,
+    softness:g('bmSoft'),grain:g('bmGrain'),wobble:g('bmWobble'),mono:$('bmMono').checked,
     tipSrc:bmTipSrc||null,tipImg:bmTipImg||null,
+    grainPreset:bmGrainPreset||null,grainSrc:bmGrainSrc||null,grainImg:bmGrainImg||null,dualSrc:bmDualSrc||null,dualImg:bmDualImg||null,
+    fx:{taperStart:g('bmTaperS'),taperEnd:g('bmTaperE'),
+      grain:{depth:g('bmGDepth'),scale:g('bmGScale'),contrast:g('bmGContrast'),invert:$('bmGInvert').checked,moving:$('bmGMoving').checked},
+      blend:$('bmBlend').value,color:{h:g('bmCH'),s:g('bmCS'),b:g('bmCB')},
+      dual:{on:$('bmDualOn').checked,size:g('bmDSize'),spacing:g('bmDSpacing'),scatter:g('bmDScatter'),count:g('bmDCount'),soft:g('bmDSoft')}},
     defaults:{size:g('bmSize'),opacity:g('bmOpacity'),smoothing:30,pressureWidth:g('bmPW'),pressureOpacity:g('bmPO'),spacing:g('bmSpacing')}};
 }
 function bmShowVals(){
-  [['bmSoft','%'],['bmGrain','%'],['bmWobble','%'],['bmSize',''],['bmOpacity','%'],['bmSpacing','%'],['bmPW','%'],['bmPO','%']].forEach(([id,u])=>{$(id+'Val').textContent=Math.round(+$(id).value)+u;});
+  [['bmTaperS','%'],['bmTaperE','%'],['bmGDepth','%'],['bmGScale','%'],['bmGContrast','%'],['bmCH','%'],['bmCS','%'],['bmCB','%'],['bmDSize','%'],['bmDSpacing','%'],['bmDScatter','%'],['bmDCount',''],['bmDSoft','%'],['bmSoft','%'],['bmGrain','%'],['bmWobble','%'],['bmSize',''],['bmOpacity','%'],['bmSpacing','%'],['bmPW','%'],['bmPO','%']].forEach(([id,u])=>{$(id+'Val').textContent=Math.round(+$(id).value)+u;});
   $('bmLook').style.display=bmTipImg?'none':'block';
   $('bmTipClear').style.display=bmTipImg?'inline-block':'none';
+  $('bmGrainCtl').style.opacity=bmGrainImg?'1':'.45';$('bmDualCtl').style.opacity=$('bmDualOn').checked?'1':'.5';
+  $('bmDualClear').style.display=bmDualImg?'inline-block':'none';
+  $('bmGrainSel').value=bmGrainPreset||(bmGrainSrc?'custom':'');
+  $('bmGrainName').textContent=bmGrainSrc?'image loaded':'';
 }
 function bmRefresh(){
   bmShowVals();
@@ -4532,7 +4594,15 @@ function bmRefresh(){
 function bmLoad(def){
   $('bmName').value=def.name||'';
   $('bmSoft').value=def.softness==null?100:def.softness;$('bmGrain').value=def.grain||0;$('bmWobble').value=def.wobble||0;
-  $('bmTaper').checked=!!def.taper;$('bmMono').checked=!!def.mono;
+  $('bmMono').checked=!!def.mono;
+  const fx=def.fx||{};let ts=fx.taperStart,te=fx.taperEnd;if(ts==null&&te==null&&def.taper){ts=te=12;}
+  $('bmTaperS').value=ts||0;$('bmTaperE').value=te||0;
+  const gr=fx.grain||{},cl=fx.color||{},du=fx.dual||{};
+  $('bmGDepth').value=gr.depth!=null?gr.depth:70;$('bmGScale').value=gr.scale||100;$('bmGContrast').value=gr.contrast||0;$('bmGInvert').checked=!!gr.invert;$('bmGMoving').checked=!!gr.moving;
+  $('bmBlend').value=fx.blend||'source-over';
+  $('bmCH').value=cl.h||0;$('bmCS').value=cl.s||0;$('bmCB').value=cl.b||0;
+  $('bmDualOn').checked=!!du.on;$('bmDSize').value=du.size||25;$('bmDSpacing').value=du.spacing||30;$('bmDScatter').value=du.scatter!=null?du.scatter:45;$('bmDCount').value=du.count||3;$('bmDSoft').value=du.soft||100;
+  bmGrainPreset=def.grainPreset||null;bmGrainSrc=def.grainSrc||null;bmGrainImg=def.grainImg||null;bmDualSrc=def.dualSrc||null;bmDualImg=def.dualImg||null;
   const d=def.defaults||{};
   $('bmSize').max=def.tipSrc?300:120;$('bmSpacing').max=def.tipSrc?250:40;
   $('bmSize').value=d.size!=null?d.size:20;$('bmOpacity').value=d.opacity!=null?d.opacity:100;$('bmSpacing').value=d.spacing!=null?d.spacing:8;
@@ -4565,24 +4635,50 @@ function bmRenderList(){
   });
 }
 function openBrushMaker(){
-  bmEditId=null;bmTipSrc=null;bmTipImg=null;$('bmSave').textContent='💾 Save brush';
+  bmEditId=null;bmTipSrc=null;bmTipImg=null;bmGrainPreset=null;bmGrainSrc=null;bmGrainImg=null;bmDualSrc=null;bmDualImg=null;$('bmSave').textContent='💾 Save brush';
   bmFillFrom();
   const cur=BrushEngine.getBrush(activeBrushId);
   const base=cur.stamp&&!cur.custom?BrushEngine.getBrush('smoothPen'):cur;
-  if(cur.custom&&cur.def&&cur.def.tipSrc){bmLoad({...cur.def,name:''});}
+  if(cur.custom&&cur.def&&(cur.def.tipSrc||cur.def.fx)){bmLoad({...cur.def,name:''});}
   else{
     $('bmFrom').value=base.custom?'':base.id;
-    bmLoad({name:'',softness:Math.round((base.hardness==null?1:base.hardness)*100),grain:Math.round((base.streaky||0)*100),wobble:Math.round((base.jitter||0)*100),taper:base.taper==='both',mono:!!base.path,defaults:BrushEngine.getSettings(base.id)});
+    bmLoad({name:'',softness:Math.round((base.hardness==null?1:base.hardness)*100),grain:Math.round((base.streaky||0)*100),wobble:Math.round((base.jitter||0)*100),fx:{taperStart:Math.round((base.taperS!=null?base.taperS:(base.taper==='both'?0.12:0))*100),taperEnd:Math.round((base.taperE!=null?base.taperE:(base.taper==='both'?0.12:0))*100)},mono:!!base.path,defaults:BrushEngine.getSettings(base.id)});
   }
   bmRenderList();$('brushMakerPanel').style.display='block';bmRefresh();
 }
 $('makeBrushBtn').onclick=openBrushMaker;
 $('bmCancel').onclick=()=>{$('brushMakerPanel').style.display='none';};
-$('bmFrom').onchange=e=>{const id=e.target.value;const b=id?BrushEngine.getBrush(id):null;bmTipSrc=null;bmTipImg=null;$('bmSize').max=120;$('bmSpacing').max=40;
-  if(!b){bmLoad({name:$('bmName').value,softness:100,grain:0,wobble:0,taper:false,mono:false,defaults:{size:20,opacity:100,spacing:8,pressureWidth:0,pressureOpacity:0}});return;}
-  bmLoad({name:$('bmName').value,softness:Math.round((b.hardness==null?1:b.hardness)*100),grain:Math.round((b.streaky||0)*100),wobble:Math.round((b.jitter||0)*100),taper:b.taper==='both',mono:!!b.path,defaults:BrushEngine.getSettings(b.id)});};
+$('bmFrom').onchange=e=>{const id=e.target.value;const b=id?BrushEngine.getBrush(id):null;bmTipSrc=null;bmTipImg=null;bmGrainPreset=null;bmGrainSrc=null;bmGrainImg=null;bmDualSrc=null;bmDualImg=null;$('bmSize').max=120;$('bmSpacing').max=40;
+  if(!b){bmLoad({name:$('bmName').value,softness:100,grain:0,wobble:0,mono:false,defaults:{size:20,opacity:100,spacing:8,pressureWidth:0,pressureOpacity:0}});return;}
+  bmLoad({name:$('bmName').value,softness:Math.round((b.hardness==null?1:b.hardness)*100),grain:Math.round((b.streaky||0)*100),wobble:Math.round((b.jitter||0)*100),fx:{taperStart:Math.round((b.taperS!=null?b.taperS:(b.taper==='both'?0.12:0))*100),taperEnd:Math.round((b.taperE!=null?b.taperE:(b.taper==='both'?0.12:0))*100)},mono:!!b.path,defaults:BrushEngine.getSettings(b.id)});};
 ['bmSoft','bmGrain','bmWobble','bmSize','bmOpacity','bmSpacing','bmPW','bmPO'].forEach(id=>$(id).oninput=bmRefresh);
-['bmTaper','bmMono'].forEach(id=>$(id).onchange=bmRefresh);
+['bmTaperS','bmTaperE','bmGDepth','bmGScale','bmGContrast','bmCH','bmCS','bmCB','bmDSize','bmDSpacing','bmDScatter','bmDCount','bmDSoft'].forEach(id=>$(id).oninput=bmRefresh);
+['bmMono','bmGInvert','bmGMoving','bmDualOn','bmBlend'].forEach(id=>$(id).onchange=bmRefresh);
+function bmReadImage(file,max,cb){
+  const r=new FileReader();r.onload=ev=>{const img=new Image();img.onload=()=>{
+    const k=Math.min(1,max/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.width*k));c.height=Math.max(1,Math.round(img.height*k));
+    const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(img,0,0,c.width,c.height);
+    cb(c);};img.src=ev.target.result;};r.readAsDataURL(file);
+}
+$('bmGrainSel').onchange=e=>{
+  const v=e.target.value;
+  if(!v){bmGrainPreset=null;bmGrainSrc=null;bmGrainImg=null;}
+  else if(v==='custom'){$('bmGrainFile').click();return;}
+  else{bmGrainPreset=v;bmGrainSrc=null;bmGrainImg=makeGrainPreset(v);}
+  bmRefresh();
+};
+$('bmGrainFile').onchange=e=>{
+  const f=e.target.files&&e.target.files[0];e.target.value='';if(!f)return;
+  bmReadImage(f,512,c=>{const src=c.toDataURL('image/jpeg',0.85),i2=new Image();i2.onload=()=>{bmGrainPreset=null;bmGrainSrc=src;bmGrainImg=i2;bmRefresh();};i2.src=src;});
+};
+$('bmDualFile').onchange=e=>{
+  const f=e.target.files&&e.target.files[0];e.target.value='';if(!f)return;
+  const r=new FileReader();r.onload=ev=>{const img=new Image();img.onload=()=>{
+    const k=Math.min(1,256/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.width*k));c.height=Math.max(1,Math.round(img.height*k));
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);const src=c.toDataURL('image/png'),i2=new Image();
+    i2.onload=()=>{bmDualSrc=src;bmDualImg=i2;$('bmDualOn').checked=true;bmRefresh();};i2.src=src;};img.src=ev.target.result;};r.readAsDataURL(f);
+};
+$('bmDualClear').onclick=()=>{bmDualSrc=null;bmDualImg=null;bmRefresh();};
 $('bmName').oninput=()=>{};
 $('bmTip').onchange=e=>{
   const f=e.target.files&&e.target.files[0];e.target.value='';if(!f)return;
@@ -4847,7 +4943,7 @@ function svgStrokeOutline(stroke,settings,brush){
   const rs=pts.map((pt,i)=>{
     const wm=BrushEngine.pressureFactor(pt.pressure,settings.pressureWidth);
     opSum+=BrushEngine.pressureFactor(pt.pressure,settings.pressureOpacity);
-    let tm=1;if(brush.taper==='both'){const edge=Math.min(i,n-1-i),tl=Math.max(2,Math.round(n*0.12));if(edge<tl)tm=Math.max(.12,edge/tl);}
+    const tm=BrushEngine.taperAt?BrushEngine.taperAt(brush,i,n):1;
     return Math.max(.3,(settings.size/2)*wm*tm);
   });
   const opacity=Math.max(0,Math.min(1,(settings.opacity/100)*(opSum/n)));
