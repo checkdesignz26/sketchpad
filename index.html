@@ -196,6 +196,15 @@ button.pill:active{transform:scale(.97)}
 #zoomPopover .zoom-row{display:flex;gap:8px;margin-bottom:8px}
 #zoomPopover .zoom-row .tool-btn{flex:1}
 #zoomPopover .tool-btn,#zoomPopover .btn{min-height:44px}
+#brushRecents,#brushFavorites{min-height:44px}
+.sidebar{overflow-anchor:none}
+/* Fabric preview: the repeat extended across the whole workspace, behind the real canvas. Purely a
+   rendered copy of the tile — it never takes input and never touches exports. */
+#fabricCanvas{left:0;top:0;width:100%;height:100%;transform:none;pointer-events:none;display:none}
+/* Subtle outline of the ORIGINAL editable tile. A DOM overlay (not canvas pixels) so it stays a
+   constant hair-line thickness at every zoom level without any redraw. */
+#tileOutline{position:absolute;left:50%;top:50%;width:780px;height:780px;pointer-events:none;box-sizing:content-box;
+  border:calc(2px / var(--vs,1)) solid rgba(65,70,130,.55);transform-origin:center center;z-index:1}
 #viewPopover{left:auto;right:12px}
 #viewPopover:before{left:auto;right:44px}
 /* Narrow viewports get tighter spacing only — text, buttons, sliders and controls stay at their
@@ -453,9 +462,9 @@ button.pill:active{transform:scale(.97)}
   </div>
   <button id="sidebarToggleBtn" class="sidebar-toggle" title="Hide tools panel">‹</button>
   <main class="workspace">
-    <div class="toolbar"><button id="undoBtn" class="tool-btn">↩️ Undo</button><button id="redoBtn" class="tool-btn">↪️ Redo</button><button id="zoomPill" class="pill" title="Zoom and view recovery">100% ▾</button><button id="resetRot" class="tool-btn">0° Rotation</button><button id="guidesBtn" class="tool-btn">📐 Guides</button><button id="paintModePill" class="pill" style="display:none;cursor:pointer;">🎨 Paint Inside — tap for Free Paint</button><button id="editMotifBar" class="pill" style="display:none;cursor:pointer;background:var(--accentTeal);border:1px solid rgba(92,184,171,.5);font:inherit;">✏️ Editing: <span id="editMotifBarName"></span> — tap Done</button><div class="toolbar-spacer"></div><button id="quickSaveBtn" class="tool-btn">💾 Save</button><div id="saveStatusPill" class="pill" title="Autosave status">Saved</div><button id="downloadProjectBtn" class="tool-btn">⬇️ Download Project</button><label class="tool-btn" for="openProjectInput" style="cursor:pointer;">📂 Open Project</label><input id="openProjectInput" type="file" accept="application/json" style="display:none;"><button id="viewToggleBtn" class="tool-btn">⋯ View</button><button id="exportBtn" class="tool-btn primary">📸 Export</button></div>
+    <div class="toolbar"><button id="undoBtn" class="tool-btn">↩️ Undo</button><button id="redoBtn" class="tool-btn">↪️ Redo</button><button id="zoomPill" class="pill" title="Zoom and view recovery">100% ▾</button><button id="resetRot" class="tool-btn">0° Rotation</button><button id="guidesBtn" class="tool-btn">📐 Guides</button><button id="strokePanelBtn" class="tool-btn" title="Show or hide the Stroke panel">🖊️ Stroke</button><button id="paintModePill" class="pill" style="display:none;cursor:pointer;">🎨 Paint Inside — tap for Free Paint</button><button id="editMotifBar" class="pill" style="display:none;cursor:pointer;background:var(--accentTeal);border:1px solid rgba(92,184,171,.5);font:inherit;">✏️ Editing: <span id="editMotifBarName"></span> — tap Done</button><div class="toolbar-spacer"></div><button id="quickSaveBtn" class="tool-btn">💾 Save</button><div id="saveStatusPill" class="pill" title="Autosave status">Saved</div><button id="downloadProjectBtn" class="tool-btn">⬇️ Download Project</button><label class="tool-btn" for="openProjectInput" style="cursor:pointer;">📂 Open Project</label><input id="openProjectInput" type="file" accept="application/json" style="display:none;"><button id="viewToggleBtn" class="tool-btn">⋯ View</button><button id="exportBtn" class="tool-btn primary">📸 Export</button></div>
     <div id="restoreBanner" style="display:none;">📂 Autosaved session found from <span id="restoreBannerTime"></span>. <button id="restoreAcceptBtn" class="btn mini primary">Restore</button><button id="restoreDeclineBtn" class="btn mini">Start Fresh</button></div>
-    <div id="canvasViewportOuter" class="canvas-viewport-outer"><div id="canvasWrap" class="canvas-wrap"><div id="viewPopover" class="sym-pop"><div class="section-title">🧭 Canvas / View</div><button id="symToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">🦋 Symmetry Off</button><div class="row" style="margin-bottom:10px;"><button id="tilingBtn" class="tool-btn active" style="flex:1">Tiling On</button><div id="layoutPill" class="pill">📍 Grid Mode</div></div><button id="themeToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">☀️ Light Mode</button><button id="clearDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear Drawing &amp; Motifs</button><button id="clearAllDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear All Layers &amp; Motifs</button><button id="viewCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="zoomPopover" class="sym-pop"><div class="section-title">🔍 View <span id="zoomPopPct" class="small"></span></div><div class="zoom-row"><button id="zoomOutBtn" class="tool-btn" aria-label="Zoom out">−</button><button id="zoomInBtn" class="tool-btn" aria-label="Zoom in">+</button></div><button id="zoom100Btn" class="tool-btn" style="width:100%;margin-bottom:8px;">100% — actual size</button><button id="zoomFitBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">Fit to View</button><button id="zoomResetBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;">Reset View (0°, centre, fit)</button><div class="hint" style="margin-bottom:8px;">These always work, even if the canvas has scrolled out of sight.</div><button id="zoomCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="symPopover" class="sym-pop"><div class="section-title">🦋 Symmetry</div><div class="grid"><button class="sym-btn btn active" data-sym="off">Off</button><button class="sym-btn btn" data-sym="vertical">Vertical</button><button class="sym-btn btn" data-sym="horizontal">Horizontal</button><button class="sym-btn btn" data-sym="quad">Quad</button><button class="sym-btn btn" data-sym="diamond">Diamond</button></div><div class="slider-row"><label>Axis X</label><input id="symX" type="range" min="0" max="1800" value="900"><span id="symXVal">50%</span></div><div class="slider-row"><label>Axis Y</label><input id="symY" type="range" min="0" max="1800" value="900"><span id="symYVal">50%</span></div><div class="row"><button id="symCentre" class="btn mini">Centre Axis</button><button id="symClose" class="btn mini">Done</button></div><div class="hint">Move the mirror point to make flowers, leaves and playful asymmetric symmetry.</div></div><canvas id="canvas" width="1800" height="1800"></canvas><div id="selectionBox" class="selection-box"><div id="resizeHandle" class="handle"></div><div id="rotateHandle" class="rotHandle"></div></div><div id="paintBBoxOverlay" class="selection-box" style="display:none;"><div id="paintResizeHandle" class="handle"></div><div id="paintRotateHandle" class="rotHandle"></div></div><div id="symAxis" class="sym-axis"></div><div id="rotateChip" class="rotate-chip">Canvas 0°</div><div id="pathNodeOverlay"></div></div></div>
+    <div id="canvasViewportOuter" class="canvas-viewport-outer"><div id="canvasWrap" class="canvas-wrap"><div id="viewPopover" class="sym-pop"><div class="section-title">🧭 Canvas / View</div><button id="symToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">🦋 Symmetry Off</button><div class="row" style="margin-bottom:10px;"><button id="tilingBtn" class="tool-btn active" style="flex:1">Tiling On</button><div id="layoutPill" class="pill">📍 Grid Mode</div></div><button id="themeToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">☀️ Light Mode</button><button id="clearDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear Drawing &amp; Motifs</button><button id="clearAllDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear All Layers &amp; Motifs</button><button id="viewCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="zoomPopover" class="sym-pop"><div class="section-title">🔍 View <span id="zoomPopPct" class="small"></span></div><div class="zoom-row"><button id="zoomOutBtn" class="tool-btn" aria-label="Zoom out">−</button><button id="zoomInBtn" class="tool-btn" aria-label="Zoom in">+</button></div><button id="zoom100Btn" class="tool-btn" style="width:100%;margin-bottom:8px;">100% — actual size</button><button id="zoomFitBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">Fit to View</button><button id="zoomResetBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;">Reset View (0°, centre, fit)</button><div class="hint" style="margin-bottom:8px;">These always work, even if the canvas has scrolled out of sight.</div><button id="zoomCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="symPopover" class="sym-pop"><div class="section-title">🦋 Symmetry</div><div class="grid"><button class="sym-btn btn active" data-sym="off">Off</button><button class="sym-btn btn" data-sym="vertical">Vertical</button><button class="sym-btn btn" data-sym="horizontal">Horizontal</button><button class="sym-btn btn" data-sym="quad">Quad</button><button class="sym-btn btn" data-sym="diamond">Diamond</button></div><div class="slider-row"><label>Axis X</label><input id="symX" type="range" min="0" max="1800" value="900"><span id="symXVal">50%</span></div><div class="slider-row"><label>Axis Y</label><input id="symY" type="range" min="0" max="1800" value="900"><span id="symYVal">50%</span></div><div class="row"><button id="symCentre" class="btn mini">Centre Axis</button><button id="symClose" class="btn mini">Done</button></div><div class="hint">Move the mirror point to make flowers, leaves and playful asymmetric symmetry.</div></div><canvas id="fabricCanvas" aria-hidden="true"></canvas><canvas id="canvas" width="1800" height="1800"></canvas><div id="tileOutline" aria-hidden="true"></div><div id="selectionBox" class="selection-box"><div id="resizeHandle" class="handle"></div><div id="rotateHandle" class="rotHandle"></div></div><div id="paintBBoxOverlay" class="selection-box" style="display:none;"><div id="paintResizeHandle" class="handle"></div><div id="paintRotateHandle" class="rotHandle"></div></div><div id="symAxis" class="sym-axis"></div><div id="rotateChip" class="rotate-chip">Canvas 0°</div><div id="pathNodeOverlay"></div></div></div>
     <div id="status" class="status">✨ Apple Pencil draws | one finger protected | two fingers pan/pinch/rotate | two-finger tap Undo | three-finger tap Redo | Capture Motif saves drawing ✨</div>
   </main>
 </div>
@@ -470,7 +479,7 @@ button.pill:active{transform:scale(.97)}
 <script>
 (()=>{
 'use strict';
-const canvas=document.getElementById('canvas'),ctx=canvas.getContext('2d'),wrap=document.getElementById('canvasWrap'),viewportOuter=document.getElementById('canvasViewportOuter');
+const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),wrap=document.getElementById('canvasWrap'),viewportOuter=document.getElementById('canvasViewportOuter');let ctx=mainCtx; // ctx is briefly pointed at the fabric tile's context while it is rendered (see rebuildFabricTile)
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
 // Perf: updateComposite/updateDisplayComposite flatten EVERY visible layer's full-resolution
 // canvas every time they run. redraw() used to call both unconditionally on every single
@@ -1006,11 +1015,76 @@ function applyTransform(){
       renderScaleTimer=setTimeout(()=>commitRenderScale(newScale),120);
     }
   }
-  canvas.style.transform=`translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom*baseScale}) rotate(${rot}deg)`;$('zoomPill').textContent=Math.round(zoom*100)+'% ▾';$('zoomPopPct').textContent='— '+Math.round(zoom*100)+'%';$('rotateChip').textContent='Canvas '+Math.round(rot)+'°';updateSelectionBox();updatePaintBBoxOverlay();updateSymAxis();if(pathEditNodes)renderPathNodeOverlay();
+  canvas.style.transform=`translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom*baseScale}) rotate(${rot}deg)`;$('zoomPill').textContent=Math.round(zoom*100)+'% ▾';$('zoomPopPct').textContent='— '+Math.round(zoom*100)+'%';{const to=$('tileOutline');to.style.setProperty('--vs',zoom*baseScale);to.style.transform=`translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom*baseScale}) rotate(${rot}deg)`;}$('rotateChip').textContent='Canvas '+Math.round(rot)+'°';updateSelectionBox();updatePaintBBoxOverlay();updateSymAxis();if(pathEditNodes)renderPathNodeOverlay();paintFabric();
 }
 function screenToCanvas(x,y){const r=canvas.getBoundingClientRect();const cx=x-(r.left+r.width/2),cy=y-(r.top+r.height/2);const a=-rot*Math.PI/180;const s=zoom*baseScale;const ux=(cx*Math.cos(a)-cy*Math.sin(a))/s+W/2;const uy=(cx*Math.sin(a)+cy*Math.cos(a))/s+H/2;return {x:ux,y:uy};}
 function canvasToScreen(x,y){const rect=canvas.getBoundingClientRect(),wrapRect=wrap.getBoundingClientRect();const cx=rect.left+rect.width/2-wrapRect.left,cy=rect.top+rect.height/2-wrapRect.top;const a=rot*Math.PI/180;const s=zoom*baseScale;const px=(x-W/2)*s,py=(y-H/2)*s;return {x:cx+px*Math.cos(a)-py*Math.sin(a),y:cy+px*Math.sin(a)+py*Math.cos(a)};}
-function redraw(){if(redraw._q)return;redraw._q=requestAnimationFrame(()=>{redraw._q=0;if(compositeDirty){updateComposite();updateDisplayComposite();compositeDirty=false;}ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);drawBackground();drawTraces();if(showTiling)drawTiles();else{ctx.drawImage(displayCanvas,0,0,W,H);if(liveActive)ctx.drawImage(liveLayer,0,0);}drawPlaced();drawMultiSelectHighlights();drawShapeToolsHighlights();drawStrokeSelection();drawTileBoundary();if(showGuides)drawGuides();updateSelectionBox();updatePaintBBoxOverlay();});}
+// ---- Fabric preview ---------------------------------------------------------------------------
+// The real canvas only holds a few repeats (it is a fixed 1800-unit bitmap). When the view is
+// zoomed out past that, this extra canvas — behind the real one, never receiving input — tiles a
+// small snapshot of the tile across the whole workspace using the same layout lattice. The snapshot
+// is rendered with the SAME draw code as the real canvas (background, artwork, motifs, live
+// stroke), so surrounding repeats update live; it holds no artwork of its own and exports never
+// read it. It is skipped entirely whenever the real canvas already covers the workspace.
+const fabricCanvas=document.getElementById('fabricCanvas'),fctx=fabricCanvas.getContext('2d');
+const fabricTile=document.createElement('canvas'),ftctx=fabricTile.getContext('2d');
+let fabricTilePx=0,fabricTileDirty=true,fabricShown=false,fabricLast=0,fabricTimer=0;
+function fabricSnapPx(n){return Math.max(96,Math.min(1024,Math.pow(2,Math.ceil(Math.log2(Math.max(1,n))))));}
+function rebuildFabricTile(px){
+  if(fabricTile.width!==px||fabricTile.height!==px){fabricTile.width=px;fabricTile.height=px;}
+  const k=px/TILE,saved=ctx;
+  ctx=ftctx;
+  try{
+    ftctx.setTransform(1,0,0,1,0,0);ftctx.clearRect(0,0,px,px);
+    ftctx.setTransform(k,0,0,k,-C*k,-C*k);
+    ftctx.save();ftctx.beginPath();ftctx.rect(C,C,TILE,TILE);ftctx.clip();
+    ftctx.fillStyle='#fff';ftctx.fillRect(C,C,TILE,TILE);
+    drawBackground();
+    drawTiles();
+    drawPlaced();
+    ftctx.restore();
+  }finally{ctx=saved;}
+  fabricTilePx=px;fabricTileDirty=false;
+}
+function fabricContentChanged(){
+  fabricTileDirty=true;
+  if(!fabricShown||fabricTimer)return;
+  fabricTimer=setTimeout(()=>{fabricTimer=0;paintFabric();},Math.max(0,33-(performance.now()-fabricLast)));
+}
+function paintFabric(){
+  const vw=wrap.clientWidth,vh=wrap.clientHeight;
+  if(!showTiling||vw<=0||vh<=0||!layers.length){fabricCanvas.style.display='none';fabricShown=false;return;}
+  // Canvas-space bounding box of the visible workspace.
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  for(const [sx,sy] of [[-vw/2,-vh/2],[vw/2,-vh/2],[-vw/2,vh/2],[vw/2,vh/2]]){
+    const q=unprojectPoint(sx,sy,zoom,rot,panX,panY);
+    if(q.x<minX)minX=q.x;if(q.x>maxX)maxX=q.x;if(q.y<minY)minY=q.y;if(q.y>maxY)maxY=q.y;
+  }
+  if(minX>=0&&minY>=0&&maxX<=W&&maxY<=H){fabricCanvas.style.display='none';fabricShown=false;return;} // real canvas already covers it
+  fabricCanvas.style.display='block';fabricShown=true;
+  const dpr=Math.min(window.devicePixelRatio||1,2),pw=Math.round(vw*dpr),ph=Math.round(vh*dpr);
+  if(fabricCanvas.width!==pw||fabricCanvas.height!==ph){fabricCanvas.width=pw;fabricCanvas.height=ph;}
+  const s=zoom*baseScale,want=fabricSnapPx(TILE*s*dpr);
+  if(fabricTileDirty||want!==fabricTilePx)rebuildFabricTile(want);
+  const a=rot*Math.PI/180,cos=Math.cos(a),sin=Math.sin(a);
+  fctx.setTransform(1,0,0,1,0,0);fctx.clearRect(0,0,pw,ph);
+  fctx.setTransform(dpr*s*cos,dpr*s*sin,-dpr*s*sin,dpr*s*cos,dpr*(vw/2+panX-s*(cos*W/2-sin*H/2)),dpr*(vh/2+panY-s*(sin*W/2+cos*H/2)));
+  fctx.imageSmoothingEnabled=true;
+  const eps=.5/(s*dpr); // overlap neighbouring tiles by half a device pixel so no hairline seams show
+  const iyLo=Math.floor((minY-C)/TILE)-2,iyHi=Math.ceil((maxY-C)/TILE)+2;
+  let drawn=0;
+  for(let iy=iyLo;iy<=iyHi&&drawn<900;iy++){
+    const rowShift=layout==='diamond'?iy*TILE/2:(layout==='halfBrick'&&iy%2)?TILE/2:0;
+    const ixLo=Math.floor((minX-C-rowShift)/TILE)-1,ixHi=Math.ceil((maxX-C-rowShift)/TILE)+1;
+    for(let ix=ixLo;ix<=ixHi&&drawn<900;ix++){
+      const [ox,oy]=tilePos(ix,iy),x=C+ox,y=C+oy;
+      if(x>maxX||x+TILE<minX||y>maxY||y+TILE<minY)continue;
+      fctx.drawImage(fabricTile,x-eps,y-eps,TILE+2*eps,TILE+2*eps);drawn++;
+    }
+  }
+  fabricLast=performance.now();
+}
+function redraw(){if(redraw._q)return;redraw._q=requestAnimationFrame(()=>{redraw._q=0;if(compositeDirty){updateComposite();updateDisplayComposite();compositeDirty=false;}ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);drawBackground();drawTraces();if(showTiling)drawTiles();else{ctx.drawImage(displayCanvas,0,0,W,H);if(liveActive)ctx.drawImage(liveLayer,0,0);}drawPlaced();drawMultiSelectHighlights();drawShapeToolsHighlights();drawStrokeSelection();drawTileBoundary();if(showGuides)drawGuides();updateSelectionBox();updatePaintBBoxOverlay();fabricContentChanged();});}
 // A pattern (e.g. exported from Magic Builder) loaded as the base of the design - unlike Trace
 // Reference (a non-exported, freely-scaled/positioned tracing guide), this is sized to exactly
 // fill the guide-square tile, tiles using the same repeat offsets as the hand-drawn layer/motifs
@@ -1019,7 +1093,7 @@ function drawBackground(){if(!bgImg||!bgShown)return;ctx.save();ctx.globalAlpha=
 // The tile boundary itself is always visible — it's how the camera-window view reads as "this is
 // the editable tile, everything outside it is a repeat edge-clone", independent of the optional
 // grid/guides overlay (which is off by default and purely a drawing aid).
-function drawTileBoundary(){ctx.save();ctx.strokeStyle='rgba(65,70,130,.62)';ctx.lineWidth=5;ctx.strokeRect(C,C,TILE,TILE);ctx.restore();}
+function drawTileBoundary(){/* now the #tileOutline DOM overlay (constant thickness at any zoom) */}
 function drawGuides(){ctx.save();ctx.strokeStyle='rgba(54,60,110,.18)';ctx.lineWidth=3;for(let x=C;x<=C+TILE;x+=TILE/4){ctx.beginPath();ctx.moveTo(x,C);ctx.lineTo(x,C+TILE);ctx.stroke()}for(let y=C;y<=C+TILE;y+=TILE/4){ctx.beginPath();ctx.moveTo(C,y);ctx.lineTo(C+TILE,y);ctx.stroke()}if(symMode!=='off'){ctx.strokeStyle='rgba(223,111,165,.75)';ctx.lineWidth=3;ctx.setLineDash([14,10]);if(symMode==='vertical'||symMode==='quad'||symMode==='diamond'){ctx.beginPath();ctx.moveTo(symX,C);ctx.lineTo(symX,C+TILE);ctx.stroke()}if(symMode==='horizontal'||symMode==='quad'||symMode==='diamond'){ctx.beginPath();ctx.moveTo(C,symY);ctx.lineTo(C+TILE,symY);ctx.stroke()}if(symMode==='diamond'){ctx.beginPath();ctx.moveTo(C,symY-(symX-C));ctx.lineTo(C+TILE,symY+(C+TILE-symX));ctx.stroke();ctx.beginPath();ctx.moveTo(C,symY+(symX-C));ctx.lineTo(C+TILE,symY-(C+TILE-symX));ctx.stroke();}}ctx.restore();}
 function drawTraces(){traces.forEach(t=>{ctx.save();ctx.globalAlpha=t.opacity;t.w=t.img.width*t.scale;t.h=t.img.height*t.scale;ctx.drawImage(t.img,t.x-t.w/2,t.y-t.h/2,t.w,t.h);ctx.restore();});}
 function tilePos(ix,iy){let ox=ix*TILE,oy=iy*TILE;if(layout==='halfDrop'&&ix%2)oy+=TILE/2;if(layout==='halfBrick'&&iy%2)ox+=TILE/2;if(layout==='diamond'){ox+=iy*TILE/2}return [ox,oy];}
@@ -1478,7 +1552,7 @@ canvas.addEventListener('pointerup',e=>{
     mode='edit';syncMode();syncStrokeSelectionUI();
     BrushEngine.touchRecent(stroke.brushId);syncRecents();
     pushHist();redraw();
-    setStatus('🔷 Shape created and selected — resize/rotate below, or Convert to Path to edit nodes.');
+    setStatus('🔷 Shape created and selected — tap 🖊️ Stroke in the toolbar to resize/rotate it or Convert to Path.');
     return;
   }
   if(eraserActive){
@@ -1742,10 +1816,20 @@ function distanceToMultiPolyline(px,py,regions){
   regions.forEach(pts=>{const d=distanceToPolyline(px,py,pts);if(d<best)best=d;});
   return best;
 }
+// The Stroke panel (sidebar section + floating actions bar) is shown ONLY when the person has
+// turned it on with the toolbar's Stroke button — selecting or creating a stroke never opens it,
+// and the on/off choice is remembered between sessions.
+let strokePanelOpen=false;try{strokePanelOpen=localStorage.getItem('sp-strokePanelOpen')==='1';}catch(e){}
+function setStrokePanelOpen(on){
+  strokePanelOpen=!!on;
+  try{localStorage.setItem('sp-strokePanelOpen',strokePanelOpen?'1':'0');}catch(e){}
+  const b=$('strokePanelBtn');if(b)b.classList.toggle('active',strokePanelOpen);
+  syncStrokeSelectionUI();
+}
 function syncStrokeSelectionUI(){
   const section=$('strokeSelectSection');
   if(!section)return;
-  section.style.display=selectedStrokeId?'block':'none';
+  section.style.display=(selectedStrokeId&&strokePanelOpen)?'block':'none';
   if(selectedStrokeId){renderStrokeReassignSwatches();syncStrokeRecipeUI();}
   if(typeof syncColourTargetUI==='function')syncColourTargetUI();
   if(typeof syncShapeToolsUI==='function')syncShapeToolsUI();
@@ -1799,7 +1883,7 @@ function syncStrokeSelectionUI(){
   // the whole-stroke Move/Transform panel has nothing useful to add until it ends.
   const actionsBar=$('strokeActionsBar');
   if(actionsBar){
-    if(selectedStrokeId&&!pathEditStrokeId&&!joinPendingStrokeId){
+    if(selectedStrokeId&&strokePanelOpen&&!pathEditStrokeId&&!joinPendingStrokeId){
       const wasHidden=actionsBar.style.display==='none';
       actionsBar.style.display='block';
       if(wasHidden){const vr=viewportOuter.getBoundingClientRect();positionFloatPanel('strokeActionsBar',vr.left+16,vr.bottom-420);}
@@ -4316,6 +4400,8 @@ $('zoomInBtn').onclick=()=>zoomAboutCentre(zoom*1.25);
 $('zoom100Btn').onclick=()=>{viewActual();$('zoomPopover').classList.remove('open');setStatus('🔍 100% — original tile centred.');};
 $('zoomFitBtn').onclick=()=>{viewFit();$('zoomPopover').classList.remove('open');setStatus('🔍 Fit to view — original tile centred.');};
 $('zoomResetBtn').onclick=()=>{viewReset();$('zoomPopover').classList.remove('open');setStatus('🔍 View reset — 0°, centred and fitted.');};
+$('strokePanelBtn').onclick=()=>{setStrokePanelOpen(!strokePanelOpen);if(strokePanelOpen&&!selectedStrokeId)setStatus('🖊️ Stroke panel on — select a stroke in Edit mode to use it.');};
+$('strokePanelBtn').classList.toggle('active',strokePanelOpen);
 $('viewCloseBtn').onclick=()=>{$('viewPopover').classList.remove('open');};
 // ---- Collapsible left panel --------------------------------------------------------------------
 // Purely a display:none toggle — nothing about the sidebar's contents, ids or bound handlers
