@@ -196,6 +196,8 @@ button.pill:active{transform:scale(.97)}
 #zoomPopover .zoom-row{display:flex;gap:8px;margin-bottom:8px}
 #zoomPopover .zoom-row .tool-btn{flex:1}
 #zoomPopover .tool-btn,#zoomPopover .btn{min-height:44px}
+#strokePanelBtn.attention{box-shadow:0 0 0 3px var(--pink);animation:spPulse 1.2s ease-in-out infinite}
+@keyframes spPulse{50%{box-shadow:0 0 0 7px rgba(255,142,214,.15)}}
 #brushRecents,#brushFavorites{min-height:44px}
 .sidebar{overflow-anchor:none}
 /* Fabric preview: the repeat extended across the whole workspace, behind the real canvas. Purely a
@@ -248,7 +250,7 @@ button.pill:active{transform:scale(.97)}
       <div class="section-title" style="font-size:11px;margin:10px 0 6px;">Colour target</div>
       <div class="grid" id="colourTargetRow">
         <button class="btn mini colour-target-btn active" data-target="brush">✏️ Brush</button>
-        <button class="btn mini colour-target-btn" data-target="stroke">🖊️ Stroke</button>
+        <button class="btn mini colour-target-btn" data-target="stroke">🖊️ Stroke tools</button>
         <button class="btn mini colour-target-btn" data-target="fill">🎨 Fill</button>
         <button class="btn mini colour-target-btn" data-target="areaFill">🪣 Area Fill</button>
       </div>
@@ -1081,7 +1083,7 @@ function rebuildFabricTile(px){
 }
 function fabricContentChanged(){
   fabricTileDirty=true;
-  if(!fabricShown||fabricTimer)return;
+  if(!fabricShown||fabricTimer||drawing)return; // no repeat-preview work while a stroke is being drawn; it catches up on pen-up
   fabricTimer=setTimeout(()=>{fabricTimer=0;paintFabric();},Math.max(0,33-(performance.now()-fabricLast)));
 }
 function paintFabric(){
@@ -1313,8 +1315,8 @@ function renderLivePreviewIncremental(){
 // just applied here so the SAME smoothed points end up both in the live preview and in what
 // gets committed — smoothing only at commit time (after the stroke already looked different
 // while being drawn) would make the line visibly "jump" the instant the pencil lifts.
-function pushRawPoint(x,y,pressure){
-  const amount=currentSettings().smoothing/100;
+function pushRawPoint(x,y,pressure,amountOverride){
+  const amount=amountOverride!=null?amountOverride:currentSettings().smoothing/100;
   let tx=x,ty=y;
   if(smoothLast&&amount>0){tx=smoothLast.x+(x-smoothLast.x)*(1-amount);ty=smoothLast.y+(y-smoothLast.y)*(1-amount);}
   smoothLast={x:tx,y:ty};
@@ -1560,7 +1562,14 @@ canvas.addEventListener('pointermove',e=>{
     return;
   }
   if(holdTriggered){adjustHeldShape(p);return;} // shape already snapped this gesture — Pencil now adjusts it, not freehand
-  pushRawPoint(p.x,p.y,pressure);
+  // Safari merges several Pencil samples into one pointermove when the page is busy; feeding every
+  // merged sample keeps curves smooth. Smoothing is split across them (a^(1/n)) so the stroke
+  // follows the Pencil with the same lag as before.
+  const co=(e.getCoalescedEvents&&e.getCoalescedEvents())||[];
+  if(co.length>1){
+    const a=currentSettings().smoothing/100,per=a>0?Math.pow(a,1/co.length):0;
+    co.forEach(ce=>{const q=screenToCanvas(ce.clientX,ce.clientY);pushRawPoint(q.x,q.y,(ce.pressure&&ce.pressure>0)?ce.pressure:.5,per);});
+  }else pushRawPoint(p.x,p.y,pressure);
   renderLivePreviewIncremental();redraw();
   if(!continueStrokeId)maybeArmHoldTimer(p); // Draw + Hold only applies to a plain freehand gesture, never Continue Path
 });
@@ -1861,6 +1870,9 @@ function setStrokePanelOpen(on){
   syncStrokeSelectionUI();
 }
 function syncStrokeSelectionUI(){
+  { // nudge: a stroke is selected in Edit mode but its tools (Edit Path, resize, colour...) are closed
+    const sb=$('strokePanelBtn');if(sb)sb.classList.toggle('attention',!!(selectedStrokeId&&!strokePanelOpen&&mode==='edit'));
+  }
   const section=$('strokeSelectSection');
   if(!section)return;
   section.style.display=(selectedStrokeId&&strokePanelOpen)?'block':'none';
@@ -2626,7 +2638,7 @@ $('shapeMultiSelectToggle').onclick=()=>{
 $('shapeMergeBtn').onclick=()=>runShapeOp('merge');
 $('shapeSubtractBtn').onclick=()=>runShapeOp('subtract');
 $('shapeIntersectBtn').onclick=()=>runShapeOp('intersect');
-function syncMode(){$('drawModeBtn').classList.toggle('active',mode==='draw');$('editModeBtn').classList.toggle('active',mode==='edit');canvas.style.cursor=mode==='draw'?'crosshair':'grab';setStatus(mode==='draw'?'✏️ Draw Mode: Apple Pencil draws, two fingers move the canvas.':'↔️ Edit Mode: tap motif with Pencil/mouse, then move, scale, rotate or flip.');}
+function syncMode(){$('drawModeBtn').classList.toggle('active',mode==='draw');$('editModeBtn').classList.toggle('active',mode==='edit');canvas.style.cursor=mode==='draw'?'crosshair':'grab';setStatus(mode==='draw'?'✏️ Draw Mode: Apple Pencil draws, two fingers move the canvas.':'↔️ Edit Mode: tap motif with Pencil/mouse, then move, scale, rotate or flip.');;if(typeof syncStrokeSelectionUI==='function')syncStrokeSelectionUI();}
 $('drawModeBtn').onclick=()=>{if(pathEditStrokeId)commitEditPath();if(joinPendingStrokeId)endJoinPick();disarmAreaFill();disarmShapeMultiSelect();armedShapeType=null;syncShapeToolUI();mode='draw';selected=null;selectedStrokeId=null;multiSelectMode=false;multiSelectIds=[];$('multiSelectToggle').textContent='🔢 Multi-Select: Off';$('multiSelectToggle').classList.remove('active');syncAlignUI();syncStrokeSelectionUI();syncMode();redraw()};$('editModeBtn').onclick=()=>{disarmAreaFill();armedShapeType=null;syncShapeToolUI();mode='edit';syncMode()};$('captureBtn').onclick=captureMotif;$('undoBtn').onclick=undo;$('redoBtn').onclick=redo;$('resetRot').onclick=()=>{const q=viewCentrePoint();setViewAnchored(zoom,0,q.x,q.y,0,0)};
 // Clear Drawing only clears the ACTIVE layer's strokes — clearing the whole document across
 // every layer from one button would be far too easy to trigger by accident once layers are
