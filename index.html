@@ -522,8 +522,9 @@ html.in-suite .suite-only{display:block!important}
   </div>
   <button id="sidebarToggleBtn" class="sidebar-toggle" title="Hide tools panel">‹</button>
   <main class="workspace">
-    <div class="toolbar"><button id="undoBtn" class="tool-btn">↩️ Undo</button><button id="redoBtn" class="tool-btn">↪️ Redo</button><button id="zoomPill" class="pill" title="Zoom and view recovery">100% ▾</button><button id="resetRot" class="tool-btn">0° Rotation</button><button id="guidesBtn" class="tool-btn">📐 Guides</button><button id="strokePanelBtn" class="tool-btn" title="Show or hide the Stroke panel">🖊️ Stroke tools</button><button id="paintModePill" class="pill" style="display:none;cursor:pointer;">🎨 Paint Inside — tap for Free Paint</button><button id="editMotifBar" class="pill" style="display:none;cursor:pointer;background:var(--accentTeal);border:1px solid rgba(92,184,171,.5);font:inherit;">✏️ Editing: <span id="editMotifBarName"></span> — tap Done</button><div class="toolbar-spacer"></div><button id="quickSaveBtn" class="tool-btn">💾 Save</button><div id="saveStatusPill" class="pill" title="Autosave status">Saved</div><button id="downloadProjectBtn" class="tool-btn">⬇️ Download Project</button><label class="tool-btn" for="openProjectInput" style="cursor:pointer;">📂 Open Project</label><input id="openProjectInput" type="file" accept="application/json" style="display:none;"><button id="viewToggleBtn" class="tool-btn">⋯ View</button><button id="exportBtn" class="tool-btn primary">📸 Export</button><button id="exportSvgBtn" class="tool-btn" title="Export as SVG (vector)">🖋️ SVG</button></div>
-    <div id="restoreBanner" style="display:none;">📂 Autosaved session found from <span id="restoreBannerTime"></span>. <button id="restoreAcceptBtn" class="btn mini primary">Restore</button><button id="restoreDeclineBtn" class="btn mini">Start Fresh</button></div>
+    <div class="toolbar"><button id="undoBtn" class="tool-btn">↩️ Undo</button><button id="redoBtn" class="tool-btn">↪️ Redo</button><button id="zoomPill" class="pill" title="Zoom and view recovery">100% ▾</button><button id="resetRot" class="tool-btn">0° Rotation</button><button id="guidesBtn" class="tool-btn">📐 Guides</button><button id="strokePanelBtn" class="tool-btn" title="Show or hide the Stroke panel">🖊️ Stroke tools</button><button id="paintModePill" class="pill" style="display:none;cursor:pointer;">🎨 Paint Inside — tap for Free Paint</button><button id="editMotifBar" class="pill" style="display:none;cursor:pointer;background:var(--accentTeal);border:1px solid rgba(92,184,171,.5);font:inherit;">✏️ Editing: <span id="editMotifBarName"></span> — tap Done</button><div class="toolbar-spacer"></div><button id="quickSaveBtn" class="tool-btn">💾 Save</button><div id="saveStatusPill" class="pill" title="Autosave status">Saved</div><button id="downloadProjectBtn" class="tool-btn">⬇️ Download Project</button><button id="backupsBtn" class="tool-btn" title="Automatic earlier versions of your work">🕘 Earlier saves</button><label class="tool-btn" for="openProjectInput" style="cursor:pointer;">📂 Open Project</label><input id="openProjectInput" type="file" accept="application/json" style="display:none;"><button id="viewToggleBtn" class="tool-btn">⋯ View</button><button id="exportBtn" class="tool-btn primary">📸 Export</button><button id="exportSvgBtn" class="tool-btn" title="Export as SVG (vector)">🖋️ SVG</button></div>
+    <div id="backupsPanel" style="display:none;position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:90;background:var(--sideBg);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:0 18px 50px rgba(0,0,0,.35);font-size:13.5px;max-width:min(560px,calc(100vw - 24px));max-height:70vh;overflow:auto;"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:800;margin-bottom:6px;">🕘 Earlier saves<button id="backupsClose" class="btn mini">Close</button></div><div id="backupsList"></div></div>
+    <div id="restoreBanner" style="display:none;"><span id="restoreBannerText">📂 Autosaved session found from </span><span id="restoreBannerTime"></span>. <button id="restoreAcceptBtn" class="btn mini primary">Restore</button><button id="restoreDeclineBtn" class="btn mini">Start Fresh</button></div>
     <div id="canvasViewportOuter" class="canvas-viewport-outer"><div id="canvasWrap" class="canvas-wrap"><div id="viewPopover" class="sym-pop"><div class="section-title">🧭 Canvas / View</div><button id="symToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">🦋 Symmetry Off</button><div class="row" style="margin-bottom:10px;"><button id="tilingBtn" class="tool-btn active" style="flex:1">Tiling On</button><div id="layoutPill" class="pill">📍 Grid Mode</div></div><button id="themeToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">☀️ Light Mode</button><button id="clearDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear Drawing &amp; Motifs</button><button id="clearAllDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear All Layers &amp; Motifs</button><button id="viewCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="zoomPopover" class="sym-pop"><div class="section-title">🔍 View <span id="zoomPopPct" class="small"></span></div><div class="zoom-row"><button id="zoomOutBtn" class="tool-btn" aria-label="Zoom out">−</button><button id="zoomInBtn" class="tool-btn" aria-label="Zoom in">+</button></div><button id="zoom100Btn" class="tool-btn" style="width:100%;margin-bottom:8px;">100% — actual size</button><button id="zoomFitBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">Fit to View</button><button id="zoomResetBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;">Reset View (0°, centre, fit)</button><div class="hint" style="margin-bottom:8px;">These always work, even if the canvas has scrolled out of sight.</div><button id="zoomCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="svgPopover" class="sym-pop"><div class="section-title">🖋️ Export SVG</div><div class="hint" style="margin-bottom:8px;">Vector strokes and fills only. Pictures (placed motifs, background image) are not vector, so they are left out.</div><div class="row" style="margin-bottom:8px;"><button class="tool-btn svg-preset" data-size="780">780</button><button class="tool-btn svg-preset" data-size="1800">1800</button><button class="tool-btn svg-preset" data-size="3600">3600</button></div><div class="slider-row" style="grid-template-columns:64px 1fr 30px;"><label>Size</label><input id="svgSizeInput" type="number" min="64" max="20000" step="1" value="3600" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><span>px</span></div><div class="hint" style="margin-bottom:8px;">Width and height of the square file. 3600 × 3600 is the usual pattern size. The artwork scales exactly.</div><button id="svgSaveBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;min-height:44px;">⬇️ Save SVG</button><button id="svgCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="recolourPopover" class="sym-pop"><div class="section-title">🎨 Recolour Parts</div><div class="hint" style="margin-bottom:8px;">Motif: <b id="recolourName"></b>. Each row is one colour used in the motif. Pick a new colour for any of them.</div><div id="recolourRows"></div><button id="recolourApplyBtn" class="tool-btn primary" style="width:100%;margin:8px 0;min-height:44px;">Apply to this motif</button><button id="recolourNewBtn" class="tool-btn" style="width:100%;margin-bottom:8px;min-height:44px;">Save as new colourway</button><div class="row"><button id="recolourResetBtn" class="btn mini" style="flex:1">Reset</button><button id="recolourCloseBtn" class="btn mini" style="flex:1">✕ Close</button></div></div><div id="symPopover" class="sym-pop"><div class="section-title">🦋 Symmetry</div><div class="grid"><button class="sym-btn btn active" data-sym="off">Off</button><button class="sym-btn btn" data-sym="vertical">Vertical</button><button class="sym-btn btn" data-sym="horizontal">Horizontal</button><button class="sym-btn btn" data-sym="quad">Quad</button><button class="sym-btn btn" data-sym="diamond">Diamond</button></div><div class="slider-row"><label>Axis X</label><input id="symX" type="range" min="0" max="1800" value="900"><span id="symXVal">50%</span></div><div class="slider-row"><label>Axis Y</label><input id="symY" type="range" min="0" max="1800" value="900"><span id="symYVal">50%</span></div><div class="row"><button id="symCentre" class="btn mini">Centre Axis</button><button id="symClose" class="btn mini">Done</button></div><div class="hint">Move the mirror point to make flowers, leaves and playful asymmetric symmetry.</div></div><canvas id="fabricCanvas" aria-hidden="true"></canvas><canvas id="canvas" width="1800" height="1800"></canvas><div id="tileOutline" aria-hidden="true"></div><div id="selectionBox" class="selection-box"><div id="resizeHandle" class="handle"></div><div id="rotateHandle" class="rotHandle"></div></div><div id="paintBBoxOverlay" class="selection-box" style="display:none;"><div id="paintResizeHandle" class="handle"></div><div id="paintRotateHandle" class="rotHandle"></div></div><div id="symAxis" class="sym-axis"></div><div id="rotateChip" class="rotate-chip">Canvas 0°</div><div id="pathNodeOverlay"></div></div></div>
     <div id="status" class="status">✨ Apple Pencil draws | one finger protected | two fingers pan/pinch/rotate | two-finger tap Undo | three-finger tap Redo | Capture Motif saves drawing ✨</div>
   </main>
@@ -5124,12 +5125,39 @@ function buildDocObject(){
     savedAt:Date.now(),
   };
 }
+// ---- Autosave safety net -----------------------------------------------------------------
+// The single "current" autosave used to be overwritten blindly, so one early autosave of a nearly
+// empty canvas (e.g. opening the app and drawing before restoring) destroyed the real session.
+// Now: (1) the stored session is restored automatically on launch and autosave stays OFF until
+// that has happened, and (2) before "current" is overwritten, the old copy is kept as a rolling
+// backup whenever it is 10+ minutes old or the new state is much smaller than it.
+let autosaveBlocked=true,lastScore=0,lastBackupAt=0;
+function docScore(d){return d?((d.strokesJSON||'').length+(d.placedJSON||'').length+(d.motifs||[]).reduce((n,m)=>n+(m.src||'').length+5000,0)):0;}
+function idbReq(store,mode,fn){return openDocDB().then(db=>new Promise((res,rej)=>{const tx=db.transaction(store,mode);const r=fn(tx.objectStore(store));tx.oncomplete=()=>res(r&&r.result);tx.onerror=()=>rej(tx.error);}));}
 async function persistDocToIDB(doc){
-  const db=await openDocDB();
-  await new Promise((res,rej)=>{const tx=db.transaction(DOC_STORE,'readwrite');tx.objectStore(DOC_STORE).put(doc,DOC_KEY);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);});
+  const score=docScore(doc);
+  if(lastScore>0&&(Date.now()-lastBackupAt>600000||score<lastScore*0.6)){
+    try{
+      const existing=await fetchStoredDoc();
+      if(existing&&existing.savedAt){
+        await idbReq(DOC_STORE,'readwrite',st=>st.put(existing,'backup:'+existing.savedAt));
+        lastBackupAt=Date.now();
+        const keys=(await idbReq(DOC_STORE,'readonly',st=>st.getAllKeys())||[]).filter(k=>String(k).startsWith('backup:')).sort();
+        for(const k of keys.slice(0,Math.max(0,keys.length-8)))await idbReq(DOC_STORE,'readwrite',st=>st.delete(k));
+      }
+    }catch(e){console.warn('[sketchpad] backup failed',e);}
+  }
+  await idbReq(DOC_STORE,'readwrite',st=>st.put(doc,DOC_KEY));
+  lastScore=score;
+}
+async function listBackups(){
+  const keys=((await idbReq(DOC_STORE,'readonly',st=>st.getAllKeys()))||[]).filter(k=>String(k).startsWith('backup:')).sort().reverse();
+  const out=[];
+  for(const k of keys){const d=await idbReq(DOC_STORE,'readonly',st=>st.get(k));if(!d)continue;let n=0;try{n=JSON.parse(d.strokesJSON||'[]').length;}catch(e){}out.push({key:k,doc:d,strokes:n,motifs:(d.motifs||[]).length,at:d.savedAt});}
+  return out;
 }
 let autosaveTimer=null;
-function scheduleAutosave(){clearTimeout(autosaveTimer);autosaveTimer=setTimeout(runAutosave,1200);}
+function scheduleAutosave(){if(autosaveBlocked)return;clearTimeout(autosaveTimer);autosaveTimer=setTimeout(runAutosave,1200);}
 async function runAutosave(){
   setSaveStatus('saving');
   try{
@@ -5140,7 +5168,7 @@ async function runAutosave(){
 // Quick Save bypasses the debounce for an explicit, immediate "save right now" — the button
 // exists precisely so the user isn't left guessing whether the debounced autosave has caught up.
 async function quickSaveNow(){
-  clearTimeout(autosaveTimer);
+  clearTimeout(autosaveTimer);autosaveBlocked=false;
   await runAutosave();
   if(lastSavedAt)setStatus('💾 Project saved.');
 }
@@ -5241,7 +5269,7 @@ async function openProjectFromFile(file){
     renderLayersList();
     history=[];hIndex=-1;pushHist();redraw();updateBaseScale();
     $('restoreBanner').style.display='none';
-    scheduleAutosave();
+    autosaveBlocked=false;scheduleAutosave();
     setStatus('📂 Project loaded from file — '+strokes.length+' stroke'+(strokes.length===1?'':'s')+', '+motifs.length+' motif'+(motifs.length===1?'':'s')+'.');
   }catch(e){
     console.warn('[sketchpad] open project failed',e);
@@ -5256,31 +5284,75 @@ $('openProjectInput').onchange=(e)=>{
   if(file)openProjectFromFile(file);
 };
 let pendingRestoreDoc=null;
+async function afterRestoreApplied(doc){
+  history=[];hIndex=-1;pushHist();redraw();updateBaseScale();
+  setSaveStatus('saved',doc.savedAt);
+  autosaveBlocked=false;lastScore=docScore(doc);
+}
+// Launch: restore the stored session automatically (no choice to miss), and keep autosave off until
+// that has finished so an empty canvas can never overwrite it. If restoring fails the stored copy
+// is left untouched and the banner offers Retry / Start Fresh.
 async function maybeOfferRestore(){
   try{
     const doc=await fetchStoredDoc();
-    if(!doc||!doc.savedAt)return;
-    pendingRestoreDoc=doc;
+    if(!doc||!doc.savedAt){autosaveBlocked=false;return;}
+    pendingRestoreDoc=doc;lastScore=docScore(doc);
     $('restoreBannerTime').textContent=new Date(doc.savedAt).toLocaleString();
-    $('restoreBanner').style.display='flex';
+    const ok=await applyDocObject(doc);
+    if(ok){
+      await afterRestoreApplied(doc);
+      $('restoreBannerText').textContent='📂 Restored your last session from ';
+      $('restoreAcceptBtn').style.display='none';
+      $('restoreBanner').style.display='flex';
+      setStatus('📂 Restored your last session — '+strokes.length+' stroke'+(strokes.length===1?'':'s')+', '+motifs.length+' motif'+(motifs.length===1?'':'s')+'.');
+      setTimeout(()=>{if(pendingRestoreDoc===doc)$('restoreBanner').style.display='none';},9000);
+      pendingRestoreDoc=null;
+    }else{
+      $('restoreBannerText').textContent='⚠️ Could not restore your autosave from ';
+      $('restoreAcceptBtn').textContent='Retry';$('restoreAcceptBtn').style.display='';
+      $('restoreBanner').style.display='flex';
+    }
   }catch(e){console.warn('[sketchpad] restore check failed',e);}
 }
 $('restoreAcceptBtn').onclick=async()=>{
   if(!pendingRestoreDoc)return;
   const ok=await applyDocObject(pendingRestoreDoc);
-  $('restoreBanner').style.display='none';
-  if(ok){
-    history=[];hIndex=-1;pushHist();redraw();updateBaseScale();
-    setSaveStatus('saved',pendingRestoreDoc.savedAt);
-    setStatus('📂 Restored your last session — '+strokes.length+' stroke'+(strokes.length===1?'':'s')+', '+motifs.length+' motif'+(motifs.length===1?'':'s')+'.');
-  }
-  pendingRestoreDoc=null;
+  if(ok){$('restoreBanner').style.display='none';await afterRestoreApplied(pendingRestoreDoc);setStatus('📂 Restored your last session — '+strokes.length+' stroke'+(strokes.length===1?'':'s')+', '+motifs.length+' motif'+(motifs.length===1?'':'s')+'.');pendingRestoreDoc=null;}
+  else setStatus('⚠️ Still could not restore it — use 🕘 Earlier saves, or Start Fresh (your autosave is kept as a backup).');
 };
-$('restoreDeclineBtn').onclick=()=>{
+$('restoreDeclineBtn').onclick=async()=>{
   $('restoreBanner').style.display='none';
+  try{const d=await fetchStoredDoc();if(d&&d.savedAt)await idbReq(DOC_STORE,'readwrite',st=>st.put(d,'backup:'+d.savedAt));}catch(e){}
   pendingRestoreDoc=null;
-  setStatus('🆕 Starting fresh — your previous autosave is kept until you save over it.');
+  // Wipe the live canvas for a genuinely fresh start; the old session stays under 🕘 Earlier saves.
+  strokes=[];placed=[];motifs=[];traces=[];bgImg=null;layers=defaultLayers();activeLayerId=layers[layers.length-1].id;
+  rebuildAllLayers();renderLayersList();renderTray();renderTraces();history=[];hIndex=-1;pushHist();redraw();
+  autosaveBlocked=false;lastScore=0;lastBackupAt=Date.now();
+  setStatus('🆕 Starting fresh — your previous session is kept under 🕘 Earlier saves.');
 };
+// 🕘 Earlier saves: the rolling backups made automatically before the autosave was overwritten.
+$('backupsBtn').onclick=async()=>{
+  const host=$('backupsList');host.innerHTML='Loading…';$('backupsPanel').style.display='block';
+  try{
+    const list=await listBackups();host.innerHTML='';
+    if(!list.length){host.textContent='No earlier saves yet — they appear automatically as you work.';return;}
+    list.forEach(b=>{
+      const row=document.createElement('div');row.style.cssText='display:flex;gap:8px;align-items:center;margin:6px 0;';
+      const t=document.createElement('div');t.style.flex='1';t.textContent=new Date(b.at).toLocaleString()+' — '+b.strokes+' stroke'+(b.strokes===1?'':'s')+', '+b.motifs+' motif'+(b.motifs===1?'':'s');
+      const btn=document.createElement('button');btn.className='btn mini primary';btn.textContent='Restore';
+      btn.onclick=async()=>{
+        if(!confirm('Replace what is on the canvas now with this earlier save? (Your current work is kept as a backup first.)'))return;
+        try{await runAutosave();}catch(e){}
+        lastBackupAt=0;lastScore=Math.max(lastScore,1);
+        const ok=await applyDocObject(b.doc);
+        if(ok){history=[];hIndex=-1;pushHist();redraw();updateBaseScale();autosaveBlocked=false;scheduleAutosave();$('backupsPanel').style.display='none';setStatus('🕘 Restored the save from '+new Date(b.at).toLocaleString()+'.');}
+        else setStatus('⚠️ That earlier save could not be opened.');
+      };
+      row.appendChild(t);row.appendChild(btn);host.appendChild(row);
+    });
+  }catch(e){host.textContent='Could not read earlier saves.';}
+};
+$('backupsClose').onclick=()=>{$('backupsPanel').style.display='none';};
 async function boot(){
   applyTransform();
   $('guidesBtn').classList.toggle('active',showGuides);
