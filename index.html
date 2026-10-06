@@ -179,6 +179,7 @@ html.in-suite .suite-only{display:block!important}
 .layer-row{display:flex;align-items:center;gap:5px;padding:6px;border-radius:10px;border:1px solid var(--cardBorder);margin-bottom:6px;background:var(--btnBg);cursor:pointer}
 .layer-row.active{border-color:var(--pink);box-shadow:0 0 0 2px rgba(255,142,214,.3)}
 .layer-row.locked{opacity:.7}
+.layer-name-input{flex:1;min-width:0;font-size:16px;padding:4px 6px;border-radius:8px;border:1px solid var(--pink);background:var(--btnBg);color:var(--text)}
 .layer-icon-btn{border:0;background:transparent;font-size:14px;cursor:pointer;padding:2px;width:22px;flex-shrink:0;color:var(--text)}
 .layer-name{flex:1;font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .layer-opacity{width:46px;flex-shrink:0}
@@ -347,8 +348,9 @@ html.in-suite .suite-only{display:block!important}
       <div class="row" style="margin-top:4px;">
         <button id="addLayerBtn" class="btn mini" style="flex:1">+ Add</button>
         <button id="duplicateLayerBtn" class="btn mini" style="flex:1">⧉ Duplicate</button>
+        <button id="renameLayerBtn" class="btn mini" style="flex:1">✎ Rename</button>
       </div>
-      <div class="hint">New strokes go onto the active (highlighted) layer. Tap a row to make it active.</div>
+      <div class="hint">New strokes go onto the active (highlighted) layer. Tap a row to make it active, tap its name (or ✎ Rename) to rename it. Every layer works the same way: the names are just labels.</div>
     </section>
     <section class="section"><div class="section-title">📐 Repeat Layouts</div><div class="grid"><button class="layout-btn active" data-layout="grid">Grid</button><button class="layout-btn" data-layout="halfDrop">Half Drop</button><button class="layout-btn" data-layout="halfBrick">Half Brick</button><button class="layout-btn" data-layout="diamond">Diamond</button><button class="layout-btn" data-layout="ogee">Ogee</button><button class="layout-btn" data-layout="tossed">Tossed</button></div></section>
     <section class="section"><div class="section-title">🔧 Selected Motif</div><div class="slider-row"><label>Size</label><input id="motifScale" type="range" min="15" max="300" value="100"><span id="motifScaleVal">100%</span></div><div class="row"><button id="rotL" class="btn mini">↺</button><button id="rotR" class="btn mini">↻</button><button id="flipH" class="btn mini">Flip H</button><button id="flipV" class="btn mini">Flip V</button><button id="deleteSel" class="btn mini danger">Delete</button></div><div class="row" style="margin-top:6px;"><button id="editMotifBtn" class="btn mini primary" style="flex:1 1 100%;display:none;">✏️ Edit Motif</button></div><div class="row" style="margin-top:6px;"><button id="duplicateMotifBtn" class="btn mini" style="flex:1 1 45%;display:none;">⧉ Duplicate</button><button id="makeIndependentBtn" class="btn mini" style="flex:1 1 45%;display:none;">🔓 Make Independent</button></div></section>
@@ -2123,7 +2125,8 @@ function renderLayersList(){
       +'<button type="button" class="layer-icon-btn layer-del" title="Delete">✕</button>';
     row.querySelector('.layer-vis').onclick=e=>{e.stopPropagation();layer.visible=!layer.visible;compositeDirty=true;renderLayersList();pushHist();redraw();};
     row.querySelector('.layer-lock').onclick=e=>{e.stopPropagation();layer.locked=!layer.locked;renderLayersList();pushHist();};
-    row.querySelector('.layer-name').onclick=e=>{e.stopPropagation();const name=prompt('Rename layer',layer.name);if(name&&name.trim()){layer.name=name.trim();renderLayersList();pushHist();}};
+    row.querySelector('.layer-name').onclick=e=>{e.stopPropagation();activeLayerId=layer.id;startLayerRename(layer.id);};
+    row.querySelector('.layer-name').ondblclick=null;
     const opacityInput=row.querySelector('.layer-opacity');
     opacityInput.oninput=e=>{layer.opacity=+e.target.value;compositeDirty=true;redraw();};
     opacityInput.onchange=()=>pushHist();
@@ -2135,6 +2138,23 @@ function renderLayersList(){
     host.appendChild(row);
   });
   syncAreaFillLayerSelect();
+}
+// Inline rename (no prompt() dialog, which iPad web-apps can suppress): swaps the row's name for a
+// text box; Return or tapping away saves, Escape cancels.
+function startLayerRename(id){
+  const layer=layers.find(l=>l.id===id);if(!layer)return;
+  renderLayersList();
+  const rows=[...document.querySelectorAll('#layersList .layer-row')];
+  const row=rows[layers.slice().reverse().findIndex(l=>l.id===id)];if(!row)return;
+  const nameEl=row.querySelector('.layer-name');
+  const input=document.createElement('input');input.type='text';input.className='layer-name-input';input.value=layer.name;input.maxLength=40;
+  nameEl.replaceWith(input);
+  let done=false;
+  const finish=save=>{if(done)return;done=true;const v=input.value.trim();if(save&&v&&v!==layer.name){layer.name=v;pushHist();setStatus('✎ Renamed to "'+v+'".');}renderLayersList();};
+  input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();finish(true);}else if(e.key==='Escape')finish(false);});
+  input.addEventListener('blur',()=>finish(true));
+  input.addEventListener('click',e=>e.stopPropagation());
+  input.focus();input.select();
 }
 function moveLayer(id,dir){
   const i=layers.findIndex(l=>l.id===id);if(i<0)return;
@@ -2161,6 +2181,7 @@ $('addLayerBtn').onclick=()=>{
   renderLayersList();pushHist();redraw();
   setStatus('📚 Added "'+layer.name+'" — new strokes go here now.');
 };
+$('renameLayerBtn').onclick=()=>{const l=getActiveLayer();if(l)startLayerRename(l.id);};
 $('duplicateLayerBtn').onclick=()=>{
   const src=getActiveLayer();if(!src)return;
   const copy=makeLayer(src.name+' copy');
