@@ -517,6 +517,7 @@ html.in-suite .suite-only{display:block!important}
       <button id="shapeFlipHBtn" class="btn mini" style="flex:1">Flip H</button>
       <button id="shapeFlipVBtn" class="btn mini" style="flex:1">Flip V</button>
     </div>
+    <button id="actionsEditPathBtn" class="btn mini primary" style="width:100%;margin-top:6px;">✎ Edit Path</button>
     <button id="duplicateStrokeBtn" class="btn mini" style="width:100%;margin-top:6px;">⧉ Duplicate</button>
     <button id="joinStrokesBtn" class="btn mini" style="width:100%;margin-top:6px;">⋈ Join to Another Path</button>
     <button id="strokeActionsUndoBtn" class="btn mini" style="width:100%;margin-top:6px;">↩️ Undo</button>
@@ -525,6 +526,7 @@ html.in-suite .suite-only{display:block!important}
   <button id="sidebarToggleBtn" class="sidebar-toggle" title="Hide tools panel">‹</button>
   <main class="workspace">
     <div class="toolbar"><button id="undoBtn" class="tool-btn">↩️ Undo</button><button id="redoBtn" class="tool-btn">↪️ Redo</button><button id="zoomPill" class="pill" title="Zoom and view recovery">100% ▾</button><button id="resetRot" class="tool-btn">0° Rotation</button><button id="guidesBtn" class="tool-btn">📐 Guides</button><button id="strokePanelBtn" class="tool-btn" title="Show or hide the Stroke panel">🖊️ Stroke tools</button><button id="paintModePill" class="pill" style="display:none;cursor:pointer;">🎨 Paint Inside — tap for Free Paint</button><button id="editMotifBar" class="pill" style="display:none;cursor:pointer;background:var(--accentTeal);border:1px solid rgba(92,184,171,.5);font:inherit;">✏️ Editing: <span id="editMotifBarName"></span> — tap Done</button><div class="toolbar-spacer"></div><button id="quickSaveBtn" class="tool-btn">💾 Save</button><div id="saveStatusPill" class="pill" title="Autosave status">Saved</div><button id="downloadProjectBtn" class="tool-btn">⬇️ Download Project</button><button id="backupsBtn" class="tool-btn" title="Automatic earlier versions of your work">🕘 Earlier saves</button><label class="tool-btn" for="openProjectInput" style="cursor:pointer;">📂 Open Project</label><input id="openProjectInput" type="file" accept="application/json" style="display:none;"><button id="viewToggleBtn" class="tool-btn">⋯ View</button><button id="exportBtn" class="tool-btn primary">📸 Export</button><button id="exportSvgBtn" class="tool-btn" title="Export as SVG (vector)">🖋️ SVG</button></div>
+    <div id="quickEditBar" style="display:none;position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:60;gap:8px;background:var(--sideBg);border:1px solid var(--line);border-radius:999px;padding:6px 8px;box-shadow:0 8px 28px rgba(0,0,0,.3);"><button id="quickEditPathBtn" class="btn mini primary">✎ Edit Path</button><button id="quickStrokeToolsBtn" class="btn mini">🖊️ Stroke tools</button></div>
     <div id="brushMakerPanel" style="display:none;position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:91;background:var(--sideBg);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:0 18px 50px rgba(0,0,0,.35);font-size:13.5px;width:min(480px,calc(100vw - 24px));max-height:calc(100vh - 90px);overflow:auto;">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:800;margin-bottom:8px;">🖌️ Create custom brush<button id="bmCancel" class="btn mini">Close</button></div>
       <div style="border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:8px;"><canvas id="bmPreview" style="position:static;display:block;width:100%;height:84px;transform:none;left:auto;top:auto;"></canvas></div>
@@ -2008,7 +2010,7 @@ function syncStrokeSelectionUI(){
   if(editPathBtnEl){
     const isPaint=!!(stroke&&stroke.clipStrokeId);
     const isMultiRegion=!!(stroke&&stroke.regions&&stroke.regions.length>1);
-    editPathBtnEl.disabled=!stroke||isPaint||isMultiRegion;
+    editPathBtnEl.disabled=!stroke||isPaint||isMultiRegion;{const a=$('actionsEditPathBtn');if(a)a.disabled=editPathBtnEl.disabled;}
     editPathBtnEl.title=isPaint?'Painted content is edited by dragging its bounding-box handles on the canvas, not as individual nodes.'
       :isMultiRegion?'This shape has a hole or several separate pieces — node editing a multi-piece Shape Tools result isn\'t supported yet. It\'s still a real, movable, recolourable vector shape.'
       :'';
@@ -2032,6 +2034,15 @@ function syncStrokeSelectionUI(){
       if(wasHidden){const vr=viewportOuter.getBoundingClientRect();positionFloatPanel('strokeActionsBar',vr.left+16,vr.bottom-420);}
     }else{
       actionsBar.style.display='none';
+    }
+  }
+  { // one-tap shortcut: a selected stroke in Edit mode offers Edit Path without opening the sidebar
+    const q=$('quickEditBar');
+    if(q){
+      const okPath=!!(stroke&&!stroke.clipStrokeId&&!(stroke.regions&&stroke.regions.length>1));
+      const show=!!(selectedStrokeId&&mode==='edit'&&!pathEditStrokeId&&!joinPendingStrokeId&&okPath);
+      q.style.display=show?'flex':'none';
+      const t=$('quickStrokeToolsBtn');if(t)t.style.display=strokePanelOpen?'none':'';
     }
   }
   updatePaintBBoxOverlay();
@@ -2914,6 +2925,9 @@ $('applyBrushStyleBtn').onclick=()=>{
   pushHist();redraw();
   setStatus('✅ Brush style applied.');
 };
+$('quickEditPathBtn').onclick=()=>{if(selectedStrokeId)enterEditPath(selectedStrokeId);};
+$('quickStrokeToolsBtn').onclick=()=>setStrokePanelOpen(true);
+$('actionsEditPathBtn').onclick=()=>{if(selectedStrokeId)enterEditPath(selectedStrokeId);};
 $('editPathBtn').onclick=()=>{if(selectedStrokeId)enterEditPath(selectedStrokeId);};
 // ---- Paint Inside -----------------------------------------------------------------------------
 // Free Paint (default) is completely untouched normal painting. Paint Inside tags every new
