@@ -1119,7 +1119,7 @@ function paintFabric(){
   }
   fabricLast=performance.now();
 }
-function redraw(){if(redraw._q)return;redraw._q=requestAnimationFrame(()=>{redraw._q=0;if(compositeDirty){updateComposite();updateDisplayComposite();compositeDirty=false;}ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);drawBackground();drawTraces();if(showTiling)drawTiles();else{ctx.drawImage(displayCanvas,0,0,W,H);if(liveActive)ctx.drawImage(liveLayer,0,0);}drawPlaced();drawMultiSelectHighlights();drawShapeToolsHighlights();drawStrokeSelection();drawTileBoundary();if(showGuides)drawGuides();updateSelectionBox();updatePaintBBoxOverlay();fabricContentChanged();});}
+function redraw(){if(redraw._q)return;redraw._q=requestAnimationFrame(()=>{redraw._q=0;if(pathEditStrokeId&&pathEditNodes&&!liveActive&&!drawing)renderPathLivePreview();if(compositeDirty){updateComposite();updateDisplayComposite();compositeDirty=false;}ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);drawBackground();drawTraces();if(showTiling)drawTiles();else{ctx.drawImage(displayCanvas,0,0,W,H);if(liveActive)ctx.drawImage(liveLayer,0,0);}drawPlaced();drawMultiSelectHighlights();drawShapeToolsHighlights();drawStrokeSelection();drawTileBoundary();if(showGuides)drawGuides();updateSelectionBox();updatePaintBBoxOverlay();fabricContentChanged();});}
 // A pattern (e.g. exported from Magic Builder) loaded as the base of the design - unlike Trace
 // Reference (a non-exported, freely-scaled/positioned tracing guide), this is sized to exactly
 // fill the guide-square tile, tiles using the same repeat offsets as the hand-drawn layer/motifs
@@ -3850,7 +3850,7 @@ function enterEditPath(strokeId){
   // there's only ever one visible outline, never a "ghost" of the original underneath it. Safe
   // to do now that commitEditPath is wrapped in try/finally and always restores this layer.
   rebuildLayerDimmed(stroke.layerId,stroke.id,0);
-  renderPathLivePreview();
+  renderPathLivePreview();redraw();
   $('pathEditBar').style.display='block';$('pathEditBar').classList.add('open');
   // Defaults to the top-right of the CANVAS viewport itself (not the raw window — see
   // clampFloatPanelPos) the FIRST time it's opened this session; after that it reopens wherever
