@@ -107,8 +107,8 @@
       hardness: 0.6, jitter: 0.25, streaky: 0.3, taper: 'none' },
   ];
 
-  const FAMILY_ORDER = ['inking', 'pencil', 'marker', 'paint', 'stamp'];
-  const FAMILY_LABEL = { inking: 'Inking', pencil: 'Pencil', marker: 'Marker', paint: 'Paint / Texture', stamp: 'Motif Brushes' };
+  const FAMILY_ORDER = ['inking', 'pencil', 'marker', 'paint', 'custom', 'stamp'];
+  const FAMILY_LABEL = { inking: 'Inking', pencil: 'Pencil', marker: 'Marker', paint: 'Paint / Texture', custom: 'My Brushes', stamp: 'Motif Brushes' };
 
   const ERASER = { id: 'eraser', name: 'Eraser', family: 'eraser', renderMode: 'raster',
     defaults: { size: 26, opacity: 100, smoothing: 15, pressureWidth: 30, pressureOpacity: 0, spacing: 6 },
@@ -121,7 +121,7 @@
   // ---- Motif (stamp) brushes ----------------------------------------------
   // A captured motif becomes a brush: the stroke is still an ordinary retained path, but it is
   // drawn by stamping the motif's picture along it. Registered at runtime by the app.
-  function registerStampBrush(id, name, img) {
+  function registerStampBrush(id, name, img, noRegister) {
     const max = 512, w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
     if (!w || !h) return null;
     const k = Math.min(1, max / Math.max(w, h));
@@ -134,9 +134,39 @@
       defaults: { size: 90, opacity: 100, smoothing: 35, pressureWidth: 0, pressureOpacity: 0, spacing: 100, follow: 0, tint: 0 },
       hardness: 1, jitter: 0, streaky: 0, taper: 'none',
     };
+    if (noRegister) return brush;
     if (old) { BRUSHES[BRUSHES.indexOf(old)] = brush; } else { BRUSHES.push(brush); }
     byId.set(id, brush);
     return brush;
+  }
+  // ---- User-made brushes ---------------------------------------------------
+  // def: { id, name, softness(0-100), grain(0-80), wobble(0-100), taper, mono, tipImg?, defaults:{size,opacity,smoothing,pressureWidth,pressureOpacity,spacing,...} }
+  function makeCustomBrush(def) {
+    const d = Object.assign({ size: 20, opacity: 100, smoothing: 30, pressureWidth: 0, pressureOpacity: 0, spacing: 8 }, def.defaults || {});
+    if (def.tipImg) {
+      const b = registerStampBrush(def.id, def.name, def.tipImg, true);
+      if (!b) return null;
+      b.family = 'custom'; b.custom = true; b.def = def;
+      b.defaults = Object.assign({}, b.defaults, d, { follow: d.follow || 0, tint: d.tint || 0 });
+      return b;
+    }
+    const brush = {
+      id: def.id, name: def.name, family: 'custom', renderMode: 'vector', custom: true, def,
+      defaults: d,
+      hardness: Math.max(0.05, Math.min(1, (def.softness == null ? 100 : def.softness) / 100)),
+      jitter: Math.max(0, Math.min(1, (def.wobble || 0) / 100)),
+      streaky: Math.max(0, Math.min(0.9, (def.grain || 0) / 100)),
+      taper: def.taper ? 'both' : 'none',
+    };
+    if (def.mono) { brush.path = true; brush.hardness = 1; brush.jitter = 0; brush.streaky = 0; brush.taper = 'none'; brush.lock = { pressureWidth: 0, pressureOpacity: 0 }; }
+    return brush;
+  }
+  function registerCustomBrush(def) {
+    const b = makeCustomBrush(def); if (!b) return null;
+    const old = byId.get(def.id);
+    if (old) BRUSHES[BRUSHES.indexOf(old)] = b; else BRUSHES.push(b);
+    byId.set(def.id, b);
+    return b;
   }
   function unregisterStampBrush(id) {
     const old = byId.get(id); if (!old) return;
@@ -426,7 +456,7 @@
 
   global.BrushEngine = {
     BRUSHES, FAMILY_ORDER, FAMILY_LABEL, ERASER,
-    getBrush, isVector, registerStampBrush, unregisterStampBrush,
+    getBrush, isVector, registerStampBrush, unregisterStampBrush, makeCustomBrush, registerCustomBrush,
     getSettings, setSettings,
     touchRecent, getRecents,
     isFavorite, toggleFavorite, getFavorites,
