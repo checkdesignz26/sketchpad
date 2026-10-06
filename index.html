@@ -313,6 +313,8 @@ button.pill:active{transform:scale(.97)}
       </div>
       <div id="activeBrushRecipe" class="hint" style="margin-top:8px;"></div>
       <button id="captureBtn" class="btn primary" style="width:100%;margin-top:10px;">✂️ Capture Motif</button>
+      <button id="captureAreaBtn" class="btn" style="width:100%;margin-top:6px;">▭ Capture Area — drag a box round just one drawing</button>
+      <div class="hint">Capture Motif takes everything you have drawn. Capture Area takes only what is inside the box you drag, and leaves the rest of your drawing alone.</div>
       <div class="hint">Apple Pencil draws. One finger no longer pans while drawing. Use two fingers to pan, pinch and rotate.</div>
     </section>
     <section class="section" id="shapesSection">
@@ -607,7 +609,7 @@ let pathEditTool='select';let pathEditInitial=null;
 let continueStrokeId=null,continueBasePoints=null; // Continue Path: next drawn stroke extends this one instead of starting a new one
 let continuousDrawMode=false; // Continuous Draw toggle: auto-continue a nearby stroke's end instead of starting a new one — see findContinuousDrawTarget
 let joinPendingStrokeId=null,joinPendingFromEnd=false; // Join Path: waiting for a tap on another stroke's endpoint
-let areaFillArmed=false; // Vector Area Fill: next canvas tap fills the enclosed region under it instead of drawing/selecting
+let captureAreaArmed=false,captureRect=null;let areaFillArmed=false; // Vector Area Fill: next canvas tap fills the enclosed region under it instead of drawing/selecting
 // ---- Adaptive Colour (ported from Pattern Playground's "colour mode" panel) --------------------
 // colorTarget tracks which control a tapped swatch writes into — 'brush' (next raster/vector
 // stroke), 'stroke' (the currently selected stroke, recoloured immediately — same as using the
@@ -1480,6 +1482,7 @@ function flushEraserRebuild(){
 }
 canvas.addEventListener('pointerdown',e=>{
   if(!isPen(e))return;
+  if(captureAreaArmed){e.preventDefault();captureRectStart(e);return;}
   if(areaFillArmed){e.preventDefault();attemptAreaFillAt(e.clientX,e.clientY);return;}
   // While Edit Path is active, a canvas tap means something ENTIRELY different (select/insert a
   // node — see handlePathEditCanvasTap) and must never fall through to selectAt()/drawing below.
@@ -1714,9 +1717,11 @@ function renderCurrentArtworkPreview(){
 // with its nodes/shape/brushId/settings/pressure/closed/clipStrokeId exactly as drawn, plus the
 // layer structure Paint Inside relies on) is captured into entry.source BEFORE the canvas is
 // cleared, so Edit Motif can hand it straight back later with nothing lost or baked into pixels.
-function captureMotif(){
+function captureMotif(subset){
+  const allStrokes=strokes;
+  if(subset){strokes=subset;rebuildAllLayers();}
   const preview=renderCurrentArtworkPreview();
-  if(!preview){setStatus('Nothing to capture yet — draw with Apple Pencil first.');return}
+  if(!preview){if(subset){strokes=allStrokes;rebuildAllLayers();}setStatus('Nothing to capture yet — draw with Apple Pencil first.');return}
   const source={
     strokesJSON:JSON.stringify(strokes),
     layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity}))),
@@ -1725,8 +1730,8 @@ function captureMotif(){
   // returnToDraw=true: the user was mid-drawing when they captured — see the comment on
   // placeMotif() for why capture must NOT silently strand the canvas in Edit Mode afterward.
   addMotif(preview.src,'Motif '+(motifs.length+1),true,source,true);
-  strokes=[];rebuildAllLayers();selectedStrokeId=null;syncStrokeSelectionUI();pushHist();redraw();
-  setStatus('✂️ Captured as an editable motif and cleared the canvas — select it and tap Edit Motif any time to return to it.');
+  strokes=subset?allStrokes.filter(st=>!subset.includes(st)):[];rebuildAllLayers();selectedStrokeId=null;syncStrokeSelectionUI();pushHist();redraw();
+  setStatus(subset?'✂️ Captured just that drawing as an editable motif — the rest of your drawing is still on the canvas.':'✂️ Captured as an editable motif and cleared the canvas — select it and tap Edit Motif any time to return to it.');
 }
 // Every motif gets a stable id (never a bare array index — placed[] instances and Edit Motif both
 // need something that survives another motif being deleted/reordered ahead of it). `source` is
@@ -2243,6 +2248,7 @@ $('duplicateLayerBtn').onclick=()=>{
 let dragMotif=null,dragStroke=null;
 canvas.addEventListener('pointerdown',e=>{
   if(mode!=='edit'||!isPen(e))return;
+  if(captureAreaArmed)return;
   if(areaFillArmed)return; // Area Fill owns canvas taps itself while armed — see the earlier pointerdown listener
   if(pathEditStrokeId)return; // Edit Path owns canvas taps itself — see the earlier pointerdown listener
   // Multi-Select (motifs) and Shape Tools' Add Shapes (strokes) both own canvas taps themselves
@@ -2666,7 +2672,45 @@ $('shapeMergeBtn').onclick=()=>runShapeOp('merge');
 $('shapeSubtractBtn').onclick=()=>runShapeOp('subtract');
 $('shapeIntersectBtn').onclick=()=>runShapeOp('intersect');
 function syncMode(){$('drawModeBtn').classList.toggle('active',mode==='draw');$('editModeBtn').classList.toggle('active',mode==='edit');canvas.style.cursor=mode==='draw'?'crosshair':'grab';setStatus(mode==='draw'?'✏️ Draw Mode: Apple Pencil draws, two fingers move the canvas.':'↔️ Edit Mode: tap motif with Pencil/mouse, then move, scale, rotate or flip.');;if(typeof syncStrokeSelectionUI==='function')syncStrokeSelectionUI();}
-$('drawModeBtn').onclick=()=>{if(pathEditStrokeId)commitEditPath();if(joinPendingStrokeId)endJoinPick();disarmAreaFill();disarmShapeMultiSelect();armedShapeType=null;syncShapeToolUI();mode='draw';selected=null;selectedStrokeId=null;multiSelectMode=false;multiSelectIds=[];$('multiSelectToggle').textContent='🔢 Multi-Select: Off';$('multiSelectToggle').classList.remove('active');syncAlignUI();syncStrokeSelectionUI();syncMode();redraw()};$('editModeBtn').onclick=()=>{disarmAreaFill();armedShapeType=null;syncShapeToolUI();mode='edit';syncMode()};$('captureBtn').onclick=captureMotif;$('undoBtn').onclick=undo;$('redoBtn').onclick=redo;$('resetRot').onclick=()=>{const q=viewCentrePoint();setViewAnchored(zoom,0,q.x,q.y,0,0)};
+$('drawModeBtn').onclick=()=>{if(pathEditStrokeId)commitEditPath();if(joinPendingStrokeId)endJoinPick();disarmAreaFill();disarmShapeMultiSelect();armedShapeType=null;syncShapeToolUI();mode='draw';selected=null;selectedStrokeId=null;multiSelectMode=false;multiSelectIds=[];$('multiSelectToggle').textContent='🔢 Multi-Select: Off';$('multiSelectToggle').classList.remove('active');syncAlignUI();syncStrokeSelectionUI();syncMode();redraw()};$('editModeBtn').onclick=()=>{disarmAreaFill();armedShapeType=null;syncShapeToolUI();mode='edit';syncMode()};$('captureBtn').onclick=()=>captureMotif();
+// Capture Area: drag a box on the canvas; only strokes inside it become the motif.
+function setCaptureArea(on){
+  captureAreaArmed=on;captureRect=null;
+  const b=$('captureAreaBtn');b.classList.toggle('active',on);b.textContent=on?'▭ Drag a box round the drawing… (tap to cancel)':'▭ Capture Area — drag a box round just one drawing';
+  canvas.style.cursor=on?'crosshair':'';
+  const o=$('captureRectBox');if(o&&!on)o.style.display='none';
+  if(on){if(pathEditStrokeId)commitEditPath();setStatus('▭ Drag a box round the drawing you want to capture.');}
+}
+$('captureAreaBtn').onclick=()=>setCaptureArea(!captureAreaArmed);
+function captureRectStart(e){
+  captureRect={x0:e.clientX,y0:e.clientY,x1:e.clientX,y1:e.clientY,id:e.pointerId};
+  try{canvas.setPointerCapture(e.pointerId);}catch(err){}
+  let box=$('captureRectBox');
+  if(!box){box=document.createElement('div');box.id='captureRectBox';box.style.cssText='position:fixed;border:2px dashed #e0609a;background:rgba(224,96,154,.12);pointer-events:none;z-index:9999;display:none;';document.body.appendChild(box);}
+  box.style.display='block';captureRectDraw();
+}
+function captureRectDraw(){
+  const r=captureRect,box=$('captureRectBox');if(!r||!box)return;
+  box.style.left=Math.min(r.x0,r.x1)+'px';box.style.top=Math.min(r.y0,r.y1)+'px';box.style.width=Math.abs(r.x1-r.x0)+'px';box.style.height=Math.abs(r.y1-r.y0)+'px';
+}
+canvas.addEventListener('pointermove',e=>{if(captureAreaArmed&&captureRect){captureRect.x1=e.clientX;captureRect.y1=e.clientY;captureRectDraw();}});
+canvas.addEventListener('pointerup',e=>{
+  if(!captureAreaArmed||!captureRect)return;
+  const r=captureRect;captureRect=null;captureRect=null;$('captureRectBox').style.display='none';
+  if(Math.abs(r.x1-r.x0)<12||Math.abs(r.y1-r.y0)<12){setStatus('▭ Drag a bigger box round the drawing.');return;}
+  const a=screenToCanvas(r.x0,r.y0),b=screenToCanvas(r.x1,r.y1);
+  const minX=Math.min(a.x,b.x),maxX=Math.max(a.x,b.x),minY=Math.min(a.y,b.y),maxY=Math.max(a.y,b.y);
+  const ids=new Set();
+  strokes.forEach(st=>{if(!st.points||!st.points.length)return;const bb=strokeBBox(st);if(bb.cx>=minX&&bb.cx<=maxX&&bb.cy>=minY&&bb.cy<=maxY)ids.add(st.id);});
+  // Paint-Inside strokes travel with the shape that holds them, and the other way round.
+  strokes.forEach(st=>{if(ids.has(st.id)&&st.clipStrokeId)ids.add(st.clipStrokeId);});
+  strokes.forEach(st=>{if(st.clipStrokeId&&ids.has(st.clipStrokeId))ids.add(st.id);});
+  const subset=strokes.filter(st=>ids.has(st.id));
+  if(!subset.length){setStatus('▭ Nothing inside that box — try again, or tap the button to cancel.');return;}
+  setCaptureArea(false);
+  captureMotif(subset);
+});
+$('captureBtn').dataset.ok=1;$('undoBtn').onclick=undo;$('redoBtn').onclick=redo;$('resetRot').onclick=()=>{const q=viewCentrePoint();setViewAnchored(zoom,0,q.x,q.y,0,0)};
 // Clear Drawing only clears the ACTIVE layer's strokes — clearing the whole document across
 // every layer from one button would be far too easy to trigger by accident once layers are
 // holding genuinely different content (Sketch vs Colour vs Outline).
