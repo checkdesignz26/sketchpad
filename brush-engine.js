@@ -58,7 +58,7 @@
   const BRUSHES = [
     // -- Inking (vector) --
     { id: 'smoothPen', name: 'Smooth Pen', family: 'inking', renderMode: 'vector',
-      defaults: { size: 6, opacity: 100, smoothing: 35, pressureWidth: 0, pressureOpacity: 0, spacing: 6 },
+      defaults: { size: 3, opacity: 100, smoothing: 35, pressureWidth: 0, pressureOpacity: 0, spacing: 6 },
       // Monoline pen: one constant width and opacity whatever the Pencil pressure (forced, so settings
       // saved before this change cannot bring pressure variation back).
       lock: { pressureWidth: 0, pressureOpacity: 0 },
@@ -108,7 +108,7 @@
   ];
 
   const FAMILY_ORDER = ['inking', 'pencil', 'marker', 'paint', 'custom', 'stamp'];
-  const FAMILY_LABEL = { inking: 'Inking', pencil: 'Pencil', marker: 'Marker', paint: 'Paint / Texture', custom: 'My Brushes', stamp: 'Motif Brushes' };
+  const FAMILY_LABEL = { inking: 'Inking', pencil: 'Pencil', marker: 'Marker', paint: 'Paint / Texture', custom: 'Custom Brushes', stamp: 'Motif Brushes' };
 
   const ERASER = { id: 'eraser', name: 'Eraser', family: 'eraser', renderMode: 'raster',
     defaults: { size: 26, opacity: 100, smoothing: 15, pressureWidth: 30, pressureOpacity: 0, spacing: 6 },
