@@ -21,8 +21,28 @@ Native behaviour lives in `native-bridge.js` and only switches on inside the iPa
 - **Steady zoom.** Pinch is anchored between your fingers; the +/- buttons zoom about the centre of the workspace.
 - **View recovery.** Tap the zoom percentage (e.g. `100% ▾`): **100%**, **Fit to View**, **Reset View** (also resets rotation).
   These work even if the canvas is completely off-screen.
-- **Stroke panel** only opens when you tap **🖊️ Stroke**; open/closed is remembered.
+- **Stroke panel** only opens when you tap **Stroke tools**; open/closed is remembered. Selecting a stroke in Edit mode
+  also shows a small bar on the canvas with a one-tap **Edit Path** button.
 - **Safe areas.** Toolbar sits below the iPad status bar in Safari and the installed app, portrait and landscape.
+
+## Drawing, brushes and saving (features added for the app)
+
+- **Smooth Pen** is a true monoline vector path (default 3 px) with smooth edges at any zoom.
+- **Edit Path.** Tap another stroke while editing to switch to it; the stroke keeps the shape it was drawn with.
+- **Live brush preview** under the brush controls matches the canvas stroke and updates as you adjust.
+- **Motif brushes.** Capture a drawing (or just a box-selected part with **Capture Area**) and it becomes a brush that
+  stamps the picture along your line. Export motif brushes to Procreate as `.brushset`, separate `.brush` files, or a PNG pack.
+- **Create custom brush** (Brush section): edge softness, texture, variation, uniform monoline, separate start and end
+  taper, grain texture (Paper, Grit, Canvas weave, or your own image, with depth, scale, contrast, invert, fixed or moving),
+  blend mode, colour variation (hue, saturation, brightness), and a dual brush (second tip with size, spacing, scatter,
+  count, softness, optional image). Image tips are supported. Brushes are stored on the device and inside project files.
+- **SVG export** (vector only; pictures are left out). Default size 3600 px.
+- **Trace reference** can be moved in Edit mode (it always reopens locked) and is never in the way of drawing.
+- **Drawing on a hidden or fully transparent layer** shows the layer again automatically.
+- **Autosave safety.** The last session is restored automatically; autosave waits until it has been restored; a rolling set of
+  earlier versions is kept under **Earlier saves**; **Start Fresh** keeps the old session as a backup.
+  Use **Download Project** regularly as an off-device backup.
+- **Wording.** Interface labels are plain text (no decorative emoji), except the layer eye and lock icons.
 
 ## Project files
 
