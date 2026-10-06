@@ -135,6 +135,8 @@ button.pill:active{transform:scale(.97)}
    Recents) can't push the whole sidebar down. */
 #brushRecents,#brushFavorites{min-height:44px}
 .sidebar{overflow-anchor:none}
+.suite-only{display:none!important}
+html.in-suite .suite-only{display:block!important}
 .motif-tray{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .motif-card{position:relative;background:var(--cardBg);border-radius:15px;padding:8px;border:2px solid transparent}
 .motif-card.active{border-color:var(--pink)}
@@ -233,8 +235,8 @@ button.pill:active{transform:scale(.97)}
 <div class="app">
   <aside class="sidebar" id="sidebar">
     <label class="upload accentPurple">📸 Add Motifs<input id="motifInput" type="file" accept="image/*" multiple style="display:none"></label>
-    <section class="section"><div class="section-title">🧱 Background Pattern</div><label class="upload accentBg">🖼️ Load as Background<input id="bgInput" type="file" accept="image/*" style="display:none"></label><div id="bgEmpty" class="hint">Load a tile from Magic Builder (or any square pattern) as the base — it tiles with the same repeat layout, sits under your drawing and motifs, and is included in export.</div><div id="bgControls" style="display:none"><div class="slider-row"><label>Opacity</label><input id="bgOpacitySlider" type="range" min="0" max="100" value="100"><span id="bgOpacityVal">100%</span></div><div class="row"><button id="bgToggle" class="btn mini active">👁️ Shown</button><button id="bgClear" class="btn mini danger">Clear</button></div></div></section>
-    <section class="section"><div class="section-title">📐 Templates</div><div class="grid">
+    <section class="section"><div class="section-title">🧱 Background Pattern</div><label class="upload accentBg">🖼️ Load as Background<input id="bgInput" type="file" accept="image/*" style="display:none"></label><div id="bgEmpty" class="hint">Load any square pattern image as the base — it tiles with the same repeat layout, sits under your drawing and motifs, and is included in export.</div><div id="bgControls" style="display:none"><div class="slider-row"><label>Opacity</label><input id="bgOpacitySlider" type="range" min="0" max="100" value="100"><span id="bgOpacityVal">100%</span></div><div class="row"><button id="bgToggle" class="btn mini active">👁️ Shown</button><button id="bgClear" class="btn mini danger">Clear</button></div></div></section>
+    <section class="section suite-only"><div class="section-title">📐 Templates</div><div class="grid">
       <button class="btn mini template-btn" data-tpl="fourCorners">Four Corners</button>
       <button class="btn mini template-btn" data-tpl="focalPoint">Focal Point</button>
       <button class="btn mini template-btn" data-tpl="diamondFrame">Diamond Frame</button>
@@ -495,6 +497,7 @@ button.pill:active{transform:scale(.97)}
 (()=>{
 'use strict';
 const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),wrap=document.getElementById('canvasWrap'),viewportOuter=document.getElementById('canvasViewportOuter');let ctx=mainCtx; // ctx is briefly pointed at the fabric tile's context while it is rendered (see rebuildFabricTile)
+try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
 // Perf: updateComposite/updateDisplayComposite flatten EVERY visible layer's full-resolution
