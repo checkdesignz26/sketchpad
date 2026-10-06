@@ -305,6 +305,11 @@ button.pill:active{transform:scale(.97)}
         <div class="slider-row"><label>Pres→Width</label><input id="pressureWidth" type="range" min="0" max="100" value="50"><span id="pressureWidthVal">50%</span></div>
         <div class="slider-row"><label>Pres→Opac</label><input id="pressureOpacity" type="range" min="0" max="100" value="10"><span id="pressureOpacityVal">10%</span></div>
         <div class="slider-row"><label>Spacing</label><input id="brushSpacingCtl" type="range" min="1" max="40" value="6"><span id="brushSpacingValCtl">6%</span></div>
+        <div id="stampOptions" style="display:none;margin-top:6px;">
+          <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:4px 0;"><input type="checkbox" id="stampFollow"> Turn stamps to follow the line</label>
+          <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:4px 0;"><input type="checkbox" id="stampTint"> Paint in one colour (tint with current colour)</label>
+          <div class="hint">Motif brush: Size is the motif's longest side, Spacing is the gap between stamps (100% = touching).</div>
+        </div>
       </div>
       <div id="activeBrushRecipe" class="hint" style="margin-top:8px;"></div>
       <button id="captureBtn" class="btn primary" style="width:100%;margin-top:10px;">✂️ Capture Motif</button>
@@ -1305,6 +1310,14 @@ function renderLivePreviewIncremental(){
   // Clipped, not a cheaper approximation) — clip() is a native, near-free canvas op, so there's no
   // real cost to paying for full-quality clipping on every incremental slice while drawing.
   const clipStrokeId=(paintMode==='inside')?paintInsideTargetId:null;
+  if(brush.stamp){ // stamps depend on spacing along the whole line, so redraw it all each time
+    lctx.clearRect(0,0,W,H);
+    symmetryTransforms().forEach(tf=>{
+      const pts=currentPoints.map(pt=>{const t=tf(pt);return{x:t.x,y:t.y,pressure:pt.pressure};});
+      renderStrokeClipped(lctx,{id:currentStrokeId,brushId:activeBrushId,color:currentColor,points:pts,clipStrokeId},brush,settings);
+    });
+    lastRenderedIndex=currentPoints.length;return;
+  }
   symmetryTransforms().forEach(tf=>{
     const pts=slice.map(pt=>{const t=tf(pt);return{x:t.x,y:t.y,pressure:pt.pressure};});
     renderStrokeClipped(lctx,{id:currentStrokeId,brushId:activeBrushId,color:currentColor,points:pts,clipStrokeId},brush,settings);
@@ -1649,6 +1662,7 @@ canvas.addEventListener('pointerup',e=>{
   pushHist();redraw();
 });
 canvas.addEventListener('pointercancel',()=>{
+  if(pathEditStrokeId&&!drawing)return; // a stray cancel (palm/gesture) must not wipe Edit Path's live stroke
   drawing=false;currentPoints=[];liveActive=false;lctx.clearRect(0,0,W,H);
   if(eraserGestureActive){
     // Unlike other gestures, the eraser already mutated `strokes` live (for on-screen feedback
@@ -1729,7 +1743,20 @@ function addMotif(src,name,placeNow=false,source=null,returnToDraw=false){
   };
   img.src=src;
 }
+// Every captured motif doubles as a brush ("Motif Brushes" in the brush panel): draw a line and
+// the motif is stamped along it. Kept in step with the motif list from renderTray.
+function syncStampBrushes(){
+  let changed=false;
+  const want=new Map(motifs.filter(m=>m.img&&(m.img.naturalWidth||m.img.width)).map(m=>['stamp:'+m.id,m]));
+  BrushEngine.BRUSHES.filter(b=>b.stamp&&!want.has(b.id)).map(b=>b.id).forEach(id=>{BrushEngine.unregisterStampBrush(id);changed=true;if(activeBrushId===id){activeBrushId='smoothPen';}});
+  want.forEach((m,id)=>{const b=BrushEngine.BRUSHES.find(x=>x.id===id);if(!b||b.stampImg!==m.img||b.name!==m.name){BrushEngine.registerStampBrush(id,m.name,m.img);changed=true;}});
+  if(changed){
+    try{renderBrushFamilies();syncRecents();syncFavorites();syncControlsFromSettings();if(typeof renderStrokeReassignSwatches==='function'&&selectedStrokeId)renderStrokeReassignSwatches();}catch(e){console.warn(e);}
+    if(strokes.some(st=>String(st.brushId).startsWith('stamp:'))){try{rebuildAllLayers();redraw();}catch(e){}}
+  }
+}
 function renderTray(){
+  syncStampBrushes();
   renderBrushSetList();
   const tray=$('motifTray');tray.innerHTML='';
   $('motifEmpty').style.display=motifs.length?'none':'block';
@@ -3112,7 +3139,9 @@ syncAreaFillUI();
 function makeBrushSwatch(b){
   const btn=document.createElement('button');
   btn.type='button';btn.className='brush-swatch'+(b.id===activeBrushId&&!eraserActive?' active':'');
-  btn.dataset.brush=b.id;btn.textContent=b.name;
+  btn.dataset.brush=b.id;
+  if(b.stamp&&b.stampCanvas){const th=document.createElement('img');th.src=b.stampCanvas.toDataURL();th.style.cssText='height:26px;max-width:40px;object-fit:contain;display:block;margin:0 auto 2px;';btn.appendChild(th);}
+  btn.appendChild(document.createTextNode(b.name));
   const star=document.createElement('span');
   star.className='fav-star'+(BrushEngine.isFavorite(b.id)?' active':'');star.textContent='★';
   star.onclick=ev=>{ev.stopPropagation();BrushEngine.toggleFavorite(b.id);syncFavorites();star.classList.toggle('active',BrushEngine.isFavorite(b.id));};
@@ -3129,8 +3158,8 @@ function renderBrushFamilies(){
     host.appendChild(row);
   });
 }
-function syncRecents(){const host=$('brushRecents');const ids=BrushEngine.getRecents();if(!ids.length){host.innerHTML='<div class="hint" style="margin:0;">Brushes you use appear here.</div>';return}host.innerHTML='';ids.forEach(id=>{const b=BrushEngine.getBrush(id);if(b)host.appendChild(makeBrushSwatch(b));});}
-function syncFavorites(){const host=$('brushFavorites');const ids=BrushEngine.getFavorites();if(!ids.length){host.innerHTML='<div class="hint" style="margin:0;">Tap ★ on a brush to favourite it.</div>';return}host.innerHTML='';ids.forEach(id=>{const b=BrushEngine.getBrush(id);if(b)host.appendChild(makeBrushSwatch(b));});}
+function syncRecents(){const host=$('brushRecents');const ids=BrushEngine.getRecents().filter(id=>BrushEngine.BRUSHES.some(x=>x.id===id));if(!ids.length){host.innerHTML='<div class="hint" style="margin:0;">Brushes you use appear here.</div>';return}host.innerHTML='';ids.forEach(id=>{const b=BrushEngine.getBrush(id);if(b)host.appendChild(makeBrushSwatch(b));});}
+function syncFavorites(){const host=$('brushFavorites');const ids=BrushEngine.getFavorites().filter(id=>BrushEngine.BRUSHES.some(x=>x.id===id));if(!ids.length){host.innerHTML='<div class="hint" style="margin:0;">Tap ★ on a brush to favourite it.</div>';return}host.innerHTML='';ids.forEach(id=>{const b=BrushEngine.getBrush(id);if(b)host.appendChild(makeBrushSwatch(b));});}
 function syncActiveSwatches(){document.querySelectorAll('.brush-swatch').forEach(el=>el.classList.toggle('active',!eraserActive&&el.dataset.brush===activeBrushId));$('eraserToggle').classList.toggle('active',eraserActive);}
 function syncControlsFromSettings(){
   const s=currentSettings();
@@ -3139,7 +3168,12 @@ function syncControlsFromSettings(){
   $('brushSmooth').value=s.smoothing;$('brushSmoothVal').textContent=Math.round(s.smoothing)+'%';
   $('pressureWidth').value=s.pressureWidth;$('pressureWidthVal').textContent=Math.round(s.pressureWidth)+'%';
   $('pressureOpacity').value=s.pressureOpacity;$('pressureOpacityVal').textContent=Math.round(s.pressureOpacity)+'%';
-  $('brushSpacingCtl').value=s.spacing;$('brushSpacingValCtl').textContent=Math.round(s.spacing)+'%';
+  const isStamp=!eraserActive&&!!BrushEngine.getBrush(activeBrushId).stamp;
+  $('brushSize').max=isStamp?400:120;$('brushSpacingCtl').max=isStamp?250:40;
+  $('brushSize').value=s.size;$('brushSpacingCtl').value=s.spacing;
+  $('brushSizeVal').textContent=Math.round(s.size);$('brushSpacingValCtl').textContent=Math.round(s.spacing)+'%';
+  $('stampOptions').style.display=isStamp?'block':'none';
+  $('stampFollow').checked=!!s.follow;$('stampTint').checked=!!s.tint;
   syncActiveBrushRecipeLine();
 }
 function patchCurrentSettings(patch){BrushEngine.setSettings(currentBrushIdForSettings(),patch);syncActiveBrushRecipeLine();}
@@ -3287,6 +3321,7 @@ $('brushOpacity').oninput=e=>{const v=+e.target.value;$('brushOpacityVal').textC
 $('brushSmooth').oninput=e=>{const v=+e.target.value;$('brushSmoothVal').textContent=Math.round(v)+'%';patchCurrentSettings({smoothing:v});};
 $('pressureWidth').oninput=e=>{const v=+e.target.value;$('pressureWidthVal').textContent=Math.round(v)+'%';patchCurrentSettings({pressureWidth:v});};
 $('pressureOpacity').oninput=e=>{const v=+e.target.value;$('pressureOpacityVal').textContent=Math.round(v)+'%';patchCurrentSettings({pressureOpacity:v});};
+$('stampFollow').onchange=e=>patchCurrentSettings({follow:e.target.checked?1:0});$('stampTint').onchange=e=>patchCurrentSettings({tint:e.target.checked?1:0});
 $('brushSpacingCtl').oninput=e=>{const v=+e.target.value;$('brushSpacingValCtl').textContent=Math.round(v)+'%';patchCurrentSettings({spacing:v});};
 
 // ---- Node / path editing ------------------------------------------------------------------
@@ -4530,6 +4565,7 @@ function svgEsc(t){return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;
 function svgColor(c){c=String(c||'#000000');if(/^rgba?\(/i.test(c)){const m=c.match(/[\d.]+/g)||[0,0,0];return {fill:'rgb('+Math.round(m[0])+','+Math.round(m[1])+','+Math.round(m[2])+')',alpha:m[3]!=null?+m[3]:1};}return {fill:c,alpha:1};}
 function svgPoly(pts){return 'M'+pts.map(p=>svgNum(p.x)+' '+svgNum(p.y)).join('L')+'Z';}
 function svgStrokeOutline(stroke,settings,brush){
+  if(brush&&brush.stamp)return null; // motif-brush strokes are pictures, not vector outlines
   const pts=BrushEngine.resample(stroke.points,Math.max(1,(settings.spacing/100)*Math.max(4,settings.size)));
   const n=pts.length;if(!n)return null;
   let opSum=0;
@@ -4682,7 +4718,7 @@ async function runBrushExport(kind){
     else if(kind==='stamp'){const c=renderBrushTip(list,px,'stamp');saveFileBlob(await canvasToBlob(c),base+'-stamp.png');}
     else{
       const sh=renderBrushTip(list,px,'shape'),st=renderBrushTip(list,px,'stamp');
-      const bytes=async c=>new Uint8Array(await (await canvasToBlob(c)).arrayBuffer());
+      const bytes=c=>pngBytes(c);
       const readme='Pattern Sketch brush pack: '+base+'\r\n\r\n'+
         base+'-shape.png  white on black, '+px+' x '+px+' px. Use as a Procreate Shape source.\r\n'+
         base+'-stamp.png  full colour on transparency, '+px+' x '+px+' px. Use as a stamp or in any app.\r\n\r\n'+
@@ -4781,14 +4817,24 @@ function thumbFromTip(tip){ // 327 x 100 white-on-transparent preview strip
   mg.drawImage(tip,0,0);mg.globalCompositeOperation='source-in';mg.fillStyle='#fff';mg.fillRect(0,0,m.width,m.height);
   g.imageSmoothingQuality='high';[0.2,0.5,0.8].forEach(f=>g.drawImage(m,327*f-40,10,80,80));return c;
 }
-async function pngBytes(c){return new Uint8Array(await (await canvasToBlob(c)).arrayBuffer());}
+function blobBytes(b){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(new Uint8Array(fr.result));fr.onerror=()=>rej(fr.error||new Error('read failed'));fr.readAsArrayBuffer(b);});}
+function freeCanvas(c){try{c.width=1;c.height=1;}catch(e){}} // hand the pixel memory back (iPad Safari runs out quickly with several 2048px canvases)
+async function pngBytes(c){
+  for(let tries=0;tries<3;tries++){
+    try{
+      const b=await canvasToBlob(c);if(!b)throw new Error('could not encode the image');
+      return new Uint8Array(await new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=()=>rej(fr.error||new Error('read failed'));fr.readAsArrayBuffer(b);}));
+    }catch(e){if(tries===2)throw e;await new Promise(r=>setTimeout(r,150));}
+  }
+}
 async function procreateBrushFiles(name,tip){
-  const shape=shapeFromTip(tip);
+  const shape=shapeFromTip(tip),shapeBytes=await pngBytes(shape);freeCanvas(shape);
+  const thumb=thumbFromTip(tip),thumbBytes=await pngBytes(thumb);freeCanvas(thumb);
   return [
     {name:'Brush.archive',data:procreateArchive('main',name)},
     {name:'Reset/Brush.archive',data:procreateArchive('reset',name)},
-    {name:'Shape.png',data:await pngBytes(shape)},
-    {name:'QuickLook/Thumbnail.png',data:await pngBytes(thumbFromTip(tip))},
+    {name:'Shape.png',data:shapeBytes},
+    {name:'QuickLook/Thumbnail.png',data:thumbBytes},
   ];
 }
 function safeFileName(n){return String(n||'brush').trim().replace(/[^\w\- ]+/g,'').replace(/\s+/g,'-').slice(0,40)||'brush';}
@@ -4817,11 +4863,11 @@ async function runBrushSetExport(kind){
     const used=new Set(),items=[];
     for(const m of chosen){
       let nm=m.name,n=2;while(used.has(nm.toLowerCase()))nm=m.name+' '+(n++);used.add(nm.toLowerCase());
-      items.push({name:nm,tip:imageTip(m.img,px)});
+      items.push({name:nm,img:m.img});
     }
     if(kind==='brushset'){
       const files=[],ids=[];
-      for(const it of items){const id=crypto.randomUUID().toUpperCase();ids.push(id);(await procreateBrushFiles(it.name,it.tip)).forEach(f=>files.push({name:id+'/'+f.name,data:f.data}));}
+      for(const it of items){const id=crypto.randomUUID().toUpperCase();ids.push(id);const tip=imageTip(it.img,px);try{(await procreateBrushFiles(it.name,tip)).forEach(f=>files.push({name:id+'/'+f.name,data:f.data}));}finally{freeCanvas(tip);}}
       const esc=t=>t.replace(/&/g,'&amp;').replace(/</g,'&lt;');
       const plist='<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0">\n<dict>\n<key>brushes</key>\n<array>\n'+ids.map(i=>'<string>'+i+'</string>').join('\n')+'\n</array>\n<key>name</key>\n<string>'+esc(setName)+'</string>\n</dict>\n</plist>\n';
       files.unshift({name:'brushset.plist',data:new TextEncoder().encode(plist)});
@@ -4829,12 +4875,12 @@ async function runBrushSetExport(kind){
       setStatus('🖌️ Brush set "'+setName+'" saved ('+items.length+' brush'+(items.length===1?'':'es')+'). Open it in Procreate and test before selling.');
     }else if(kind==='brushes'){
       const files=[];
-      for(const it of items){const bf=await procreateBrushFiles(it.name,it.tip);const bz=makeZip(bf);files.push({name:safeFileName(it.name)+'.brush',data:new Uint8Array(await bz.arrayBuffer())});}
+      for(const it of items){const tip=imageTip(it.img,px);try{const bf=await procreateBrushFiles(it.name,tip);files.push({name:safeFileName(it.name)+'.brush',data:await blobBytes(makeZip(bf))});}finally{freeCanvas(tip);}}
       saveFileBlob(makeZip(files),base+'-brushes.zip');
       setStatus('🖌️ '+items.length+' separate .brush file'+(items.length===1?'':'s')+' saved in a zip. Unzip, then tap each .brush to import it into Procreate.');
     }else{
       const files=[];
-      for(const it of items){const f=safeFileName(it.name);files.push({name:f+'-shape.png',data:await pngBytes(shapeFromTip(it.tip))});files.push({name:f+'-stamp.png',data:await pngBytes(it.tip)});}
+      for(const it of items){const f=safeFileName(it.name),tip=imageTip(it.img,px);try{const sh=shapeFromTip(tip);files.push({name:f+'-shape.png',data:await pngBytes(sh)});freeCanvas(sh);files.push({name:f+'-stamp.png',data:await pngBytes(tip)});}finally{freeCanvas(tip);}}
       files.push({name:'README.txt',data:new TextEncoder().encode('Pattern Sketch stamp pack: '+setName+'\r\n\r\n*-shape.png  white on black, '+px+' px: a Procreate Shape source.\r\n*-stamp.png  full colour on transparency.\r\n')});
       saveFileBlob(makeZip(files),base+'-png-pack.zip');
       setStatus('🖌️ PNG pack saved ('+items.length+' motif'+(items.length===1?'':'s')+').');
