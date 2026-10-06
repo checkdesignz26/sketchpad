@@ -2046,7 +2046,7 @@ function syncStrokeSelectionUI(){
     const q=$('quickEditBar');
     if(q){
       const okPath=!!(stroke&&!stroke.clipStrokeId&&!(stroke.regions&&stroke.regions.length>1));
-      const show=!!(selectedStrokeId&&mode==='edit'&&!pathEditStrokeId&&!joinPendingStrokeId);
+      const show=!!(selectedStrokeId&&mode==='edit'&&!pathEditStrokeId&&!joinPendingStrokeId&&!strokePanelOpen); // the open Stroke panel already has these controls
       {const eb=$('quickEditPathBtn');if(eb)eb.style.display=okPath?'':'none';}
       q.style.display=show?'flex':'none';
       if(show){const vr=viewportOuter.getBoundingClientRect();q.style.left=(vr.left+vr.width/2)+'px';q.style.top=Math.max(vr.top+8,vr.bottom-76)+'px';}
