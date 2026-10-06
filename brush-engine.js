@@ -266,7 +266,12 @@
     if (!stroke.points || stroke.points.length === 0) return;
     if (alphaMul === undefined) alphaMul = 1;
     if (alphaMul <= 0) return; // fully hidden — skip dabs entirely rather than stamp at opacity 0
-    const spacingPx = Math.max(1, (settings.spacing / 100) * Math.max(4, settings.size));
+    let spacingPx = Math.max(1, (settings.spacing / 100) * Math.max(4, settings.size));
+    // Thin brushes: a 1-unit minimum gap is wider than the dab itself at size ~1-3 (and wider still
+    // when light pressure shrinks it), so the stroke breaks into visible dots, worst when zoomed in.
+    // Cap the gap to a fraction of the dab's narrowest width; sizes of ~3.5+ are unchanged.
+    const narrow = Math.max(0.35, 1 - settings.pressureWidth / 100);
+    spacingPx = Math.max(0.2, Math.min(spacingPx, settings.size * narrow * 0.6));
     const pts = resample(stroke.points, spacingPx);
     const rand = seededRandom(stroke.id || 'live');
     const n = pts.length;
