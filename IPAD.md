@@ -21,7 +21,7 @@ Native behaviour lives in `native-bridge.js` and only switches on inside the iPa
 - **Steady zoom.** Pinch is anchored between your fingers; the +/- buttons zoom about the centre of the workspace.
 - **View recovery.** Tap the zoom percentage (e.g. `100% ▾`): **100%**, **Fit to View**, **Reset View** (also resets rotation).
   These work even if the canvas is completely off-screen.
-- **Stroke panel** only opens when you tap **Stroke tools**; open/closed is remembered. Selecting a stroke in Edit mode
+- **Stroke panel** only opens when you tap **🖊️ Stroke tools**; open/closed is remembered. Selecting a stroke in Edit mode
   also shows a small bar on the canvas with a one-tap **Edit Path** button.
 - **Safe areas.** Toolbar sits below the iPad status bar in Safari and the installed app, portrait and landscape.
 
@@ -42,7 +42,6 @@ Native behaviour lives in `native-bridge.js` and only switches on inside the iPa
 - **Autosave safety.** The last session is restored automatically; autosave waits until it has been restored; a rolling set of
   earlier versions is kept under **Earlier saves**; **Start Fresh** keeps the old session as a backup.
   Use **Download Project** regularly as an off-device backup.
-- **Wording.** Interface labels are plain text (no decorative emoji), except the layer eye and lock icons.
 
 ## Project files
 
