@@ -58,7 +58,10 @@
   const BRUSHES = [
     // -- Inking (vector) --
     { id: 'smoothPen', name: 'Smooth Pen', family: 'inking', renderMode: 'vector',
-      defaults: { size: 6, opacity: 100, smoothing: 35, pressureWidth: 55, pressureOpacity: 10, spacing: 6 },
+      defaults: { size: 6, opacity: 100, smoothing: 35, pressureWidth: 0, pressureOpacity: 0, spacing: 6 },
+      // Monoline pen: one constant width and opacity whatever the Pencil pressure (forced, so settings
+      // saved before this change cannot bring pressure variation back).
+      lock: { pressureWidth: 0, pressureOpacity: 0 },
       hardness: 1, jitter: 0, streaky: 0, taper: 'none' },
     { id: 'technicalPen', name: 'Technical Pen', family: 'inking', renderMode: 'vector',
       defaults: { size: 4, opacity: 100, smoothing: 45, pressureWidth: 5, pressureOpacity: 0, spacing: 5 },
@@ -144,7 +147,7 @@
 
   function getSettings(brushId) {
     const brush = getBrush(brushId);
-    return Object.assign({}, brush.defaults, settingsStore[brushId] || {});
+    return Object.assign({}, brush.defaults, settingsStore[brushId] || {}, brush.lock || {});
   }
   function setSettings(brushId, patch) {
     settingsStore[brushId] = Object.assign({}, getSettings(brushId), patch);
