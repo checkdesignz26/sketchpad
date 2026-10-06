@@ -603,7 +603,7 @@ let pathEditStrokeId=null,pathEditNodes=null,pathEditClosed=false,selectedNodeIn
 // Edit Path's own current tool: 'select' (tap a node to select it, drag to move — tapping bare
 // canvas/path never adds a node) or 'addNode' (tap directly on the path to insert a node at the
 // exact tapped location; an existing node still takes priority if the tap is also close to one).
-let pathEditTool='select';
+let pathEditTool='select';let pathEditInitial=null;
 let continueStrokeId=null,continueBasePoints=null; // Continue Path: next drawn stroke extends this one instead of starting a new one
 let continuousDrawMode=false; // Continuous Draw toggle: auto-continue a nearby stroke's end instead of starting a new one — see findContinuousDrawTarget
 let joinPendingStrokeId=null,joinPendingFromEnd=false; // Join Path: waiting for a tap on another stroke's endpoint
@@ -3367,7 +3367,7 @@ function pointsToNodes(points,closed){
   // small loops) on a complex hand-drawn stroke the instant Edit Path was entered, before the
   // user had touched anything. 5 keeps noticeably more of the original shape while still cutting
   // a dense resampled polyline down to a manageable, actually-draggable handful of nodes.
-  const simplified=closed?rdpSimplifyClosedLoop(src,5):rdpSimplify(src,5);
+  const simplified=closed?rdpSimplifyClosedLoop(src,1.5):rdpSimplify(src,1.5); // tight fit: Edit Path must not change how the line looks
   return simplified.map(p=>({x:p.x,y:p.y,pressure:p.pressure,type:'smooth'}));
 }
 function catmullRom(p0,p1,p2,p3,t){const t2=t*t,t3=t2*t;return 0.5*((2*p1)+(-p0+p2)*t+(2*p0-5*p1+4*p2-p3)*t2+(-p0+3*p1-3*p2+p3)*t3);}
@@ -3878,6 +3878,7 @@ function enterEditPath(strokeId){
   pathEditStrokeId=stroke.id;
   pathEditNodes=stroke.nodes?stroke.nodes.map(n=>({...n})):pointsToNodes(stroke.points,stroke.closed);
   pathEditClosed=!!stroke.closed;
+  pathEditInitial=JSON.stringify([pathEditClosed,pathEditNodes.map(n=>[Math.round(n.x*100),Math.round(n.y*100),n.type])]);
   selectedNodeIndex=null;
   pathEditTool='select';
   $('pathSelectToolBtn').classList.add('active');$('pathAddNodeToolBtn').classList.remove('active');
@@ -3936,7 +3937,10 @@ function commitEditPath(){
   try{
     if(stroke&&pathEditNodes&&pathEditNodes.length){
       const allFinite=pathEditNodes.every(n=>Number.isFinite(n.x)&&Number.isFinite(n.y)&&Number.isFinite(n.pressure));
-      if(allFinite){
+      const unchanged=pathEditInitial===JSON.stringify([pathEditClosed,pathEditNodes.map(n=>[Math.round(n.x*100),Math.round(n.y*100),n.type])]);
+      if(unchanged){
+        // Nothing was moved: leave the stroke exactly as it was drawn.
+      }else if(allFinite){
         stroke.nodes=pathEditNodes.map(n=>({...n}));
         stroke.closed=pathEditClosed;
         stroke.points=nodesToPoints(stroke.nodes,stroke.closed);
@@ -4049,7 +4053,21 @@ function handlePathEditCanvasTap(e){
     if(selectedNodeIndex!==nearestIdx){selectedNodeIndex=nearestIdx;renderPathNodeOverlay();syncPathEditBarButtons();}
     return;
   }
-  if(pathEditTool!=='addNode')return; // Select tool: a miss on bare canvas/path is simply a no-op
+  if(pathEditTool!=='addNode'){
+    // Select tool: tapping a DIFFERENT line moves Edit Path straight onto it (no need to press
+    // Edit Path again). A tap on bare canvas is still a no-op.
+    const lockedIds=new Set(layers.filter(l=>l.locked).map(l=>l.id));
+    let best=null,bestDist=Infinity;
+    strokes.forEach(st=>{
+      if(st.id===pathEditStrokeId||lockedIds.has(st.layerId)||st.clipStrokeId||st.regions||!st.points||st.points.length<2)return;
+      const settings=st.settings||BrushEngine.getSettings(st.brushId);
+      const tol=Math.max((settings.size||6)/2+2,16/s); // ~16 screen px at any zoom
+      const d=distanceToPolyline(p.x,p.y,st.points);
+      if(d<tol&&d<bestDist){bestDist=d;best=st;}
+    });
+    if(best){const id=best.id;commitEditPath();selectedStrokeId=id;selected=null;syncStrokeSelectionUI();enterEditPath(id);}
+    return;
+  }
   const hit=findInsertionOnPath(p.x,p.y);
   const insertRadiusCanvas=22/s;
   if(!hit||hit.dist>insertRadiusCanvas)return; // tapped well away from the path — do nothing
