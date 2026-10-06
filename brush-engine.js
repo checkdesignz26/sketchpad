@@ -62,7 +62,7 @@
       // Monoline pen: one constant width and opacity whatever the Pencil pressure (forced, so settings
       // saved before this change cannot bring pressure variation back).
       lock: { pressureWidth: 0, pressureOpacity: 0 },
-      hardness: 1, jitter: 0, streaky: 0, taper: 'none' },
+      hardness: 1, jitter: 0, streaky: 0, taper: 'none', path: true },
     { id: 'technicalPen', name: 'Technical Pen', family: 'inking', renderMode: 'vector',
       defaults: { size: 4, opacity: 100, smoothing: 45, pressureWidth: 5, pressureOpacity: 0, spacing: 5 },
       hardness: 1, jitter: 0, streaky: 0, taper: 'none' },
@@ -261,6 +261,35 @@
     return out;
   }
 
+  // Monoline pens: one true anti-aliased curved path (round caps/joins) instead of
+  // stamped dabs, so edges stay perfectly smooth at any zoom.
+  function renderPathStroke(ctx, stroke, settings, alphaMul) {
+    const src = stroke.points, color = stroke.color || '#000000';
+    const pts = [src[0]];
+    for (let i = 1; i < src.length; i++) {
+      const l = pts[pts.length - 1];
+      if (Math.hypot(src[i].x - l.x, src[i].y - l.y) >= 0.3) pts.push(src[i]);
+    }
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, Math.min(1, (settings.opacity / 100) * alphaMul));
+    ctx.strokeStyle = color; ctx.fillStyle = color;
+    ctx.lineWidth = settings.size; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    if (pts.length < 2) {
+      ctx.beginPath(); ctx.arc(pts[0].x, pts[0].y, settings.size / 2, 0, Math.PI * 2); ctx.fill();
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length - 1; i++) {
+        const mx = (pts[i].x + pts[i + 1].x) / 2, my = (pts[i].y + pts[i + 1].y) / 2;
+        ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
+      }
+      const e = pts[pts.length - 1];
+      ctx.lineTo(e.x, e.y);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   // Renders one stroke (vector or, called from the app's raster path,
   // one in-progress raster segment) onto `ctx` using `brush`'s current
   // settings. This is the single function both the vector replay path
@@ -269,6 +298,7 @@
     if (!stroke.points || stroke.points.length === 0) return;
     if (alphaMul === undefined) alphaMul = 1;
     if (alphaMul <= 0) return; // fully hidden — skip dabs entirely rather than stamp at opacity 0
+    if (brush.path) { renderPathStroke(ctx, stroke, settings, alphaMul); return; }
     let spacingPx = Math.max(1, (settings.spacing / 100) * Math.max(4, settings.size));
     // Thin brushes: a 1-unit minimum gap is wider than the dab itself at size ~1-3 (and wider still
     // when light pressure shrinks it), so the stroke breaks into visible dots, worst when zoomed in.
