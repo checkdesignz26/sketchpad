@@ -107,8 +107,8 @@
       hardness: 0.6, jitter: 0.25, streaky: 0.3, taper: 'none' },
   ];
 
-  const FAMILY_ORDER = ['inking', 'pencil', 'marker', 'paint'];
-  const FAMILY_LABEL = { inking: 'Inking', pencil: 'Pencil', marker: 'Marker', paint: 'Paint / Texture' };
+  const FAMILY_ORDER = ['inking', 'pencil', 'marker', 'paint', 'stamp'];
+  const FAMILY_LABEL = { inking: 'Inking', pencil: 'Pencil', marker: 'Marker', paint: 'Paint / Texture', stamp: 'Motif Brushes' };
 
   const ERASER = { id: 'eraser', name: 'Eraser', family: 'eraser', renderMode: 'raster',
     defaults: { size: 26, opacity: 100, smoothing: 15, pressureWidth: 30, pressureOpacity: 0, spacing: 6 },
@@ -118,6 +118,31 @@
   byId.set(ERASER.id, ERASER);
 
   function getBrush(id) { return byId.get(id) || BRUSHES[0]; }
+  // ---- Motif (stamp) brushes ----------------------------------------------
+  // A captured motif becomes a brush: the stroke is still an ordinary retained path, but it is
+  // drawn by stamping the motif's picture along it. Registered at runtime by the app.
+  function registerStampBrush(id, name, img) {
+    const max = 512, w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+    if (!w || !h) return null;
+    const k = Math.min(1, max / Math.max(w, h));
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+    const g = c.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(img, 0, 0, c.width, c.height);
+    const old = byId.get(id);
+    const brush = {
+      id, name, family: 'stamp', renderMode: 'vector', stamp: true, stampImg: img, stampCanvas: c, tinted: {},
+      defaults: { size: 90, opacity: 100, smoothing: 35, pressureWidth: 0, pressureOpacity: 0, spacing: 100, follow: 0, tint: 0 },
+      hardness: 1, jitter: 0, streaky: 0, taper: 'none',
+    };
+    if (old) { BRUSHES[BRUSHES.indexOf(old)] = brush; } else { BRUSHES.push(brush); }
+    byId.set(id, brush);
+    return brush;
+  }
+  function unregisterStampBrush(id) {
+    const old = byId.get(id); if (!old) return;
+    BRUSHES.splice(BRUSHES.indexOf(old), 1); byId.delete(id);
+  }
+
   function isVector(brushOrId) {
     const b = typeof brushOrId === 'string' ? getBrush(brushOrId) : brushOrId;
     return b.renderMode === 'vector';
@@ -290,6 +315,48 @@
     ctx.restore();
   }
 
+  // Motif brush: stamp the motif picture along the path. size = the motif's longest side in canvas px.
+  function renderStampStroke(ctx, stroke, brush, settings, alphaMul) {
+    const src = brush.stampCanvas; if (!src) return;
+    let img = src;
+    if (settings.tint) {
+      const key = stroke.color || '#000000';
+      img = brush.tinted[key];
+      if (!img) {
+        img = document.createElement('canvas'); img.width = src.width; img.height = src.height;
+        const g = img.getContext('2d'); g.drawImage(src, 0, 0);
+        g.globalCompositeOperation = 'source-in'; g.fillStyle = key; g.fillRect(0, 0, img.width, img.height);
+        brush.tinted[key] = img;
+      }
+    }
+    const pts0 = stroke.points; if (!pts0 || !pts0.length) return;
+    const spacingPx = Math.max(2, (settings.spacing / 100) * settings.size);
+    let pts = pts0.length < 2 ? pts0.slice() : resample(pts0, spacingPx);
+    if (pts.length > 2) {
+      const a = pts[pts.length - 1], b = pts[pts.length - 2];
+      if (Math.hypot(a.x - b.x, a.y - b.y) < spacingPx * 0.5) pts.pop();
+    }
+    const longest = Math.max(src.width, src.height);
+    ctx.save();
+    for (let i = 0; i < pts.length; i++) {
+      const pt = pts[i];
+      const sz = settings.size * pressureFactor(pt.pressure, settings.pressureWidth);
+      const op = (settings.opacity / 100) * pressureFactor(pt.pressure, settings.pressureOpacity) * alphaMul;
+      if (sz <= 0.5 || op <= 0) continue;
+      const k = sz / longest, w = src.width * k, h = src.height * k;
+      ctx.globalAlpha = Math.max(0, Math.min(1, op));
+      ctx.save();
+      ctx.translate(pt.x, pt.y);
+      if (settings.follow && pts.length > 1) {
+        const p0 = pts[Math.max(0, i - 1)], p1 = pts[Math.min(pts.length - 1, i + 1)];
+        ctx.rotate(Math.atan2(p1.y - p0.y, p1.x - p0.x));
+      }
+      ctx.drawImage(img, -w / 2, -h / 2, w, h);
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
   // Renders one stroke (vector or, called from the app's raster path,
   // one in-progress raster segment) onto `ctx` using `brush`'s current
   // settings. This is the single function both the vector replay path
@@ -299,6 +366,7 @@
     if (alphaMul === undefined) alphaMul = 1;
     if (alphaMul <= 0) return; // fully hidden — skip dabs entirely rather than stamp at opacity 0
     if (brush.path) { renderPathStroke(ctx, stroke, settings, alphaMul); return; }
+    if (brush.stamp) { renderStampStroke(ctx, stroke, brush, settings, alphaMul); return; }
     let spacingPx = Math.max(1, (settings.spacing / 100) * Math.max(4, settings.size));
     // Thin brushes: a 1-unit minimum gap is wider than the dab itself at size ~1-3 (and wider still
     // when light pressure shrinks it), so the stroke breaks into visible dots, worst when zoomed in.
@@ -358,7 +426,7 @@
 
   global.BrushEngine = {
     BRUSHES, FAMILY_ORDER, FAMILY_LABEL, ERASER,
-    getBrush, isVector,
+    getBrush, isVector, registerStampBrush, unregisterStampBrush,
     getSettings, setSettings,
     touchRecent, getRecents,
     isFavorite, toggleFavorite, getFavorites,
