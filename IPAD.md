@@ -149,3 +149,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 ## Bézier Pen + quick Pen/Eraser (v55)
 - Top toolbar (row 2) now has 🖋️ Pen and 🧹 Eraser buttons next to Select.
 - Pen: tap = corner point, drag = pull smooth curve handles, tap the pink first point (or Close shape) = close, Done/Enter = finish. Drag points/handles to reshape, double-tap a point = smooth/corner. Result is a normal stroke in the selected brush; keeps `stroke.bez` so Edit Mode → 🖋️ Edit Curve reopens it (hidden once the stroke has been moved/scaled/node-edited). Finger pans; Pencil/mouse places points. Symmetry is not applied to Pen paths.
+
+## Pencil + brush dropdown in the toolbar (v56)
+- ✏️ Pencil (back to freehand with the current brush, turning off Pen/Eraser/shape tools) plus a ▾ that lists every brush grouped by family; picking one selects it and starts drawing.
