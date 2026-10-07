@@ -519,8 +519,8 @@ html.in-suite .suite-only{display:block!important}
       <div id="shapeParamsBox" style="display:none;">
         <div class="section-title" style="margin-top:12px;">🔷 Shape Controls</div>
         <div id="shapeParamCornerRow" class="slider-row" style="display:none;"><label>Corner</label><input id="shapeParamCorner" type="range" min="0" max="90" value="30"><span id="shapeParamCornerVal">30%</span></div>
-        <div id="shapeParamSidesRow" class="slider-row" style="display:none;"><label>Sides</label><input id="shapeParamSides" type="range" min="3" max="12" value="6"><span id="shapeParamSidesVal">6</span></div>
-        <div id="shapeParamPointsRow" class="slider-row" style="display:none;"><label>Points</label><input id="shapeParamPoints" type="range" min="3" max="16" value="5"><span id="shapeParamPointsVal">5</span></div>
+        <div id="shapeParamSidesRow" class="slider-row" style="display:none;"><label>Sides</label><input id="shapeParamSides" type="range" min="3" max="24" value="6"><span id="shapeParamSidesVal">6</span></div>
+        <div id="shapeParamPointsRow" class="slider-row" style="display:none;"><label>Points</label><input id="shapeParamPoints" type="range" min="3" max="24" value="5"><span id="shapeParamPointsVal">5</span></div>
         <div id="shapeParamInnerRow" class="slider-row" style="display:none;"><label>Depth</label><input id="shapeParamInner" type="range" min="10" max="90" value="50"><span id="shapeParamInnerVal">50%</span></div>
         <div id="shapeParamTurnsRow" class="slider-row" style="display:none;"><label>Turns</label><input id="shapeParamTurns" type="range" min="1" max="8" value="3"><span id="shapeParamTurnsVal">3</span></div>
         <div id="shapeParamSpacingRow" class="slider-row" style="display:none;"><label>Spacing</label><input id="shapeParamSpacing" type="range" min="20" max="100" value="60"><span id="shapeParamSpacingVal">60%</span></div>
@@ -632,6 +632,11 @@ html.in-suite .suite-only{display:block!important}
     </div>
     <div class="sel-quick" style="display:flex;align-items:center;gap:10px;margin:6px 0 4px;"><input class="sel-colour color" type="color" value="#000000" title="Stroke colour" style="width:44px;height:36px;flex:none;"><span style="font-size:12.5px;opacity:.8;flex:none;">Size</span><input class="sel-width" type="range" min="0.05" step="0.05" max="120" value="6" style="flex:1;min-width:90px;"><span class="sel-width-val" style="min-width:26px;text-align:right;font-size:13px;">6</span></div>
     <div class="sel-quick" style="display:flex;align-items:center;gap:10px;margin:0 0 4px;"><span style="font-size:12.5px;opacity:.8;flex:none;">Brush</span><select class="sel-brush" style="flex:1;min-width:0;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></select></div>
+    <div id="fpShapeRow" style="display:none;margin:4px 0 8px;">
+      <div class="slider-row has-size" id="fpSidesRow" style="display:none;"><label>Sides</label><input id="fpSides" type="range" min="3" max="24" value="6"><span id="fpSidesVal" style="min-width:26px;text-align:right;">6</span></div>
+      <div class="slider-row has-size" id="fpPointsRow" style="display:none;"><label>Points</label><input id="fpPoints" type="range" min="3" max="24" value="5"><span id="fpPointsVal" style="min-width:26px;text-align:right;">5</span></div>
+      <div class="slider-row has-size" id="fpInnerRow" style="display:none;"><label>Depth</label><input id="fpInner" type="range" min="5" max="95" value="50"><span id="fpInnerVal" style="min-width:34px;text-align:right;">50%</span></div>
+    </div>
     <div class="hint">Drag the stroke to move it. Fill and layers are under 🖊️ Stroke tools.</div>
     <div class="row" style="margin-top:6px;">
       <button id="shapeSmallerBtn" class="btn mini" style="flex:1">🔍− Smaller</button>
@@ -2476,6 +2481,10 @@ function syncShapeParamsUI(stroke){
   if(!shape)return;
   const show=(id,on)=>{$(id).style.display=on?'':'none';};
   show('shapeParamCornerRow',shape.type==='roundRect');
+  { const fr=$('fpShapeRow');if(fr){const poly=shape.type==='polygon',star=shape.type==='star';
+    fr.style.display=(poly||star)?'':'none';$('fpSidesRow').style.display=poly?'':'none';$('fpPointsRow').style.display=star?'':'none';$('fpInnerRow').style.display=star?'':'none';
+    if(poly){$('fpSides').value=shape.sides;$('fpSidesVal').textContent=shape.sides;}
+    if(star){$('fpPoints').value=shape.starPoints;$('fpPointsVal').textContent=shape.starPoints;$('fpInner').value=shape.innerRatio;$('fpInnerVal').textContent=Math.round(shape.innerRatio)+'%';}} }
   show('shapeParamSidesRow',shape.type==='polygon');
   show('shapeParamPointsRow',shape.type==='star');
   show('shapeParamInnerRow',shape.type==='star');
@@ -4387,6 +4396,10 @@ document.querySelectorAll('.shape-btn').forEach(btn=>{
 $('shapeConstrainBtn').onclick=()=>{constrainShape=!constrainShape;syncShapeToolUI();};
 $('shapeParamCorner').oninput=e=>updateSelectedShapeParam(s=>{s.cornerRadius=+e.target.value;$('shapeParamCornerVal').textContent=e.target.value+'%';});
 $('shapeParamCorner').onchange=()=>pushHist();
+$('fpSides').oninput=e=>{updateSelectedShapeParam(s=>{s.sides=+e.target.value;});$('fpSidesVal').textContent=e.target.value;$('shapeParamSides').value=e.target.value;$('shapeParamSidesVal').textContent=e.target.value;};
+$('fpPoints').oninput=e=>{updateSelectedShapeParam(s=>{s.starPoints=+e.target.value;});$('fpPointsVal').textContent=e.target.value;$('shapeParamPoints').value=e.target.value;$('shapeParamPointsVal').textContent=e.target.value;};
+$('fpInner').oninput=e=>{updateSelectedShapeParam(s=>{s.innerRatio=+e.target.value;});$('fpInnerVal').textContent=e.target.value+'%';};
+['fpSides','fpPoints','fpInner'].forEach(id=>{$(id).onchange=()=>pushHist();});
 $('shapeParamSides').oninput=e=>updateSelectedShapeParam(s=>{s.sides=+e.target.value;$('shapeParamSidesVal').textContent=e.target.value;});
 $('shapeParamSides').onchange=()=>pushHist();
 $('shapeParamPoints').oninput=e=>updateSelectedShapeParam(s=>{s.starPoints=+e.target.value;$('shapeParamPointsVal').textContent=e.target.value;});

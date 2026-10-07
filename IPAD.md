@@ -139,3 +139,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 ## Fine stroke sizes (v52)
 - Brush Size and selected-stroke Width now go down to 0.05 (slider step 0.05).
 - Each has a number box (type any value, e.g. 0.25 or 2) plus a ▾ dropdown of common sizes (0.1 … 400).
+
+## Shape controls in the floating Stroke panel (v53)
+- Selecting a polygon/star now shows Sides / Points / Depth sliders right in the floating Stroke panel (range 3–24), mirrored with the Shape Controls in the left Stroke tools panel.
