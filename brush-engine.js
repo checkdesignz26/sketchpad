@@ -69,6 +69,11 @@
     { id: 'taperedInk', name: 'Tapered Ink', family: 'inking', renderMode: 'vector',
       defaults: { size: 7, opacity: 100, smoothing: 30, pressureWidth: 70, pressureOpacity: 0, spacing: 6 },
       hardness: 1, jitter: 0, streaky: 0, taper: 'both' },
+    { id: 'calligraphy', name: 'Calligraphy', family: 'inking', renderMode: 'vector', nib: true,
+      // Flat nib held at a fixed angle: thick across the nib, hairline along it. Size = nib width,
+      // nibAngle = degrees (0 = horizontal), nibFlat = nib thickness as % of its width.
+      defaults: { size: 16, opacity: 100, smoothing: 45, pressureWidth: 25, pressureOpacity: 0, spacing: 6, nibAngle: 40, nibFlat: 12 },
+      hardness: 1, jitter: 0, streaky: 0, taper: 'none' },
     { id: 'roughInk', name: 'Rough Ink', family: 'inking', renderMode: 'vector',
       defaults: { size: 8, opacity: 100, smoothing: 20, pressureWidth: 60, pressureOpacity: 15, spacing: 7 },
       hardness: 0.85, jitter: 0.35, streaky: 0.08, taper: 'none' },
@@ -515,6 +520,40 @@
   // one in-progress raster segment) onto `ctx` using `brush`'s current
   // settings. This is the single function both the vector replay path
   // and the live raster-paint path call — see file header.
+  // ---- Calligraphy: a flat nib swept along the path, filled as ONE shape so opacity stays even ----
+  function renderNibStroke(ctx, stroke, settings, alphaMul) {
+    const src = stroke.points; if (!src || !src.length) return;
+    const ang = ((settings.nibAngle == null ? 40 : settings.nibAngle) * Math.PI) / 180;
+    const flat = Math.max(0.02, Math.min(1, (settings.nibFlat == null ? 12 : settings.nibFlat) / 100));
+    const ux = Math.cos(ang), uy = -Math.sin(ang); // nib long axis (angle measured counter-clockwise, as on paper)
+    const step = Math.max(0.25, settings.size * 0.06);
+    const pts = resample(src, step);
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, Math.min(1, (settings.opacity / 100) * alphaMul));
+    ctx.fillStyle = stroke.color || '#000000';
+    ctx.beginPath();
+    let prev = null;
+    pts.forEach((pt) => {
+      const half = Math.max(0.05, (settings.size / 2) * pressureFactor(pt.pressure, settings.pressureWidth));
+      const th = Math.max(0.05, half * 2 * flat / 2);
+      ctx.moveTo(pt.x + Math.cos(-ang) * half, pt.y + Math.sin(-ang) * half);
+      ctx.ellipse(pt.x, pt.y, half, th, -ang, 0, Math.PI * 2);
+      if (prev) {
+        const ax = prev.x - prev.hx, ay = prev.y - prev.hy, bx = prev.x + prev.hx, by = prev.y + prev.hy;
+        const cx = pt.x + ux * half, cy = pt.y + uy * half, dx = pt.x - ux * half, dy = pt.y - uy * half;
+        // quad a-b-c-d; make winding clockwise (matches ellipse) so nonzero fill never cancels
+        const area = (ax * by - bx * ay) + (bx * cy - cx * by) + (cx * dy - dx * cy) + (dx * ay - ax * dy);
+        ctx.moveTo(ax, ay);
+        if (area >= 0) { ctx.lineTo(bx, by); ctx.lineTo(cx, cy); ctx.lineTo(dx, dy); }
+        else { ctx.lineTo(dx, dy); ctx.lineTo(cx, cy); ctx.lineTo(bx, by); }
+        ctx.closePath();
+      }
+      prev = { x: pt.x, y: pt.y, hx: ux * half, hy: uy * half };
+    });
+    ctx.fill('nonzero');
+    ctx.restore();
+  }
+
   function renderStroke(ctx, stroke, brush, settings, alphaMul) {
     if (!stroke.points || stroke.points.length === 0) return;
     if (alphaMul === undefined) alphaMul = 1;
@@ -524,6 +563,7 @@
   }
   function renderBase(ctx, stroke, brush, settings, alphaMul) {
     if (brush.path) { renderPathStroke(ctx, stroke, settings, alphaMul); return; }
+    if (brush.nib) { renderNibStroke(ctx, stroke, settings, alphaMul); return; }
     if (brush.stamp) { renderStampStroke(ctx, stroke, brush, settings, alphaMul); return; }
     let spacingPx = Math.max(1, (settings.spacing / 100) * Math.max(4, settings.size));
     // Thin brushes: a 1-unit minimum gap is wider than the dab itself at size ~1-3 (and wider still
