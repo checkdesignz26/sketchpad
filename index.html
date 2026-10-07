@@ -492,10 +492,32 @@ button.pill:active{transform:scale(.97)}
     <div class="hint">The gold node is the endpoint you're joining from. Tap any pulsing green endpoint to connect it there.</div>
     <button id="joinCancelBtn" class="btn mini" style="width:100%;margin-top:10px;">✕ Cancel</button>
   </div>
+  <div class="float-panel" id="blendPanel" style="display:none;width:300px;">
+    <div class="float-panel-handle" id="blendPanelHandle">
+      <span>&#127744; Blend</span>
+      <span class="float-panel-handle-actions"><button id="blendApplyBtn" class="btn mini primary float-panel-done">&#10003; Apply</button><button id="blendCancelBtn" class="btn mini danger float-panel-done">&#10005; Cancel</button><span class="float-panel-grip" title="Drag to move">&#10303;</span></span>
+    </div>
+    <div id="blendPickRow" style="display:none;margin-top:8px;"><div class="hint">Tap the <b>second shape</b> on the canvas. The first one is the one you had selected.</div><button id="blendCancelPickBtn" class="btn mini" style="width:100%;margin-top:6px;">Cancel</button></div>
+    <div id="blendMsg" class="hint" style="display:none;margin-top:8px;"></div>
+    <div id="blendBody" style="margin-top:8px;">
+      <div style="font-size:12.5px;opacity:.85;margin-bottom:4px;">Steps between the two shapes</div>
+      <div class="row" style="align-items:center;gap:8px;"><input id="blendSteps" type="range" min="1" max="40" step="1" value="5" style="flex:1;min-width:0;"><input id="blendStepsNum" type="number" min="1" max="40" step="1" value="5" inputmode="numeric" style="width:56px;flex:none;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></div>
+      <div id="blendStepsNote" class="hint" style="margin:4px 0 8px;"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;font-size:13px;">
+        <label style="display:flex;gap:6px;align-items:center;"><input id="blendColour" type="checkbox" checked> Colour &amp; opacity</label>
+        <label style="display:flex;gap:6px;align-items:center;"><input id="blendShape" type="checkbox" checked> Shape</label>
+        <label style="display:flex;gap:6px;align-items:center;"><input id="blendPos" type="checkbox" checked> Position</label>
+        <label style="display:flex;gap:6px;align-items:center;"><input id="blendSize" type="checkbox" checked> Size</label>
+        <label style="display:flex;gap:6px;align-items:center;"><input id="blendRot" type="checkbox" checked> Rotation</label>
+      </div>
+      <button id="blendReverseBtn" class="btn mini" style="width:100%;margin-top:10px;">&#8644; Reverse direction</button>
+      <button id="blendExpandBtn" class="btn mini" style="width:100%;margin-top:6px;display:none;" title="Turn the blend into separate shapes you can edit one by one">&#128165; Expand Blend</button>
+    </div>
+  </div>
   <div class="float-panel" id="rotatePanel" style="display:none;">
     <div class="float-panel-handle" id="rotatePanelHandle">
       <span>&#8635; Rotate &amp; Repeat</span>
-      <span class="float-panel-handle-actions"><button id="rotatePanelDoneBtn" class="btn mini primary float-panel-done">&#10003; Done</button><span class="float-panel-grip" title="Drag to move">&#10815;</span></span>
+      <span class="float-panel-handle-actions"><button id="rotatePanelDoneBtn" class="btn mini primary float-panel-done">&#10003; Done</button><span class="float-panel-grip" title="Drag to move">&#10303;</span></span>
     </div>
     <div class="row" style="margin-top:6px;gap:6px;">
       <button class="btn mini rotQuick" data-deg="45" style="flex:1">&#8635; 45&deg;</button><button class="btn mini rotQuick" data-deg="90" style="flex:1">&#8635; 90&deg;</button><button class="btn mini rotQuick" data-deg="135" style="flex:1">&#8635; 135&deg;</button><button class="btn mini rotQuick" data-deg="180" style="flex:1">&#8635; 180&deg;</button>
@@ -540,7 +562,7 @@ button.pill:active{transform:scale(.97)}
     </div>
     <button id="actionsEditPathBtn" class="btn mini primary" style="width:100%;margin-top:6px;">✎ Edit Path</button>
     <div class="row" style="margin-top:6px;gap:6px;"><button id="duplicateStrokeBtn" class="btn mini" style="flex:1">⧉ Duplicate</button><button id="openRotatePanelBtn" class="btn mini" style="flex:1">&#8635; Rotate &amp; Repeat</button></div>
-    <div class="row" style="margin-top:6px;gap:6px;"><button id="strokeActionsUndoBtn" class="btn mini" style="flex:1">↩️ Undo</button><button id="deleteStrokeBtn" class="btn mini danger" style="flex:1">✕ Delete</button></div>
+    <div class="row" style="margin-top:6px;gap:6px;"><button id="strokeActionsUndoBtn" class="btn mini" style="display:none">↩️ Undo</button><button id="openBlendBtn" class="btn mini" style="flex:1" title="Create steps between this shape and another">&#127744; Blend</button><button id="deleteStrokeBtn" class="btn mini danger" style="flex:1">✕ Delete</button></div>
   </div>
   <button id="sidebarToggleBtn" class="sidebar-toggle" title="Hide tools panel">‹</button>
   <main class="workspace">
@@ -819,6 +841,7 @@ let currentPoints=[],currentStrokeId=null,smoothLast=null,lastRenderedIndex=0;
 let eraserGestureActive=false,eraserLastPoint=null,eraserSelectionDirty=false;
 let eraserDirtyLayerIds=new Set(),eraserTouchedIds=new Set();
 let selectedStrokeId=null;
+let blendDraft=null,blendPickArmed=false,blendRaf=0; // Shape Blend (declared early: pushHist runs during boot)
 let copiedBrushStyle=null; // {brushId,settings} — session-only clipboard for Copy/Apply Brush Style
 let pathEditStrokeId=null,pathEditNodes=null,pathEditClosed=false,selectedNodeIndex=null; // Edit Path mode state
 // Edit Path's own current tool: 'select' (tap a node to select it, drag to move — tapping bare
@@ -1166,12 +1189,13 @@ function snapshot(){
     selected,selectedStrokeId,
   };
 }
-function pushHist(){history=history.slice(0,hIndex+1);history.push(snapshot());if(history.length>40)history.shift();hIndex=history.length-1;scheduleAutosave();}
+function pushHist(){try{if(typeof refreshBlends==='function')refreshBlends();}catch(e){console.warn('[sketchpad] blend refresh failed',e);}history=history.slice(0,hIndex+1);history.push(snapshot());if(history.length>40)history.shift();hIndex=history.length-1;scheduleAutosave();}
 // Synchronous now (no more toDataURL()/Image round-trip for the drawing layer) — cheaper AND
 // simpler: JSON-serialised stroke points are far smaller than a full 1800x1800 PNG snapshot per
 // undo step, and replaying them is deterministic so this never has to wait on an image decode.
 function restore(s){
   if(!s)return;
+  if(blendDraft){blendDraft=null;blendPickArmed=false;const bp=$('blendPanel');if(bp)bp.style.display='none';}
   strokes=JSON.parse(s.strokesJSON||'[]');
   const layerMeta=JSON.parse(s.layersJSON||'[]');
   applyLayerMeta(layerMeta,s.activeLayerId);
@@ -2220,7 +2244,7 @@ function syncStrokeSelectionUI(){
   // the whole-stroke Move/Transform panel has nothing useful to add until it ends.
   const actionsBar=$('strokeActionsBar');
   if(actionsBar){
-    if(selectedStrokeId&&!pathEditStrokeId&&!joinPendingStrokeId){
+    if(selectedStrokeId&&!pathEditStrokeId&&!joinPendingStrokeId&&!blendDraft){
       const wasHidden=actionsBar.style.display==='none';
       actionsBar.style.display='block';
       if(wasHidden){const vr=viewportOuter.getBoundingClientRect();positionFloatPanel('strokeActionsBar',vr.right-294,vr.top+16);}
@@ -2340,6 +2364,341 @@ function flipSelectedStroke(axis){
     }
   });
 }
+
+// ---- Shape Blend -----------------------------------------------------------------------------
+// Builds N intermediate strokes between two selected vector strokes. The result is a LIVE blend:
+// the generated strokes are ordinary strokes (so layers, tiling, save/load, undo and SVG export
+// all work unchanged) that carry `blendId` + `blendSpec`. refreshBlends() (called from pushHist)
+// regenerates them whenever an endpoint or a setting changes; Expand just removes the link.
+// spec.mode is 'straight' today; 'path' (Blend Along Path, with spacing/orientation) can slot in
+// as another branch of generateBlend() without touching the panel, storage or refresh logic.
+const BLEND_MAX_STEPS=40;
+function blendParseColour(c){
+  if(typeof c!=='string')return null;
+  let m=c.trim().match(/^#([0-9a-f]{3})$/i);if(m){const h=m[1];return [parseInt(h[0]+h[0],16),parseInt(h[1]+h[1],16),parseInt(h[2]+h[2],16)];}
+  m=c.trim().match(/^#([0-9a-f]{6})$/i);if(m){const h=m[1];return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
+  m=c.match(/^rgba?\(\s*([\d.]+)[ ,]+([\d.]+)[ ,]+([\d.]+)/i);if(m)return [+m[1],+m[2],+m[3]];
+  return null;
+}
+function blendMixColour(a,b,t){
+  const A=blendParseColour(a),B=blendParseColour(b);if(!A||!B)return a;
+  const h=v=>('0'+Math.max(0,Math.min(255,Math.round(v))).toString(16)).slice(-2);
+  return '#'+h(A[0]+(B[0]-A[0])*t)+h(A[1]+(B[1]-A[1])*t)+h(A[2]+(B[2]-A[2])*t);
+}
+// Why a stroke cannot be blended (null = fine). Shown to the user, never silently skipped.
+function blendStrokeReason(s){
+  if(!s)return 'is missing';
+  if(s.regions)return 'is a compound shape (holes or several pieces)';
+  if(s.clipStrokeId)return 'is painted content, which is a bitmap scribble';
+  if(!s.points||s.points.length<2)return 'is too short to blend';
+  if(s.blendId)return 'is already part of a blend (use Expand Blend first)';
+  return null;
+}
+function blendPairReason(a,b){
+  const ra=blendStrokeReason(a);if(ra)return 'The first shape '+ra+'.';
+  const rb=blendStrokeReason(b);if(rb)return 'The second shape '+rb+'.';
+  if(!!a.closed!==!!b.closed)return 'One is a closed shape and the other is an open line. Blend two closed shapes or two open paths.';
+  const pa=blendPath(a),pb=blendPath(b);
+  if(!pa||!pb)return 'One of the shapes has no length to blend.';
+  return null;
+}
+function blendPath(s){
+  let pts=[];
+  s.points.forEach(p=>{const q=pts[pts.length-1];if(!q||Math.hypot(p.x-q.x,p.y-q.y)>0.01)pts.push({x:p.x,y:p.y,pr:p.pressure==null?1:p.pressure});});
+  const closed=!!s.closed;
+  if(closed&&pts.length>2&&Math.hypot(pts[0].x-pts[pts.length-1].x,pts[0].y-pts[pts.length-1].y)<0.5)pts.pop();
+  if(pts.length<2||(closed&&pts.length<3))return null;
+  const n=pts.length,m=closed?n:n-1,cum=[0];let tot=0;
+  for(let i=0;i<m;i++){tot+=Math.hypot(pts[(i+1)%n].x-pts[i].x,pts[(i+1)%n].y-pts[i].y);cum.push(tot);}
+  if(tot<1e-3)return null;
+  return {pts,closed,n,cum,tot};
+}
+function blendAt(P,u){
+  if(P.closed)u=((u%1)+1)%1;else u=Math.min(1,Math.max(0,u));
+  const d=u*P.tot;let lo=0,hi=P.cum.length-1;
+  while(hi-lo>1){const mid=(lo+hi)>>1;if(P.cum[mid]<=d)lo=mid;else hi=mid;}
+  const seg=(P.cum[hi]-P.cum[lo])||1e-9,f=Math.min(1,Math.max(0,(d-P.cum[lo])/seg));
+  const a=P.pts[lo],b=P.pts[hi%P.n];
+  return {x:a.x+(b.x-a.x)*f,y:a.y+(b.y-a.y)*f,pr:a.pr+(b.pr-a.pr)*f};
+}
+// Correspondence: for closed shapes try both directions and every start offset (on a coarse
+// resampling), keep the one where the best rotate+scale fit leaves the smallest leftover
+// difference; ties go to the smallest turn so identical shapes do not spin. Open paths only try
+// the two directions. The final sample positions then include every corner of BOTH shapes
+// (when they are simple) so sharp corners survive, or an even resampling for dense curves.
+function blendPrepare(A,B){
+  const PA=blendPath(A),PB=blendPath(B);if(!PA||!PB)return null;
+  const closed=PA.closed,M=96;
+  const au=[];for(let j=0;j<M;j++)au.push(blendAt(PA,closed?j/M:j/(M-1)));
+  let ax=0,ay=0;au.forEach(p=>{ax+=p.x;ay+=p.y;});ax/=M;ay/=M;
+  const av=au.map(p=>({x:p.x-ax,y:p.y-ay}));let vA=0;av.forEach(p=>{vA+=p.x*p.x+p.y*p.y;});
+  if(vA<1e-6)return null;
+  const cands=[];
+  const dirs=[1,-1];
+  for(const dir of dirs){
+    const shifts=closed?M:1;
+    for(let k=0;k<shifts;k++){
+      const bu=[];let bx=0,by=0;
+      for(let j=0;j<M;j++){
+        const u=closed?(dir===1?(j+k)/M:-(j+k)/M):(dir===1?j/(M-1):1-j/(M-1));
+        const p=blendAt(PB,u);bu.push(p);bx+=p.x;by+=p.y;
+      }
+      bx/=M;by/=M;
+      let d=0,c=0,w=0;
+      for(let j=0;j<M;j++){const qx=bu[j].x-bx,qy=bu[j].y-by,px=av[j].x,py=av[j].y;d+=px*qx+py*qy;c+=px*qy-py*qx;w+=qx*qx+qy*qy;}
+      const err=(w-(d*d+c*c)/vA)/(w||1),th=Math.atan2(c,d),sc=Math.sqrt(d*d+c*c)/vA;
+      if(!(sc>1e-6))continue;
+      cands.push({err,th,sc,dir,k,bx,by});
+    }
+  }
+  if(!cands.length)return null;
+  // near-equal fits (a circle fits a rotated copy of itself at every offset) go to the smallest turn
+  const minErr=Math.min.apply(null,cands.map(c=>c.err));
+  let best=null;
+  cands.forEach(c=>{if(c.err<=minErr+2e-3&&(!best||Math.abs(c.th)<Math.abs(best.th)-1e-3||(Math.abs(Math.abs(c.th)-Math.abs(best.th))<=1e-3&&c.err<best.err)))best=c;});
+  const Bt=t=>closed?blendAt(PB,best.dir===1?(t+best.k/M):-(t+best.k/M)):blendAt(PB,best.dir===1?t:1-t);
+  let params=[];
+  if(PA.n<=60&&PB.n<=60){
+    PA.cum.slice(0,PA.n).forEach(c=>params.push(c/PA.tot));
+    PB.cum.slice(0,PB.n).forEach(c=>{const u=c/PB.tot;let t;
+      if(closed)t=best.dir===1?u-best.k/M:-u-best.k/M;else t=best.dir===1?u:1-u;
+      params.push(closed?((t%1)+1)%1:t);});
+    if(!closed)params.push(0,1);else params.push(0);
+    params.sort((x,y)=>x-y);params=params.filter((x,i)=>i===0||x-params[i-1]>1e-5);
+    if(!closed&&params[params.length-1]<1-1e-6)params.push(1);
+  }
+  if(params.length<12||PA.n>60||PB.n>60){
+    const N=closed?240:200;params=[];for(let j=0;j<N;j++)params.push(closed?j/N:j/(N-1));
+    // keep sharp corners of either shape even when the outline is sampled evenly
+    const corner=(P,toT)=>{for(let i=0;i<P.n;i++){if(!P.closed&&(i===0||i===P.n-1))continue;
+      const a=P.pts[(i-1+P.n)%P.n],b=P.pts[i],c=P.pts[(i+1)%P.n];
+      const a1=Math.atan2(b.y-a.y,b.x-a.x),a2=Math.atan2(c.y-b.y,c.x-b.x);let d=Math.abs(a2-a1);if(d>Math.PI)d=2*Math.PI-d;
+      if(d>0.6){const t=toT(P.cum[i]/P.tot);params.push(P.closed?((t%1)+1)%1:t);}}};
+    corner(PA,u=>u);
+    corner(PB,u=>closed?(best.dir===1?u-best.k/M:-u-best.k/M):(best.dir===1?u:1-u));
+    params.sort((x,y)=>x-y);params=params.filter((x,i)=>i===0||x-params[i-1]>1e-4);
+  }
+  return {closed,ca:{x:ax,y:ay},cb:{x:best.bx,y:best.by},th:best.th,sc:best.sc,
+    a:params.map(t=>blendAt(PA,t)),b:params.map(t=>Bt(t)),err:best.err};
+}
+function blendClone(o){return JSON.parse(JSON.stringify(o));}
+function blendMeanPressure(s){let t=0;s.points.forEach(p=>{t+=p.pressure==null?1:p.pressure;});return t/s.points.length;}
+// Pure: returns the intermediate stroke objects (not yet added) or {error}.
+function generateBlend(A,B,spec){
+  const reason=blendPairReason(A,B);if(reason)return {error:reason};
+  const prep=blendPrepare(A,B);if(!prep)return {error:'These shapes cannot be matched up (one has no usable length).'};
+  const n=Math.max(1,Math.min(BLEND_MAX_STEPS,Math.round(spec.steps)||1));
+  const out=[],cth=Math.cos(-prep.th),sth=Math.sin(-prep.th),L=prep.a.length;
+  // each end's outline relative to its own centre; B is un-rotated/un-scaled so the remaining
+  // difference is purely "shape", which keeps position, size and turn separate and smooth
+  const qa=prep.a.map(p=>({x:p.x-prep.ca.x,y:p.y-prep.ca.y,pr:p.pr}));
+  const qb=prep.b.map(p=>{const x=p.x-prep.cb.x,y=p.y-prep.cb.y;return {x:(x*cth-y*sth)/prep.sc,y:(x*sth+y*cth)/prep.sc,pr:p.pr};});
+  const sA=blendClone(strokeSettings(A)),sB=strokeSettings(B);
+  for(let k=1;k<=n;k++){
+    const t=k/(n+1);
+    const cx=spec.pos?prep.ca.x+(prep.cb.x-prep.ca.x)*t:prep.ca.x,cy=spec.pos?prep.ca.y+(prep.cb.y-prep.ca.y)*t:prep.ca.y;
+    const sc=spec.size?Math.pow(prep.sc,t):1,th=spec.rot?prep.th*t:0,c=Math.cos(th)*sc,sn=Math.sin(th)*sc;
+    const pts=[];
+    for(let i=0;i<L;i++){
+      const qx=spec.shape?qa[i].x+(qb[i].x-qa[i].x)*t:qa[i].x,qy=spec.shape?qa[i].y+(qb[i].y-qa[i].y)*t:qa[i].y;
+      pts.push({x:cx+c*qx-sn*qy,y:cy+sn*qx+c*qy,pressure:Math.max(.05,qa[i].pr+(qb[i].pr-qa[i].pr)*t)});
+    }
+    if(prep.closed)pts.push({...pts[0]});
+    const s=blendClone(A);
+    delete s.shape;delete s.nodes;delete s.regions;delete s.blendId;delete s.blendSpec;
+    s.id=crypto.randomUUID();s.points=pts;s.closed=prep.closed;
+    s.settings=blendClone(sA);
+    ['size','opacity'].forEach(key=>{if(typeof sA[key]==='number'&&typeof sB[key]==='number')s.settings[key]=Math.round((sA[key]+(sB[key]-sA[key])*t)*100)/100;});
+    if(spec.colour){
+      s.color=blendMixColour(A.color,B.color,t);
+      if(A.fillColor||B.fillColor){
+        const fa=A.fillColor||B.fillColor,fb=B.fillColor||A.fillColor;
+        s.fillColor=blendMixColour(fa,fb,t);
+        const oa=A.fillColor?(A.fillOpacity==null?1:A.fillOpacity):0,ob=B.fillColor?(B.fillOpacity==null?1:B.fillOpacity):0;
+        s.fillOpacity=Math.round((oa+(ob-oa)*t)*1000)/1000;
+      }
+    }
+    out.push(s);
+  }
+  return {strokes:out,identical:prep.err<1e-8&&Math.abs(prep.sc-1)<1e-6&&Math.hypot(prep.cb.x-prep.ca.x,prep.cb.y-prep.ca.y)<1e-3&&Math.abs(prep.th)<1e-6};
+}
+function blendSig(A,B,spec){
+  const f=s=>{let h=5381;const str=JSON.stringify([s.closed,s.color,s.fillColor,s.fillOpacity,s.settings||null,s.brushId,s.points.map(p=>Math.round(p.x*100)+','+Math.round(p.y*100)+','+Math.round((p.pressure==null?1:p.pressure)*100)).join(';')]);
+    for(let i=0;i<str.length;i++)h=((h<<5)+h+str.charCodeAt(i))|0;return h+':'+str.length;};
+  return f(A)+'|'+f(B)+'|'+[spec.steps,spec.colour,spec.shape,spec.pos,spec.size,spec.rot,spec.mode].join(',');
+}
+function blendGroups(){
+  const m=new Map();strokes.forEach(s=>{if(s.blendId){if(!m.has(s.blendId))m.set(s.blendId,[]);m.get(s.blendId).push(s);}});return m;
+}
+// Remove a blend's generated strokes, build new ones and insert them just above the lower endpoint.
+function blendInstall(spec,keepSel){
+  const A=strokes.find(s=>s.id===spec.aId),B=strokes.find(s=>s.id===spec.bId);
+  const old=strokes.filter(s=>s.blendId===spec.id);
+  const layersTouched=new Set(old.map(s=>s.layerId));
+  if(!A||!B)return {error:'One of the two shapes no longer exists.'};
+  const res=generateBlend(A,B,spec);if(res.error)return res;
+  const sig=blendSig(A,B,spec),full={...spec,sig};
+  strokes=strokes.filter(s=>s.blendId!==spec.id);
+  const at=Math.min(strokes.indexOf(A),strokes.indexOf(B))+1;
+  res.strokes.forEach(s=>{s.blendId=spec.id;s.blendSpec=blendClone(full);s.layerId=A.layerId;});
+  strokes.splice(at,0,...res.strokes);
+  layersTouched.add(A.layerId);layersTouched.forEach(id=>{if(layers.some(l=>l.id===id))rebuildLayer(id);});
+  return {ok:true,identical:res.identical,count:res.strokes.length};
+}
+// Called before every history snapshot: endpoints or settings changed -> regenerate; an endpoint
+// deleted -> the blend quietly becomes plain editable strokes.
+function refreshBlends(){
+  if(blendDraft)return false;
+  let changed=false;
+  blendGroups().forEach((gens,id)=>{
+    const spec=gens[0].blendSpec;if(!spec)return;
+    const A=strokes.find(s=>s.id===spec.aId),B=strokes.find(s=>s.id===spec.bId);
+    if(!A||!B){gens.forEach(s=>{delete s.blendId;delete s.blendSpec;});changed=true;return;}
+    if(blendSig(A,B,spec)===spec.sig)return;
+    const r=blendInstall(spec);
+    if(r.error){setStatus('🌀 The blend could not update: '+r.error);return;}
+    changed=true;
+  });
+  if(changed)redraw();
+  return changed;
+}
+// ---- Blend panel ----------------------------------------------------------------------------
+function blendFindEndpointGroup(strokeId){
+  let found=null;blendGroups().forEach((gens,id)=>{if(found)return;const sp=gens[0].blendSpec;if(sp&&(sp.aId===strokeId||sp.bId===strokeId||gens.some(g=>g.id===strokeId)))found=sp;});return found;
+}
+function blendReadControls(){
+  if(!blendDraft)return;
+  const d=blendDraft;
+  d.steps=Math.max(1,Math.min(BLEND_MAX_STEPS,Math.round(+$('blendSteps').value)||1));
+  d.colour=$('blendColour').checked;d.shape=$('blendShape').checked;d.pos=$('blendPos').checked;d.size=$('blendSize').checked;d.rot=$('blendRot').checked;
+}
+function blendWriteControls(){
+  const d=blendDraft;$('blendSteps').value=d.steps;$('blendStepsNum').value=d.steps;
+  $('blendColour').checked=d.colour;$('blendShape').checked=d.shape;$('blendPos').checked=d.pos;$('blendSize').checked=d.size;$('blendRot').checked=d.rot;
+  blendUpdateNote();
+}
+function blendUpdateNote(){
+  const d=blendDraft;if(!d)return;
+  $('blendStepsNote').textContent=d.steps+' new shape'+(d.steps===1?'':'s')+' between the two originals ('+(d.steps+2)+' in total with them).';
+}
+function blendMsg(text,bad){const m=$('blendMsg');m.textContent=text||'';m.style.display=text?'block':'none';m.style.color=bad?'#c0392b':'';}
+function blendPreview(){
+  if(!blendDraft||!blendDraft.bId)return;
+  cancelAnimationFrame(blendRaf);
+  blendRaf=requestAnimationFrame(()=>{
+    if(!blendDraft)return;
+    const A=strokes.find(s=>s.id===blendDraft.aId),B=strokes.find(s=>s.id===blendDraft.bId);
+    const reason=blendPairReason(A,B);
+    if(reason){
+      strokes=strokes.filter(s=>s.blendId!==blendDraft.id);rebuildLayer(A?A.layerId:activeLayerId);redraw();
+      blendMsg(reason+' Your originals are untouched.',true);return;
+    }
+    const r=blendInstall(blendSpecOf(blendDraft));
+    if(r.error){blendMsg(r.error+' Your originals are untouched.',true);return;}
+    blendMsg(r.identical?'These two shapes are identical and in the same place, so the new shapes are copies on top of each other. Move or change one to see the blend.':'');
+    redraw();
+  });
+}
+function blendSpecOf(d){return {id:d.id,aId:d.aId,bId:d.bId,steps:d.steps,colour:d.colour,shape:d.shape,pos:d.pos,size:d.size,rot:d.rot,mode:'straight'};}
+function blendShowPanel(){
+  const p=$('blendPanel'),was=p.style.display==='none';p.style.display='block';
+  if(was){const vr=viewportOuter.getBoundingClientRect();positionFloatPanel('blendPanel',vr.left+16,vr.top+16);}
+  $('blendExpandBtn').style.display=blendDraft&&blendDraft.existing?'block':'none';
+  $('blendPickRow').style.display=blendDraft&&!blendDraft.bId?'block':'none';
+  $('blendBody').style.opacity=blendDraft&&blendDraft.bId?'1':'.45';
+  $('blendBody').style.pointerEvents=blendDraft&&blendDraft.bId?'auto':'none';
+  $('blendApplyBtn').disabled=!(blendDraft&&blendDraft.bId);
+}
+function openBlend(){
+  if(blendDraft)return;
+  const sel=strokes.find(s=>s.id===selectedStrokeId);
+  if(!sel&&selected){setStatus('🌀 Pictures and placed motifs cannot be blended yet. Select a vector shape or path instead.');return;}
+  if(!sel||pathEditStrokeId){setStatus('🌀 Select a shape first, then tap Blend.');return;}
+  const ex=blendFindEndpointGroup(sel.id);
+  if(ex){
+    blendDraft={...ex,existing:true,backup:{...ex}};delete blendDraft.sig;
+    blendPickArmed=false;blendWriteControls();blendMsg('');blendShowPanel();syncStrokeSelectionUI();setStatus('🌀 Editing this blend. Apply keeps your changes, Cancel puts it back.');return;
+  }
+  const why=blendStrokeReason(sel);
+  if(why){setStatus('🌀 This shape '+why+', so it cannot be blended.');return;}
+  blendDraft={id:crypto.randomUUID(),aId:sel.id,bId:null,steps:5,colour:true,shape:true,pos:true,size:true,rot:true,mode:'straight',existing:false};
+  blendPickArmed=true;blendWriteControls();blendMsg('');blendShowPanel();syncStrokeSelectionUI();
+  setStatus('🌀 Now tap the second shape on the canvas.');
+}
+function closeBlendPanel(){blendDraft=null;blendPickArmed=false;$('blendPanel').style.display='none';syncStrokeSelectionUI();}
+function blendApply(){
+  if(!blendDraft||!blendDraft.bId)return;
+  const d=blendDraft;blendReadControls();cancelAnimationFrame(blendRaf);
+  const A=strokes.find(s=>s.id===d.aId),B=strokes.find(s=>s.id===d.bId);
+  if(blendPairReason(A,B)){setStatus('🌀 These two cannot be blended, so nothing was changed.');return;}
+  const r=blendInstall(blendSpecOf(d));
+  if(r.error){blendMsg(r.error,true);return;}
+  closeBlendPanel();
+  pushHist();redraw();
+  setStatus('🌀 Blend applied: '+r.count+' shape'+(r.count===1?'':'s')+' added. Edit either original and the blend follows. Undo removes it in one step.');
+}
+function blendCancel(){
+  if(!blendDraft)return;
+  cancelAnimationFrame(blendRaf);
+  const d=blendDraft;
+  if(d.existing){
+    const r=blendInstall({...d.backup});closeBlendPanel();redraw();
+    setStatus(r&&r.error?'🌀 Cancelled.':'🌀 Cancelled. The blend is back as it was.');
+  }else{
+    const A=strokes.find(s=>s.id===d.aId);
+    strokes=strokes.filter(s=>s.blendId!==d.id);
+    layers.forEach(l=>rebuildLayer(l.id));closeBlendPanel();redraw();
+    setStatus('🌀 Blend cancelled. Your shapes are untouched.');
+  }
+}
+function blendExpand(){
+  if(!blendDraft||!blendDraft.existing)return;
+  const id=blendDraft.id;cancelAnimationFrame(blendRaf);blendReadControls();
+  const rr=blendInstall(blendSpecOf(blendDraft)); // expand exactly what the preview shows
+  if(rr.error){blendMsg(rr.error,true);return;}
+  let n=0;strokes.forEach(s=>{if(s.blendId===id){delete s.blendId;delete s.blendSpec;n++;}});
+  closeBlendPanel();pushHist();redraw();
+  setStatus('🌀 Blend expanded into '+n+' separate shapes you can edit one by one. Undo brings the live blend back.');
+}
+function blendSwap(){
+  if(!blendDraft||!blendDraft.bId)return;
+  const t=blendDraft.aId;blendDraft.aId=blendDraft.bId;blendDraft.bId=t;
+  blendReadControls();blendPreview();setStatus('🌀 Direction reversed.');
+}
+function blendPickAt(clientX,clientY){
+  const p=screenToCanvas(clientX,clientY);
+  const locked=new Set(layers.filter(l=>l.locked).map(l=>l.id));
+  let best=null,bd=Infinity;
+  for(let i=strokes.length-1;i>=0;i--){
+    const s=strokes[i];if(locked.has(s.layerId)||s.id===blendDraft.aId||s.blendId)continue;
+    const st=s.settings||BrushEngine.getSettings(s.brushId),tol=Math.max(18,(st.size||6)/2+12);
+    const d=distanceToPolyline(p.x,p.y,s.points);if(d<tol&&d<bd){bd=d;best=s;}
+  }
+  if(!best){for(let i=strokes.length-1;i>=0;i--){const s=strokes[i];if(locked.has(s.layerId)||s.id===blendDraft.aId||s.blendId||!s.closed)continue;if(pointInPolygon(p.x,p.y,s.points)){best=s;break;}}}
+  return best;
+}
+wrap.addEventListener('pointerdown',e=>{
+  if(!blendDraft||!blendPickArmed||(e.target!==canvas&&e.target!==wrap&&e.target.id!=='detailCanvas'&&e.target.id!=='pathOverlay'))return;
+  e.preventDefault();e.stopPropagation();
+  const hit=blendPickAt(e.clientX,e.clientY);
+  if(!hit){
+    const pc=screenToCanvas(e.clientX,e.clientY);
+    const onMotif=placed.some(m=>Math.abs(pc.x-m.x)<m.w*m.s/2&&Math.abs(pc.y-m.y)<m.h*m.s/2);
+    blendMsg(onMotif?'Pictures and placed motifs cannot be blended yet. Tap a vector shape or path.':'Tap directly on the second shape.',true);return;}
+  const A=strokes.find(s=>s.id===blendDraft.aId),why=blendPairReason(A,hit);
+  if(why){blendMsg(why,true);return;}
+  blendDraft.bId=hit.id;blendPickArmed=false;blendMsg('');blendShowPanel();blendPreview();
+  setStatus('🌀 Adjust the blend, then tap Apply.');
+},true);
+$('blendSteps').addEventListener('input',()=>{$('blendStepsNum').value=$('blendSteps').value;blendReadControls();blendUpdateNote();blendPreview();});
+$('blendStepsNum').addEventListener('input',()=>{const v=Math.max(1,Math.min(BLEND_MAX_STEPS,Math.round(+$('blendStepsNum').value)||0));if(!v)return;$('blendSteps').value=v;blendReadControls();blendUpdateNote();blendPreview();});
+$('blendStepsNum').addEventListener('change',()=>{$('blendStepsNum').value=$('blendSteps').value;});
+['blendColour','blendShape','blendPos','blendSize','blendRot'].forEach(id=>$(id).addEventListener('change',()=>{blendReadControls();blendPreview();}));
+$('blendApplyBtn').onclick=blendApply;$('blendCancelBtn').onclick=blendCancel;$('blendCancelPickBtn').onclick=blendCancel;
+$('blendReverseBtn').onclick=blendSwap;$('blendExpandBtn').onclick=blendExpand;
+$('openBlendBtn').onclick=openBlend;
+$('drawModeBtn').addEventListener('click',()=>{if(blendDraft)blendCancel();});
+
 // "Duplicate and repeat": the step you applied to the copy (any mix of move, turn and resize) is worked out as one
 // similarity transform from the original's points to the copy's points, then applied again and again.
 let dupLink=null,repeatT=null;
@@ -2637,7 +2996,7 @@ function updateSelectionBox(){const box=$('selectionBox'),m=getSel();if(!m){box.
 function selectedPaintStroke(){
   const stroke=strokes.find(s=>s.id===selectedStrokeId);
   // Every selected stroke gets the on-canvas handles (rotate, resize, colour), not only painted content.
-  return (stroke&&!pathEditStrokeId&&!joinPendingStrokeId&&stroke.points&&stroke.points.length)?stroke:null;
+  return (stroke&&!pathEditStrokeId&&!joinPendingStrokeId&&!blendDraft&&stroke.points&&stroke.points.length)?stroke:null;
 }
 function strokePointsBBox(points){
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
@@ -4401,6 +4760,7 @@ makeFloatPanelDraggable('pathEditBar','pathEditBarHandle');
 makeFloatPanelDraggable('joinPickBar','joinPickBarHandle');
 makeFloatPanelDraggable('strokeActionsBar','strokeActionsBarHandle');
 makeFloatPanelDraggable('rotatePanel','rotatePanelHandle');
+makeFloatPanelDraggable('blendPanel','blendPanelHandle');
 function openRotatePanel(){
   if(!selectedStrokeId||pathEditStrokeId)return;
   const p=$('rotatePanel'),was=p.style.display==='none';p.style.display='block';
@@ -6125,6 +6485,7 @@ window.__sketchpadCanvasToScreenAbs=(x,y)=>{
 // the (production, intentional) 120ms pinch-settle debounce so a test can assert on the
 // re-rendered result immediately instead of waiting out the debounce window.
 window.__sketchpadSetRot=(r)=>{rot=+r||0;applyTransform();};
+window.__sketchpadDoc={build:()=>buildDocObject(),apply:d=>applyDocObject(d),svg:n=>buildSvgExport(n)};
 window.__sketchpadSetPan=(x,y)=>{panX=+x||0;panY=+y||0;applyTransform();};
 window.__sketchpadSetZoom=(z,skipDebounce)=>{
   zoom=clampZoom(z);
