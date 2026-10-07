@@ -665,6 +665,7 @@ function hideDetail(){if(detailShown){detailCanvas.style.display='none';detailSh
 function detailNeeded(){return zoom*baseScale*(window.devicePixelRatio||1)>2.15;}
 function invalidateDetail(){
   if(!detailReady)return;
+  if(invalidateDetail._keep){invalidateDetail._keep=false;if(detailShown)return;}
   try{hideDetail();clearTimeout(detailTimer);if(detailNeeded())detailTimer=setTimeout(renderDetail,170);}catch(e){}
 }
 function strokeBoundsPad(s){
@@ -676,6 +677,49 @@ function strokeBoundsPad(s){
   const st=s.settings||BrushEngine.getSettings(s.brushId),pad=((st&&st.size)||20)*2+30;
   return {x0:x0-pad,y0:y0-pad,x1:x1+pad,y1:y1+pad};
 }
+// ---- Live path overlay (Edit Path) -----------------------------------------------------------------
+// While a node is dragged the edited stroke used to be drawn into the 1800x1800 live layer, which the
+// browser then enlarged with CSS, so it looked soft at high zoom and only sharpened when the detail
+// layer caught up after release. The edited stroke is now drawn straight onto a viewport-sized canvas
+// with the real view matrix (same renderer as the final stroke), so it is crisp at any zoom. Only the
+// one stroke is drawn, so it is cheap and needs no full-canvas bitmap.
+const pathOverlay=document.createElement('canvas');let pathOverlayShown=false,pathOverlayTimer=0,pathOverlayHold=0;
+function viewMatrix(){
+  const vw=wrap.clientWidth,vh=wrap.clientHeight;if(vw<=0||vh<=0)return null;
+  let k=Math.min(2,window.devicePixelRatio||1);while(vw*k*vh*k>14e6)k*=0.9;
+  const sCss=zoom*baseScale,a=rot*Math.PI/180,cs=Math.cos(a)*sCss,sn=Math.sin(a)*sCss;
+  const e=(vw/2+panX)-(cs*W/2-sn*H/2),f=(vh/2+panY)-(sn*W/2+cs*H/2);
+  return {k,pw:Math.round(vw*k),ph:Math.round(vh*k),M:[k*cs,k*sn,-k*sn,k*cs,k*e,k*f]};
+}
+function overlayNeeded(){return pathOverlay._ready&&zoom*baseScale*(window.devicePixelRatio||1)>1.05;}
+function hidePathOverlay(){clearTimeout(pathOverlayTimer);clearTimeout(pathOverlayHold);if(pathOverlayShown){pathOverlay.style.display='none';pathOverlayShown=false;}}
+function renderPathOverlay(){
+  const vm=viewMatrix();if(!vm||!pathEditStrokeId||!pathEditNodes)return false;
+  if(pathOverlay.width!==vm.pw||pathOverlay.height!==vm.ph){pathOverlay.width=vm.pw;pathOverlay.height=vm.ph;}
+  const o=pathOverlay.getContext('2d');
+  o.setTransform(1,0,0,1,0,0);o.clearRect(0,0,vm.pw,vm.ph);
+  o.setTransform.apply(o,vm.M);
+  const saved=ctx;
+  try{ctx=o;renderPathPreviewInto(o);}catch(err){ctx=saved;hidePathOverlay();return false;}
+  ctx=saved;
+  clearTimeout(pathOverlayHold);
+  if(!pathOverlayShown){pathOverlay.style.display='block';pathOverlayShown=true;}
+  return true;
+}
+// View moved (pan/zoom/rotate): the overlay is viewport-fixed, so it is redrawn once the view settles.
+// Until then the ordinary live layer carries the stroke so it never disappears.
+function overlayViewChanged(){
+  if(!pathEditStrokeId||!pathEditNodes){return;}
+  if(!pathOverlayShown&&!overlayNeeded())return;
+  hidePathOverlay();
+  lctx.clearRect(0,0,W,H);renderPathPreviewInto(lctx);liveActive=true;
+  if(overlayNeeded())pathOverlayTimer=setTimeout(()=>{if(pathEditStrokeId&&pathEditNodes&&overlayNeeded()&&renderPathOverlay()){lctx.clearRect(0,0,W,H);redraw();}},120);
+}
+(function(){
+  pathOverlay.id='pathOverlay';
+  pathOverlay.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;transform:none;pointer-events:none;display:none;';
+  wrap.insertBefore(pathOverlay,detailCanvas.nextSibling);pathOverlay._ready=true;
+})();
 function renderDetail(){
   if(!detailReady||!detailNeeded())return;
   if(drawing||(liveActive&&!pathEditStrokeId)||redraw._q){clearTimeout(detailTimer);detailTimer=setTimeout(renderDetail,250);return;}
@@ -721,11 +765,11 @@ function renderDetail(){
         d.save();d.setTransform(1,0,0,1,0,0);d.globalAlpha=l.opacity/100;d.drawImage(detailScratch,0,0);d.restore();
       });
     });
-    if(pathEditStrokeId&&pathEditNodes)renderPathPreviewInto(d);
     drawPlaced();drawMultiSelectHighlights();drawShapeToolsHighlights();drawStrokeSelection();drawTileBoundary();if(showGuides)drawGuides();
   }catch(err){console.warn('[sketchpad] detail render failed',err);ctx=saved;hideDetail();return;}
   ctx=saved;
   detailCanvas.style.display='block';detailShown=true;
+  if(!pathEditStrokeId)hidePathOverlay();
 }
 (function(){
   detailCanvas.id='detailCanvas';
@@ -1163,7 +1207,7 @@ function applyTransform(){
       renderScaleTimer=setTimeout(()=>commitRenderScale(newScale),120);
     }
   }
-  canvas.style.transform=`translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom*baseScale}) rotate(${rot}deg)`;invalidateDetail();$('zoomPill').textContent=Math.round(zoom*100)+'% ▾';$('zoomPopPct').textContent='— '+Math.round(zoom*100)+'%';{const to=$('tileOutline');to.style.setProperty('--vs',zoom*baseScale);to.style.transform=`translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom*baseScale}) rotate(${rot}deg)`;}$('rotateChip').textContent='Canvas '+Math.round(rot)+'°';updateSelectionBox();updatePaintBBoxOverlay();updateSymAxis();if(pathEditNodes)renderPathNodeOverlay();paintFabric();
+  canvas.style.transform=`translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom*baseScale}) rotate(${rot}deg)`;invalidateDetail();overlayViewChanged();$("zoomPill").textContent=Math.round(zoom*100)+'% ▾';$('zoomPopPct').textContent='— '+Math.round(zoom*100)+'%';{const to=$('tileOutline');to.style.setProperty('--vs',zoom*baseScale);to.style.transform=`translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom*baseScale}) rotate(${rot}deg)`;}$('rotateChip').textContent='Canvas '+Math.round(rot)+'°';updateSelectionBox();updatePaintBBoxOverlay();updateSymAxis();if(pathEditNodes)renderPathNodeOverlay();paintFabric();
 }
 function screenToCanvas(x,y){const r=canvas.getBoundingClientRect();const cx=x-(r.left+r.width/2),cy=y-(r.top+r.height/2);const a=-rot*Math.PI/180;const s=zoom*baseScale;const ux=(cx*Math.cos(a)-cy*Math.sin(a))/s+W/2;const uy=(cx*Math.sin(a)+cy*Math.cos(a))/s+H/2;return {x:ux,y:uy};}
 function canvasToScreen(x,y){const rect=canvas.getBoundingClientRect(),wrapRect=wrap.getBoundingClientRect();const cx=rect.left+rect.width/2-wrapRect.left,cy=rect.top+rect.height/2-wrapRect.top;const a=rot*Math.PI/180;const s=zoom*baseScale;const px=(x-W/2)*s,py=(y-H/2)*s;return {x:cx+px*Math.cos(a)-py*Math.sin(a),y:cy+px*Math.sin(a)+py*Math.cos(a)};}
@@ -4218,6 +4262,8 @@ function renderPathPreviewInto(target){
 function renderPathLivePreview(){
   const stroke=strokes.find(s=>s.id===pathEditStrokeId);if(!stroke||!pathEditNodes)return;
   lctx.clearRect(0,0,W,H);
+  if(overlayNeeded()&&renderPathOverlay()){liveActive=true;return;}
+  hidePathOverlay();
   renderPathPreviewInto(lctx);
   liveActive=true;
 }
@@ -4233,7 +4279,7 @@ function renderPathLivePreview(){
 let pathLivePreview_q=0;
 function schedulePathLivePreview(){
   if(pathLivePreview_q)return;
-  pathLivePreview_q=requestAnimationFrame(()=>{pathLivePreview_q=0;renderPathLivePreview();redraw();});
+  pathLivePreview_q=requestAnimationFrame(()=>{pathLivePreview_q=0;renderPathLivePreview();invalidateDetail._keep=true;redraw();});
 }
 function commitEditPath(){
   const stroke=strokes.find(s=>s.id===pathEditStrokeId);
@@ -4271,6 +4317,7 @@ function exitEditPath(silent){
   $('pathEditBar').style.display='none';$('pathEditBar').classList.remove('open');
   $('pathNodeOverlay').innerHTML='';
   liveActive=false;lctx.clearRect(0,0,W,H);
+  if(pathOverlayShown&&detailNeeded()){clearTimeout(pathOverlayHold);pathOverlayHold=setTimeout(hidePathOverlay,2500);}else hidePathOverlay();
   syncStrokeSelectionUI(); // brings the Stroke Actions float-panel back now that pathEditStrokeId is clear
   if(!silent)redraw();
 }
@@ -5865,7 +5912,7 @@ boot();
 // Read-only introspection for debugging/testing — mirrors the small hooks already used for
 // Seamlessly Creative suite integration (see the bottom of this file once frozen into the
 // suite), just exposed unconditionally here since it's harmless and useful standalone too.
-window.__sketchpadGetState=()=>({strokeCount:strokes.length,strokes,placed,motifs,activeBrushId,eraserActive,selectedStrokeId,layout,layers:layers.map(l=>({id:l.id,name:l.name,visible:l.visible,locked:l.locked,opacity:l.opacity})),activeLayerId,pathEditStrokeId,pathEditNodes,pathEditClosed,selectedNodeIndex,pathEditTool,copiedBrushStyle,continueStrokeId,joinPendingStrokeId,paintMode,paintInsideTargetId,armedShapeType,constrainShape,holdTriggered,holdCorrectedShape,currentPointsLength:currentPoints.length,zoom,baseScale,renderScale,rot,canvasBackingWidth:canvas.width,displayBackingWidth:displayCanvas.width,sidebarCollapsed});
+window.__sketchpadGetState=()=>({strokeCount:strokes.length,strokes,placed,motifs,activeBrushId,eraserActive,selectedStrokeId,layout,layers:layers.map(l=>({id:l.id,name:l.name,visible:l.visible,locked:l.locked,opacity:l.opacity})),activeLayerId,pathEditStrokeId,pathEditNodes,pathEditClosed,selectedNodeIndex,pathEditTool,copiedBrushStyle,continueStrokeId,joinPendingStrokeId,paintMode,paintInsideTargetId,armedShapeType,constrainShape,holdTriggered,holdCorrectedShape,currentPointsLength:currentPoints.length,zoom,panX,panY,baseScale,renderScale,rot,canvasBackingWidth:canvas.width,displayBackingWidth:displayCanvas.width,sidebarCollapsed});
 // Test-only: exposes the app's own screen<->canvas coordinate mapping directly, so a test can
 // place a real pointer event at the exact screen position corresponding to a given canvas-space
 // point (or vice versa) at whatever zoom/pan/rotation is currently active, without having to
