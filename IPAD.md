@@ -98,6 +98,14 @@ screen" step. Replace the placeholder icon by dropping your 1024x1024 artwork in
 5. Start the `patternsketch-ipad` workflow. When it finishes, the build appears in TestFlight.
 6. Install **TestFlight** on your iPad and test with a real Apple Pencil.
 
+## Projects (folders, autosave per project)
+
+- **📁 Projects** and **➕ New Project** are the first two buttons in the toolbar; the open project's name sits next to them (tap it to rename).
+- Storage: the same IndexedDB (`pkmSketchDocDB`, now v2) gains `projects` (small records + thumbnail), `projdocs` (the full editable document, the same `buildDocObject()` payload as before) and `folders`. The old `doc/current` and `backup:*` keys are never modified; on first launch they are copied into a **Recovered drawing** project (with its earlier saves).
+- Autosave writes to the open project 1.2 s after a change. The pill shows Unsaved… / Saving… / Saved hh:mm, and Saved only appears after the write completes. A failed write turns it red and retries; creating, opening or switching a project first saves the current one and refuses (with a Download option) if that fails.
+- Folders are one level deep. Delete moves a project to Trash (restore or delete forever there). Duplicate makes an independent copy. Export / Import use the existing editable `.json` project file, which now also carries the project name; importing creates a new project.
+- Known limits: the canvas is still a fixed square 780 px tile on an 1800 px working canvas, so there is no per-project canvas size yet. Custom brushes live in one shared library, with copies stored inside each project.
+
 ## Before submitting to the App Store
 
 - App icon (1024x1024 PNG, no transparency) and iPad screenshots (13-inch iPad: 2064x2752 or 2752x2064).

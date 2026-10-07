@@ -99,6 +99,31 @@ input[type=range]{accent-color:var(--pink)}
 .toolbar{display:flex;gap:7px;align-items:center;flex-wrap:wrap;padding:6px 10px;background:var(--toolbarBg);border-bottom:1px solid var(--line)}
 .toolbar-spacer{flex:1}
 .pill{background:rgba(255,142,214,.10);border:1px solid rgba(255,142,214,.25);border-radius:999px;padding:8px 12px;color:var(--text);font-size:13px;font-weight:900}
+#projOverlay{position:fixed;inset:0;z-index:150;display:none;flex-direction:column;background:var(--bg);color:var(--text)}
+.pj-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--line);background:var(--toolbarBg)}
+.pj-title{font-size:22px;font-weight:900;margin-right:auto}
+.pj-head .btn{min-height:46px}.pj-big{padding:14px 22px!important;font-size:17px!important;border-radius:16px!important}
+.pj-chips{display:flex;gap:8px;overflow-x:auto;padding:12px 18px;border-bottom:1px solid var(--line);-webkit-overflow-scrolling:touch}
+.pj-chip{flex:0 0 auto;min-height:44px;border:1px solid var(--btnBorder);border-radius:999px;background:var(--btnBg);color:var(--text);padding:8px 16px;font-size:14px;font-weight:850;cursor:pointer}
+.pj-chip.active{background:var(--accentPurple);border-color:var(--pink)}
+.pj-body{flex:1;overflow:auto;padding:18px}
+.pj-h{font-size:17px;font-weight:900;margin-bottom:12px}
+.pj-bar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}.pj-bar .btn{min-height:44px}
+.pj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
+.pj-card{border:1px solid var(--line);border-radius:18px;background:var(--panel);overflow:hidden;display:flex;flex-direction:column}
+.pj-card.current{outline:2px solid var(--pink)}
+.pj-thumb{aspect-ratio:1/1;background:#fff center/cover no-repeat;cursor:pointer;position:relative;display:flex;align-items:center;justify-content:center;font-size:42px;color:#999}
+.pj-badge{position:absolute;top:8px;left:8px;background:var(--pink);color:#000;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:900}
+.pj-info{padding:10px 12px 2px}.pj-name{font-weight:900;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pj-meta{font-size:12px;opacity:.72;margin-top:2px}
+.pj-acts{display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px 12px}.pj-acts .btn{flex:1 1 auto;min-height:42px;padding:6px 8px;font-size:13px}
+.pj-empty{text-align:center;padding:48px 16px;opacity:.9}.pj-empty-t{font-size:20px;font-weight:900;margin-bottom:6px}
+.pj-back{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:300;padding:16px}
+.pj-dlg{background:var(--sideBg);color:var(--text);border:1px solid var(--line);border-radius:20px;padding:20px;width:min(440px,100%);max-height:90vh;overflow:auto;box-shadow:0 18px 60px rgba(0,0,0,.5)}
+.pj-dlg-title{font-size:19px;font-weight:900;margin-bottom:10px}.pj-dlg-msg,.pj-dlg-note{font-size:14px;line-height:1.45;margin-bottom:12px;opacity:.9}.pj-dlg-note{font-size:12.5px;opacity:.7}
+.pj-field{margin-bottom:12px}.pj-field label{display:block;font-size:13px;font-weight:800;margin-bottom:6px;opacity:.85}
+.pj-input{width:100%;box-sizing:border-box;min-height:46px;border-radius:12px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);padding:10px 12px;font-size:16px}
+.pj-chiprow{display:flex;flex-wrap:wrap;gap:8px}
+.pj-dlg-btns{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:6px}.pj-dlg-btns .btn{min-height:46px}
 .ac-sw{width:30px;height:30px;border-radius:8px;border:2px solid rgba(0,0,0,.15);cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
 .ac-sw.selected{outline:3px solid var(--pink)}
 .ac-palette-card{border:1px solid var(--btnBorder);border-radius:12px;padding:8px;margin-top:6px}
@@ -612,7 +637,7 @@ html.in-suite .suite-only{display:block!important}
   </div>
   <button id="sidebarToggleBtn" class="sidebar-toggle" title="Hide tools panel">‹</button>
   <main class="workspace">
-    <div class="toolbar"><button id="undoBtn" class="tool-btn">↩️ Undo</button><button id="redoBtn" class="tool-btn">↪️ Redo</button><button id="zoomPill" class="pill" title="Zoom and view recovery">100% ▾</button><button id="resetRot" class="tool-btn">0° Rotation</button><button id="guidesBtn" class="tool-btn">📐 Guides</button><button id="strokePanelBtn" class="tool-btn" title="Show or hide the Stroke panel">🖊️ Stroke tools</button><button id="selectAreaBtn" class="tool-btn" title="Drag a box round one drawing (like your goose) to select just that, then resize or move it">▭ Select Area</button><button id="selectAllBtn" class="tool-btn" title="Select all your artwork (not the background or guides) so you can group, move or resize it">☑️ Select All</button><button id="paintModePill" class="pill" style="display:none;cursor:pointer;">🎨 Paint Inside — tap for Free Paint</button><button id="editMotifBar" class="pill" style="display:none;cursor:pointer;background:var(--accentTeal);border:1px solid rgba(92,184,171,.5);font:inherit;">✏️ Editing: <span id="editMotifBarName"></span> — tap Done</button><div class="toolbar-spacer"></div><button id="quickSaveBtn" class="tool-btn">💾 Save</button><div id="saveStatusPill" class="pill" title="Autosave status">Saved</div><button id="downloadProjectBtn" class="tool-btn">⬇️ Download Project</button><button id="backupsBtn" class="tool-btn" title="Automatic earlier versions of your work">🕘 Earlier saves</button><label class="tool-btn" for="openProjectInput" style="cursor:pointer;">📂 Open Project</label><input id="openProjectInput" type="file" accept="application/json" style="display:none;"><button id="viewToggleBtn" class="tool-btn">⋯ View</button><button id="exportBtn" class="tool-btn primary">📸 Export</button><button id="exportSvgBtn" class="tool-btn" title="Export as SVG (vector)">🖋️ SVG</button></div>
+    <div class="toolbar"><button id="projectsBtn" class="tool-btn primary" title="Your projects and folders">📁 Projects</button><button id="newProjectBtn" class="tool-btn" title="Start a new project">➕ New Project</button><button id="projNameChip" class="pill" title="Tap to rename" style="cursor:pointer;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:inherit;font-size:13px;font-weight:900;color:var(--text)">📄 …</button><button id="undoBtn" class="tool-btn">↩️ Undo</button><button id="redoBtn" class="tool-btn">↪️ Redo</button><button id="zoomPill" class="pill" title="Zoom and view recovery">100% ▾</button><button id="resetRot" class="tool-btn">0° Rotation</button><button id="guidesBtn" class="tool-btn">📐 Guides</button><button id="strokePanelBtn" class="tool-btn" title="Show or hide the Stroke panel">🖊️ Stroke tools</button><button id="selectAreaBtn" class="tool-btn" title="Drag a box round one drawing (like your goose) to select just that, then resize or move it">▭ Select Area</button><button id="selectAllBtn" class="tool-btn" title="Select all your artwork (not the background or guides) so you can group, move or resize it">☑️ Select All</button><button id="paintModePill" class="pill" style="display:none;cursor:pointer;">🎨 Paint Inside — tap for Free Paint</button><button id="editMotifBar" class="pill" style="display:none;cursor:pointer;background:var(--accentTeal);border:1px solid rgba(92,184,171,.5);font:inherit;">✏️ Editing: <span id="editMotifBarName"></span> — tap Done</button><div class="toolbar-spacer"></div><button id="quickSaveBtn" class="tool-btn">💾 Save</button><div id="saveStatusPill" class="pill" title="Autosave status">Saved</div><button id="downloadProjectBtn" class="tool-btn">⬇️ Download Project</button><button id="backupsBtn" class="tool-btn" title="Automatic earlier versions of your work">🕘 Earlier saves</button><label class="tool-btn" for="openProjectInput" style="cursor:pointer;">📥 Import Project</label><input id="openProjectInput" type="file" accept="application/json" style="display:none;"><button id="viewToggleBtn" class="tool-btn">⋯ View</button><button id="exportBtn" class="tool-btn primary">📸 Export</button><button id="exportSvgBtn" class="tool-btn" title="Export as SVG (vector)">🖋️ SVG</button></div>
     <div id="brushMakerPanel" style="display:none;position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:91;background:var(--sideBg);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:0 18px 50px rgba(0,0,0,.35);font-size:13.5px;width:min(480px,calc(100vw - 24px));max-height:calc(100vh - 90px);overflow:auto;">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:800;margin-bottom:8px;">🖌️ Create custom brush<button id="bmCancel" class="btn mini">Close</button></div>
       <div style="border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:8px;"><canvas id="bmPreview" style="position:static;display:block;width:100%;height:84px;transform:none;left:auto;top:auto;"></canvas></div>
@@ -667,7 +692,7 @@ html.in-suite .suite-only{display:block!important}
       <div class="row" style="margin-top:8px;"><button id="bmSave" class="btn primary" style="flex:1;">💾 Save brush</button></div>
       <div id="bmListWrap" style="margin-top:10px;"></div>
     </div>
-    <div id="backupsPanel" style="display:none;position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:90;background:var(--sideBg);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:0 18px 50px rgba(0,0,0,.35);font-size:13.5px;max-width:min(560px,calc(100vw - 24px));max-height:70vh;overflow:auto;"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:800;margin-bottom:6px;">🕘 Earlier saves<button id="backupsClose" class="btn mini">Close</button></div><div id="backupsList"></div><div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);"><button id="newBlankBtn" class="btn mini" style="width:100%;">🆕 Start a new blank canvas</button><div class="hint">Your current work is kept in this list, so you can come back to it.</div></div></div>
+    <div id="backupsPanel" style="display:none;position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:90;background:var(--sideBg);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:0 18px 50px rgba(0,0,0,.35);font-size:13.5px;max-width:min(560px,calc(100vw - 24px));max-height:70vh;overflow:auto;"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:800;margin-bottom:6px;">🕘 Earlier saves<button id="backupsClose" class="btn mini">Close</button></div><div id="backupsList"></div><div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);"><button id="newBlankBtn" class="btn mini" style="width:100%;">➕ New Project</button><div class="hint">Your current project is saved first, then a fresh one opens. Find every project under 📁 Projects.</div></div></div>
     <div id="restoreBanner" style="display:none;"><span id="restoreBannerText">📂 Autosaved session found from </span><span id="restoreBannerTime"></span> <button id="restoreAcceptBtn" class="btn mini primary">Restore</button><button id="restoreDeclineBtn" class="btn mini">Start Fresh</button><button id="restoreOkBtn" class="btn mini primary" style="display:none;">OK</button></div>
     <div id="canvasViewportOuter" class="canvas-viewport-outer"><div id="canvasWrap" class="canvas-wrap"><div id="viewPopover" class="sym-pop"><div class="section-title">🧭 Canvas / View</div><button id="symToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">🦋 Symmetry Off</button><div class="row" style="margin-bottom:10px;"><button id="tilingBtn" class="tool-btn active" style="flex:1">Tiling On</button><div id="layoutPill" class="pill">📍 Grid Mode</div></div><button id="themeToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">☀️ Light Mode</button><button id="clearDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear Drawing &amp; Motifs</button><button id="clearAllDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear All Layers &amp; Motifs</button><button id="viewCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="zoomPopover" class="sym-pop"><div class="section-title">🔍 View <span id="zoomPopPct" class="small"></span></div><div class="zoom-row"><button id="zoomOutBtn" class="tool-btn" aria-label="Zoom out">−</button><button id="zoomInBtn" class="tool-btn" aria-label="Zoom in">+</button></div><button id="zoom100Btn" class="tool-btn" style="width:100%;margin-bottom:8px;">100% — actual size</button><button id="zoomFitBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">Fit to View</button><button id="zoomResetBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;">Reset View (0°, centre, fit)</button><button id="updateAppBtn" class="tool-btn" style="width:100%;margin-bottom:8px;" title="Fetch the newest version of the app">⟳ Get latest version</button><div class="hint" style="margin-bottom:8px;">These always work, even if the canvas has scrolled out of sight.</div><button id="zoomCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="svgPopover" class="sym-pop"><div class="section-title">🖋️ Export SVG</div><div class="hint" style="margin-bottom:8px;">Vector strokes and fills only. Pictures (placed motifs, background image) are not vector, so they are left out.</div><div class="row" style="margin-bottom:8px;"><button class="tool-btn svg-preset" data-size="780">780</button><button class="tool-btn svg-preset" data-size="1800">1800</button><button class="tool-btn svg-preset" data-size="3600">3600</button></div><div class="slider-row" style="grid-template-columns:64px 1fr 30px;"><label>Size</label><input id="svgSizeInput" type="number" min="64" max="20000" step="1" value="3600" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><span>px</span></div><div class="hint" style="margin-bottom:8px;">Width and height of the square file. 3600 × 3600 is the usual pattern size. The artwork scales exactly.</div><button id="svgSaveBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;min-height:44px;">⬇️ Save SVG</button><button id="svgCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="recolourPopover" class="sym-pop"><div class="section-title">🎨 Recolour Parts</div><div class="hint" style="margin-bottom:8px;">Motif: <b id="recolourName"></b>. Each row is one colour used in the motif. Pick a new colour for any of them.</div><div id="recolourRows"></div><button id="recolourApplyBtn" class="tool-btn primary" style="width:100%;margin:8px 0;min-height:44px;">Apply to this motif</button><button id="recolourNewBtn" class="tool-btn" style="width:100%;margin-bottom:8px;min-height:44px;">Save as new colourway</button><div class="row"><button id="recolourResetBtn" class="btn mini" style="flex:1">Reset</button><button id="recolourCloseBtn" class="btn mini" style="flex:1">✕ Close</button></div></div><div id="symPopover" class="sym-pop"><div class="section-title">🦋 Symmetry</div><div class="grid"><button class="sym-btn btn active" data-sym="off">Off</button><button class="sym-btn btn" data-sym="vertical">Vertical</button><button class="sym-btn btn" data-sym="horizontal">Horizontal</button><button class="sym-btn btn" data-sym="quad">Quad</button><button class="sym-btn btn" data-sym="diamond">Diamond</button></div><div class="slider-row"><label>Axis X</label><input id="symX" type="range" min="0" max="1800" value="900"><span id="symXVal">50%</span></div><div class="slider-row"><label>Axis Y</label><input id="symY" type="range" min="0" max="1800" value="900"><span id="symYVal">50%</span></div><div class="row"><button id="symCentre" class="btn mini">Centre Axis</button><button id="symClose" class="btn mini">Done</button></div><div class="hint">Move the mirror point to make flowers, leaves and playful asymmetric symmetry.</div></div><canvas id="fabricCanvas" aria-hidden="true"></canvas><canvas id="canvas" width="1800" height="1800"></canvas><div id="tileOutline" aria-hidden="true"></div><div id="selectionBox" class="selection-box"><div id="resizeHandle" class="handle"></div><div id="rotateHandle" class="rotHandle"></div></div><div id="pivotMarker" style="display:none;position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;border:2px solid var(--pink);border-radius:50%;background:rgba(255,255,255,.85);pointer-events:none;z-index:5;"><div style="position:absolute;left:50%;top:-6px;bottom:-6px;width:2px;margin-left:-1px;background:var(--pink)"></div><div style="position:absolute;top:50%;left:-6px;right:-6px;height:2px;margin-top:-1px;background:var(--pink)"></div></div><div id="paintBBoxOverlay" class="selection-box" style="display:none;"><div id="paintResizeHandle" class="handle" title="Drag to resize. Tap to make 25% bigger."></div><div id="paintRotateHandle" class="rotHandle" title="Drag to rotate. Tap to turn 45 degrees."></div><input id="strokeColourHandle" class="sel-colour strokeColourHandle" type="color" value="#000000" title="Tap to change colour"></div><div id="groupBox" class="selection-box" style="display:none;"><div class="gh" data-h="nw" style="left:0%;top:0%;cursor:nwse-resize"></div><div class="gh" data-h="n" style="left:50%;top:0%;cursor:ns-resize"></div><div class="gh" data-h="ne" style="left:100%;top:0%;cursor:nesw-resize"></div><div class="gh" data-h="e" style="left:100%;top:50%;cursor:ew-resize"></div><div class="gh" data-h="se" style="left:100%;top:100%;cursor:nwse-resize"></div><div class="gh" data-h="s" style="left:50%;top:100%;cursor:ns-resize"></div><div class="gh" data-h="sw" style="left:0%;top:100%;cursor:nesw-resize"></div><div class="gh" data-h="w" style="left:0%;top:50%;cursor:ew-resize"></div><div id="grpRotHandle" class="rotHandle" title="Drag to turn. Tap to turn 45 degrees."></div></div><div id="symAxis" class="sym-axis"></div><div id="rotateChip" class="rotate-chip">Canvas 0°</div><div id="pathNodeOverlay"></div></div></div>
     <div id="status" class="status">✨ Apple Pencil draws | one finger protected | two fingers pan/pinch/rotate | two-finger tap Undo | three-finger tap Redo | Capture Motif saves drawing ✨</div>
@@ -6660,7 +6685,7 @@ window.addEventListener('resize',updateBaseScale);
 // mockupStudioDB — origin-scoped, independent of the Seamlessly Creative suite's shared library.
 const DOC_DB_NAME='pkmSketchDocDB',DOC_STORE='doc',DOC_KEY='current';
 let docDBPromise=null;
-function openDocDB(){if(!docDBPromise)docDBPromise=new Promise((resolve,reject)=>{const req=indexedDB.open(DOC_DB_NAME,1);req.onupgradeneeded=()=>{req.result.createObjectStore(DOC_STORE);};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});return docDBPromise;}
+function openDocDB(){if(!docDBPromise)docDBPromise=new Promise((resolve,reject)=>{const req=indexedDB.open(DOC_DB_NAME,2);req.onupgradeneeded=()=>{const db=req.result;[DOC_STORE,'projects','projdocs','folders'].forEach(n=>{if(!db.objectStoreNames.contains(n))db.createObjectStore(n);});};req.onsuccess=()=>{req.result.onversionchange=()=>{req.result.close();docDBPromise=null;};resolve(req.result);};req.onerror=()=>reject(req.error);req.onblocked=()=>reject(new Error('Storage is blocked by another open tab — close other Pattern Sketch tabs and reload.'));});return docDBPromise;}
 // setSaveStatus drives #saveStatusPill: 'saving' shows a transient in-progress state, 'saved'
 // shows the time of the last successful save (ticking visibly so the user always has a fresh
 // answer to "did my work actually save?"), and 'failed' turns the pill red rather than failing
@@ -6670,6 +6695,7 @@ function setSaveStatus(state,at){
   const pill=$('saveStatusPill');if(!pill)return;
   pill.classList.remove('saving','failed');
   if(state==='saving'){pill.classList.add('saving');pill.textContent='Saving…';}
+  else if(state==='dirty'){pill.classList.add('saving');pill.textContent='Unsaved…';}
   else if(state==='failed'){pill.classList.add('failed');pill.textContent='⚠️ Save failed';}
   else{
     lastSavedAt=at||Date.now();
@@ -6696,6 +6722,7 @@ function buildDocObject(){
     customBrushes:serialCustomDefs(),
     layout,activeTemplate,
     savedPalettes:savedPalettes.map(p=>({id:p.id,name:p.name,hexes:p.hexes.slice()})),
+    format:'sketchpad-project',version:2,projectName:(typeof activeProject!=='undefined'&&activeProject)?activeProject.name:null,
     savedAt:Date.now(),
   };
 }
@@ -6707,49 +6734,505 @@ function buildDocObject(){
 // backup whenever it is 10+ minutes old or the new state is much smaller than it.
 let autosaveBlocked=true,lastScore=0,lastBackupAt=0;
 function docScore(d){return d?((d.strokesJSON||'').length+(d.placedJSON||'').length+(d.motifs||[]).reduce((n,m)=>n+(m.src||'').length+5000,0)):0;}
-function idbReq(store,mode,fn){return openDocDB().then(db=>new Promise((res,rej)=>{const tx=db.transaction(store,mode);const r=fn(tx.objectStore(store));tx.oncomplete=()=>res(r&&r.result);tx.onerror=()=>rej(tx.error);}));}
-async function persistDocToIDB(doc){
-  const score=docScore(doc);
-  if(lastScore>0&&(Date.now()-lastBackupAt>600000||score<lastScore*0.6)){
-    try{
-      const existing=await fetchStoredDoc();
-      if(existing&&existing.savedAt){
-        await idbReq(DOC_STORE,'readwrite',st=>st.put(existing,'backup:'+existing.savedAt));
-        lastBackupAt=Date.now();
-        const keys=(await idbReq(DOC_STORE,'readonly',st=>st.getAllKeys())||[]).filter(k=>String(k).startsWith('backup:')).sort();
-        for(const k of keys.slice(0,Math.max(0,keys.length-8)))await idbReq(DOC_STORE,'readwrite',st=>st.delete(k));
-      }
-    }catch(e){console.warn('[sketchpad] backup failed',e);}
+function idbReq(store,mode,fn){return openDocDB().then(db=>new Promise((res,rej)=>{const tx=db.transaction(store,mode);const r=fn(tx.objectStore(store));tx.oncomplete=()=>res(r&&r.result);tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error||new Error('Transaction aborted'));}));}
+// ---- Projects -----------------------------------------------------------------------------------
+// A project = one record in `projects` (small: name, folder, thumbnail, dates — cheap to list) plus
+// one full editable document in `projdocs` (the exact buildDocObject() payload that Quick Save and the
+// downloadable project file already use). Folders live in `folders` (one level). "Trash" is simply
+// projects with trashed:true. The original single-drawing keys in `doc` ('current', 'backup:*') are
+// never modified — they are migrated once into a "Recovered drawing" project and then left untouched.
+const PROJ_STORE='projects',PDOC_STORE='projdocs',FOLD_STORE='folders';
+let activeProject=null,projDirty=false,saveChain=Promise.resolve(),lastThumbAt=0;
+const LAYOUT_CHOICES=[['grid','Grid'],['halfDrop','Half Drop'],['halfBrick','Half Brick'],['diamond','Diamond'],['ogee','Ogee'],['tossed','Tossed']];
+const dbAll=s=>idbReq(s,'readonly',st=>st.getAll()).then(r=>r||[]);
+const dbGet=(s,k)=>idbReq(s,'readonly',st=>st.get(k));
+const dbPut=(s,v,k)=>idbReq(s,'readwrite',st=>st.put(v,k));
+const dbDel=(s,k)=>idbReq(s,'readwrite',st=>st.delete(k));
+function idbMulti(names,fn){if(window.__spFailWrites)return Promise.reject(new Error('simulated storage failure'));return openDocDB().then(db=>new Promise((res,rej)=>{
+  const tx=db.transaction(names,'readwrite');const o={};names.forEach(n=>o[n]=tx.objectStore(n));
+  try{fn(o);}catch(e){try{tx.abort();}catch(_){}rej(e);return;}
+  tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error||new Error('Transaction aborted'));}));}
+function queueJob(fn){const job=saveChain.then(fn,fn);saveChain=job.then(()=>{},()=>{});return job;}
+function blankDoc(lay){
+  const dl=defaultLayers();
+  return {format:'sketchpad-project',version:2,strokesJSON:'[]',layersJSON:JSON.stringify(dl.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity}))),activeLayerId:dl[dl.length-1].id,placedJSON:'[]',groupsJSON:'{}',motifs:[],editingMotifId:null,editingMotifStash:null,bgSrc:null,bgOpacity:1,bgShown:true,tracesJSON:'[]',traceLocked:true,customBrushes:[],layout:lay||'grid',activeTemplate:null,savedPalettes:savedPalettes.map(p=>({id:crypto.randomUUID(),name:p.name,hexes:p.hexes.slice()})),savedAt:Date.now()};
+}
+function docCounts(d){const n=j=>{try{return JSON.parse(j||'[]').length;}catch(e){return 0;}};return {strokes:n(d.strokesJSON),motifs:(d.motifs||[]).length};}
+function makeThumb(){
+  try{
+    updateComposite();
+    const S=240,c=document.createElement('canvas');c.width=c.height=S;const o=c.getContext('2d');
+    o.fillStyle='#fff';o.fillRect(0,0,S,S);
+    if(bgImg&&bgShown){o.save();o.globalAlpha=bgOpacity;o.drawImage(bgImg,0,0,S,S);o.restore();}
+    const k=S/TILE;
+    o.drawImage(compositeCanvas,C,C,TILE,TILE,0,0,S,S);
+    placed.forEach(p=>{if(!p.img)return;o.save();o.translate((p.x-C)*k,(p.y-C)*k);o.rotate(p.r*Math.PI/180);o.scale(p.s*p.fx*k,p.s*p.fy*k);o.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);o.restore();});
+    return c.toDataURL('image/jpeg',0.82);
+  }catch(e){return null;}
+}
+// ---- Saving the open project ----
+function saveActive(opts){return queueJob(()=>doSave(opts||{}));}
+async function doSave(opts){
+  const p=activeProject;if(!p)return true;
+  if(autosaveBlocked&&!opts.force)return true;
+  if(!projDirty&&!opts.force){
+    // Nothing changed: at most refresh the thumbnail (does not touch "last edited").
+    if(opts.thumb&&(!p.thumb||Date.now()-lastThumbAt>5000)){
+      const t=makeThumb();
+      if(t){try{const m={...p,thumb:t};await dbPut(PROJ_STORE,m,p.id);p.thumb=t;lastThumbAt=Date.now();}catch(e){}}
+    }
+    return true;
   }
-  await idbReq(DOC_STORE,'readwrite',st=>st.put(doc,DOC_KEY));
-  lastScore=score;
+  const wasDirty=projDirty;
+  setSaveStatus('saving');
+  projDirty=false;
+  try{
+    const doc=buildDocObject();
+    const score=docScore(doc),now=Date.now();
+    const meta={...p,updatedAt:wasDirty?now:p.updatedAt,strokes:strokes.length,motifs:motifs.length,layout};
+    if(opts.thumb||!p.thumb||now-lastThumbAt>15000){const t=makeThumb();if(t){meta.thumb=t;lastThumbAt=now;}}
+    let bak=null;
+    if(lastScore>0&&(now-lastBackupAt>600000||score<lastScore*0.6)){
+      try{const ex=await dbGet(PDOC_STORE,p.id);if(ex&&ex.savedAt)bak=ex;}catch(e){}
+    }
+    await idbMulti([PROJ_STORE,PDOC_STORE],s=>{
+      if(bak)s[PDOC_STORE].put(bak,'bak:'+p.id+':'+bak.savedAt);
+      s[PROJ_STORE].put(meta,p.id);s[PDOC_STORE].put(doc,p.id);
+    });
+    if(bak){lastBackupAt=now;pruneBackups(p.id);}
+    lastScore=score;
+    if(activeProject&&activeProject.id===p.id)Object.assign(activeProject,{updatedAt:meta.updatedAt,strokes:meta.strokes,motifs:meta.motifs,thumb:meta.thumb});
+    if(!projDirty)setSaveStatus('saved',now);   // only ever shown after the write has completed
+    return true;
+  }catch(e){
+    console.warn('[sketchpad] save failed',e);
+    projDirty=true;setSaveStatus('failed');
+    clearTimeout(autosaveTimer);autosaveTimer=setTimeout(runAutosave,8000);
+    return false;
+  }
+}
+async function pruneBackups(id){
+  try{
+    const keys=((await idbReq(PDOC_STORE,'readonly',st=>st.getAllKeys()))||[]).filter(k=>String(k).startsWith('bak:'+id+':')).sort();
+    for(const k of keys.slice(0,Math.max(0,keys.length-8)))await dbDel(PDOC_STORE,k);
+  }catch(e){}
 }
 async function listBackups(){
-  const keys=((await idbReq(DOC_STORE,'readonly',st=>st.getAllKeys()))||[]).filter(k=>String(k).startsWith('backup:')).sort().reverse();
+  if(!activeProject)return [];
+  const pre='bak:'+activeProject.id+':';
+  const keys=((await idbReq(PDOC_STORE,'readonly',st=>st.getAllKeys()))||[]).filter(k=>String(k).startsWith(pre)).sort().reverse();
   const out=[];
-  for(const k of keys){const d=await idbReq(DOC_STORE,'readonly',st=>st.get(k));if(!d)continue;let n=0;try{n=JSON.parse(d.strokesJSON||'[]').length;}catch(e){}out.push({key:k,doc:d,strokes:n,motifs:(d.motifs||[]).length,at:d.savedAt});}
+  for(const k of keys){const d=await dbGet(PDOC_STORE,k);if(!d)continue;const c=docCounts(d);out.push({key:k,doc:d,strokes:c.strokes,motifs:c.motifs,at:d.savedAt});}
   return out;
 }
 let autosaveTimer=null;
-function scheduleAutosave(){if(autosaveBlocked)return;clearTimeout(autosaveTimer);autosaveTimer=setTimeout(runAutosave,1200);}
-async function runAutosave(){
-  setSaveStatus('saving');
-  try{
-    await persistDocToIDB(buildDocObject());
-    setSaveStatus('saved');
-  }catch(e){console.warn('[sketchpad] autosave failed',e);setSaveStatus('failed');}
-}
-// Quick Save bypasses the debounce for an explicit, immediate "save right now" — the button
-// exists precisely so the user isn't left guessing whether the debounced autosave has caught up.
+function scheduleAutosave(){if(autosaveBlocked||!activeProject)return;projDirty=true;setSaveStatus('dirty');clearTimeout(autosaveTimer);autosaveTimer=setTimeout(runAutosave,1200);}
+function runAutosave(){return saveActive();}
+function commitPendingEdits(){try{if(pathEditStrokeId)commitEditPath();}catch(e){}}
+// Explicit Save: bypasses the debounce and always writes.
 async function quickSaveNow(){
-  clearTimeout(autosaveTimer);autosaveBlocked=false;
-  await runAutosave();
-  if(lastSavedAt)setStatus('💾 Project saved.');
+  if(!activeProject){openProjects();return;}
+  clearTimeout(autosaveTimer);commitPendingEdits();
+  const ok=await saveActive({force:true,thumb:true});
+  setStatus(ok?'💾 “'+activeProject.name+'” saved.':'⚠️ Could not save — your artwork is still open. Try ⬇️ Download Project to keep a copy.');
+}
+// Used before creating / opening / switching: the open project must be safely written first.
+async function flushBeforeSwitch(){
+  if(!activeProject)return true;
+  clearTimeout(autosaveTimer);commitPendingEdits();
+  const ok=await saveActive({thumb:true});
+  if(ok)return true;
+  const r=await projAsk({title:'⚠️ Couldn’t save your work',message:'“'+activeProject.name+'” could not be written to storage, so nothing has been switched. Your artwork is still open and unchanged. Download a project file to keep a safe copy, then try again.',ok:'Stay here',cancel:null,extra:[{label:'⬇️ Download project file',value:'dl'}]});
+  if(r&&r.__extra==='dl')downloadProjectFile();
+  return false;
 }
 async function fetchStoredDoc(){
   const db=await openDocDB();
   return new Promise((res,rej)=>{const tx=db.transaction(DOC_STORE,'readonly');const r=tx.objectStore(DOC_STORE).get(DOC_KEY);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});
 }
+// ---- Switching / loading ----
+function resetForLoad(){
+  commitPendingEdits();
+  selectedStrokeId=null;selected=null;multiSel=null;groupInsideId=null;selAddArmed=false;
+  hiddenStrokeIds.clear();hiddenPlacedIds.clear();
+  editingMotifId=null;editingMotifStash=null;mode='draw';
+  try{if(blendDraft)closeBlendPanel();}catch(e){}
+  bgImg=null;$('bgEmpty').style.display='block';$('bgControls').style.display='none';
+  const eb=$('editMotifBar');if(eb)eb.style.display='none';
+  try{updateSelectedControls();}catch(e){}
+  try{updateGroupBox();syncGroupBar();}catch(e){}
+}
+function syncProjectName(){
+  const c=$('projNameChip');if(!c)return;
+  c.textContent=activeProject?'📄 '+activeProject.name:'📄 No project open';
+  c.title=activeProject?'Tap to rename this project':'';
+  try{document.title=(activeProject?activeProject.name+' — ':'')+'Pattern Sketch';}catch(e){}
+}
+function finishLoad(meta,doc){
+  if(!layers.length){layers=defaultLayers();activeLayerId=layers[layers.length-1].id;}
+  renderLayersList();
+  history=[];hIndex=-1;pushHist();viewReset();redraw();updateBaseScale();
+  activeProject=meta;projDirty=false;lastScore=docScore(doc);lastBackupAt=Date.now();lastThumbAt=0;
+  try{localStorage.setItem('sp-activeProject',meta.id);}catch(e){}
+  syncProjectName();setSaveStatus('saved',meta.updatedAt||doc.savedAt);
+  autosaveBlocked=false;
+  if(!meta.thumb)setTimeout(()=>saveActive({thumb:true}),1500);
+}
+async function loadProject(meta,doc,opts){
+  opts=opts||{};
+  const prev=activeProject;
+  autosaveBlocked=true;clearTimeout(autosaveTimer);projDirty=false;
+  resetForLoad();
+  const ok=await applyDocObject(doc);
+  if(ok){finishLoad(meta,doc);closeProjects(true);return true;}
+  // Could not read it: put the previous project back (it was saved just before) and leave the stored copy untouched.
+  activeProject=null;
+  let back=false;
+  if(prev){try{const pd=await dbGet(PDOC_STORE,prev.id);if(pd){resetForLoad();if(await applyDocObject(pd)){finishLoad(prev,pd);back=true;}}}catch(e){}}
+  if(!back)await enterNoProject(true);
+  if(!opts.quiet)await projAsk({title:'Couldn’t open that project',message:'“'+(meta.name||'Project')+'” could not be read. It has not been changed or deleted.'+(back?' Your previous project is open again.':''),ok:'OK',cancel:null});
+  return false;
+}
+async function switchToProject(id){
+  if(activeProject&&activeProject.id===id){closeProjects(true);return true;}
+  if(!(await flushBeforeSwitch()))return false;
+  let meta,doc;
+  try{[meta,doc]=await Promise.all([dbGet(PROJ_STORE,id),dbGet(PDOC_STORE,id)]);}catch(e){}
+  if(!meta||!doc){await projAsk({title:'Project not found',message:'That project could not be read from storage.',ok:'OK',cancel:null});return false;}
+  const ok=await loadProject(meta,doc);
+  if(ok)setStatus('📂 Opened “'+meta.name+'”.');
+  return ok;
+}
+async function enterNoProject(keepId){
+  activeProject=null;autosaveBlocked=true;projDirty=false;clearTimeout(autosaveTimer);
+  resetForLoad();await applyDocObject(blankDoc('grid'));
+  history=[];hIndex=-1;pushHist();viewReset();redraw();updateBaseScale();
+  syncProjectName();$('saveStatusPill').textContent='No project open';
+  if(!keepId){try{localStorage.removeItem('sp-activeProject');}catch(e){}}
+}
+// ---- Project records ----
+function uniqueName(base,metas){
+  const names=new Set(metas.filter(m=>!m.trashed).map(m=>m.name));
+  if(!names.has(base))return base;
+  for(let i=2;i<500;i++){const n=base+' '+i;if(!names.has(n))return n;}
+  return base+' '+Date.now();
+}
+function cleanName(s,fallback){s=String(s||'').replace(/\s+/g,' ').trim().slice(0,80);return s||fallback;}
+async function createProjectRecord({name,folderId,doc}){
+  const id=crypto.randomUUID(),now=Date.now();
+  doc.savedAt=now;doc.format='sketchpad-project';doc.version=2;doc.projectName=name;
+  const c=docCounts(doc);
+  const meta={id,name,folderId:folderId||null,createdAt:now,updatedAt:now,thumb:null,layout:doc.layout||'grid',canvas:{w:W,h:H,tile:TILE},trashed:false,trashedAt:null,strokes:c.strokes,motifs:c.motifs};
+  await queueJob(()=>idbMulti([PROJ_STORE,PDOC_STORE],s=>{s[PROJ_STORE].put(meta,id);s[PDOC_STORE].put(doc,id);}));
+  return meta;
+}
+function updateMeta(id,patch){
+  return queueJob(async()=>{
+    const m=await dbGet(PROJ_STORE,id);if(!m)return null;
+    Object.assign(m,patch);await dbPut(PROJ_STORE,m,id);
+    if(activeProject&&activeProject.id===id)Object.assign(activeProject,patch);
+    return m;
+  });
+}
+async function newProjectFlow(presetFolder){
+  const [metas,folders]=await Promise.all([dbAll(PROJ_STORE),dbAll(FOLD_STORE)]);
+  const fields=[{key:'name',label:'Project name',type:'text',value:uniqueName('Untitled pattern',metas)},
+    {key:'layout',label:'Repeat layout',type:'chips',options:LAYOUT_CHOICES,value:'grid'}];
+  if(folders.length)fields.push({key:'folderId',label:'Folder',type:'select',value:presetFolder||'',options:[['','No folder']].concat(folders.sort((a,b)=>a.name.localeCompare(b.name)).map(f=>[f.id,f.name]))});
+  const r=await projAsk({title:'➕ New Project',fields,note:'Canvas: seamless square tile — a '+TILE+' × '+TILE+' px repeat on an '+W+' × '+H+' px working canvas. You can change the repeat layout any time under 📐 Repeat Layouts.',ok:'Create & start drawing'});
+  if(!r)return false;
+  if(!(await flushBeforeSwitch()))return false;
+  const name=cleanName(r.name,'Untitled pattern');
+  let meta;
+  try{meta=await createProjectRecord({name,folderId:r.folderId||presetFolder||null,doc:blankDoc(r.layout||'grid')});}
+  catch(e){console.warn(e);await projAsk({title:'⚠️ Couldn’t create the project',message:'Storage refused the new project (it may be full). Your current artwork is still open.',ok:'OK',cancel:null});return false;}
+  const doc=await dbGet(PDOC_STORE,meta.id);
+  const ok=await loadProject(meta,doc);
+  if(ok)setStatus('🆕 “'+name+'” created — start drawing!');
+  return ok;
+}
+async function renameProject(id){
+  const m=await dbGet(PROJ_STORE,id);if(!m)return;
+  const r=await projAsk({title:'✏️ Rename project',fields:[{key:'name',label:'Name',type:'text',value:m.name}],ok:'Rename'});
+  if(!r)return;
+  await updateMeta(id,{name:cleanName(r.name,m.name)});
+  if(activeProject&&activeProject.id===id)syncProjectName();
+  renderProjects();
+}
+async function duplicateProject(id){
+  if(activeProject&&activeProject.id===id){if(!(await flushBeforeSwitch()))return;}
+  const [m,doc,metas]=await Promise.all([dbGet(PROJ_STORE,id),dbGet(PDOC_STORE,id),dbAll(PROJ_STORE)]);
+  if(!m||!doc)return;
+  try{await createProjectRecord({name:uniqueName(m.name+' copy',metas),folderId:m.folderId,doc:JSON.parse(JSON.stringify(doc))});}
+  catch(e){await projAsk({title:'⚠️ Couldn’t duplicate',message:'Storage refused the copy (it may be full).',ok:'OK',cancel:null});return;}
+  setStatus('⧉ Duplicated “'+m.name+'” — the copy is fully independent.');
+  renderProjects();
+}
+async function moveProject(id){
+  const [m,folders]=await Promise.all([dbGet(PROJ_STORE,id),dbAll(FOLD_STORE)]);if(!m)return;
+  if(!folders.length){const r=await projAsk({title:'No folders yet',message:'Create a folder first, then you can move projects into it.',ok:'Create folder',cancel:'Not now'});if(r){await newFolder();}return;}
+  const r=await projAsk({title:'📁 Move “'+m.name+'”',fields:[{key:'folderId',label:'Folder',type:'select',value:m.folderId||'',options:[['','No folder']].concat(folders.sort((a,b)=>a.name.localeCompare(b.name)).map(f=>[f.id,f.name]))}],ok:'Move'});
+  if(!r)return;
+  await updateMeta(id,{folderId:r.folderId||null});renderProjects();
+}
+async function trashProject(id){
+  const m=await dbGet(PROJ_STORE,id);if(!m)return;
+  const isActive=activeProject&&activeProject.id===id;
+  const r=await projAsk({title:'🗑️ Move to Trash?',message:'“'+m.name+'” will go to the Trash folder. You can restore it from there any time until you empty the Trash.'+(isActive?' It is the project you have open — it will be saved first.':''),ok:'Move to Trash',danger:true});
+  if(!r)return;
+  if(isActive){if(!(await flushBeforeSwitch()))return;}
+  await updateMeta(id,{trashed:true,trashedAt:Date.now()});
+  if(isActive){
+    activeProject=null;autosaveBlocked=true;clearTimeout(autosaveTimer);projDirty=false;
+    const others=(await dbAll(PROJ_STORE)).filter(x=>!x.trashed&&x.id!==id).sort((a,b)=>b.updatedAt-a.updatedAt);
+    if(others.length){const d=await dbGet(PDOC_STORE,others[0].id);if(d&&await loadProject(others[0],d,{quiet:true})){}else await enterNoProject();}
+    else await enterNoProject();
+    $('projOverlay').style.display='flex';
+  }
+  renderProjects();
+}
+async function restoreProject(id){
+  const [m,folders]=await Promise.all([dbGet(PROJ_STORE,id),dbAll(FOLD_STORE)]);if(!m)return;
+  await updateMeta(id,{trashed:false,trashedAt:null,folderId:folders.some(f=>f.id===m.folderId)?m.folderId:null});
+  setStatus('↩️ Restored “'+m.name+'”.');renderProjects();
+}
+async function deleteForever(ids,label){
+  const r=await projAsk({title:'Delete permanently?',message:label+' will be deleted for good. This cannot be undone.',ok:'Delete forever',danger:true});
+  if(!r)return;
+  for(const id of ids){
+    try{
+      const keys=((await idbReq(PDOC_STORE,'readonly',st=>st.getAllKeys()))||[]).filter(k=>k===id||String(k).startsWith('bak:'+id+':'));
+      await queueJob(()=>idbMulti([PROJ_STORE,PDOC_STORE],s=>{s[PROJ_STORE].delete(id);keys.forEach(k=>s[PDOC_STORE].delete(k));}));
+    }catch(e){console.warn(e);}
+  }
+  renderProjects();
+}
+// ---- Folders ----
+async function newFolder(){
+  const r=await projAsk({title:'📁 New folder',fields:[{key:'name',label:'Folder name',type:'text',value:''}],ok:'Create'});
+  if(!r)return;
+  const name=cleanName(r.name,'');if(!name)return;
+  const f={id:crypto.randomUUID(),name,createdAt:Date.now()};
+  await dbPut(FOLD_STORE,f,f.id);pjView='f:'+f.id;renderProjects();
+}
+async function renameFolder(id){
+  const f=await dbGet(FOLD_STORE,id);if(!f)return;
+  const r=await projAsk({title:'✏️ Rename folder',fields:[{key:'name',label:'Name',type:'text',value:f.name}],ok:'Rename'});
+  if(!r)return;
+  f.name=cleanName(r.name,f.name);await dbPut(FOLD_STORE,f,id);renderProjects();
+}
+async function deleteFolder(id){
+  const f=await dbGet(FOLD_STORE,id);if(!f)return;
+  const metas=(await dbAll(PROJ_STORE)).filter(m=>m.folderId===id);
+  const r=await projAsk({title:'Delete folder “'+f.name+'”?',message:metas.length?'The '+metas.length+' project'+(metas.length===1?'':'s')+' inside will not be deleted — they move to “All projects” with no folder.':'The folder is empty.',ok:'Delete folder',danger:true});
+  if(!r)return;
+  for(const m of metas)await updateMeta(m.id,{folderId:null});
+  await dbDel(FOLD_STORE,id);pjView='all';renderProjects();
+}
+// ---- Export / import (editable project file; same format as before, plus the project name) ----
+function safeFileName(n){return (String(n||'project').replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'-')||'project');}
+function downloadProjectFile(docIn,nameIn){
+  const doc=(docIn&&docIn.strokesJSON!==undefined)?docIn:buildDocObject();
+  const name=nameIn||(activeProject?activeProject.name:'sketchpad-project');
+  const blob=new Blob([JSON.stringify(doc)],{type:'application/json'});
+  SketchpadNative.saveBlob(blob,safeFileName(name)+'.sketchpad.json').then(r=>{
+    if(r==='cancelled')return;
+    setStatus(r==='share'?'⬆️ Project file ready — save it to Files or AirDrop it as a backup.':'⬇️ Project file downloaded — keep it somewhere safe as a backup.');
+  });
+}
+async function exportProject(id){
+  if(activeProject&&activeProject.id===id){commitPendingEdits();if(!(await flushBeforeSwitch()))return;downloadProjectFile(buildDocObject(),activeProject.name);return;}
+  const [m,doc]=await Promise.all([dbGet(PROJ_STORE,id),dbGet(PDOC_STORE,id)]);
+  if(m&&doc)downloadProjectFile(Object.assign({},doc,{projectName:m.name}),m.name);
+}
+async function importProjectFile(file,folderId){
+  let doc;
+  try{doc=JSON.parse(await file.text());}catch(e){doc=null;}
+  if(!doc||typeof doc!=='object'||typeof doc.strokesJSON!=='string'){
+    await projAsk({title:'Couldn’t import that file',message:'It doesn’t look like a Pattern Sketch project file (.json). Nothing was changed.',ok:'OK',cancel:null});return false;
+  }
+  const metas=await dbAll(PROJ_STORE);
+  const base=cleanName(doc.projectName||String(file.name||'').replace(/\.(sketchpad\.)?json$/i,''),'Imported project');
+  if(!(await flushBeforeSwitch()))return false;
+  let meta;
+  try{meta=await createProjectRecord({name:uniqueName(base,metas),folderId:folderId||null,doc});}
+  catch(e){await projAsk({title:'⚠️ Couldn’t import',message:'Storage refused the project (it may be full). Nothing was changed.',ok:'OK',cancel:null});return false;}
+  const stored=await dbGet(PDOC_STORE,meta.id);
+  const ok=await loadProject(meta,stored);
+  if(ok)setStatus('📥 Imported “'+meta.name+'” — '+meta.strokes+' stroke'+(meta.strokes===1?'':'s')+', '+meta.motifs+' motif'+(meta.motifs===1?'':'s')+'.');
+  return ok;
+}
+// ---- First run after the update: keep the old single drawing as a project ----
+async function migrateLegacyIfNeeded(){
+  if(await dbGet(PDOC_STORE,'__migrated'))return;
+  const existing=await dbAll(PROJ_STORE);
+  if(existing.length){await dbPut(PDOC_STORE,{at:Date.now()},'__migrated');return;}
+  let legacy=null;try{legacy=await fetchStoredDoc();}catch(e){}
+  const bkKeys=((await idbReq(DOC_STORE,'readonly',st=>st.getAllKeys()))||[]).filter(k=>String(k).startsWith('backup:')).sort();
+  const c=legacy?docCounts(legacy):{strokes:0,motifs:0};
+  let hasPlaced=false;try{hasPlaced=JSON.parse((legacy&&legacy.placedJSON)||'[]').length>0;}catch(e){}
+  if(!legacy||!legacy.savedAt||(!c.strokes&&!c.motifs&&!hasPlaced&&!bkKeys.length)){await dbPut(PDOC_STORE,{at:Date.now()},'__migrated');return;}
+  const baks=[];for(const k of bkKeys.slice(-8)){const d=await dbGet(DOC_STORE,k);if(d&&d.savedAt)baks.push(d);}
+  const id=crypto.randomUUID(),at=legacy.savedAt;
+  const meta={id,name:'Recovered drawing',folderId:null,createdAt:at,updatedAt:at,thumb:null,layout:legacy.layout||'grid',canvas:{w:W,h:H,tile:TILE},trashed:false,trashedAt:null,strokes:c.strokes,motifs:c.motifs};
+  await idbMulti([PROJ_STORE,PDOC_STORE],s=>{
+    s[PROJ_STORE].put(meta,id);s[PDOC_STORE].put(legacy,id);
+    baks.forEach(d=>s[PDOC_STORE].put(d,'bak:'+id+':'+d.savedAt));
+    s[PDOC_STORE].put({at:Date.now()},'__migrated');
+  });
+  try{localStorage.setItem('sp-activeProject',id);}catch(e){}
+}
+// ---- Dialog helper (own modal: works the same in Safari, the iPad app and tests) ----
+function projAsk(o){
+  return new Promise(resolve=>{
+    const back=pjEl('div','pj-back'),box=pjEl('div','pj-dlg');back.appendChild(box);
+    box.appendChild(pjEl('div','pj-dlg-title',o.title||''));
+    if(o.message)box.appendChild(pjEl('div','pj-dlg-msg',o.message));
+    const vals={},inputs={};
+    (o.fields||[]).forEach(f=>{
+      const row=pjEl('div','pj-field');row.appendChild(pjEl('label',null,f.label));
+      vals[f.key]=f.value==null?'':f.value;
+      if(f.type==='text'){const i=pjEl('input','pj-input');i.type='text';i.value=vals[f.key];i.maxLength=80;i.oninput=()=>{vals[f.key]=i.value;};inputs[f.key]=i;row.appendChild(i);}
+      else if(f.type==='select'){const s=pjEl('select','pj-input');f.options.forEach(([v,t])=>{const op=pjEl('option',null,t);op.value=v;s.appendChild(op);});s.value=vals[f.key];s.onchange=()=>{vals[f.key]=s.value;};row.appendChild(s);}
+      else if(f.type==='chips'){const w=pjEl('div','pj-chiprow');f.options.forEach(([v,t])=>{const b=pjEl('button','pj-chip'+(v===vals[f.key]?' active':''),t);b.type='button';b.onclick=()=>{vals[f.key]=v;[...w.children].forEach(x=>x.classList.toggle('active',x===b));};w.appendChild(b);});row.appendChild(w);}
+      box.appendChild(row);
+    });
+    if(o.note)box.appendChild(pjEl('div','pj-dlg-note',o.note));
+    const btns=pjEl('div','pj-dlg-btns');
+    const done=v=>{back.remove();resolve(v);};
+    if(o.cancel!==null){const c=pjEl('button','btn',o.cancel||'Cancel');c.onclick=()=>done(null);btns.appendChild(c);}
+    (o.extra||[]).forEach(x=>{const b=pjEl('button','btn',x.label);b.onclick=()=>done({__extra:x.value});btns.appendChild(b);});
+    const ok=pjEl('button','btn primary'+(o.danger?' danger':''),o.ok||'OK');
+    ok.onclick=()=>done(o.fields&&o.fields.length?vals:true);btns.appendChild(ok);
+    box.appendChild(btns);
+    back.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'&&o.cancel!==null)done(null);else if(e.key==='Enter'&&e.target.tagName!=='BUTTON'){e.preventDefault();ok.click();}});
+    document.body.appendChild(back);
+    const first=box.querySelector('input');if(first){first.focus();first.select();}else ok.focus();
+  });
+}
+// ---- Projects browser ----
+let pjView='recent';
+const pjEl=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e;};
+function buildProjectsUI(){
+  const ov=pjEl('div');ov.id='projOverlay';
+  ov.innerHTML='<div class="pj-head"><div class="pj-title">📁 Projects</div><button id="pjNew" class="btn primary pj-big">➕ New Project</button><button id="pjNewFolder" class="btn">📁 New Folder</button><label class="btn" for="pjImportInput" style="cursor:pointer">📥 Import file</label><input id="pjImportInput" type="file" accept="application/json,.json" style="display:none"><button id="pjClose" class="btn">✕ Close</button></div><div id="pjChips" class="pj-chips"></div><div id="pjBody" class="pj-body"></div>';
+  document.body.appendChild(ov);
+  ov.addEventListener('keydown',e=>{e.stopPropagation();});
+  $('pjNew').onclick=()=>newProjectFlow(pjView.startsWith('f:')?pjView.slice(2):null);
+  $('pjNewFolder').onclick=newFolder;
+  $('pjClose').onclick=()=>closeProjects();
+  $('pjImportInput').onchange=e=>{const f=e.target.files&&e.target.files[0];e.target.value='';if(f)importProjectFile(f,pjView.startsWith('f:')?pjView.slice(2):null);};
+}
+async function openProjects(){
+  const ov=$('projOverlay');ov.style.display='flex';
+  $('pjBody').textContent='Loading…';
+  $('pjClose').style.display=activeProject?'':'none';
+  if(activeProject&&!autosaveBlocked){
+    clearTimeout(autosaveTimer);commitPendingEdits();
+    await saveActive({thumb:true});
+  }
+  await renderProjects();
+}
+function closeProjects(force){
+  if(!force&&!activeProject)return;     // nothing to go back to: the browser stays until a project exists
+  const ov=$('projOverlay');if(ov)ov.style.display='none';
+}
+async function renderProjects(){
+  const body=$('pjBody'),chipsHost=$('pjChips');if(!body)return;
+  let metas,folders;
+  try{[metas,folders]=await Promise.all([dbAll(PROJ_STORE),dbAll(FOLD_STORE)]);}
+  catch(e){body.textContent='⚠️ Your projects could not be read (browser storage unavailable). Download Project still works for the open drawing.';return;}
+  $('pjClose').style.display=activeProject?'':'none';
+  folders.sort((a,b)=>a.name.localeCompare(b.name));
+  const live=metas.filter(m=>!m.trashed).sort((a,b)=>b.updatedAt-a.updatedAt);
+  const trash=metas.filter(m=>m.trashed).sort((a,b)=>(b.trashedAt||0)-(a.trashedAt||0));
+  if(pjView.startsWith('f:')&&!folders.some(f=>'f:'+f.id===pjView))pjView='recent';
+  chipsHost.innerHTML='';
+  const addChip=(id,label)=>{const b=pjEl('button','pj-chip'+(pjView===id?' active':''),label);b.onclick=()=>{pjView=id;renderProjects();};chipsHost.appendChild(b);};
+  addChip('recent','🕘 Recent');addChip('all','📚 All projects ('+live.length+')');
+  folders.forEach(f=>addChip('f:'+f.id,'📁 '+f.name+' ('+live.filter(m=>m.folderId===f.id).length+')'));
+  addChip('trash','🗑️ Trash ('+trash.length+')');
+  body.innerHTML='';
+  let list=[],head='',bar=null;
+  if(pjView==='recent'){list=live.slice(0,12);head='🕘 Recent projects';}
+  else if(pjView==='all'){list=live;head='📚 All projects';}
+  else if(pjView==='trash'){list=trash;head='🗑️ Trash — restore a project or delete it for good';}
+  else{const f=folders.find(x=>'f:'+x.id===pjView);list=live.filter(m=>m.folderId===f.id);head='📁 '+f.name;
+    bar=pjEl('div','pj-bar');const r=pjEl('button','btn','✏️ Rename folder');r.onclick=()=>renameFolder(f.id);const d=pjEl('button','btn','🗑️ Delete folder');d.onclick=()=>deleteFolder(f.id);bar.appendChild(r);bar.appendChild(d);}
+  const h=pjEl('div','pj-h',head);body.appendChild(h);
+  if(bar)body.appendChild(bar);
+  if(pjView==='trash'&&trash.length){const e=pjEl('button','btn danger','Empty Trash');e.style.marginBottom='12px';e.onclick=()=>deleteForever(trash.map(m=>m.id),'All '+trash.length+' project'+(trash.length===1?'':'s')+' in the Trash');body.appendChild(e);}
+  if(!list.length){
+    const emp=pjEl('div','pj-empty');
+    if(pjView==='trash')emp.textContent='The Trash is empty.';
+    else if(!live.length){emp.appendChild(pjEl('div','pj-empty-t','Welcome! Start your first project'));emp.appendChild(pjEl('div',null,'Every project keeps its own drawing, layers, motifs and brushes, saved automatically.'));const b=pjEl('button','btn primary pj-big','➕ New Project');b.style.marginTop='14px';b.onclick=()=>newProjectFlow(null);emp.appendChild(b);}
+    else emp.textContent=pjView.startsWith('f:')?'This folder is empty. Use Move on a project to put it here.':'Nothing here yet.';
+    body.appendChild(emp);return;
+  }
+  const grid=pjEl('div','pj-grid');body.appendChild(grid);
+  list.forEach(m=>{
+    const isCur=activeProject&&activeProject.id===m.id;
+    const card=pjEl('div','pj-card'+(isCur?' current':''));
+    const th=pjEl('div','pj-thumb');if(m.thumb)th.style.backgroundImage='url('+m.thumb+')';else th.textContent='🎨';
+    if(isCur)th.appendChild(pjEl('span','pj-badge','Open now'));
+    if(pjView!=='trash')th.onclick=()=>switchToProject(m.id);
+    card.appendChild(th);
+    const info=pjEl('div','pj-info');info.appendChild(pjEl('div','pj-name',m.name));
+    const fo=folders.find(f=>f.id===m.folderId);
+    info.appendChild(pjEl('div','pj-meta','Edited '+friendlyWhen(m.updatedAt)));
+    info.appendChild(pjEl('div','pj-meta',(fo?'📁 '+fo.name:'No folder')+' · '+(m.strokes||0)+' strokes'));
+    card.appendChild(info);
+    const acts=pjEl('div','pj-acts');
+    const A=(label,fn,cls)=>{const b=pjEl('button','btn'+(cls?' '+cls:''),label);b.onclick=fn;acts.appendChild(b);};
+    if(pjView==='trash'){A('↩️ Restore',()=>restoreProject(m.id),'primary');A('Delete forever',()=>deleteForever([m.id],'“'+m.name+'”'),'danger');}
+    else{A(isCur?'Continue':'Open',()=>switchToProject(m.id),'primary');A('Rename',()=>renameProject(m.id));A('Duplicate',()=>duplicateProject(m.id));A('Move',()=>moveProject(m.id));A('Export',()=>exportProject(m.id));A('Delete',()=>trashProject(m.id));}
+    card.appendChild(acts);grid.appendChild(card);
+  });
+}
+// ---- Boot ----
+async function bootProjects(){
+  buildProjectsUI();syncProjectName();
+  try{
+    await migrateLegacyIfNeeded();
+    const metas=(await dbAll(PROJ_STORE)).filter(m=>!m.trashed);
+    if(!metas.length){await enterNoProject();openProjects();return;}
+    let id=null;try{id=localStorage.getItem('sp-activeProject');}catch(e){}
+    const meta=metas.find(m=>m.id===id)||metas.sort((a,b)=>b.updatedAt-a.updatedAt)[0];
+    const doc=await dbGet(PDOC_STORE,meta.id);
+    const ok=doc?await loadProject(meta,doc,{quiet:true,boot:true}):false;
+    if(ok){
+      $('restoreBannerText').textContent='📂 Welcome back — “'+meta.name+'” was restored (saved ';
+      $('restoreBannerTime').textContent=friendlyWhen(doc.savedAt||meta.updatedAt)+')';
+      $('restoreAcceptBtn').style.display='none';$('restoreDeclineBtn').style.display='none';$('restoreOkBtn').style.display='';
+      $('restoreBanner').style.display='flex';
+      setStatus('📂 Opened “'+meta.name+'” — '+strokes.length+' stroke'+(strokes.length===1?'':'s')+', '+motifs.length+' motif'+(motifs.length===1?'':'s')+'.');
+      setTimeout(()=>{$('restoreBanner').style.display='none';},6000);
+    }else{
+      $('restoreBannerText').textContent='⚠️ Could not open “'+meta.name+'” — it has not been changed. Saved ';
+      $('restoreBannerTime').textContent=friendlyWhen(meta.updatedAt);
+      $('restoreAcceptBtn').textContent='Retry';$('restoreAcceptBtn').style.display='';
+      $('restoreDeclineBtn').textContent='Open Projects';$('restoreDeclineBtn').style.display='';$('restoreOkBtn').style.display='none';
+      $('restoreBanner').style.display='flex';
+      $('saveStatusPill').textContent='No project open';
+    }
+  }catch(e){
+    console.warn('[sketchpad] project storage unavailable',e);
+    autosaveBlocked=true;$('saveStatusPill').textContent='⚠️ Storage unavailable';$('saveStatusPill').classList.add('failed');
+    setStatus('⚠️ This browser is not allowing storage, so projects cannot be saved. Use ⬇️ Download Project to keep your work.');
+  }
+}
+$('restoreAcceptBtn').onclick=()=>{$('restoreBanner').style.display='none';bootProjects();};
+$('restoreDeclineBtn').onclick=()=>{$('restoreBanner').style.display='none';openProjects();};
+$('restoreOkBtn').onclick=()=>{$('restoreBanner').style.display='none';};
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&projDirty&&activeProject&&!autosaveBlocked){clearTimeout(autosaveTimer);saveActive();}});
+window.addEventListener('pagehide',()=>{if(projDirty&&activeProject&&!autosaveBlocked){clearTimeout(autosaveTimer);saveActive();}});
+$('quickSaveBtn').onclick=quickSaveNow;
+$('downloadProjectBtn').onclick=()=>{commitPendingEdits();downloadProjectFile();};
+$('openProjectInput').onchange=(e)=>{const file=e.target.files&&e.target.files[0];e.target.value='';if(file)importProjectFile(file,null);};
+$('projectsBtn').onclick=openProjects;
+$('newProjectBtn').onclick=()=>newProjectFlow(null);
+$('projNameChip').onclick=()=>{if(activeProject)renameProject(activeProject.id);else openProjects();};
+
 // Applies a previously-saved (or imported-from-file) doc object to the live app state. Shared by
 // the boot-time restore-prompt flow and by Open Project, so a project file round-trips through
 // exactly the same code path a real autosave restore does — including the interrupted-Edit-Motif
@@ -6831,90 +7314,6 @@ async function applyDocObject(doc){
     return true;
   }catch(e){console.warn('[sketchpad] restore failed',e);return false;}
 }
-function downloadProjectFile(){
-  const doc=buildDocObject();
-  const blob=new Blob([JSON.stringify(doc)],{type:'application/json'});
-  const stamp=new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
-  SketchpadNative.saveBlob(blob,'sketchpad-project-'+stamp+'.json').then(r=>{
-    if(r==='cancelled')return;
-    setStatus(r==='share'?'⬆️ Project file ready — save it to Files or AirDrop it as a backup.':'⬇️ Project file downloaded — keep it somewhere safe as a backup.');
-  });
-}
-async function openProjectFromFile(file){
-  try{
-    const text=await file.text();
-    const doc=JSON.parse(text);
-    const ok=await applyDocObject(doc);
-    if(!ok){setStatus('⚠️ That file had no readable project data.');return;}
-    if(!layers.length){layers=defaultLayers();activeLayerId=layers[layers.length-1].id;}
-    renderLayersList();
-    history=[];hIndex=-1;pushHist();redraw();updateBaseScale();
-    $('restoreBanner').style.display='none';
-    autosaveBlocked=false;scheduleAutosave();
-    setStatus('📂 Project loaded from file — '+strokes.length+' stroke'+(strokes.length===1?'':'s')+', '+motifs.length+' motif'+(motifs.length===1?'':'s')+'.');
-  }catch(e){
-    console.warn('[sketchpad] open project failed',e);
-    setStatus('⚠️ Could not open that file — it may not be a valid Sketchpad project.');
-  }
-}
-$('quickSaveBtn').onclick=quickSaveNow;
-$('downloadProjectBtn').onclick=downloadProjectFile;
-$('openProjectInput').onchange=(e)=>{
-  const file=e.target.files&&e.target.files[0];
-  e.target.value='';
-  if(file)openProjectFromFile(file);
-};
-let pendingRestoreDoc=null;
-async function afterRestoreApplied(doc){
-  history=[];hIndex=-1;pushHist();redraw();updateBaseScale();
-  setSaveStatus('saved',doc.savedAt);
-  autosaveBlocked=false;lastScore=docScore(doc);
-}
-// Launch: restore the stored session automatically (no choice to miss), and keep autosave off until
-// that has finished so an empty canvas can never overwrite it. If restoring fails the stored copy
-// is left untouched and the banner offers Retry / Start Fresh.
-async function maybeOfferRestore(){
-  try{
-    const doc=await fetchStoredDoc();
-    if(!doc||!doc.savedAt){autosaveBlocked=false;return;}
-    pendingRestoreDoc=doc;lastScore=docScore(doc);
-    $('restoreBannerTime').textContent=new Date(doc.savedAt).toLocaleString();
-    const ok=await applyDocObject(doc);
-    if(ok){
-      await afterRestoreApplied(doc);
-      // Informational only: it fades on its own and has just an OK button (Start Fresh lives in Earlier saves now).
-      $('restoreBannerText').textContent='📂 Welcome back — your last session was restored (saved ';
-      $('restoreBannerTime').textContent=friendlyWhen(doc.savedAt)+')';
-      $('restoreAcceptBtn').style.display='none';$('restoreDeclineBtn').style.display='none';$('restoreOkBtn').style.display='';
-      $('restoreBanner').style.display='flex';
-      setStatus('📂 Restored your last session — '+strokes.length+' stroke'+(strokes.length===1?'':'s')+', '+motifs.length+' motif'+(motifs.length===1?'':'s')+'.');
-      setTimeout(()=>{$('restoreBanner').style.display='none';},6000);
-      pendingRestoreDoc=null;
-    }else{
-      $('restoreBannerText').textContent='⚠️ Could not restore your autosave from ';
-      $('restoreAcceptBtn').textContent='Retry';$('restoreAcceptBtn').style.display='';$('restoreDeclineBtn').style.display='';$('restoreOkBtn').style.display='none';
-      $('restoreBanner').style.display='flex';
-    }
-  }catch(e){console.warn('[sketchpad] restore check failed',e);}
-}
-$('restoreAcceptBtn').onclick=async()=>{
-  if(!pendingRestoreDoc)return;
-  const ok=await applyDocObject(pendingRestoreDoc);
-  if(ok){$('restoreBanner').style.display='none';await afterRestoreApplied(pendingRestoreDoc);setStatus('📂 Restored your last session — '+strokes.length+' stroke'+(strokes.length===1?'':'s')+', '+motifs.length+' motif'+(motifs.length===1?'':'s')+'.');pendingRestoreDoc=null;}
-  else setStatus('⚠️ Still could not restore it — use 🕘 Earlier saves, or Start Fresh (your autosave is kept as a backup).');
-};
-$('restoreOkBtn').onclick=()=>{$('restoreBanner').style.display='none';};
-async function startFreshCanvas(){
-  $('restoreBanner').style.display='none';
-  try{const d=await fetchStoredDoc();if(d&&d.savedAt)await idbReq(DOC_STORE,'readwrite',st=>st.put(d,'backup:'+d.savedAt));}catch(e){}
-  pendingRestoreDoc=null;
-  // Wipe the live canvas for a genuinely fresh start; the old session stays under 🕘 Earlier saves.
-  strokes=[];placed=[];motifs=[];traces=[];bgImg=null;layers=defaultLayers();activeLayerId=layers[layers.length-1].id;
-  rebuildAllLayers();renderLayersList();renderTray();renderTraces();history=[];hIndex=-1;pushHist();redraw();
-  autosaveBlocked=false;lastScore=0;lastBackupAt=Date.now();
-  setStatus('🆕 Started a blank canvas — your previous work is kept under 🕘 Earlier saves.');
-}
-$('restoreDeclineBtn').onclick=startFreshCanvas;
 // 🕘 Earlier saves: the rolling backups made automatically before the autosave was overwritten.
 function friendlyWhen(ms){
   const d=new Date(ms),n=new Date(),tm=d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
@@ -6968,6 +7367,7 @@ $('backupsBtn').onclick=async()=>{
         if(!confirm('Replace what is on the canvas now with this earlier save? (Your current work is kept as a backup first.)'))return;
         try{await runAutosave();}catch(e){}
         lastBackupAt=0;lastScore=Math.max(lastScore,1);
+        resetForLoad();
         const ok=await applyDocObject(b.doc);
         if(ok){history=[];hIndex=-1;pushHist();redraw();updateBaseScale();autosaveBlocked=false;scheduleAutosave();$('backupsPanel').style.display='none';setStatus('🕘 Restored the save from '+new Date(b.at).toLocaleString()+'.');}
         else setStatus('⚠️ That earlier save could not be opened.');
@@ -6976,7 +7376,7 @@ $('backupsBtn').onclick=async()=>{
     });
   }catch(e){host.textContent='Could not read earlier saves.';}
 };
-$('newBlankBtn').onclick=async()=>{if(!confirm('Start a new blank canvas? Your current work is kept in Earlier saves.'))return;$('backupsPanel').style.display='none';try{await runAutosave();}catch(e){}await startFreshCanvas();};
+$('newBlankBtn').onclick=()=>{$('backupsPanel').style.display='none';newProjectFlow(null);};
 $('backupsClose').onclick=()=>{$('backupsPanel').style.display='none';};
 async function boot(){
   applyTransform();
@@ -6988,8 +7388,8 @@ async function boot(){
   // — same recompute used any time the workspace changes size afterward (panel collapse/expand,
   // window resize); `zoom` itself stays at its default of 1 until the user actually pinches.
   updateBaseScale();
-  $('saveStatusPill').textContent='No autosave yet';
-  await maybeOfferRestore();
+  $('saveStatusPill').textContent='Opening…';
+  await bootProjects();
 }
 boot();
 
