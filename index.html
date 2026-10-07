@@ -359,6 +359,7 @@ html.in-suite .suite-only{display:block!important}
         <button class="btn mini shape-btn" data-shape="polygon">⬡ Polygon</button>
         <button class="btn mini shape-btn" data-shape="star">☆ Star</button>
         <button class="btn mini shape-btn" data-shape="heart">♡ Heart</button>
+        <button class="btn mini shape-btn" data-shape="teardrop">💧 Teardrop</button>
         <button class="btn mini shape-btn" data-shape="spiral">🌀 Spiral</button>
       </div>
       <button id="shapeConstrainBtn" class="btn mini" style="width:100%;margin-top:8px;">🔒 Constrain (Square/Circle)</button>
@@ -2496,8 +2497,9 @@ function generateBlend(A,B,spec){
   const qa=prep.a.map(p=>({x:p.x-prep.ca.x,y:p.y-prep.ca.y,pr:p.pr}));
   const qb=prep.b.map(p=>{const x=p.x-prep.cb.x,y=p.y-prep.cb.y;return {x:(x*cth-y*sth)/prep.sc,y:(x*sth+y*cth)/prep.sc,pr:p.pr};});
   const sA=blendClone(strokeSettings(A)),sB=strokeSettings(B);
-  for(let k=1;k<=n;k++){
-    const t=k/(n+1);
+  const tlist=Array.isArray(spec.ts)?spec.ts:null;
+  for(let k=1;k<=(tlist?tlist.length:n);k++){
+    const t=tlist?tlist[k-1]:k/(n+1);
     const cx=spec.pos?prep.ca.x+(prep.cb.x-prep.ca.x)*t:prep.ca.x,cy=spec.pos?prep.ca.y+(prep.cb.y-prep.ca.y)*t:prep.ca.y;
     const sc=spec.size?Math.pow(prep.sc,t):1,th=spec.rot?prep.th*t:0,c=Math.cos(th)*sc,sn=Math.sin(th)*sc;
     const pts=[];
@@ -2508,7 +2510,7 @@ function generateBlend(A,B,spec){
     if(prep.closed)pts.push({...pts[0]});
     const s=blendClone(A);
     delete s.shape;delete s.nodes;delete s.regions;delete s.blendId;delete s.blendSpec;
-    s.id=crypto.randomUUID();s.points=pts;s.closed=prep.closed;
+    s.id=crypto.randomUUID();s.points=pts;s.closed=prep.closed;s.cornerAuto=true; // keep sharp corners of blended outlines
     s.settings=blendClone(sA);
     ['size','opacity'].forEach(key=>{if(typeof sA[key]==='number'&&typeof sB[key]==='number')s.settings[key]=Math.round((sA[key]+(sB[key]-sA[key])*t)*100)/100;});
     if(spec.colour){
@@ -2769,9 +2771,7 @@ function convertShapeToPath(){
   // OUTLINE actually render closed, no gap) — drop that repeated point before deriving nodes, or
   // a closed shape would convert into a path with a redundant duplicate node sitting on its seam.
   const srcPoints=stroke.closed?stroke.points.slice(0,-1):stroke.points;
-  const nodes=SHAPE_POLYGONAL[stroke.shape.type]
-    ?srcPoints.map(p=>({x:p.x,y:p.y,pressure:p.pressure,type:'corner'}))
-    :pointsToNodes(srcPoints);
+  const nodes=strokeToEditNodes(stroke);
   stroke.nodes=nodes;
   stroke.shape=null;
   stroke.points=nodesToPoints(nodes,stroke.closed);
@@ -4249,7 +4249,7 @@ function rdpSimplify(points,epsilon){
 // Close Shape outline, ...) onto two coincident nodes with no usable outline left to drag.
 // rdpSimplifyClosedLoop sidesteps this entirely by anchoring on the loop's two genuinely
 // farthest-apart points instead of an arbitrary (and, for a closed loop, degenerate) array edge.
-function pointsToNodes(points,closed){
+function pointsToNodes(points,closed,detectCorners){
   let src=points;
   if(closed&&src.length>1){
     const first=src[0],last=src[src.length-1];
@@ -4260,7 +4260,26 @@ function pointsToNodes(points,closed){
   // user had touched anything. 5 keeps noticeably more of the original shape while still cutting
   // a dense resampled polyline down to a manageable, actually-draggable handful of nodes.
   const simplified=closed?rdpSimplifyClosedLoop(src,1.5):rdpSimplify(src,1.5); // tight fit: Edit Path must not change how the line looks
-  return simplified.map(p=>({x:p.x,y:p.y,pressure:p.pressure,type:'smooth'}));
+  // Sharp points (flagged by the shape generators, or - for shapes - any big turn) become corner
+  // nodes, so the heart's cusp and the teardrop's tip are not rounded off the moment they are edited.
+  const m=simplified.length;
+  return simplified.map((p,i)=>{
+    let corner=p.corner===true;
+    if(!corner&&detectCorners&&m>=3){
+      const a=simplified[closed?(i-1+m)%m:i-1],c=simplified[closed?(i+1)%m:i+1];
+      if(a&&c){const a1=Math.atan2(p.y-a.y,p.x-a.x),a2=Math.atan2(c.y-p.y,c.x-p.x);let d=Math.abs(a2-a1);if(d>Math.PI)d=2*Math.PI-d;if(d>0.9)corner=true;}
+    }
+    return {x:p.x,y:p.y,pressure:p.pressure,type:corner?'corner':'smooth'};
+  });
+}
+// Nodes for editing a stroke: polygonal shapes keep their exact vertices as corner nodes (never
+// run through smoothing), other shapes keep their sharp tips, everything else is simplified as before.
+function strokeToEditNodes(stroke){
+  if(stroke.shape&&SHAPE_POLYGONAL[stroke.shape.type]){
+    const src=stroke.closed&&stroke.points.length>1?stroke.points.slice(0,-1):stroke.points;
+    return src.map(p=>({x:p.x,y:p.y,pressure:p.pressure,type:'corner'}));
+  }
+  return pointsToNodes(stroke.points,stroke.closed,!!stroke.shape);
 }
 function catmullRom(p0,p1,p2,p3,t){const t2=t*t,t3=t2*t;return 0.5*((2*p1)+(-p0+p2)*t+(2*p0-5*p1+4*p2-p3)*t2+(-p0+3*p1-3*p2+p3)*t3);}
 // `closed` wraps the segment index around the node array (using modulo neighbours for the
@@ -4283,6 +4302,7 @@ function nodesToPoints(nodes,closed=false,samplesPerSeg=14){
       const t=s/steps;
       if(smoothSeg){out.push({x:catmullRom(n0.x,n1.x,n2.x,n3.x,t),y:catmullRom(n0.y,n1.y,n2.y,n3.y,t),pressure:n1.pressure+(n2.pressure-n1.pressure)*t});}
       else{out.push({x:n1.x+(n2.x-n1.x)*t,y:n1.y+(n2.y-n1.y)*t,pressure:n1.pressure+(n2.pressure-n1.pressure)*t});}
+      if(s===0&&n1.type==='corner')out[out.length-1].corner=true; // a corner node stays a sharp corner when drawn
     }
   }
   if(closed){out.push({...out[0]});}
@@ -4331,9 +4351,9 @@ function findInsertionOnPath(px,py){
 // app already fixed once for Edit Path). "Convert to Path" deletes stroke.shape entirely and hands
 // the SAME points over to the existing node editor — from that moment on there is no parametric
 // object left to fall back to, by design.
-const SHAPE_TYPES=['line','rect','roundRect','ellipse','circle','triangle','diamond','polygon','star','heart','spiral'];
+const SHAPE_TYPES=['line','rect','roundRect','ellipse','circle','triangle','diamond','polygon','star','heart','teardrop','spiral'];
 // Shapes with a closed, filled silhouette — these are exactly the ones Paint Inside can target.
-const SHAPE_CLOSED={line:false,rect:true,roundRect:true,ellipse:true,circle:true,triangle:true,diamond:true,polygon:true,star:true,heart:true,spiral:false};
+const SHAPE_CLOSED={line:false,rect:true,roundRect:true,ellipse:true,circle:true,triangle:true,diamond:true,polygon:true,star:true,heart:true,teardrop:true,spiral:false};
 // Vertex-exact shapes: shapeLocalPoints() already returns their real corners with nothing sampled
 // in between, so Convert to Path can hand those straight to the node editor as 'corner' nodes
 // instead of running RDP simplification (which would round off deliberately sharp corners).
@@ -4365,9 +4385,9 @@ function shapeLocalPoints(shape){
       return out;
     }
     case 'roundRect':{
-      const r=Math.max(0,Math.min(1,(shape.cornerRadius!=null?shape.cornerRadius:30)/100)),out=[],segs=6;
+      const r=Math.max(0,Math.min(1,(shape.cornerRadius!=null?shape.cornerRadius:30)/100)),out=[],segs=12;
       // Sample a quarter-circle arc at each of the 4 corners, straight edges implied between them.
-      const arc=(cx,cy,startA)=>{for(let i=0;i<=segs;i++){const a=startA+i*(Math.PI/2)/segs;out.push({x:cx+Math.cos(a)*r,y:cy+Math.sin(a)*r});}};
+      const arc=(cx,cy,startA)=>{for(let i=0;i<=segs;i++){const a=startA+i*(Math.PI/2)/segs;const pt={x:cx+Math.cos(a)*r,y:cy+Math.sin(a)*r};if(i===0||i===segs)pt.corner=true;out.push(pt);}}; // arc ends join straight edges, kept exact
       arc(1-r,-1+r,-Math.PI/2);
       arc(1-r,1-r,0);
       arc(-1+r,1-r,Math.PI/2);
@@ -4375,24 +4395,33 @@ function shapeLocalPoints(shape){
       return out;
     }
     case 'ellipse':case 'circle':{
-      const out=[],segs=48;
+      const out=[],segs=120;
       for(let i=0;i<segs;i++){const a=i*2*Math.PI/segs;out.push({x:Math.cos(a),y:Math.sin(a)});}
       return out;
     }
     case 'heart':{
-      const out=[],segs=48,xs=16,ys=17.5;
+      const out=[],segs=120,xs=16,ys=17.5;
       for(let i=0;i<=segs;i++){
         const t=i/segs*2*Math.PI;
         const x=16*Math.pow(Math.sin(t),3);
         const y=-(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t));
-        out.push({x:x/xs,y:y/ys});
+        const pt={x:x/xs,y:y/ys};
+        if(i===0||i===segs/2||i===segs)pt.corner=true; // the top cusp and the bottom point stay sharp
+        out.push(pt);
       }
+      return out;
+    }
+    case 'teardrop':{
+      // One pointed tip at the top (0,-1) and a smooth round base: an ellipse (centre y=c) with the
+      // two straight sides drawn from the tip tangent to it, so the sides blend into the curve.
+      const c=0.3,ry=1-c,d=(1+c)/ry,a0=-Math.asin(1/d),a1=Math.PI-a0,segs=72,out=[{x:0,y:-1,corner:true}];
+      for(let i=0;i<=segs;i++){const a=a0+(a1-a0)*i/segs;out.push({x:Math.cos(a),y:c+Math.sin(a)*ry});}
       return out;
     }
     case 'spiral':{
       const turns=Math.max(0.5,shape.turns||3),dir=shape.dir||1;
       const tightness=Math.max(0.1,Math.min(1,(shape.spacing!=null?shape.spacing:60)/100));
-      const steps=Math.max(24,Math.round(turns*24)),out=[];
+      const steps=Math.max(48,Math.round(turns*60)),out=[];
       const startR=1-tightness*0.9; // tighter spacing -> more turns visible within the same outer radius
       for(let i=0;i<=steps;i++){
         const t=i/steps,a=dir*t*turns*2*Math.PI,r=startR*(1-t)*0.15+t*1;
@@ -4425,7 +4454,9 @@ function shapeToPoints(shape){
   if(SHAPE_CLOSED[shape.type]&&local.length>1)local=local.concat([local[0]]);
   return local.map(p=>{
     const lx=(shape.flipH?-p.x:p.x)*hw,ly=(shape.flipV?-p.y:p.y)*hh;
-    return {x:cx+lx*cosR-ly*sinR,y:cy+lx*sinR+ly*cosR,pressure:0.65};
+    const o={x:cx+lx*cosR-ly*sinR,y:cy+lx*sinR+ly*cosR,pressure:0.65};
+    if(p.corner||SHAPE_POLYGONAL[shape.type])o.corner=true;
+    return o;
   });
 }
 // Drag-to-create: normalises whichever corner was dragged into x0<->x1 order isn't needed (the
@@ -4780,7 +4811,7 @@ function enterEditPath(strokeId){
   if(layer&&layer.locked){setStatus('🔒 "'+layer.name+'" is locked.');return;}
   disarmAreaFill();disarmShapeMultiSelect();
   pathEditStrokeId=stroke.id;
-  pathEditNodes=stroke.nodes?stroke.nodes.map(n=>({...n})):pointsToNodes(stroke.points,stroke.closed);
+  pathEditNodes=stroke.nodes?stroke.nodes.map(n=>({...n})):strokeToEditNodes(stroke);
   pathEditClosed=!!stroke.closed;
   pathEditInitial=JSON.stringify([pathEditClosed,pathEditNodes.map(n=>[Math.round(n.x*100),Math.round(n.y*100),n.type])]);
   selectedNodeIndex=null;
@@ -6486,7 +6517,7 @@ window.__sketchpadCanvasToScreenAbs=(x,y)=>{
 // the (production, intentional) 120ms pinch-settle debounce so a test can assert on the
 // re-rendered result immediately instead of waiting out the debounce window.
 window.__sketchpadSetRot=(r)=>{rot=+r||0;applyTransform();};
-window.__sketchpadDoc={build:()=>buildDocObject(),apply:d=>applyDocObject(d),svg:n=>buildSvgExport(n)};
+window.__sketchpadDoc={build:()=>buildDocObject(),apply:d=>applyDocObject(d),svg:n=>buildSvgExport(n),blendAt:(aId,bId,ts)=>{const A=strokes.find(x=>x.id===aId),B=strokes.find(x=>x.id===bId);const r=generateBlend(A,B,{steps:1,colour:true,shape:true,pos:true,size:true,rot:true,ts});return r.error?{error:r.error}:r.strokes.map(x=>({points:x.points,color:x.color,closed:x.closed}));}};
 window.__sketchpadSetPan=(x,y)=>{panX=+x||0;panY=+y||0;applyTransform();};
 window.__sketchpadSetZoom=(z,skipDebounce)=>{
   zoom=clampZoom(z);
