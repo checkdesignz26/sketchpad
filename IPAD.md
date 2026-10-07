@@ -18,7 +18,7 @@ Native behaviour lives in `native-bridge.js` and only switches on inside the iPa
 
 - **Fabric preview.** Zoom out and the repeat continues across the whole workspace (respects grid, half-drop,
   half-brick and diamond). Your tile has a subtle outline. It is display only: exports are unchanged.
-- **Crisp deep zoom.** Zoom goes up to 3200%. Once zooming settles, the visible part of the vector drawing is redrawn at full
+- **Crisp deep zoom.** Zoom goes up to 3200%. The stroke being edited with Edit Path stays sharp while you drag a node. Once zooming settles, the visible part of the vector drawing is redrawn at full
   screen resolution so lines stay sharp (the soft view stays until the sharp one is ready). Placed pictures and motifs are
   bitmaps, so they stay soft.
 - **Steady zoom.** Pinch is anchored between your fingers; the +/- buttons zoom about the centre of the workspace.
