@@ -444,7 +444,7 @@ html.in-suite .suite-only{display:block!important}
       <div class="hint">New strokes go onto the active (highlighted) layer. Tap a row to make it active, tap its name (or ✎ Rename) to rename it. Every layer works the same way: the names are just labels.</div>
     </section>
     <section class="section"><div class="section-title">📐 Repeat Layouts</div><div class="grid"><button class="layout-btn active" data-layout="grid">Grid</button><button class="layout-btn" data-layout="halfDrop">Half Drop</button><button class="layout-btn" data-layout="halfBrick">Half Brick</button><button class="layout-btn" data-layout="diamond">Diamond</button><button class="layout-btn" data-layout="ogee">Ogee</button><button class="layout-btn" data-layout="tossed">Tossed</button></div></section>
-    <section class="section"><div class="section-title">🔧 Selected Motif</div><div class="slider-row"><label>Size</label><input id="motifScale" type="range" min="10" max="600" value="100"><span id="motifScaleVal">100%</span></div><div class="row"><button id="rotL" class="btn mini">↺</button><button id="rotR" class="btn mini">↻</button><button id="flipH" class="btn mini">Flip H</button><button id="flipV" class="btn mini">Flip V</button><button id="deleteSel" class="btn mini danger">Delete</button></div><div class="row" style="margin-top:6px;"><button id="editMotifBtn" class="btn mini primary" style="flex:1 1 100%;display:none;">✏️ Edit Motif</button><button id="recolourBtn" class="btn mini" style="flex:1 1 100%;display:none;">🎨 Recolour Parts</button></div><div class="row" style="margin-top:6px;"><button id="duplicateMotifBtn" class="btn mini" style="flex:1 1 45%;display:none;">⧉ Duplicate</button><button id="makeIndependentBtn" class="btn mini" style="flex:1 1 45%;display:none;">🔓 Make Independent</button></div><div class="row" style="margin-top:6px;"><button id="releaseMotifBtn" class="btn mini" style="flex:1 1 100%;display:none;" title="Turn this motif back into its original vector strokes as a group, which you can resize at any size without blur">⤴ Release to Vectors (group)</button></div></section>
+    <section class="section"><div class="section-title">🔧 Selected Motif</div><div class="slider-row"><label>Size</label><input id="motifScale" type="range" min="10" max="600" value="100"><span id="motifScaleVal">100%</span></div><div class="row"><button id="rotL" class="btn mini">↺</button><button id="rotR" class="btn mini">↻</button><button id="flipH" class="btn mini">Flip H</button><button id="flipV" class="btn mini">Flip V</button><button id="deleteSel" class="btn mini danger">Delete</button></div><div class="row" style="margin-top:6px;"><button id="editMotifBtn" class="btn mini primary" style="flex:1 1 100%;display:none;">✏️ Edit Motif</button><button id="recolourBtn" class="btn mini" style="flex:1 1 100%;display:none;">🎨 Recolour Parts</button></div><div class="row" style="margin-top:6px;"><button id="blendMotifBtn" class="btn mini" style="flex:1 1 100%;" title="Blend this motif into another motif or group">🌀 Blend with another…</button></div><div class="row" style="margin-top:6px;"><button id="duplicateMotifBtn" class="btn mini" style="flex:1 1 45%;display:none;">⧉ Duplicate</button><button id="makeIndependentBtn" class="btn mini" style="flex:1 1 45%;display:none;">🔓 Make Independent</button></div><div class="row" style="margin-top:6px;"><button id="releaseMotifBtn" class="btn mini" style="flex:1 1 100%;display:none;" title="Turn this motif back into its original vector strokes as a group, which you can resize at any size without blur">⤴ Release to Vectors (group)</button></div></section>
     <section class="section" id="alignSection">
       <div class="section-title">📐 Align Motifs</div>
       <button id="multiSelectToggle" class="btn mini" style="width:100%;">🔢 Multi-Select: Off</button>
@@ -553,15 +553,17 @@ html.in-suite .suite-only{display:block!important}
       <span>&#127744; Blend</span>
       <span class="float-panel-handle-actions"><button id="blendApplyBtn" class="btn mini primary float-panel-done">&#10003; Apply</button><button id="blendCancelBtn" class="btn mini danger float-panel-done">&#10005; Cancel</button><span class="float-panel-grip" title="Drag to move">&#10303;</span></span>
     </div>
-    <div id="blendPickRow" style="display:none;margin-top:8px;"><div class="hint">Tap the <b>second shape</b> on the canvas. The first one is the one you had selected.</div><button id="blendCancelPickBtn" class="btn mini" style="width:100%;margin-top:6px;">Cancel</button></div>
+    <div id="blendPickRow" style="display:none;margin-top:8px;"><div class="hint" id="blendPickText">Tap the <b>second shape</b> on the canvas. The first one is the one you had selected.</div><button id="blendCancelPickBtn" class="btn mini" style="width:100%;margin-top:6px;">Cancel</button></div>
     <div id="blendMsg" class="hint" style="display:none;margin-top:8px;"></div>
     <div id="blendBody" style="margin-top:8px;">
-      <div style="font-size:12.5px;opacity:.85;margin-bottom:4px;">Steps between the two shapes</div>
+      <div id="blendStepsLabel" style="font-size:12.5px;opacity:.85;margin-bottom:4px;">Steps between the two shapes</div>
       <div class="row" style="align-items:center;gap:8px;"><input id="blendSteps" type="range" min="1" max="40" step="1" value="5" style="flex:1;min-width:0;"><input id="blendStepsNum" type="number" min="1" max="40" step="1" value="5" inputmode="numeric" style="width:56px;flex:none;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></div>
       <div id="blendStepsNote" class="hint" style="margin:4px 0 8px;"></div>
+      <div id="blendModeNote" class="hint" style="display:none;margin:0 0 8px;padding:6px 8px;border-radius:8px;background:rgba(155,107,255,.14);"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;font-size:13px;">
-        <label style="display:flex;gap:6px;align-items:center;"><input id="blendColour" type="checkbox" checked> Colour &amp; opacity</label>
-        <label style="display:flex;gap:6px;align-items:center;"><input id="blendShape" type="checkbox" checked> Shape</label>
+        <label style="display:flex;gap:6px;align-items:center;"><input id="blendColour" type="checkbox" checked> <span id="blendColourTxt">Colour &amp; opacity</span></label>
+        <label id="blendOpacityLbl" style="display:none;gap:6px;align-items:center;"><input id="blendOpacity" type="checkbox" checked> Opacity</label>
+        <label style="display:flex;gap:6px;align-items:center;"><input id="blendShape" type="checkbox" checked> <span id="blendShapeTxt">Shape</span></label>
         <label style="display:flex;gap:6px;align-items:center;"><input id="blendPos" type="checkbox" checked> Position</label>
         <label style="display:flex;gap:6px;align-items:center;"><input id="blendSize" type="checkbox" checked> Size</label>
         <label style="display:flex;gap:6px;align-items:center;"><input id="blendRot" type="checkbox" checked> Rotation</label>
@@ -633,6 +635,7 @@ html.in-suite .suite-only{display:block!important}
     <div class="row" style="margin-top:6px;gap:6px;align-items:center;"><span style="font-size:12.5px;opacity:.8;width:44px;">Turn</span><input id="grpTurnDeg" type="number" min="-360" max="360" value="90" style="width:70px;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);">°<button id="grpTurnBtn" class="btn mini" style="flex:1">Turn</button></div>
     <div class="row" style="margin-top:6px;gap:6px;align-items:center;"><span style="font-size:12.5px;opacity:.8;width:44px;">Colour</span><input id="grpColour" type="color" value="#000000" style="width:44px;height:34px;padding:0;border:none;background:none;"><span style="font-size:12.5px;opacity:.8;margin-left:6px;">Line</span><input id="grpWidth" type="number" min="1" max="200" placeholder="size" style="width:62px;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"><button id="grpEditAllBtn" class="btn mini" style="flex:1" title="Apply the colour and line size to everything selected">Apply to all</button></div>
     <div class="row" style="margin-top:6px;gap:6px;"><button id="grpAddBtn" class="btn mini" style="flex:1" title="Tap more things to add or remove them">＋ Add / remove</button><button id="grpInsideBtn" class="btn mini" style="flex:1" title="Select one part of the group to edit it">✎ Edit inside</button></div>
+    <div class="row" style="margin-top:6px;gap:6px;"><button id="grpBlendBtn" class="btn mini" style="flex:1" title="Select two motifs or two groups, then Blend to make steps between them">🌀 Blend two…</button></div>
     <div class="row" style="margin-top:6px;gap:6px;"><button id="grpDeleteBtn" class="btn mini danger" style="flex:1">✕ Delete selection</button></div>
   </div>
   <button id="sidebarToggleBtn" class="sidebar-toggle" title="Hide tools panel">‹</button>
@@ -1322,7 +1325,7 @@ function snapshot(){
     groupsJSON:JSON.stringify(groups),
   };
 }
-function pushHist(){try{pruneGroups();}catch(e){}try{if(typeof refreshBlends==='function')refreshBlends();}catch(e){console.warn('[sketchpad] blend refresh failed',e);}history=history.slice(0,hIndex+1);history.push(snapshot());if(history.length>40)history.shift();hIndex=history.length-1;scheduleAutosave();}
+function pushHist(){try{pruneGroups();}catch(e){}try{if(typeof refreshBlends==='function')refreshBlends();if(typeof refreshObjBlends==='function')refreshObjBlends();}catch(e){console.warn('[sketchpad] blend refresh failed',e);}history=history.slice(0,hIndex+1);history.push(snapshot());if(history.length>40)history.shift();hIndex=history.length-1;scheduleAutosave();}
 // Synchronous now (no more toDataURL()/Image round-trip for the drawing layer) — cheaper AND
 // simpler: JSON-serialised stroke points are far smaller than a full 1800x1800 PNG snapshot per
 // undo step, and replaying them is deterministic so this never has to wait on an image decode.
@@ -1591,7 +1594,7 @@ function drawShapeToolsHighlights(){
   });
   ctx.restore();
 }
-function drawOne(p,ox=0,oy=0){const hi=p.motifId?motifHi.get(p.motifId):null;ctx.save();ctx.translate(p.x+ox,p.y+oy);ctx.rotate(p.r*Math.PI/180);ctx.scale(p.s*(p.fx==null?1:p.fx),p.s*(p.fy==null?1:p.fy));ctx.drawImage((hi&&hi.img===p.img)?hi.canvas:p.img,-p.w/2,-p.h/2,p.w,p.h);ctx.restore();}
+function drawOne(p,ox=0,oy=0){const hi=p.motifId?motifHi.get(p.motifId):null;ctx.save();if(p.alpha!=null)ctx.globalAlpha=Math.max(0,Math.min(1,p.alpha));ctx.translate(p.x+ox,p.y+oy);ctx.rotate(p.r*Math.PI/180);ctx.scale(p.s*(p.fx==null?1:p.fx),p.s*(p.fy==null?1:p.fy));ctx.drawImage((hi&&hi.img===p.img)?hi.canvas:p.img,-p.w/2,-p.h/2,p.w,p.h);ctx.restore();}
 // An unfilled Template slot: a dashed placeholder shape (same idea as Magic Builder's blank
 // skeleton bricks) showing where a motif will land and roughly how big ("hero" slots are the
 // biggest, "accent"/"filler" the smallest) - purely an editing aid, never exported.
@@ -2145,13 +2148,34 @@ function addMotif(src,name,placeNow=false,source=null,returnToDraw=false){
   };
   img.src=src;
 }
+// Sharp motif brush tips: a captured motif keeps its real strokes (entry.source), so when its brush is used bigger than the
+// small preview picture, the tip is redrawn from those strokes at a power-of-two size that fits the stamp (64..2048 px).
+// Tips are cached per motif+size, tied to the motif's current picture/source (editing the motif makes the old tips stale),
+// and trimmed least-recently-used to a pixel budget so iPad memory stays safe.
+const motifTipCache=new Map();let motifTipBuilding=false;const MOTIF_TIP_BUDGET=24e6;
+function motifTipFor(entry,px){
+  const b=entry&&entry.source&&entry.source.bounds;if(!b||motifTipBuilding)return null;
+  let bucket=64;while(bucket<px&&bucket<2048)bucket*=2;
+  const key=entry.id+'|'+bucket,hit=motifTipCache.get(key);
+  if(hit&&hit.img===entry.img&&hit.src===entry.source){motifTipCache.delete(key);motifTipCache.set(key,hit);return hit.canvas;}
+  if(hit)motifTipCache.delete(key);
+  motifTipBuilding=true;
+  try{
+    const canvas=renderSourceHi(entry,bucket/Math.max(b.w,b.h));
+    motifTipCache.set(key,{img:entry.img,src:entry.source,canvas});
+    let total=0;motifTipCache.forEach(v=>{total+=v.canvas.width*v.canvas.height;});
+    for(const k of motifTipCache.keys()){if(total<=MOTIF_TIP_BUDGET||motifTipCache.size<=1)break;const v=motifTipCache.get(k);total-=v.canvas.width*v.canvas.height;motifTipCache.delete(k);}
+    return canvas;
+  }catch(e){console.warn('[sketchpad] sharp stamp tip failed',e);return null;}
+  finally{motifTipBuilding=false;}
+}
 // Every captured motif doubles as a brush ("Motif Brushes" in the brush panel): draw a line and
 // the motif is stamped along it. Kept in step with the motif list from renderTray.
 function syncStampBrushes(){
   let changed=false;
   const want=new Map(motifs.filter(m=>m.img&&(m.img.naturalWidth||m.img.width)).map(m=>['stamp:'+m.id,m]));
   BrushEngine.BRUSHES.filter(b=>b.stamp&&String(b.id).startsWith('stamp:')&&!want.has(b.id)).map(b=>b.id).forEach(id=>{BrushEngine.unregisterStampBrush(id);changed=true;if(activeBrushId===id){activeBrushId='smoothPen';}});
-  want.forEach((m,id)=>{const b=BrushEngine.BRUSHES.find(x=>x.id===id);if(!b||b.stampImg!==m.img||b.name!==m.name){BrushEngine.registerStampBrush(id,m.name,m.img);changed=true;}});
+  want.forEach((m,id)=>{const b=BrushEngine.BRUSHES.find(x=>x.id===id);if(!b||b.stampImg!==m.img||b.name!==m.name){const nb=BrushEngine.registerStampBrush(id,m.name,m.img);if(nb)nb.tipFn=px=>motifTipFor(m,px);changed=true;}});
   if(changed){
     try{renderBrushFamilies();syncRecents();syncFavorites();syncControlsFromSettings();if(typeof renderStrokeReassignSwatches==='function'&&selectedStrokeId)renderStrokeReassignSwatches();}catch(e){console.warn(e);}
     if(strokes.some(st=>String(st.brushId).startsWith('stamp:'))){try{rebuildAllLayers();redraw();}catch(e){}}
@@ -2687,19 +2711,23 @@ function blendReadControls(){
   const d=blendDraft;
   d.steps=Math.max(1,Math.min(BLEND_MAX_STEPS,Math.round(+$('blendSteps').value)||1));
   d.colour=$('blendColour').checked;d.shape=$('blendShape').checked;d.pos=$('blendPos').checked;d.size=$('blendSize').checked;d.rot=$('blendRot').checked;
+  if(d.obj)d.opacity=$('blendOpacity').checked;
 }
 function blendWriteControls(){
   const d=blendDraft;$('blendSteps').value=d.steps;$('blendStepsNum').value=d.steps;
   $('blendColour').checked=d.colour;$('blendShape').checked=d.shape;$('blendPos').checked=d.pos;$('blendSize').checked=d.size;$('blendRot').checked=d.rot;
+  if(d.obj)$('blendOpacity').checked=d.opacity!==false;
   blendUpdateNote();
 }
 function blendUpdateNote(){
   const d=blendDraft;if(!d)return;
+  if(d.obj){objUpdateNote();return;}
   $('blendStepsNote').textContent=d.steps+' new shape'+(d.steps===1?'':'s')+' between the two originals ('+(d.steps+2)+' in total with them).';
 }
 function blendMsg(text,bad){const m=$('blendMsg');m.textContent=text||'';m.style.display=text?'block':'none';m.style.color=bad?'#c0392b':'';}
 function blendPreview(){
   if(!blendDraft||!blendDraft.bId)return;
+  if(blendDraft.obj){objPreview();return;}
   cancelAnimationFrame(blendRaf);
   blendRaf=requestAnimationFrame(()=>{
     if(!blendDraft)return;
@@ -2727,6 +2755,8 @@ function blendShowPanel(){
 }
 function openBlend(){
   if(blendDraft)return;
+  {const gs=strokes.find(x=>x.id===selectedStrokeId);if(multiSel||(selected&&placed.find(p=>p.id===selected))||(gs&&gs.oblendId))return openObjBlend();}
+  objShowControls(false);
   const sel=strokes.find(s=>s.id===selectedStrokeId);
   if(!sel&&selected){setStatus('🌀 Pictures and placed motifs cannot be blended yet. Select a vector shape or path instead.');return;}
   if(!sel||pathEditStrokeId){setStatus('🌀 Select a shape first, then tap Blend.');return;}
@@ -2741,9 +2771,10 @@ function openBlend(){
   blendPickArmed=true;blendWriteControls();blendMsg('');blendShowPanel();syncStrokeSelectionUI();
   setStatus('🌀 Now tap the second shape on the canvas.');
 }
-function closeBlendPanel(){blendDraft=null;blendPickArmed=false;$('blendPanel').style.display='none';syncStrokeSelectionUI();}
+function closeBlendPanel(){try{objShowControls(false);}catch(e){}blendDraft=null;blendPickArmed=false;$('blendPanel').style.display='none';syncStrokeSelectionUI();}
 function blendApply(){
   if(!blendDraft||!blendDraft.bId)return;
+  if(blendDraft.obj)return objApply();
   const d=blendDraft;blendReadControls();cancelAnimationFrame(blendRaf);
   const A=strokes.find(s=>s.id===d.aId),B=strokes.find(s=>s.id===d.bId);
   if(blendPairReason(A,B)){setStatus('🌀 These two cannot be blended, so nothing was changed.');return;}
@@ -2755,6 +2786,7 @@ function blendApply(){
 }
 function blendCancel(){
   if(!blendDraft)return;
+  if(blendDraft.obj)return objCancel();
   cancelAnimationFrame(blendRaf);
   const d=blendDraft;
   if(d.existing){
@@ -2769,6 +2801,7 @@ function blendCancel(){
 }
 function blendExpand(){
   if(!blendDraft||!blendDraft.existing)return;
+  if(blendDraft.obj)return objExpand();
   const id=blendDraft.id;cancelAnimationFrame(blendRaf);blendReadControls();
   const rr=blendInstall(blendSpecOf(blendDraft)); // expand exactly what the preview shows
   if(rr.error){blendMsg(rr.error,true);return;}
@@ -2778,6 +2811,7 @@ function blendExpand(){
 }
 function blendSwap(){
   if(!blendDraft||!blendDraft.bId)return;
+  if(blendDraft.obj)return objSwap();
   const t=blendDraft.aId;blendDraft.aId=blendDraft.bId;blendDraft.bId=t;
   blendReadControls();blendPreview();setStatus('🌀 Direction reversed.');
 }
@@ -2796,6 +2830,7 @@ function blendPickAt(clientX,clientY){
 wrap.addEventListener('pointerdown',e=>{
   if(!blendDraft||!blendPickArmed||(e.target!==canvas&&e.target!==wrap&&e.target.id!=='detailCanvas'&&e.target.id!=='pathOverlay'))return;
   e.preventDefault();e.stopPropagation();
+  if(blendDraft.obj){objPickHandle(e);return;}
   const hit=blendPickAt(e.clientX,e.clientY);
   if(!hit){
     const pc=screenToCanvas(e.clientX,e.clientY);
@@ -2813,6 +2848,304 @@ $('blendStepsNum').addEventListener('change',()=>{$('blendStepsNum').value=$('bl
 $('blendApplyBtn').onclick=blendApply;$('blendCancelBtn').onclick=blendCancel;$('blendCancelPickBtn').onclick=blendCancel;
 $('blendReverseBtn').onclick=blendSwap;$('blendExpandBtn').onclick=blendExpand;
 $('openBlendBtn').onclick=openBlend;
+$('grpBlendBtn').onclick=openBlend;$('blendMotifBtn').onclick=openBlend;
+
+// ---- Object Blend: motifs and groups --------------------------------------------------------------------------
+// Blends between two placed motifs or two groups (or one of each). The originals are never touched. The result is a
+// LIVE set of ordinary strokes / placed copies tagged with oblendId + oblendSpec, regenerated whenever an endpoint
+// changes (refreshObjBlends, called from pushHist) exactly like the single-shape blend.
+//  - SHAPE MORPH (real): used only when both objects are all vector paths that pair up reliably (same number of paths,
+//    matching open/closed, similar arrangement). Each pair is morphed point by point with generateBlend().
+//  - TRANSFORM BLEND (always available): position, size, turn, opacity and colour change smoothly, but the SHAPE does not.
+//    Each step is a copy of the nearer original (pictures stay as pictures at full available quality). It never crossfades.
+const OBJ_POINT_BUDGET=400000;
+function objResolve(e){
+  let st=[],pl=[];
+  if(e.gid){const m=groupMembersOf(e.gid);st=m.strokeIds;pl=m.placedIds;}
+  if(!st.length&&!pl.length){st=e.s||[];pl=e.p||[];}
+  return {gid:e.gid||null,
+    st:st.map(id=>strokes.find(x=>x.id===id)).filter(x=>x&&!x.oblendId&&!x.blendId),
+    pl:pl.map(id=>placed.find(x=>x.id===id)).filter(x=>x&&!x.oblendId&&x.img)};
+}
+function objIds(ep){return new Set(ep.st.map(s=>s.id).concat(ep.pl.map(p=>p.id)));}
+function objFrame(ep){
+  let x0=1e12,y0=1e12,x1=-1e12,y1=-1e12;
+  ep.st.forEach(s=>{(s.regions?s.regions.flat():s.points).forEach(p=>{if(p.x<x0)x0=p.x;if(p.x>x1)x1=p.x;if(p.y<y0)y0=p.y;if(p.y>y1)y1=p.y;});});
+  ep.pl.forEach(p=>{const b=motifAABB(p);if(b.x0<x0)x0=b.x0;if(b.x1>x1)x1=b.x1;if(b.y0<y0)y0=b.y0;if(b.y1>y1)y1=b.y1;});
+  if(x0>x1)return null;
+  const w=Math.max(1,x1-x0),h=Math.max(1,y1-y0),single=ep.pl.length===1&&!ep.st.length;
+  return {cx:(x0+x1)/2,cy:(y0+y1)/2,w,h,M:Math.max(w,h),rot:single?(ep.pl[0].r||0):0,single};
+}
+function objOpacity(ep){
+  const v=[];ep.st.forEach(s=>{try{v.push((strokeSettings(s).opacity==null?100:strokeSettings(s).opacity)/100);}catch(e){v.push(1);}});
+  ep.pl.forEach(p=>v.push(p.alpha==null?1:p.alpha));
+  return v.length?v.reduce((a,b)=>a+b,0)/v.length:1;
+}
+function objPoints(ep){let n=0;ep.st.forEach(s=>{n+=(s.regions?s.regions.reduce((a,r)=>a+r.length,0):s.points.length);});return n;}
+// Why the shapes cannot be morphed (null = they can, with pairs).
+function objMorphPlan(A,B){
+  if(A.pl.length||B.pl.length)return {reason:'Pictures (placed motifs) are bitmaps, so they can only be blended by position, size, turn and opacity.'};
+  if(!A.st.length||!B.st.length)return {reason:'There are no vector paths to morph.'};
+  if(A.st.length!==B.st.length)return {reason:'The two have a different number of paths ('+A.st.length+' and '+B.st.length+'), so the paths cannot be paired up.'};
+  for(const s of A.st.concat(B.st)){const why=blendStrokeReason(s);if(why)return {reason:'A path '+why+'.'};}
+  const FA=objFrame(A),FB=objFrame(B);if(!FA||!FB)return {reason:'One of them has no size.'};
+  const desc=(ep,F)=>ep.st.map(s=>{const bb=strokeBBox(s);return {s,x:(bb.cx-F.cx)/F.M,y:(bb.cy-F.cy)/F.M,m:Math.max(1,bb.maxX-bb.minX,bb.maxY-bb.minY)/F.M,closed:!!s.closed};});
+  const da=desc(A,FA),db=desc(B,FB),n=da.length,all=[];
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++){
+    if(da[i].closed!==db[j].closed)continue;
+    all.push({i,j,c:Math.hypot(da[i].x-db[j].x,da[i].y-db[j].y)+0.5*Math.abs(Math.log(da[i].m/db[j].m))+0.01*Math.abs(i-j)/n});
+  }
+  all.sort((p,q)=>p.c-q.c);
+  const ui=new Set(),uj=new Set(),pairs=[];let worst=0;
+  all.forEach(p=>{if(ui.has(p.i)||uj.has(p.j))return;ui.add(p.i);uj.add(p.j);pairs.push([da[p.i].s,db[p.j].s]);worst=Math.max(worst,p.c);});
+  if(pairs.length!==n)return {reason:'The open and closed paths do not correspond (one has closed shapes where the other has open lines).'};
+  if(worst>0.45)return {reason:'The paths are arranged too differently to pair up reliably.'};
+  for(const [a,b] of pairs){const why=blendPairReason(a,b);if(why)return {reason:why};}
+  return {pairs};
+}
+function objDominantColour(ep){const s=ep.st.find(x=>x.color);return s?s.color:null;}
+function objGenerate(A,B,spec){
+  const FA=objFrame(A),FB=objFrame(B);if(!FA||!FB)return {error:'One of the two no longer has anything to blend.'};
+  const n=Math.max(1,Math.min(BLEND_MAX_STEPS,Math.round(spec.steps)||1));
+  let mode='transform',reason=null,pairs=null;
+  if(spec.shape){const plan=objMorphPlan(A,B);if(plan.pairs){mode='morph';pairs=plan.pairs;}else reason=plan.reason;}
+  else reason='Shape morph is switched off.';
+  const steps=[];for(let k=0;k<n;k++)steps.push({st:[],pl:[]});
+  if(mode==='morph'){
+    let failed=null;
+    for(const [a,b] of pairs){
+      const r=generateBlend(a,b,{steps:n,colour:spec.colour,shape:true,pos:spec.pos,size:spec.size,rot:spec.rot});
+      if(r.error){failed=r.error;break;}
+      const oa=strokeSettings(a).opacity;
+      r.strokes.forEach((s,k)=>{
+        delete s.groupId;
+        if(!spec.opacity&&typeof oa==='number')s.settings.opacity=oa;
+        steps[k].st.push(s);
+      });
+    }
+    if(failed){mode='transform';reason=failed;steps.forEach(s=>{s.st=[];});}
+  }
+  if(mode==='transform'){
+    const oA=objOpacity(A),oB=objOpacity(B),cA=objDominantColour(A),cB=objDominantColour(B);
+    const bothSingle=FA.single&&FB.single;let dr=0;if(bothSingle){dr=((FB.rot-FA.rot)%360+540)%360-180;}
+    for(let k=0;k<n;k++){
+      const t=(k+1)/(n+1),useA=t<0.5,E=useA?A:B,FE=useA?FA:FB,oE=useA?oA:oB;
+      const Ft={cx:spec.pos?FA.cx+(FB.cx-FA.cx)*t:FA.cx,cy:spec.pos?FA.cy+(FB.cy-FA.cy)*t:FA.cy,M:spec.size?FA.M*Math.pow(FB.M/FA.M,t):FA.M,rot:(spec.rot&&bothSingle)?FA.rot+dr*t:FA.rot};
+      const kk=Ft.M/FE.M,dth=(spec.rot&&bothSingle)?Ft.rot-FE.rot:0,c=Math.cos(dth*Math.PI/180),sn=Math.sin(dth*Math.PI/180);
+      const map=(x,y)=>{const dx=(x-FE.cx)*kk,dy=(y-FE.cy)*kk;return {x:Ft.cx+dx*c-dy*sn,y:Ft.cy+dx*sn+dy*c};};
+      const f=spec.opacity&&oE>0?Math.max(0,(oA+(oB-oA)*t)/oE):1;
+      const other=useA?cB:cA,shiftT=useA?t:1-t;
+      E.st.forEach(src=>{
+        const s=blendClone(src);delete s.groupId;delete s.shape;delete s.blendId;delete s.blendSpec;
+        transformStrokePoints(s,map);
+        s.id=crypto.randomUUID();
+        s.settings=blendClone(strokeSettings(src));
+        if(typeof s.settings.size==='number')s.settings.size=Math.max(0.1,s.settings.size*kk);
+        if(typeof s.settings.opacity==='number')s.settings.opacity=Math.max(0,Math.min(100,s.settings.opacity*f));
+        if(spec.colour&&other){s.color=blendMixColour(s.color,other,shiftT);if(s.fillColor)s.fillColor=blendMixColour(s.fillColor,other,shiftT);}
+        steps[k].st.push(s);
+      });
+      E.pl.forEach(src=>{
+        const p={...src};delete p.groupId;
+        const q=map(src.x,src.y);p.id=crypto.randomUUID();p.x=q.x;p.y=q.y;p.s=src.s*kk;p.r=(src.r||0)+dth;
+        p.alpha=Math.max(0,Math.min(1,(src.alpha==null?1:src.alpha)*f));
+        steps[k].pl.push(p);
+      });
+    }
+  }
+  return {mode,reason,steps,identical:false};
+}
+function objSig(A,B,spec){
+  const f=ep=>JSON.stringify([ep.st.map(s=>[s.id,s.color,s.fillColor,s.brushId,s.closed,s.settings&&s.settings.size,s.settings&&s.settings.opacity,s.points.length,s.points[0]&&Math.round(s.points[0].x*10),s.points[0]&&Math.round(s.points[0].y*10),s.points.length>1&&Math.round(s.points[s.points.length>>1].x*10),Math.round((s.points[s.points.length-1]||{x:0}).x*10),Math.round((s.points[s.points.length-1]||{y:0}).y*10)]),ep.pl.map(p=>[p.id,p.motifId,Math.round(p.x*10),Math.round(p.y*10),Math.round(p.s*1000),Math.round((p.r||0)*10),p.fx,p.fy,p.alpha])]);
+  let h=5381;const str=f(A)+'|'+f(B)+'|'+[spec.steps,spec.colour,spec.shape,spec.pos,spec.size,spec.rot,spec.opacity].join(',');
+  for(let i=0;i<str.length;i++)h=((h<<5)+h+str.charCodeAt(i))|0;return h+':'+str.length;
+}
+function objGenerated(id){return {st:strokes.filter(s=>s.oblendId===id),pl:placed.filter(p=>p.oblendId===id)};}
+// Replace the generated copies with freshly built ones. Returns {ok,mode,reason,count,clamped} or {error}.
+function objInstall(spec){
+  const A=objResolve(spec.A),B=objResolve(spec.B);
+  if((!A.st.length&&!A.pl.length)||(!B.st.length&&!B.pl.length))return {error:'One of the two objects no longer exists.'};
+  const old=objGenerated(spec.id),touched=new Set(old.st.map(s=>s.layerId));
+  let clamped=false;const per=Math.max(1,(objPoints(A)+objPoints(B))/2);
+  if(per*spec.steps>OBJ_POINT_BUDGET){const cap=Math.max(1,Math.floor(OBJ_POINT_BUDGET/per));if(cap<spec.steps){spec={...spec,steps:cap};clamped=cap;}}
+  const res=objGenerate(A,B,spec);if(res.error)return res;
+  const sig=objSig(A,B,spec),full={...blendClone(spec),sig,mode:res.mode};
+  strokes=strokes.filter(s=>s.oblendId!==spec.id);placed=placed.filter(p=>p.oblendId!==spec.id);
+  const sIdx=[...A.st,...B.st].map(s=>strokes.indexOf(s)).filter(i=>i>=0),pIdx=[...A.pl,...B.pl].map(p=>placed.indexOf(p)).filter(i=>i>=0);
+  const gs=[],gp=[];
+  res.steps.forEach((st,k)=>{
+    st.st.forEach(s=>{s.oblendId=spec.id;s.oblendSpec=blendClone(full);s.oblendStep=k;if(!layers.some(l=>l.id===s.layerId))s.layerId=activeLayerId;gs.push(s);touched.add(s.layerId);});
+    st.pl.forEach(p=>{p.oblendId=spec.id;p.oblendSpec=blendClone(full);p.oblendStep=k;gp.push(p);});
+  });
+  if(gs.length)strokes.splice(sIdx.length?Math.min(...sIdx)+1:strokes.length,0,...gs);
+  if(gp.length)placed.splice(pIdx.length?Math.min(...pIdx)+1:placed.length,0,...gp);
+  touched.forEach(id=>{if(layers.some(l=>l.id===id))rebuildLayer(id);});
+  try{scheduleMotifHi();}catch(e){}
+  return {ok:true,mode:res.mode,reason:res.reason,count:gs.length+gp.length,steps:spec.steps,clamped,sig};
+}
+function objRemove(id){
+  const g=objGenerated(id),touched=new Set(g.st.map(s=>s.layerId));
+  strokes=strokes.filter(s=>s.oblendId!==id);placed=placed.filter(p=>p.oblendId!==id);
+  touched.forEach(l=>{if(layers.some(x=>x.id===l))rebuildLayer(l);});
+}
+// Endpoints edited / deleted -> regenerate; both gone -> the copies quietly become plain editable items.
+function refreshObjBlends(){
+  if(blendDraft)return false;
+  const ids=new Set();strokes.forEach(s=>{if(s.oblendId)ids.add(s.oblendId);});placed.forEach(p=>{if(p.oblendId)ids.add(p.oblendId);});
+  let changed=false;
+  ids.forEach(id=>{
+    const g=objGenerated(id),first=g.st[0]||g.pl[0],spec=first&&first.oblendSpec;if(!spec)return;
+    const A=objResolve(spec.A),B=objResolve(spec.B);
+    const strip=()=>{g.st.concat(g.pl).forEach(x=>{delete x.oblendId;delete x.oblendSpec;delete x.oblendStep;});changed=true;};
+    if((!A.st.length&&!A.pl.length)||(!B.st.length&&!B.pl.length)){strip();return;}
+    if(objSig(A,B,spec)===spec.sig)return;
+    const r=objInstall(spec);
+    if(r.error){setStatus('🌀 The blend could not update: '+r.error);return;}
+    changed=true;
+  });
+  if(changed)redraw();
+  return changed;
+}
+// ---- selection -> endpoints ----
+function objPartsFromSelection(){
+  const items=[];
+  if(multiSel){
+    multiSel.strokeIds.forEach(id=>{const s=strokes.find(x=>x.id===id);if(s)items.push({k:'s',id,gid:s.groupId||null});});
+    multiSel.placedIds.forEach(id=>{const p=placed.find(x=>x.id===id);if(p)items.push({k:'p',id,gid:p.groupId||null});});
+  }else if(selected){const p=placed.find(x=>x.id===selected);if(p)items.push({k:'p',id:p.id,gid:p.groupId||null});}
+  const parts=new Map();
+  items.forEach(x=>{
+    const gid=(x.gid&&groupInsideId!==x.gid)?x.gid:null,key=gid||(x.k+':'+x.id);
+    if(!parts.has(key))parts.set(key,{gid,s:[],p:[]});
+    (x.k==='s'?parts.get(key).s:parts.get(key).p).push(x.id);
+  });
+  return [...parts.values()];
+}
+function objFindExisting(){
+  const sel=new Set();
+  if(multiSel){multiSel.strokeIds.forEach(i=>sel.add(i));multiSel.placedIds.forEach(i=>sel.add(i));}
+  if(selected)sel.add(selected);if(selectedStrokeId)sel.add(selectedStrokeId);
+  if(!sel.size)return null;
+  const seen=new Set();let found=null;
+  strokes.concat(placed).forEach(x=>{
+    if(found||!x.oblendId||seen.has(x.oblendId))return;seen.add(x.oblendId);
+    const g=objGenerated(x.oblendId),spec=x.oblendSpec;if(!spec)return;
+    const A=objIds(objResolve(spec.A)),B=objIds(objResolve(spec.B));
+    if(g.st.concat(g.pl).some(y=>sel.has(y.id))||[...sel].some(i=>A.has(i)||B.has(i)))found=spec;
+  });
+  return found;
+}
+function objCheckEndpoint(part){
+  const ep=objResolve(part);
+  if(!ep.st.length&&!ep.pl.length)return 'There is nothing in that selection to blend.';
+  const all=part.gid?groupMembersOf(part.gid):{strokeIds:part.s,placedIds:part.p};
+  if(all.strokeIds.some(id=>{const s=strokes.find(x=>x.id===id);return s&&(s.blendId||s.oblendId);})||all.placedIds.some(id=>{const p=placed.find(x=>x.id===id);return p&&p.oblendId;}))return 'That already contains a blend (use Expand Blend first).';
+  return null;
+}
+function objSpecOf(d){return {id:d.id,obj:true,A:d.A,B:d.B,steps:d.steps,colour:d.colour,shape:d.shape,pos:d.pos,size:d.size,rot:d.rot,opacity:d.opacity!==false,mode:'straight'};}
+function objModeNote(r){
+  const n=$('blendModeNote');if(!n)return;
+  if(!r||r.error){n.style.display='none';return;}
+  n.style.display='block';
+  n.innerHTML=r.mode==='morph'
+    ?'✅ <b>Shape morph</b> — the paths pair up, so each shape changes into the other point by point.'
+    :'↔️ <b>Transform blend</b> — position, size, turn, opacity and colour change gradually, but the shape does not morph'+(r.reason?': '+escapeHtml(r.reason):'.')+' Each step is a copy of the nearer original.';
+}
+function objUpdateNote(){
+  const d=blendDraft;if(!d||!d.obj)return;
+  $('blendStepsNote').textContent=d.steps+' new cop'+(d.steps===1?'y':'ies')+' between the two ('+(d.steps+2)+' in total with the originals).';
+}
+function objPreview(){
+  cancelAnimationFrame(blendRaf);
+  blendRaf=requestAnimationFrame(()=>{
+    const d=blendDraft;if(!d||!d.obj||!d.B)return;
+    const r=objInstall(objSpecOf(d));
+    if(r.error){blendMsg(r.error+' Your originals are untouched.',true);objModeNote(null);return;}
+    blendMsg(r.clamped?'Steps limited to '+r.clamped+' to keep this artwork fast.':'');
+    objModeNote(r);redraw();
+  });
+}
+function objShowControls(on){
+  $('blendOpacityLbl').style.display=on?'flex':'none';
+  $('blendColourTxt').textContent=on?'Colour':'Colour & opacity';
+  $('blendShapeTxt').textContent=on?'Shape morph':'Shape';
+  if(!on)$('blendModeNote').style.display='none';
+  $('blendPickText').innerHTML=on?'Tap the <b>second motif or group</b> on the canvas. The first one is what you had selected.':'Tap the <b>second shape</b> on the canvas. The first one is the one you had selected.';
+  $('blendStepsLabel').textContent=on?'Steps between the two (motifs / groups)':'Steps between the two shapes';
+}
+function openObjBlend(){
+  const ex=objFindExisting();
+  if(ex){
+    blendDraft={...blendClone(ex),obj:true,existing:true,aId:'obj-a',bId:'obj-b'};delete blendDraft.sig;delete blendDraft.mode;
+    blendDraft.backup=blendClone(blendDraft);delete blendDraft.backup.backup;
+    if(blendDraft.opacity===undefined)blendDraft.opacity=true;
+    blendPickArmed=false;objShowControls(true);blendWriteControls();blendMsg('');blendShowPanel();syncStrokeSelectionUI();
+    objPreview();setStatus('🌀 Editing this blend. Apply keeps your changes, Cancel puts it back.');return;
+  }
+  const parts=objPartsFromSelection();
+  if(parts.length>2){setStatus('🌀 Select exactly two motifs or groups to blend (you have '+parts.length+' selected). Group related pieces first.');return;}
+  if(!parts.length){setStatus('🌀 Select a motif or group first, then tap Blend.');return;}
+  for(const p of parts){const why=objCheckEndpoint(p);if(why){setStatus('🌀 '+why);return;}}
+  blendDraft={id:crypto.randomUUID(),obj:true,A:parts[0],B:parts[1]||null,aId:'obj-a',bId:parts[1]?'obj-b':null,steps:5,colour:true,shape:true,pos:true,size:true,rot:true,opacity:true,mode:'straight',existing:false};
+  blendPickArmed=!parts[1];objShowControls(true);objModeNote(null);blendWriteControls();blendMsg('');blendShowPanel();syncStrokeSelectionUI();
+  if(parts[1]){objPreview();setStatus('🌀 Adjust the blend, then tap Apply.');}else setStatus('🌀 Now tap the second motif or group on the canvas.');
+}
+function objPickAt(clientX,clientY){
+  const p=screenToCanvas(clientX,clientY),locked=new Set(layers.filter(l=>l.locked).map(l=>l.id));
+  const mine=objIds(objResolve(blendDraft.A));
+  for(let i=placed.length-1;i>=0;i--){
+    const m=placed[i];if(m.oblendId||mine.has(m.id)||!m.img)continue;
+    const rad=-(m.r||0)*Math.PI/180,dx=p.x-m.x,dy=p.y-m.y,lx=dx*Math.cos(rad)-dy*Math.sin(rad),ly=dx*Math.sin(rad)+dy*Math.cos(rad);
+    if(Math.abs(lx)<m.w*m.s/2&&Math.abs(ly)<m.h*m.s/2)return {gid:m.groupId&&groupInsideId!==m.groupId?m.groupId:null,s:[],p:[m.id]};
+  }
+  let best=null,bd=Infinity;
+  for(let i=strokes.length-1;i>=0;i--){
+    const s=strokes[i];if(locked.has(s.layerId)||s.oblendId||s.blendId||mine.has(s.id))continue;
+    const st=strokeSettings(s),tol=Math.max(18,(st.size||6)/2+12),d=distanceToPolyline(p.x,p.y,s.points);
+    if(d<tol&&d<bd){bd=d;best=s;}
+  }
+  if(!best){for(let i=strokes.length-1;i>=0;i--){const s=strokes[i];if(locked.has(s.layerId)||s.oblendId||s.blendId||mine.has(s.id)||!s.closed)continue;if(pointInPolygon(p.x,p.y,s.points)){best=s;break;}}}
+  return best?{gid:best.groupId&&groupInsideId!==best.groupId?best.groupId:null,s:[best.id],p:[]}:null;
+}
+function objPickHandle(e){
+  const hit=objPickAt(e.clientX,e.clientY);
+  if(!hit){blendMsg('Tap directly on the second motif or group.',true);return;}
+  const why=objCheckEndpoint(hit);if(why){blendMsg(why,true);return;}
+  const a=objIds(objResolve(blendDraft.A)),b=objResolve(hit);
+  if(b.st.concat(b.pl).some(x=>a.has(x.id))){blendMsg('That is part of the first object. Tap a different one.',true);return;}
+  blendDraft.B=hit;blendDraft.bId='obj-b';blendPickArmed=false;blendMsg('');blendShowPanel();objPreview();
+  setStatus('🌀 Adjust the blend, then tap Apply.');
+}
+function objApply(){
+  const d=blendDraft;if(!d||!d.B)return;
+  blendReadControls();cancelAnimationFrame(blendRaf);
+  const r=objInstall(objSpecOf(d));
+  if(r.error){blendMsg(r.error,true);return;}
+  closeBlendPanel();pushHist();redraw();
+  setStatus('🌀 '+(r.mode==='morph'?'Shape morph':'Transform blend')+' applied: '+r.count+' item'+(r.count===1?'':'s')+' added. Edit either original and the blend follows. Undo removes it in one step.');
+}
+function objCancel(){
+  const d=blendDraft;cancelAnimationFrame(blendRaf);
+  if(d.existing){const r=objInstall(blendClone(d.backup));closeBlendPanel();redraw();setStatus(r&&r.error?'🌀 Cancelled.':'🌀 Cancelled. The blend is back as it was.');}
+  else{objRemove(d.id);closeBlendPanel();redraw();setStatus('🌀 Blend cancelled. Your originals are untouched.');}
+}
+function objExpand(){
+  const d=blendDraft;if(!d||!d.existing)return;
+  cancelAnimationFrame(blendRaf);blendReadControls();
+  const rr=objInstall(objSpecOf(d));if(rr.error){blendMsg(rr.error,true);return;}
+  const g=objGenerated(d.id),gids=new Map();
+  g.st.concat(g.pl).forEach(x=>{
+    const k=x.oblendStep;if(!gids.has(k)){const gid=crypto.randomUUID();gids.set(k,gid);groups[gid]={lock:true,scale:true};}
+    x.groupId=gids.get(k);delete x.oblendId;delete x.oblendSpec;delete x.oblendStep;
+  });
+  closeBlendPanel();pushHist();redraw();
+  setStatus('🌀 Blend expanded into '+gids.size+' groups you can move or edit one by one (paths stay editable). Undo brings the live blend back.');
+}
+function objSwap(){
+  const d=blendDraft;if(!d||!d.B)return;
+  const t=d.A;d.A=d.B;d.B=t;blendReadControls();objPreview();setStatus('🌀 Direction reversed.');
+}
+
 $('drawModeBtn').addEventListener('click',()=>{if(blendDraft)blendCancel();});
 
 // "Duplicate and repeat": the step you applied to the copy (any mix of move, turn and resize) is worked out as one
@@ -6598,7 +6931,7 @@ $('exportBtn').onclick=()=>{updateComposite();const out=document.createElement('
   // over its edges (same lattice as the on-screen repeat), so anything crossing an edge wraps round.
   const wrapOffs=[[0,0]];for(let ix=-1;ix<=1;ix++)for(let iy=-1;iy<=1;iy++){if(ix||iy)wrapOffs.push(tilePos(ix,iy));}
   wrapOffs.forEach(([ox,oy])=>o.drawImage(compositeCanvas,0,0,W,H,ox-C,oy-C,W,H));
-  placed.forEach(p=>{if(!p.img)return;wrapOffs.forEach(([ox,oy])=>{o.save();o.translate(p.x-C+ox,p.y-C+oy);o.rotate(p.r*Math.PI/180);o.scale(p.s*p.fx,p.s*p.fy);o.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);o.restore();});});out.toBlob(b=>{if(b)SketchpadNative.saveBlob(b,'pattern-sketch-tile.png');},'image/png');};
+  placed.forEach(p=>{if(!p.img)return;wrapOffs.forEach(([ox,oy])=>{o.save();if(p.alpha!=null)o.globalAlpha=p.alpha;o.translate(p.x-C+ox,p.y-C+oy);o.rotate(p.r*Math.PI/180);o.scale(p.s*p.fx,p.s*p.fy);o.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);o.restore();});});out.toBlob(b=>{if(b)SketchpadNative.saveBlob(b,'pattern-sketch-tile.png');},'image/png');};
 window.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='z'){e.shiftKey?redo():undo();}});
 function syncThemeToggleUI(){const light=document.body.classList.contains('theme-light');$('themeToggle').textContent=light?'🌙 Dark Mode':'☀️ Light Mode';}
 $('themeToggle').onclick=()=>{const light=document.body.classList.toggle('theme-light');try{localStorage.setItem('pkmTheme',light?'light':'dark');}catch(e){}syncThemeToggleUI();};
@@ -6766,7 +7099,7 @@ function makeThumb(){
     if(bgImg&&bgShown){o.save();o.globalAlpha=bgOpacity;o.drawImage(bgImg,0,0,S,S);o.restore();}
     const k=S/TILE;
     o.drawImage(compositeCanvas,C,C,TILE,TILE,0,0,S,S);
-    placed.forEach(p=>{if(!p.img)return;o.save();o.translate((p.x-C)*k,(p.y-C)*k);o.rotate(p.r*Math.PI/180);o.scale(p.s*p.fx*k,p.s*p.fy*k);o.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);o.restore();});
+    placed.forEach(p=>{if(!p.img)return;o.save();if(p.alpha!=null)o.globalAlpha=p.alpha;o.translate((p.x-C)*k,(p.y-C)*k);o.rotate(p.r*Math.PI/180);o.scale(p.s*p.fx*k,p.s*p.fy*k);o.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);o.restore();});
     return c.toDataURL('image/jpeg',0.82);
   }catch(e){return null;}
 }
@@ -7415,6 +7748,9 @@ window.__sketchpadCanvasToScreenAbs=(x,y)=>{
 // re-rendered result immediately instead of waiting out the debounce window.
 window.__sketchpadSetRot=(r)=>{rot=+r||0;applyTransform();};
 window.__sketchpadDoc={build:()=>buildDocObject(),apply:d=>applyDocObject(d),svg:n=>buildSvgExport(n),blendAt:(aId,bId,ts)=>{const A=strokes.find(x=>x.id===aId),B=strokes.find(x=>x.id===bId);const r=generateBlend(A,B,{steps:1,colour:true,shape:true,pos:true,size:true,rot:true,ts});return r.error?{error:r.error}:r.strokes.map(x=>({points:x.points,color:x.color,closed:x.closed}));}};
+window.__sketchpadTips=()=>[...motifTipCache.entries()].map(([k,v])=>{const d=v.canvas.getContext('2d').getImageData(0,0,v.canvas.width,v.canvas.height).data;let a=0;for(let i=3;i<d.length;i+=4)a+=d[i];return k+':'+v.canvas.width+'x'+v.canvas.height+':ink'+Math.round(a/255);});
+window.__sketchpadPush=()=>{rebuildAllLayers();pushHist();redraw();};
+window.__sketchpadRedraw=()=>{rebuildAllLayers();redraw();};
 window.__sketchpadSetPan=(x,y)=>{panX=+x||0;panY=+y||0;applyTransform();};
 window.__sketchpadSetZoom=(z,skipDebounce)=>{
   zoom=clampZoom(z);

@@ -98,6 +98,17 @@ screen" step. Replace the placeholder icon by dropping your 1024x1024 artwork in
 5. Start the `patternsketch-ipad` workflow. When it finishes, the build appears in TestFlight.
 6. Install **TestFlight** on your iPad and test with a real Apple Pencil.
 
+## Blend between motifs and groups
+
+- Select a motif, or a group, tap **🌀 Blend with another…** (motif panel) or **🌀 Blend two…** (selection panel), then tap the second motif or group. Or select exactly two first and tap Blend.
+- **Shape morph** is real and only used when both are all vector paths that pair up reliably (same path count, matching open/closed, similar arrangement). Otherwise it is a **transform blend** (position, size, turn, opacity, colour) with each step a copy of the nearer original — never a crossfade — and the panel says why in plain English. Pictures are always transform-only and keep their full available quality.
+- The result is live: edit either original and it regenerates; Reverse direction, steps and the toggles update it; Undo removes it in one step; Expand turns each step into its own editable group. Stored as `oblendId`/`oblendSpec` on ordinary strokes and placed copies, so save/load, SVG export and tiling work unchanged. Placed items gained an optional `alpha`.
+- Limits: transform blends turn only when both ends are single motifs; morphed paths travel in straight lines, not arcs; colour shifts apply to vector strokes only; steps are capped for very heavy artwork.
+
+## Sharper motif and pattern brush tips
+
+- Motif stamp brushes now redraw their tip from the motif's saved vector paths at a power-of-two size (64–2048 px) chosen from the brush size times the canvas's current scale, so big stamps and deep zoom stay crisp. Tips are cached per motif and size, refresh when the motif is edited, and are trimmed to a 24-megapixel budget. Bitmap-only tips use progressively larger copies of the original picture, never enlarged beyond it.
+
 ## Projects (folders, autosave per project)
 
 - **📁 Projects** and **➕ New Project** are the first two buttons in the toolbar; the open project's name sits next to them (tap it to rename).
