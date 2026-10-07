@@ -295,6 +295,11 @@ button.pill:active{transform:scale(.97)}
 #zoomPopover,#viewPopover,#svgPopover{left:auto;right:12px;top:12px}
 #zoomPopover:before,#viewPopover:before,#svgPopover:before{display:none}
 @media (max-width:600px){.tb-row{padding:6px 8px;gap:6px}}
+
+.size-combo{display:flex;align-items:center;gap:2px}
+.size-combo input.size-num{width:58px;min-width:0;padding:6px 4px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:15px;text-align:center}
+.size-combo select.size-pick{width:30px;padding:6px 0;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:14px}
+.slider-row.has-size{grid-template-columns:64px 1fr auto}
 </style>
 </head>
 <body>
@@ -354,7 +359,7 @@ button.pill:active{transform:scale(.97)}
       <div class="mode-switch"><button id="drawModeBtn" class="btn active">✏️ Draw</button><button id="editModeBtn" class="btn">↔️ Edit</button></div>
       <div id="brushPreviewWrap" style="margin:8px 0 4px;border:1px solid var(--line);border-radius:12px;overflow:hidden;"><canvas id="brushPreview" style="position:static;display:block;width:100%;height:76px;max-width:100%;transform:none;left:auto;top:auto;"></canvas></div>
       <div class="brush-quickbar">
-        <div class="slider-row"><label>Size</label><input id="brushSize" type="range" min="1" max="120" value="6"><span id="brushSizeVal">6</span></div>
+        <div class="slider-row"><label>Size</label><input id="brushSize" type="range" min="0.05" step="0.05" max="120" value="6"><span id="brushSizeVal">6</span></div>
         <div class="slider-row"><label>Opacity</label><input id="brushOpacity" type="range" min="1" max="100" value="100"><span id="brushOpacityVal">100%</span></div>
       </div>
       <div class="row" style="margin-top:10px">
@@ -477,7 +482,7 @@ button.pill:active{transform:scale(.97)}
       <div id="strokeRecipe" class="recipe-text"></div>
       <div class="slider-row"><label>Colour</label><input id="strokeColorInput" class="color sel-colour" type="color" value="#000000"><span class="hint" style="flex:1;">Recolours this stroke/outline directly.</span></div>
       <div class="slider-row"><label>Layer</label><select id="strokeLayerSelect" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></select></div>
-      <div class="slider-row"><label>Width</label><input id="strokeWidthCtl" class="sel-width" type="range" min="1" max="120" value="6"><span id="strokeWidthVal" class="sel-width-val">6</span></div>
+      <div class="slider-row"><label>Width</label><input id="strokeWidthCtl" class="sel-width" type="range" min="0.05" step="0.05" max="120" value="6"><span id="strokeWidthVal" class="sel-width-val">6</span></div>
       <div class="row" style="margin-top:6px;flex-wrap:wrap;">
         <button id="useThisBrushBtn" class="btn mini" style="flex:1 1 45%;">Use This Brush</button>
         <button id="editPathBtn" class="btn mini" style="flex:1 1 45%;">✎ Edit Path</button>
@@ -527,7 +532,7 @@ button.pill:active{transform:scale(.97)}
       <span>✎ Edit Path</span>
       <span class="float-panel-handle-actions"><button id="pathEditDoneTopBtn" class="btn mini primary float-panel-done">✓ Done</button><span class="float-panel-grip" title="Drag to move">⠿</span></span>
     </div>
-    <div class="sel-quick" style="display:flex;align-items:center;gap:10px;margin:0 0 8px;"><input class="sel-colour color" type="color" value="#000000" title="Stroke colour" style="width:44px;height:36px;flex:none;"><span style="font-size:12.5px;opacity:.8;flex:none;">Size</span><input class="sel-width" type="range" min="1" max="120" value="6" style="flex:1;min-width:90px;"><span class="sel-width-val" style="min-width:26px;text-align:right;font-size:13px;">6</span></div>
+    <div class="sel-quick" style="display:flex;align-items:center;gap:10px;margin:0 0 8px;"><input class="sel-colour color" type="color" value="#000000" title="Stroke colour" style="width:44px;height:36px;flex:none;"><span style="font-size:12.5px;opacity:.8;flex:none;">Size</span><input class="sel-width" type="range" min="0.05" step="0.05" max="120" value="6" style="flex:1;min-width:90px;"><span class="sel-width-val" style="min-width:26px;text-align:right;font-size:13px;">6</span></div>
     <div class="sel-quick" style="display:flex;align-items:center;gap:10px;margin:0 0 8px;"><span style="font-size:12.5px;opacity:.8;flex:none;">Brush</span><select class="sel-brush" style="flex:1;min-width:0;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></select></div>
     <div class="row"><button id="pathSelectToolBtn" class="btn mini active" style="flex:1">↖ Select</button><button id="pathAddNodeToolBtn" class="btn mini" style="flex:1">➕ Add Node</button></div>
     <div class="row" style="margin-top:6px;"><button id="nodeSmoothBtn" class="btn mini">⌒ Smooth</button><button id="nodeCornerBtn" class="btn mini">⌐ Corner</button></div>
@@ -607,7 +612,7 @@ button.pill:active{transform:scale(.97)}
       <span>✥ Stroke</span>
       <span class="float-panel-handle-actions"><button id="strokeActionsDoneBtn" class="btn mini primary float-panel-done">✓ Done</button><button id="strokeActionsDeleteTopBtn" class="btn mini danger float-panel-done">✕ Delete</button><span class="float-panel-grip" title="Drag to move">⠿</span></span>
     </div>
-    <div class="sel-quick" style="display:flex;align-items:center;gap:10px;margin:6px 0 4px;"><input class="sel-colour color" type="color" value="#000000" title="Stroke colour" style="width:44px;height:36px;flex:none;"><span style="font-size:12.5px;opacity:.8;flex:none;">Size</span><input class="sel-width" type="range" min="1" max="120" value="6" style="flex:1;min-width:90px;"><span class="sel-width-val" style="min-width:26px;text-align:right;font-size:13px;">6</span></div>
+    <div class="sel-quick" style="display:flex;align-items:center;gap:10px;margin:6px 0 4px;"><input class="sel-colour color" type="color" value="#000000" title="Stroke colour" style="width:44px;height:36px;flex:none;"><span style="font-size:12.5px;opacity:.8;flex:none;">Size</span><input class="sel-width" type="range" min="0.05" step="0.05" max="120" value="6" style="flex:1;min-width:90px;"><span class="sel-width-val" style="min-width:26px;text-align:right;font-size:13px;">6</span></div>
     <div class="sel-quick" style="display:flex;align-items:center;gap:10px;margin:0 0 4px;"><span style="font-size:12.5px;opacity:.8;flex:none;">Brush</span><select class="sel-brush" style="flex:1;min-width:0;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></select></div>
     <div class="hint">Drag the stroke to move it. Fill and layers are under 🖊️ Stroke tools.</div>
     <div class="row" style="margin-top:6px;">
@@ -693,7 +698,7 @@ button.pill:active{transform:scale(.97)}
       <div class="slider-row"><label>Taper — start</label><input id="bmTaperS" type="range" min="0" max="60" value="0"><span id="bmTaperSVal"></span></div>
       <div class="slider-row"><label>Taper — end</label><input id="bmTaperE" type="range" min="0" max="60" value="0"><span id="bmTaperEVal"></span></div>
       <div class="hint">Taper length is a percentage of the stroke. A tapered monoline is drawn as a solid brush.</div>
-      <div class="slider-row"><label>Size</label><input id="bmSize" type="range" min="1" max="120" value="20"><span id="bmSizeVal"></span></div>
+      <div class="slider-row"><label>Size</label><input id="bmSize" type="range" min="0.05" step="0.05" max="120" value="20"><span id="bmSizeVal"></span></div>
       <div class="slider-row"><label>Opacity</label><input id="bmOpacity" type="range" min="1" max="100" value="100"><span id="bmOpacityVal"></span></div>
       <div class="slider-row"><label>Spacing</label><input id="bmSpacing" type="range" min="1" max="40" value="8"><span id="bmSpacingVal"></span></div>
       <div class="slider-row"><label>Pressure → width</label><input id="bmPW" type="range" min="0" max="100" value="0"><span id="bmPWVal"></span></div>
@@ -4479,7 +4484,8 @@ function syncSelStrokeControls(){
   fillSelBrushOptions();document.querySelectorAll('.sel-brush').forEach(e=>{e.value=stroke.brushId;});
   document.querySelectorAll('.sel-colour').forEach(e=>{e.value=/^#[0-9a-f]{6}$/i.test(stroke.color||'')?stroke.color:'#000000';});
   document.querySelectorAll('.sel-width').forEach(e=>{e.max=mx;e.value=st.size;});
-  document.querySelectorAll('.sel-width-val').forEach(e=>{e.textContent=Math.round(st.size);});
+  document.querySelectorAll('.sel-width-val').forEach(e=>{e.textContent=fmtSize(st.size);});
+  syncSizeNums();
 }
 // Brush of the selected stroke (changing it keeps colour and, where it makes sense, size).
 let selBrushSig='';
@@ -4518,6 +4524,42 @@ document.querySelectorAll('.sel-width').forEach(el=>{
   });
   el.addEventListener('change',()=>{if(!pathEditStrokeId){pushHist();scheduleAutosave();}});
 });
+
+// ---- Size: fractional sizes + number box + preset dropdown ----
+const SIZE_PRESETS=[0.1,0.25,0.5,0.75,1,1.5,2,3,4,5,6,8,10,12,16,20,24,32,48,64,100,150,200,300,400];
+function fmtSize(v){v=+v;if(!isFinite(v))return'';return v>=10?String(Math.round(v)):String(Math.round(v*100)/100);}
+function syncSizeNums(){
+  document.querySelectorAll('.size-combo').forEach(c=>{
+    const r=c._range,n=c.querySelector('.size-num');
+    if(document.activeElement!==n)n.value=fmtSize(r.value);
+    n.max=r.max;
+  });
+}
+function initSizeCombos(){
+  const ranges=[$('brushSize'),...document.querySelectorAll('.sel-width')];
+  ranges.forEach(r=>{
+    const span=r.nextElementSibling;
+    const c=document.createElement('div');c.className='size-combo';c._range=r;
+    c.innerHTML='<input class="size-num" type="number" inputmode="decimal" min="0.05" step="0.05" title="Size — type any number"><select class="size-pick" title="Common sizes"></select>';
+    const n=c.querySelector('.size-num'),sel=c.querySelector('.size-pick');
+    sel.innerHTML='<option value="">▾</option>'+SIZE_PRESETS.map(v=>'<option value="'+v+'">'+v+'</option>').join('');
+    const apply=(v,commit)=>{
+      v=+v;if(!isFinite(v)||v<=0)return;
+      v=Math.min(Math.max(v,0.05),+r.max||120);
+      r.value=v;r.dispatchEvent(new Event('input',{bubbles:true}));
+      if(commit)r.dispatchEvent(new Event('change',{bubbles:true}));
+    };
+    n.addEventListener('input',()=>{if(n.value!=='')apply(n.value,false);});
+    n.addEventListener('change',()=>{apply(n.value,true);n.value=fmtSize(r.value);});
+    sel.addEventListener('change',()=>{if(sel.value!==''){apply(sel.value,true);}sel.value='';});
+    r.addEventListener('input',()=>syncSizeNums());
+    if(span){span.style.display='none';span.after(c);}else r.after(c);
+    if(r.parentElement.classList.contains('slider-row'))r.parentElement.classList.add('has-size');
+    r.style.minWidth='60px';
+  });
+  syncSizeNums();
+}
+initSizeCombos();
 document.querySelectorAll('.sel-colour').forEach(el=>{
   el.addEventListener('input',e=>{
     const stroke=strokes.find(s=>s.id===selectedStrokeId);if(!stroke)return;
@@ -4926,7 +4968,7 @@ function syncFavorites(){const host=$('brushFavorites');const ids=BrushEngine.ge
 function syncActiveSwatches(){document.querySelectorAll('.brush-swatch').forEach(el=>el.classList.toggle('active',!eraserActive&&el.dataset.brush===activeBrushId));$('eraserToggle').classList.toggle('active',eraserActive);}
 function syncControlsFromSettings(){
   const s=currentSettings();
-  $('brushSize').value=s.size;$('brushSizeVal').textContent=Math.round(s.size);
+  $('brushSize').value=s.size;$('brushSizeVal').textContent=fmtSize(s.size);
   $('brushOpacity').value=s.opacity;$('brushOpacityVal').textContent=Math.round(s.opacity)+'%';
   $('brushSmooth').value=s.smoothing;$('brushSmoothVal').textContent=Math.round(s.smoothing)+'%';
   $('pressureWidth').value=s.pressureWidth;$('pressureWidthVal').textContent=Math.round(s.pressureWidth)+'%';
@@ -4934,7 +4976,7 @@ function syncControlsFromSettings(){
   const isStamp=!eraserActive&&!!BrushEngine.getBrush(activeBrushId).stamp;
   $('brushSize').max=isStamp?400:120;$('brushSpacingCtl').max=isStamp?250:40;
   $('brushSize').value=s.size;$('brushSpacingCtl').value=s.spacing;
-  $('brushSizeVal').textContent=Math.round(s.size);$('brushSpacingValCtl').textContent=Math.round(s.spacing)+'%';
+  $('brushSizeVal').textContent=fmtSize(s.size);syncSizeNums();$('brushSpacingValCtl').textContent=Math.round(s.spacing)+'%';
   $('stampOptions').style.display=isStamp?'block':'none';
   $('stampFollow').checked=!!s.follow;$('stampTint').checked=!!s.tint;
   syncActiveBrushRecipeLine();
@@ -4975,7 +5017,7 @@ $('continuousDrawToggle').onclick=()=>{
   $('continuousDrawHint').style.display=continuousDrawMode?'block':'none';
   setStatus(continuousDrawMode?'🔗 Continuous Draw on — starting a new stroke right where the last one ended extends it as one path.':'🔗 Continuous Draw off.');
 };
-$('brushSize').oninput=e=>{const v=+e.target.value;$('brushSizeVal').textContent=Math.round(v);patchCurrentSettings({size:v});};
+$('brushSize').oninput=e=>{const v=+e.target.value;$('brushSizeVal').textContent=fmtSize(v);patchCurrentSettings({size:v});};
 // Each brush remembers the colour last used with it (shown again when you pick that brush).
 let brushColours={};try{brushColours=JSON.parse(localStorage.getItem('sp-brushColours')||'{}')||{};}catch(e){brushColours={};}
 function rememberBrushColour(){if(eraserActive)return;brushColours[activeBrushId]=currentColor;try{localStorage.setItem('sp-brushColours',JSON.stringify(brushColours));}catch(e){}}
