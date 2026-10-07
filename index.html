@@ -673,6 +673,86 @@ const displayCanvas=document.createElement('canvas');displayCanvas.width=W;displ
 // moving, full-quality render when the stroke finishes" split.
 const liveLayer=document.createElement('canvas');liveLayer.width=W;liveLayer.height=H;const lctx=liveLayer.getContext('2d');
 let liveActive=false;
+
+// ---- Deep-zoom detail layer ------------------------------------------------------------------
+// Past roughly 200% the stored bitmaps (kept small so an iPad never runs out of memory) would only be
+// enlarged, so edges went soft. Strokes are vector, so once the view stops moving the part of the
+// drawing that is actually on screen is redrawn from the strokes at full screen resolution into
+// #detailCanvas, which sits exactly over the normal canvas. Any change (or the next zoom or pan)
+// hides it again at once and the ordinary view takes over until the sharp redraw is ready.
+let detailReady=false,detailShown=false,detailTimer=0;
+const detailCanvas=document.createElement('canvas'),detailScratch=document.createElement('canvas');
+function hideDetail(){if(detailShown){detailCanvas.style.display='none';detailShown=false;}}
+function detailNeeded(){return zoom*baseScale*(window.devicePixelRatio||1)>2.15;}
+function invalidateDetail(){
+  if(!detailReady)return;
+  try{hideDetail();clearTimeout(detailTimer);if(detailNeeded())detailTimer=setTimeout(renderDetail,170);}catch(e){}
+}
+function strokeBoundsPad(s){
+  const pts=s.regions?[].concat.apply([],s.regions):(s.points||[]);
+  const all=s.nodes?pts.concat(s.nodes):pts;
+  if(!all.length)return null;
+  let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+  for(let i=0;i<all.length;i++){const p=all[i];if(p.x<x0)x0=p.x;if(p.x>x1)x1=p.x;if(p.y<y0)y0=p.y;if(p.y>y1)y1=p.y;}
+  const st=s.settings||BrushEngine.getSettings(s.brushId),pad=((st&&st.size)||20)*2+30;
+  return {x0:x0-pad,y0:y0-pad,x1:x1+pad,y1:y1+pad};
+}
+function renderDetail(){
+  if(!detailReady||!detailNeeded())return;
+  if(drawing||(liveActive&&!pathEditStrokeId)||redraw._q){clearTimeout(detailTimer);detailTimer=setTimeout(renderDetail,250);return;}
+  const vw=wrap.clientWidth,vh=wrap.clientHeight;if(vw<=0||vh<=0)return;
+  let k=Math.min(2,window.devicePixelRatio||1);
+  while(vw*k*vh*k>14e6)k*=0.9;
+  const pw=Math.round(vw*k),ph=Math.round(vh*k);
+  if(detailCanvas.width!==pw||detailCanvas.height!==ph){detailCanvas.width=pw;detailCanvas.height=ph;}
+  if(detailScratch.width!==pw||detailScratch.height!==ph){detailScratch.width=pw;detailScratch.height=ph;}
+  const d=detailCanvas.getContext('2d'),sc=detailScratch.getContext('2d');
+  const sCss=zoom*baseScale,a=rot*Math.PI/180,cs=Math.cos(a)*sCss,sn=Math.sin(a)*sCss;
+  const e=(vw/2+panX)-(cs*W/2-sn*H/2),f=(vh/2+panY)-(sn*W/2+cs*H/2);
+  const M=[k*cs,k*sn,-k*sn,k*cs,k*e,k*f];
+  let vis;
+  try{
+    const inv=new DOMMatrix(M).inverse();
+    const xs=[],ys=[];[[0,0],[pw,0],[0,ph],[pw,ph]].forEach(([x,y])=>{const q=inv.transformPoint(new DOMPoint(x,y));xs.push(q.x);ys.push(q.y);});
+    vis={x0:Math.min.apply(null,xs),y0:Math.min.apply(null,ys),x1:Math.max.apply(null,xs),y1:Math.max.apply(null,ys)};
+  }catch(err){return;}
+  const saved=ctx;
+  try{
+    ctx=d;
+    d.setTransform(1,0,0,1,0,0);d.clearRect(0,0,pw,ph);
+    d.setTransform(M[0],M[1],M[2],M[3],M[4],M[5]);
+    d.fillStyle='#fff';d.fillRect(0,0,W,H);
+    drawBackground();drawTraces();
+    const offs=showTiling?offsets():[[0,0]];
+    offs.forEach(([ox,oy])=>{
+      const vx0=vis.x0-ox,vy0=vis.y0-oy,vx1=vis.x1-ox,vy1=vis.y1-oy;
+      if(vx1<0||vy1<0||vx0>W||vy0>H)return;
+      layers.forEach(l=>{
+        if(!l.visible)return;
+        const hit=strokes.filter(s=>{if(s.layerId!==l.id)return false;const b=strokeBoundsPad(s);return b&&b.x1>=vx0&&b.x0<=vx1&&b.y1>=vy0&&b.y0<=vy1;});
+        if(!hit.length)return;
+        sc.setTransform(1,0,0,1,0,0);sc.clearRect(0,0,pw,ph);
+        sc.setTransform(M[0],M[1],M[2],M[3],M[4]+M[0]*ox+M[2]*oy,M[5]+M[1]*ox+M[3]*oy);
+        sc.save();sc.beginPath();sc.rect(0,0,W,H);sc.clip();
+        hit.forEach(s=>{
+          const brush=BrushEngine.getBrush(s.brushId),settings=s.settings||BrushEngine.getSettings(s.brushId);
+          renderStrokeClipped(sc,s,brush,settings,s.id===pathEditStrokeId?0:1); // Edit Path shows its own live copy instead
+        });
+        sc.restore();
+        d.save();d.setTransform(1,0,0,1,0,0);d.globalAlpha=l.opacity/100;d.drawImage(detailScratch,0,0);d.restore();
+      });
+    });
+    if(pathEditStrokeId&&pathEditNodes)renderPathPreviewInto(d);
+    drawPlaced();drawMultiSelectHighlights();drawShapeToolsHighlights();drawStrokeSelection();drawTileBoundary();if(showGuides)drawGuides();
+  }catch(err){console.warn('[sketchpad] detail render failed',err);ctx=saved;hideDetail();return;}
+  ctx=saved;
+  detailCanvas.style.display='block';detailShown=true;
+}
+(function(){
+  detailCanvas.id='detailCanvas';
+  detailCanvas.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;transform:none;pointer-events:none;display:none;';
+  wrap.insertBefore(detailCanvas,canvas.nextSibling);detailReady=true;
+})();
 let strokes=[]; // retained, replayable, re-brushable — {id,brushId,layerId,color,settings,points:[{x,y,pressure}],nodes:null|[{x,y,pressure,type}]}
 let activeBrushId='smoothPen',eraserActive=false,currentColor='#000000';
 let currentPoints=[],currentStrokeId=null,smoothLast=null,lastRenderedIndex=0;
@@ -1105,7 +1185,7 @@ function applyTransform(){
       renderScaleTimer=setTimeout(()=>commitRenderScale(newScale),120);
     }
   }
-  canvas.style.transform=`translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom*baseScale}) rotate(${rot}deg)`;$('zoomPill').textContent=Math.round(zoom*100)+'% ▾';$('zoomPopPct').textContent='— '+Math.round(zoom*100)+'%';{const to=$('tileOutline');to.style.setProperty('--vs',zoom*baseScale);to.style.transform=`translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom*baseScale}) rotate(${rot}deg)`;}$('rotateChip').textContent='Canvas '+Math.round(rot)+'°';updateSelectionBox();updatePaintBBoxOverlay();updateSymAxis();if(pathEditNodes)renderPathNodeOverlay();paintFabric();
+  canvas.style.transform=`translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom*baseScale}) rotate(${rot}deg)`;invalidateDetail();$('zoomPill').textContent=Math.round(zoom*100)+'% ▾';$('zoomPopPct').textContent='— '+Math.round(zoom*100)+'%';{const to=$('tileOutline');to.style.setProperty('--vs',zoom*baseScale);to.style.transform=`translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom*baseScale}) rotate(${rot}deg)`;}$('rotateChip').textContent='Canvas '+Math.round(rot)+'°';updateSelectionBox();updatePaintBBoxOverlay();updateSymAxis();if(pathEditNodes)renderPathNodeOverlay();paintFabric();
 }
 function screenToCanvas(x,y){const r=canvas.getBoundingClientRect();const cx=x-(r.left+r.width/2),cy=y-(r.top+r.height/2);const a=-rot*Math.PI/180;const s=zoom*baseScale;const ux=(cx*Math.cos(a)-cy*Math.sin(a))/s+W/2;const uy=(cx*Math.sin(a)+cy*Math.cos(a))/s+H/2;return {x:ux,y:uy};}
 function canvasToScreen(x,y){const rect=canvas.getBoundingClientRect(),wrapRect=wrap.getBoundingClientRect();const cx=rect.left+rect.width/2-wrapRect.left,cy=rect.top+rect.height/2-wrapRect.top;const a=rot*Math.PI/180;const s=zoom*baseScale;const px=(x-W/2)*s,py=(y-H/2)*s;return {x:cx+px*Math.cos(a)-py*Math.sin(a),y:cy+px*Math.sin(a)+py*Math.cos(a)};}
@@ -1115,7 +1195,7 @@ function canvasToScreen(x,y){const rect=canvas.getBoundingClientRect(),wrapRect=
 // s=zoom*baseScale and rotated by rot about its OWN centre — which is the centre of the tile.
 // Everything below works in "workspace-centre-relative" screen coordinates (0,0 = middle of the
 // drawing area) so the same few functions drive pinch, the zoom menu and the recovery buttons.
-const MIN_ZOOM=.1,MAX_ZOOM=8;
+const MIN_ZOOM=.1,MAX_ZOOM=32;
 function clampZoom(z){return isFinite(z)?Math.min(MAX_ZOOM,Math.max(MIN_ZOOM,z)):1;}
 function wrapSize(){return {w:wrap.clientWidth,h:wrap.clientHeight};}
 function unprojectPoint(sx,sy,z,r,pX,pY){const s=z*baseScale,a=-r*Math.PI/180,c=Math.cos(a),n=Math.sin(a),dx=sx-pX,dy=sy-pY;return {x:(dx*c-dy*n)/s+W/2,y:(dx*n+dy*c)/s+H/2};}
@@ -1217,7 +1297,7 @@ function paintFabric(){
   }
   fabricLast=performance.now();
 }
-function redraw(){if(redraw._q)return;redraw._q=requestAnimationFrame(()=>{redraw._q=0;if(pathEditStrokeId&&pathEditNodes&&!liveActive&&!drawing)renderPathLivePreview(); /* Edit Path hides the real stroke, so its live preview must never be lost to a stray clear */if(compositeDirty){updateComposite();updateDisplayComposite();compositeDirty=false;}ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);drawBackground();drawTraces();if(showTiling)drawTiles();else{ctx.drawImage(displayCanvas,0,0,W,H);if(liveActive)ctx.drawImage(liveLayer,0,0);}drawPlaced();drawMultiSelectHighlights();drawShapeToolsHighlights();drawStrokeSelection();drawTileBoundary();if(showGuides)drawGuides();updateSelectionBox();updatePaintBBoxOverlay();fabricContentChanged();});}
+function redraw(){if(redraw._q)return;redraw._q=requestAnimationFrame(()=>{redraw._q=0;if(pathEditStrokeId&&pathEditNodes&&!liveActive&&!drawing)renderPathLivePreview(); /* Edit Path hides the real stroke, so its live preview must never be lost to a stray clear */if(compositeDirty){updateComposite();updateDisplayComposite();compositeDirty=false;}ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);drawBackground();drawTraces();if(showTiling)drawTiles();else{ctx.drawImage(displayCanvas,0,0,W,H);if(liveActive)ctx.drawImage(liveLayer,0,0);}drawPlaced();drawMultiSelectHighlights();drawShapeToolsHighlights();drawStrokeSelection();drawTileBoundary();if(showGuides)drawGuides();updateSelectionBox();updatePaintBBoxOverlay();fabricContentChanged();invalidateDetail();});}
 // A pattern (e.g. exported from Magic Builder) loaded as the base of the design - unlike Trace
 // Reference (a non-exported, freely-scaled/positioned tracing guide), this is sized to exactly
 // fill the guide-square tile, tiles using the same repeat offsets as the hand-drawn layer/motifs
@@ -4123,9 +4203,8 @@ function enterEditPath(strokeId){
   syncStrokeSelectionUI(); // hides the Stroke Actions float-panel now that pathEditStrokeId is set
   setStatus('✎ Edit Path: drag nodes to adjust the curve, then tap Done.');
 }
-function renderPathLivePreview(){
+function renderPathPreviewInto(target){
   const stroke=strokes.find(s=>s.id===pathEditStrokeId);if(!stroke||!pathEditNodes)return;
-  lctx.clearRect(0,0,W,H);
   const brush=BrushEngine.getBrush(stroke.brushId),settings=strokeSettings(stroke);
   // A taper brush (Tapered Ink, Spiral's "both" taper, ...) thins its own start/end down to
   // near-nothing — correct for the finished artwork, but during editing specifically that thin,
@@ -4137,7 +4216,12 @@ function renderPathLivePreview(){
   // the actual node structure stays unambiguous while editing; the committed stroke still tapers
   // normally the moment Done bakes it back through the ordinary (non-preview) render path.
   const previewBrush=(brush.taper&&brush.taper!=='none')?{...brush,taper:'none',taperS:0,taperE:0}:brush;
-  BrushEngine.renderStroke(lctx,{...stroke,points:nodesToPoints(pathEditNodes,pathEditClosed)},previewBrush,settings);
+  BrushEngine.renderStroke(target,{...stroke,points:nodesToPoints(pathEditNodes,pathEditClosed)},previewBrush,settings);
+}
+function renderPathLivePreview(){
+  const stroke=strokes.find(s=>s.id===pathEditStrokeId);if(!stroke||!pathEditNodes)return;
+  lctx.clearRect(0,0,W,H);
+  renderPathPreviewInto(lctx);
   liveActive=true;
 }
 // Unlike freehand drawing's incremental live preview (renderLivePreviewIncremental, which only
@@ -5799,6 +5883,8 @@ window.__sketchpadCanvasToScreenAbs=(x,y)=>{
 // pinch-zoom uses, without needing to simulate a real multitouch gesture. skipDebounce bypasses
 // the (production, intentional) 120ms pinch-settle debounce so a test can assert on the
 // re-rendered result immediately instead of waiting out the debounce window.
+window.__sketchpadSetRot=(r)=>{rot=+r||0;applyTransform();};
+window.__sketchpadSetPan=(x,y)=>{panX=+x||0;panY=+y||0;applyTransform();};
 window.__sketchpadSetZoom=(z,skipDebounce)=>{
   zoom=clampZoom(z);
   if(skipDebounce)clearTimeout(renderScaleTimer);
