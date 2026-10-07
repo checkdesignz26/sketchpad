@@ -592,7 +592,7 @@ button.pill:active{transform:scale(.97)}
   </div>
   <button id="sidebarToggleBtn" class="sidebar-toggle" title="Hide tools panel">‹</button>
   <main class="workspace">
-    <div class="toolbar"><button id="undoBtn" class="tool-btn">↩️ Undo</button><button id="redoBtn" class="tool-btn">↪️ Redo</button><button id="zoomPill" class="pill" title="Zoom and view recovery">100% ▾</button><button id="resetRot" class="tool-btn">0° Rotation</button><button id="guidesBtn" class="tool-btn">📐 Guides</button><button id="strokePanelBtn" class="tool-btn" title="Show or hide the Stroke panel">🖊️ Stroke</button><button id="selectAllBtn" class="tool-btn" title="Select all your artwork (not the background or guides) so you can group, move or resize it">☑️ Select All</button><button id="paintModePill" class="pill" style="display:none;cursor:pointer;">🎨 Paint Inside — tap for Free Paint</button><button id="editMotifBar" class="pill" style="display:none;cursor:pointer;background:var(--accentTeal);border:1px solid rgba(92,184,171,.5);font:inherit;">✏️ Editing: <span id="editMotifBarName"></span> — tap Done</button><div class="toolbar-spacer"></div><button id="quickSaveBtn" class="tool-btn">💾 Save</button><div id="saveStatusPill" class="pill" title="Autosave status">Saved</div><button id="downloadProjectBtn" class="tool-btn">⬇️ Download Project</button><button id="backupsBtn" class="tool-btn" title="Automatic earlier versions of your work">🕘 Earlier saves</button><label class="tool-btn" for="openProjectInput" style="cursor:pointer;">📂 Open Project</label><input id="openProjectInput" type="file" accept="application/json" style="display:none;"><button id="viewToggleBtn" class="tool-btn">⋯ View</button><button id="exportBtn" class="tool-btn primary">📸 Export</button><button id="exportSvgBtn" class="tool-btn" title="Export as SVG (vector)">🖋️ SVG</button></div>
+    <div class="toolbar"><button id="undoBtn" class="tool-btn">↩️ Undo</button><button id="redoBtn" class="tool-btn">↪️ Redo</button><button id="zoomPill" class="pill" title="Zoom and view recovery">100% ▾</button><button id="resetRot" class="tool-btn">0° Rotation</button><button id="guidesBtn" class="tool-btn">📐 Guides</button><button id="strokePanelBtn" class="tool-btn" title="Show or hide the Stroke panel">🖊️ Stroke</button><button id="selectAreaBtn" class="tool-btn" title="Drag a box round one drawing (like your goose) to select just that, then resize or move it">▭ Select Area</button><button id="selectAllBtn" class="tool-btn" title="Select all your artwork (not the background or guides) so you can group, move or resize it">☑️ Select All</button><button id="paintModePill" class="pill" style="display:none;cursor:pointer;">🎨 Paint Inside — tap for Free Paint</button><button id="editMotifBar" class="pill" style="display:none;cursor:pointer;background:var(--accentTeal);border:1px solid rgba(92,184,171,.5);font:inherit;">✏️ Editing: <span id="editMotifBarName"></span> — tap Done</button><div class="toolbar-spacer"></div><button id="quickSaveBtn" class="tool-btn">💾 Save</button><div id="saveStatusPill" class="pill" title="Autosave status">Saved</div><button id="downloadProjectBtn" class="tool-btn">⬇️ Download Project</button><button id="backupsBtn" class="tool-btn" title="Automatic earlier versions of your work">🕘 Earlier saves</button><label class="tool-btn" for="openProjectInput" style="cursor:pointer;">📂 Open Project</label><input id="openProjectInput" type="file" accept="application/json" style="display:none;"><button id="viewToggleBtn" class="tool-btn">⋯ View</button><button id="exportBtn" class="tool-btn primary">📸 Export</button><button id="exportSvgBtn" class="tool-btn" title="Export as SVG (vector)">🖋️ SVG</button></div>
     <div id="brushMakerPanel" style="display:none;position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:91;background:var(--sideBg);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:0 18px 50px rgba(0,0,0,.35);font-size:13.5px;width:min(480px,calc(100vw - 24px));max-height:calc(100vh - 90px);overflow:auto;">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:800;margin-bottom:8px;">🖌️ Create custom brush<button id="bmCancel" class="btn mini">Close</button></div>
       <div style="border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:8px;"><canvas id="bmPreview" style="position:static;display:block;width:100%;height:84px;transform:none;left:auto;top:auto;"></canvas></div>
@@ -935,7 +935,7 @@ let pathEditTool='select';let pathEditInitial=null;
 let continueStrokeId=null,continueBasePoints=null; // Continue Path: next drawn stroke extends this one instead of starting a new one
 let continuousDrawMode=false; // Continuous Draw toggle: auto-continue a nearby stroke's end instead of starting a new one — see findContinuousDrawTarget
 let joinPendingStrokeId=null,joinPendingFromEnd=false; // Join Path: waiting for a tap on another stroke's endpoint
-let captureAreaArmed=false,captureRect=null;let areaFillArmed=false; // Vector Area Fill: next canvas tap fills the enclosed region under it instead of drawing/selecting
+let areaSelectMode=false,captureAreaArmed=false,captureRect=null;let areaFillArmed=false; // Vector Area Fill: next canvas tap fills the enclosed region under it instead of drawing/selecting
 // ---- Adaptive Colour (ported from Pattern Playground's "colour mode" panel) --------------------
 // colorTarget tracks which control a tapped swatch writes into — 'brush' (next raster/vector
 // stroke), 'stroke' (the currently selected stroke, recoloured immediately — same as using the
@@ -3830,13 +3830,15 @@ function syncMode(){$('drawModeBtn').classList.toggle('active',mode==='draw');$(
 $('drawModeBtn').onclick=()=>{if(pathEditStrokeId)commitEditPath();if(joinPendingStrokeId)endJoinPick();disarmAreaFill();disarmShapeMultiSelect();armedShapeType=null;syncShapeToolUI();mode='draw';selected=null;selectedStrokeId=null;multiSel=null;selAddArmed=false;groupInsideId=null;multiSelectMode=false;multiSelectIds=[];$('multiSelectToggle').textContent='🔢 Multi-Select: Off';$('multiSelectToggle').classList.remove('active');syncAlignUI();syncStrokeSelectionUI();syncMode();redraw()};$('editModeBtn').onclick=()=>{disarmAreaFill();armedShapeType=null;syncShapeToolUI();mode='edit';syncMode()};$('captureBtn').onclick=()=>captureMotif();
 // Capture Area: drag a box on the canvas; only strokes inside it become the motif.
 function setCaptureArea(on){
-  captureAreaArmed=on;captureRect=null;
-  const b=$('captureAreaBtn');b.classList.toggle('active',on);b.textContent=on?'▭ Drag a box round the drawing… (tap to cancel)':'▭ Capture Area — drag a box round just one drawing';
+  captureAreaArmed=on;captureRect=null;if(!on)areaSelectMode=false;
+  {const sb=$('selectAreaBtn');if(sb){sb.classList.toggle('active',on&&areaSelectMode);sb.textContent=(on&&areaSelectMode)?'▭ Drag a box… (tap to cancel)':'▭ Select Area';}}
+  const b=$('captureAreaBtn');b.classList.toggle('active',on&&!areaSelectMode);b.textContent=on&&!areaSelectMode?'▭ Drag a box round the drawing… (tap to cancel)':'▭ Capture Area — drag a box round just one drawing';
   canvas.style.cursor=on?'crosshair':'';
   const o=$('captureRectBox');if(o&&!on)o.style.display='none';
   if(on){if(pathEditStrokeId)commitEditPath();setStatus('▭ Drag a box round the drawing you want to capture.');}
 }
-$('captureAreaBtn').onclick=()=>setCaptureArea(!captureAreaArmed);
+$('captureAreaBtn').onclick=()=>{areaSelectMode=false;setCaptureArea(!captureAreaArmed);};
+$('selectAreaBtn').onclick=()=>{const on=!(captureAreaArmed&&areaSelectMode);areaSelectMode=on;setCaptureArea(on);areaSelectMode=on;{const sb=$('selectAreaBtn');sb.classList.toggle('active',on);sb.textContent=on?'▭ Drag a box… (tap to cancel)':'▭ Select Area';}if(on)setStatus('▭ Drag a box round just the drawing you want to select, then resize it with the corner handle.');};
 function captureRectStart(e){
   captureRect={x0:e.clientX,y0:e.clientY,x1:e.clientX,y1:e.clientY,id:e.pointerId};
   try{canvas.setPointerCapture(e.pointerId);}catch(err){}
@@ -3860,6 +3862,18 @@ canvas.addEventListener('pointerup',e=>{
   // Paint-Inside strokes travel with the shape that holds them, and the other way round.
   strokes.forEach(st=>{if(ids.has(st.id)&&st.clipStrokeId)ids.add(st.clipStrokeId);});
   strokes.forEach(st=>{if(st.clipStrokeId&&ids.has(st.clipStrokeId))ids.add(st.id);});
+  if(areaSelectMode){
+    const pids=new Set();
+    placed.forEach(p=>{if(p.img&&p.x>=minX&&p.x<=maxX&&p.y>=minY&&p.y<=maxY)pids.add(p.id);});
+    strokes.forEach(st=>{if(ids.has(st.id)&&st.groupId)strokes.forEach(o=>{if(o.groupId===st.groupId)ids.add(o.id);});});
+    if(!ids.size&&!pids.size){setStatus('▭ Nothing inside that box. Try again, or tap Select Area to cancel.');return;}
+    setCaptureArea(false);
+    if(mode!=='edit')$('editModeBtn').click();
+    setMulti([...ids],[...pids],null);selAddArmed=false;groupInsideId=null;
+    syncStrokeSelectionUI();updateSelectedControls();redraw();
+    setStatus('▭ Selected '+(ids.size+pids.size)+' items. Drag a corner handle to resize it (proportions stay locked), drag inside the box to move it, the round handle turns it.');
+    return;
+  }
   const subset=strokes.filter(st=>ids.has(st.id));
   if(!subset.length){setStatus('▭ Nothing inside that box — try again, or tap the button to cancel.');return;}
   setCaptureArea(false);
