@@ -98,6 +98,12 @@ screen" step. Replace the placeholder icon by dropping your 1024x1024 artwork in
 5. Start the `patternsketch-ipad` workflow. When it finishes, the build appears in TestFlight.
 6. Install **TestFlight** on your iPad and test with a real Apple Pencil.
 
+## Two-row toolbar
+
+- Row 1: **📁 Projects**, the project name with a ▾ menu (Rename, New Project, Save, Download Project, Import Project, Earlier Saves), small autosave text, Undo, Redo, **📸 Export ▾** (PNG tile / SVG options).
+- Row 2: **Select ▾** (Select Area, Select All, Select same colour/stroke/fill; shows "Select Area ON" while armed), **🖊️ Stroke tools**, **100% ▾** (Fit, 100%, reset rotation, reset view) and **👁️ View ▾** (rotation value + reset, Guides, symmetry, tiling, theme, reset view).
+- The original buttons still exist, hidden in `#tbLegacy`; menu items press them, so every handler is unchanged. When a row runs out of room, lowest-priority items move into a labelled **⋯ More** menu instead of wrapping.
+
 ## Blend between motifs and groups
 
 - Select a motif, or a group, tap **🌀 Blend with another…** (motif panel) or **🌀 Blend two…** (selection panel), then tap the second motif or group. Or select exactly two first and tap Blend.
