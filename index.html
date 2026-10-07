@@ -3387,9 +3387,8 @@ function drawBrushSample(c,brush,st,color){
   const lum=(()=>{const h=(col||'#000').replace('#','');const n=parseInt(h.length===3?h.split('').map(x=>x+x).join(''):h,16);return(0.299*(n>>16&255)+0.587*(n>>8&255)+0.114*(n&255));})();
   g.fillStyle=lum>200?'#6b6475':'#fffdf8';g.fillRect(0,0,cssW,cssH);
   if(eraser){g.fillStyle='#fff';g.fillRect(0,0,cssW,cssH);g.fillStyle='#8a7f8f';g.font='600 13px system-ui,sans-serif';g.textAlign='center';g.fillText('Eraser — removes strokes it crosses',cssW/2,cssH/2+4);return;}
-  // true to the canvas: the preview uses the same on-screen scale the canvas is currently shown at,
-  // so a line looks as thick here as it will when drawn (very large brushes are shrunk to fit).
-  const onScreen=Math.max(0.05,(typeof zoom==='number'&&typeof baseScale==='number')?zoom*baseScale:1);
+  // true to the canvas at its normal 100% view (not the current zoom): a line looks as thick here as it will at 100% (very large brushes are shrunk to fit).
+  const onScreen=Math.max(0.05,(typeof baseScale==='number')?baseScale:1); // at the normal (100%) view, so zooming in never makes the sample look heavy
   const k=Math.min(onScreen,(cssH*0.55)/Math.max(1,st.size));
   g.save();g.scale(k,k);
   const w=cssW/k,h=cssH/k,pts=[],N=70;
