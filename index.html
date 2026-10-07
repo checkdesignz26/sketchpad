@@ -398,6 +398,11 @@ html.in-suite .suite-only{display:block!important}
         <div class="slider-row"><label>Pressure → width</label><input id="pressureWidth" type="range" min="0" max="100" value="50"><span id="pressureWidthVal">50%</span></div>
         <div class="slider-row"><label>Pressure → opacity</label><input id="pressureOpacity" type="range" min="0" max="100" value="10"><span id="pressureOpacityVal">10%</span></div>
         <div class="slider-row"><label>Spacing</label><input id="brushSpacingCtl" type="range" min="1" max="40" value="6"><span id="brushSpacingValCtl">6%</span></div>
+        <div id="nibOptions" style="display:none;margin-top:6px;">
+          <div class="slider-row"><label>Nib angle</label><input id="nibAngleCtl" type="range" min="0" max="180" step="1" value="40"><span id="nibAngleVal">40°</span></div>
+          <div class="slider-row"><label>Nib thickness</label><input id="nibFlatCtl" type="range" min="2" max="60" step="1" value="12"><span id="nibFlatVal">12%</span></div>
+          <div class="hint">Calligraphy nib: Size is the nib's width. Strokes are thick across the nib and hairline along it.</div>
+        </div>
         <div id="stampOptions" style="display:none;margin-top:6px;">
           <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:4px 0;"><input type="checkbox" id="stampFollow"> Turn stamps to follow the line</label>
           <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:4px 0;"><input type="checkbox" id="stampTint"> Paint in one colour (tint with current colour)</label>
@@ -3318,7 +3323,8 @@ function formatRecipe(brushId,settings){
     +'Smoothing: '+Math.round(settings.smoothing)+'%\n'
     +'Pressure→Width: '+Math.round(settings.pressureWidth)+'%\n'
     +'Pressure→Opacity: '+Math.round(settings.pressureOpacity)+'%\n'
-    +'Spacing: '+Math.round(settings.spacing)+'%';
+    +'Spacing: '+Math.round(settings.spacing)+'%'
+    +(brush.nib?'\nNib angle: '+Math.round(settings.nibAngle)+'°, thickness '+Math.round(settings.nibFlat)+'%':'');
 }
 function strokeSettings(stroke){return stroke.settings||BrushEngine.getSettings(stroke.brushId);}
 function syncStrokeRecipeUI(){
@@ -4993,6 +4999,8 @@ function syncControlsFromSettings(){
   $('brushSize').max=isStamp?400:120;$('brushSpacingCtl').max=isStamp?250:40;
   $('brushSize').value=s.size;$('brushSpacingCtl').value=s.spacing;
   $('brushSizeVal').textContent=fmtSize(s.size);syncSizeNums();$('brushSpacingValCtl').textContent=Math.round(s.spacing)+'%';
+  { const isNib=!eraserActive&&!!BrushEngine.getBrush(activeBrushId).nib;$('nibOptions').style.display=isNib?'block':'none';
+    if(isNib){$('nibAngleCtl').value=s.nibAngle;$('nibAngleVal').textContent=Math.round(s.nibAngle)+'°';$('nibFlatCtl').value=s.nibFlat;$('nibFlatVal').textContent=Math.round(s.nibFlat)+'%';} }
   $('stampOptions').style.display=isStamp?'block':'none';
   $('stampFollow').checked=!!s.follow;$('stampTint').checked=!!s.tint;
   syncActiveBrushRecipeLine();
@@ -5172,6 +5180,8 @@ $('brushOpacity').oninput=e=>{const v=+e.target.value;$('brushOpacityVal').textC
 $('brushSmooth').oninput=e=>{const v=+e.target.value;$('brushSmoothVal').textContent=Math.round(v)+'%';patchCurrentSettings({smoothing:v});};
 $('pressureWidth').oninput=e=>{const v=+e.target.value;$('pressureWidthVal').textContent=Math.round(v)+'%';patchCurrentSettings({pressureWidth:v});};
 $('pressureOpacity').oninput=e=>{const v=+e.target.value;$('pressureOpacityVal').textContent=Math.round(v)+'%';patchCurrentSettings({pressureOpacity:v});};
+$('nibAngleCtl').oninput=e=>{const v=+e.target.value;$('nibAngleVal').textContent=Math.round(v)+'°';patchCurrentSettings({nibAngle:v});};
+$('nibFlatCtl').oninput=e=>{const v=+e.target.value;$('nibFlatVal').textContent=Math.round(v)+'%';patchCurrentSettings({nibFlat:v});};
 $('stampFollow').onchange=e=>patchCurrentSettings({follow:e.target.checked?1:0});$('stampTint').onchange=e=>patchCurrentSettings({tint:e.target.checked?1:0});
 $('brushSpacingCtl').oninput=e=>{const v=+e.target.value;$('brushSpacingValCtl').textContent=Math.round(v)+'%';patchCurrentSettings({spacing:v});};
 

@@ -142,3 +142,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## Shape controls in the floating Stroke panel (v53)
 - Selecting a polygon/star now shows Sides / Points / Depth sliders right in the floating Stroke panel (range 3–24), mirrored with the Shape Controls in the left Stroke tools panel.
+
+## Calligraphy brush (v54)
+- New "Calligraphy" brush (Inking family): flat nib at a fixed angle. Size = nib width; Nib angle (0–180°) and Nib thickness (2–60%) sliders appear under the brush settings. Drawn as one filled shape so opacity stays even; Pencil pressure thins the nib slightly.
