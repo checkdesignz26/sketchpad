@@ -126,6 +126,7 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
 .selection-box{position:absolute;border:2px dashed var(--pink);border-radius:10px;pointer-events:none;display:none}
 .handle{position:absolute;right:-9px;bottom:-9px;width:18px;height:18px;border-radius:6px;background:linear-gradient(90deg,var(--purple),var(--pink));border:2px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.35);touch-action:none;pointer-events:auto;cursor:nwse-resize}
 .rotHandle{position:absolute;left:50%;top:-30px;width:16px;height:16px;margin-left:-8px;border-radius:50%;background:linear-gradient(90deg,var(--purple),var(--pink));border:2px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.35);touch-action:none;pointer-events:auto;cursor:grab}
+#paintBBoxOverlay{border:1.5px dashed var(--pink);border-radius:2px}
 #paintBBoxOverlay .handle{width:26px;height:26px;right:-13px;bottom:-13px;border-radius:8px}
 #paintBBoxOverlay .rotHandle{width:26px;height:26px;margin-left:-13px;top:-46px}
 #paintBBoxOverlay .rotHandle:before{height:20px}
@@ -1371,6 +1372,7 @@ function distToSeg(px,py,ax,ay,bx,by){const dx=bx-ax,dy=by-ay;const len2=dx*dx+d
 function distanceToPolyline(px,py,pts){if(!pts||!pts.length)return Infinity;if(pts.length===1)return Math.hypot(px-pts[0].x,py-pts[0].y);let best=Infinity;for(let i=1;i<pts.length;i++){const d=distToSeg(px,py,pts[i-1].x,pts[i-1].y,pts[i].x,pts[i].y);if(d<best)best=d;}return best;}
 function drawStrokeSelection(){
   if(!selectedStrokeId)return;
+  if(typeof selectedPaintStroke==='function'&&selectedPaintStroke())return; // the on-canvas handle box replaces this outline
   const stroke=strokes.find(s=>s.id===selectedStrokeId);
   if(!stroke||!stroke.points.length)return;
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
@@ -2572,21 +2574,26 @@ function strokePointsBBox(points){
   points.forEach(p=>{if(p.x<minX)minX=p.x;if(p.y<minY)minY=p.y;if(p.x>maxX)maxX=p.x;if(p.y>maxY)maxY=p.y;});
   return {cx:(minX+maxX)/2,cy:(minY+maxY)/2,w:Math.max(1,maxX-minX),h:Math.max(1,maxY-minY)};
 }
-function updatePaintBBoxOverlay(){
+let handleDragOv=null;
+function updatePaintBBoxOverlay(ov){
+  ov=ov||handleDragOv;
   const box=$('paintBBoxOverlay');if(!box)return;
   const stroke=selectedPaintStroke();
   if(!stroke){box.style.display='none';return;}
-  const bb=strokePointsBBox(stroke.points);
+  const bb=ov||strokePointsBBox(stroke.points);
   const rect=canvas.getBoundingClientRect(),wrapRect=wrap.getBoundingClientRect();
   const cx=rect.left+rect.width/2-wrapRect.left,cy=rect.top+rect.height/2-wrapRect.top;
-  const a=rot*Math.PI/180,s=zoom*baseScale,pad=16;
+  const a=rot*Math.PI/180,s=zoom*baseScale;
+  // Hug the stroke: half its line width plus a few screen pixels, whatever the zoom.
+  let sz=3;try{sz=strokeSettings(stroke).size||3;}catch(err){}
+  const pad=Math.min(60,sz/2)+5/Math.max(.01,s);
   const px=(bb.cx-W/2)*s,py=(bb.cy-H/2)*s;
   const sx=cx+px*Math.cos(a)-py*Math.sin(a),sy=cy+px*Math.sin(a)+py*Math.cos(a);
   const bw=(bb.w+pad*2)*s,bh=(bb.h+pad*2)*s;
   box.style.display='block';
   box.style.width=bw+'px';box.style.height=bh+'px';
   box.style.left=(sx-bw/2)+'px';box.style.top=(sy-bh/2)+'px';
-  box.style.transform=`rotate(${rot}deg)`;
+  box.style.transform=`rotate(${rot+(ov&&ov.deg||0)}deg)`;
 }
 let handleTapRot={id:null,deg:0,t:0};
 function paintBBoxHandleDrag(handleEl,mode){
@@ -2613,25 +2620,31 @@ function paintBBoxHandleDrag(handleEl,mode){
         else{const r=val*Math.PI/180,c=Math.cos(r),sn=Math.sin(r);transformStrokePoints(stroke,(x,y)=>{const dx=x-bb.cx,dy=y-bb.cy;return {x:bb.cx+dx*c-dy*sn,y:bb.cy+dx*sn+dy*c};});}
       }
     };
-    let moved=false,hidden=false;const t0=performance.now();
+    let moved=false,hidden=false,ov=null;const t0=performance.now();
     const onMove=ev=>{
       if(!moved){if(Math.hypot(ev.clientX-sx0,ev.clientY-sy0)<8)return;moved=true;}
       if(!hidden){hidden=true;rebuildLayerDimmed(stroke.layerId,stroke.id,0);} // live copy is the only visible one
       const p=screenToCanvas(ev.clientX,ev.clientY);
       if(mode==='resize'){
-        apply('scale',Math.max(0.05,(Math.hypot(p.x-bb.cx,p.y-bb.cy)||1)/baseDist));
+        const f=Math.max(0.05,(Math.hypot(p.x-bb.cx,p.y-bb.cy)||1)/baseDist);
+        apply('scale',f);ov={cx:bb.cx,cy:bb.cy,w:bb.w*f,h:bb.h*f,deg:0};
       }else{
         let deg=(Math.atan2(p.y-bb.cy,p.x-bb.cx)-baseAngle)*180/Math.PI;
-        const near=Math.round(deg/45)*45;if(Math.abs(deg-near)<3)deg=near; // gentle snap to 45 degree steps
-        apply('rot',deg);
+        // Controlled turning: steps of 15 degrees, and the 45/90/135/180 positions hold firmly.
+        deg=Math.round(deg/15)*15;
+        deg=((deg%360)+540)%360-180;
+        apply('rot',deg);ov={cx:bb.cx,cy:bb.cy,w:bb.w,h:bb.h,deg};
+        const chip=$('rotateChip');if(chip)chip.textContent='Stroke '+deg+'\u00b0';
       }
       lctx.clearRect(0,0,W,H);
       renderStrokeClipped(lctx,stroke,BrushEngine.getBrush(stroke.brushId),strokeSettings(stroke));
       liveActive=true;
-      updatePaintBBoxOverlay();
+      handleDragOv=ov;updatePaintBBoxOverlay(ov);
       redraw();
     };
     const finish=ev=>{
+      handleDragOv=null;
+      {const chip=$('rotateChip');if(chip)chip.textContent='Canvas '+Math.round(rot)+'\u00b0';}
       handleEl.removeEventListener('pointermove',onMove);
       handleEl.removeEventListener('pointerup',finish);handleEl.removeEventListener('pointercancel',finish);
       const tap=!moved&&performance.now()-t0<700;
