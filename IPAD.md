@@ -31,7 +31,7 @@ Native behaviour lives in `native-bridge.js` and only switches on inside the iPa
 ## Drawing, brushes and saving (features added for the app)
 
 - **Smooth Pen** is a true monoline vector path (default 3 px) with smooth edges at any zoom.
-- **On-canvas handles.** A selected stroke shows three handles: the round one at the top turns it (drag, or tap for a 45 degree step: 45, 90, 135, 180...), the square one at the corner resizes it (drag, or tap for 25% bigger), and the colour dot at the top-left changes its colour.
+- **On-canvas handles.** A selected stroke shows three handles: the round one at the top turns it (drag, or tap for a 45 degree step: 45, 90, 135, 180...; dragging turns in controlled 15 degree steps with the angle shown, and the box turns with it), the square one at the corner resizes it (drag, or tap for 25% bigger), and the colour dot at the top-left changes its colour.
 - **Edit Path.** Tap another stroke while editing to switch to it; the stroke keeps the shape it was drawn with.
 - **Live brush preview** under the brush controls matches the canvas stroke and updates as you adjust.
 - **Motif brushes.** Capture a drawing (or just a box-selected part with **Capture Area**) and it becomes a brush that
