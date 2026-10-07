@@ -302,6 +302,10 @@ button.pill:active{transform:scale(.97)}
 .slider-row.has-size{grid-template-columns:64px 1fr auto}
 .pen-bar{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;z-index:30;display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;max-width:94%;padding:8px 10px;border-radius:14px;background:var(--btnBg);border:1px solid var(--btnBorder);box-shadow:0 6px 18px rgba(0,0,0,.18);font-size:12.5px;color:var(--muted)}
 .pen-bar .btn{min-height:38px}
+.tb-split{display:inline-flex;flex:none}
+.tb-split .tool-btn:first-child{border-top-right-radius:0;border-bottom-right-radius:0;margin-right:-1px}
+.tb-split .tool-btn:last-child{border-top-left-radius:0;border-bottom-left-radius:0;padding-left:10px;padding-right:10px}
+.tb-menu{max-height:min(72vh,560px);overflow-y:auto}
 </style>
 </head>
 <body>
@@ -675,6 +679,7 @@ button.pill:active{transform:scale(.97)}
       </div>
       <div class="tb-row tb-canvas" id="tbCanvas">
         <button id="selMenuBtn" class="tool-btn tb-fix" aria-haspopup="menu" aria-expanded="false" title="Select Area, Select All, Select same…">▭ Select ▾</button>
+        <span class="tb-split"><button id="tbPencilBtn" class="tool-btn tb-fix" title="Freehand drawing with the current brush">✏️ Pencil</button><button id="tbPencilMenuBtn" class="tool-btn tb-fix" aria-haspopup="menu" aria-expanded="false" title="Choose a brush">▾</button></span>
         <button id="tbPenBtn" class="tool-btn tb-fix" title="Bézier Pen: tap for points, drag to curve">🖋️ Pen</button>
         <button id="tbEraserBtn" class="tool-btn tb-fix" title="Eraser">🧹 Eraser</button>
         <button id="strokePanelBtn" class="tool-btn" data-ovp="2" data-ovl="🖊️ Stroke tools" title="Show or hide the Stroke panel">🖊️ Stroke tools</button>
@@ -4305,7 +4310,7 @@ $('shapeMultiSelectToggle').onclick=()=>{
 $('shapeMergeBtn').onclick=()=>runShapeOp('merge');
 $('shapeSubtractBtn').onclick=()=>runShapeOp('subtract');
 $('shapeIntersectBtn').onclick=()=>runShapeOp('intersect');
-function syncMode(){try{if(penOn&&mode==='edit')penSet(false);}catch(e){}$('drawModeBtn').classList.toggle('active',mode==='draw');$('editModeBtn').classList.toggle('active',mode==='edit');canvas.style.cursor=mode==='draw'?'crosshair':'grab';setStatus(mode==='draw'?'✏️ Draw Mode: Apple Pencil draws, two fingers move the canvas.':'↔️ Edit Mode: tap motif with Pencil/mouse, then move, scale, rotate or flip.');;if(typeof syncStrokeSelectionUI==='function')syncStrokeSelectionUI();}
+function syncMode(){try{tbToolSync();}catch(e){}try{if(penOn&&mode==='edit')penSet(false);}catch(e){}$('drawModeBtn').classList.toggle('active',mode==='draw');$('editModeBtn').classList.toggle('active',mode==='edit');canvas.style.cursor=mode==='draw'?'crosshair':'grab';setStatus(mode==='draw'?'✏️ Draw Mode: Apple Pencil draws, two fingers move the canvas.':'↔️ Edit Mode: tap motif with Pencil/mouse, then move, scale, rotate or flip.');;if(typeof syncStrokeSelectionUI==='function')syncStrokeSelectionUI();}
 $('drawModeBtn').onclick=()=>{if(pathEditStrokeId)commitEditPath();if(joinPendingStrokeId)endJoinPick();disarmAreaFill();disarmShapeMultiSelect();armedShapeType=null;syncShapeToolUI();mode='draw';selected=null;selectedStrokeId=null;multiSel=null;selAddArmed=false;groupInsideId=null;multiSelectMode=false;multiSelectIds=[];$('multiSelectToggle').textContent='🔢 Multi-Select: Off';$('multiSelectToggle').classList.remove('active');syncAlignUI();syncStrokeSelectionUI();syncMode();redraw()};$('editModeBtn').onclick=()=>{disarmAreaFill();armedShapeType=null;syncShapeToolUI();mode='edit';syncMode()};$('captureBtn').onclick=()=>captureMotif();
 // Capture Area: drag a box on the canvas; only strokes inside it become the motif.
 function setCaptureArea(on){
@@ -4990,7 +4995,7 @@ function renderBrushFamilies(){
 }
 function syncRecents(){const host=$('brushRecents');const ids=BrushEngine.getRecents().filter(id=>BrushEngine.BRUSHES.some(x=>x.id===id));if(!ids.length){host.innerHTML='<div class="hint" style="margin:0;">Brushes you use appear here.</div>';return}host.innerHTML='';ids.forEach(id=>{const b=BrushEngine.getBrush(id);if(b)host.appendChild(makeBrushSwatch(b));});}
 function syncFavorites(){const host=$('brushFavorites');const ids=BrushEngine.getFavorites().filter(id=>BrushEngine.BRUSHES.some(x=>x.id===id));if(!ids.length){host.innerHTML='<div class="hint" style="margin:0;">Tap ★ on a brush to favourite it.</div>';return}host.innerHTML='';ids.forEach(id=>{const b=BrushEngine.getBrush(id);if(b)host.appendChild(makeBrushSwatch(b));});}
-function syncActiveSwatches(){document.querySelectorAll('.brush-swatch').forEach(el=>el.classList.toggle('active',!eraserActive&&el.dataset.brush===activeBrushId));$('eraserToggle').classList.toggle('active',eraserActive);{const tb=$('tbEraserBtn');if(tb)tb.classList.toggle('active',!!eraserActive);}}
+function syncActiveSwatches(){document.querySelectorAll('.brush-swatch').forEach(el=>el.classList.toggle('active',!eraserActive&&el.dataset.brush===activeBrushId));$('eraserToggle').classList.toggle('active',eraserActive);try{tbToolSync();}catch(e){}}
 function syncControlsFromSettings(){
   const s=currentSettings();
   $('brushSize').value=s.size;$('brushSizeVal').textContent=fmtSize(s.size);
@@ -8028,7 +8033,7 @@ function penOverlayRender(){
 }
 function penBarSync(){
   $('penBar').style.display=penOn?'flex':'none';
-  $('tbPenBtn').classList.toggle('active',penOn);
+  $('tbPenBtn').classList.toggle('active',penOn);try{tbToolSync();}catch(e){}
   $('penHint').textContent=penA.length?(penA.length+' point'+(penA.length>1?'s':'')+' · drag a point to move · double-tap = smooth/corner'):'Tap to place a point · drag to curve · tap the pink first point to close';
   $('penDoneBtn').disabled=penA.length<2;$('penCloseBtn').disabled=penA.length<2||penClosed;$('penUndoBtn').disabled=!penA.length;
 }
@@ -8148,6 +8153,33 @@ $('tbEraserBtn').onclick=()=>{
 document.addEventListener('keydown',e=>{if(!penOn)return;if(e.key==='Enter'){penFinish();}else if(e.key==='Escape'){penCancel();penOn=false;penBarSync();}});
 
 $('actionsEditCurveBtn').onclick=()=>{const st=strokes.find(x=>x.id===selectedStrokeId);if(st)penEditStroke(st);};
+function tbToolSync(){
+  const free=!penOn&&!eraserActive&&!armedShapeType&&mode==='draw';
+  const b=$('tbPencilBtn');if(b)b.classList.toggle('active',free);
+  const e=$('tbEraserBtn');if(e)e.classList.toggle('active',!!eraserActive);
+}
+function tbPencilGo(){
+  if(penOn)penSet(false);
+  eraserActive=false;armedShapeType=null;try{syncShapeToolUI();disarmAreaFill();}catch(e){}
+  if(mode==='edit')$('drawModeBtn').onclick();
+  syncControlsFromSettings();syncActiveSwatches();tbToolSync();
+  setStatus('✏️ '+BrushEngine.getBrush(activeBrushId).name+' — draw with Apple Pencil.');
+}
+const TB_FAMILY_NAMES={inking:'Inking',pencil:'Pencil',marker:'Marker',paint:'Paint',stamp:'Motif brushes',custom:'Custom'};
+function tbBrushMenu(){
+  const list=BrushEngine.BRUSHES.filter(b=>b.id!=='eraser'),fams=[];
+  list.forEach(b=>{if(!fams.includes(b.family))fams.push(b.family);});
+  const items=[];
+  fams.forEach((f,i)=>{
+    if(i)items.push({sep:1});
+    items.push({head:TB_FAMILY_NAMES[f]||(f?f.charAt(0).toUpperCase()+f.slice(1):'Brushes')});
+    list.filter(b=>b.family===f).forEach(b=>items.push({label:(b.id===activeBrushId&&!eraserActive&&!penOn?'✓ ':'')+b.name,on:b.id===activeBrushId&&!eraserActive,run:()=>{selectBrush(b.id);tbPencilGo();}}));
+  });
+  tbMenu($('tbPencilMenuBtn'),items);
+}
+$('tbPencilBtn').onclick=()=>tbPencilGo();
+$('tbPencilMenuBtn').onclick=()=>tbBrushMenu();
+
 async function boot(){
   applyTransform();
   $('guidesBtn').classList.toggle('active',showGuides);
