@@ -152,3 +152,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## Pencil + brush dropdown in the toolbar (v56)
 - ✏️ Pencil (back to freehand with the current brush, turning off Pen/Eraser/shape tools) plus a ▾ that lists every brush grouped by family; picking one selects it and starts drawing.
+
+## Size box in the toolbar (v57)
+- Number box + ▾ presets next to Pencil sets the size of the current brush (or the eraser while it's on); synced with the Size slider in the side panel. With the side panel open on a 10.2" iPad, zoom % and Stroke tools sit in ⋯ More.
