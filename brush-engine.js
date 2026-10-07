@@ -545,8 +545,22 @@
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (let i = 0; i < pts.length; i++) { const p = pts[i]; if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x; if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y; }
     const pad = settings.size * ((f.dual && f.dual.on ? 1 + (f.dual.scatter || 0) / 100 : 1)) + 4;
-    const bx = Math.floor(minX - pad), by = Math.floor(minY - pad), bw = Math.ceil(maxX - minX + pad * 2), bh = Math.ceil(maxY - minY + pad * 2);
+    let bx = Math.floor(minX - pad), by = Math.floor(minY - pad), bw = Math.ceil(maxX - minX + pad * 2), bh = Math.ceil(maxY - minY + pad * 2);
     const m = ctx.getTransform ? ctx.getTransform() : { a: 1, b: 0 };
+    // When zoomed far in, only the part of the stroke that is on this canvas matters: shrink the scratch
+    // area to it so the texture stays sharp instead of being scaled down to fit a huge stroke.
+    try {
+      if (ctx.getTransform && ctx.canvas && typeof DOMMatrix !== 'undefined') {
+        const inv = m.inverse(), cw = ctx.canvas.width, ch = ctx.canvas.height;
+        const xs = [], ys = [];
+        [[0, 0], [cw, 0], [0, ch], [cw, ch]].forEach((c) => { const q = inv.transformPoint(new DOMPoint(c[0], c[1])); xs.push(q.x); ys.push(q.y); });
+        const vx0 = Math.floor(Math.min.apply(null, xs)), vy0 = Math.floor(Math.min.apply(null, ys));
+        const vx1 = Math.ceil(Math.max.apply(null, xs)), vy1 = Math.ceil(Math.max.apply(null, ys));
+        const nx0 = Math.max(bx, vx0 - 2), ny0 = Math.max(by, vy0 - 2), nx1 = Math.min(bx + bw, vx1 + 2), ny1 = Math.min(by + bh, vy1 + 2);
+        if (nx1 <= nx0 || ny1 <= ny0) return;
+        bx = nx0; by = ny0; bw = nx1 - nx0; bh = ny1 - ny0;
+      }
+    } catch (e) { /* keep the full area */ }
     let sc = Math.hypot(m.a, m.b) || 1;
     const MAXPX = 12e6;
     if (bw * bh * sc * sc > MAXPX) sc = Math.sqrt(MAXPX / (bw * bh));
