@@ -306,6 +306,9 @@ button.pill:active{transform:scale(.97)}
 .tb-split .tool-btn:first-child{border-top-right-radius:0;border-bottom-right-radius:0;margin-right:-1px}
 .tb-split .tool-btn:last-child{border-top-left-radius:0;border-bottom-left-radius:0;padding-left:10px;padding-right:10px}
 .tb-menu{max-height:min(72vh,560px);overflow-y:auto}
+.tb-size{margin:0 2px;flex:none}.tb-size-l{font-size:12px;opacity:.7;margin-right:4px}
+.tb-size .size-num{width:50px;padding:9px 2px;font-size:16px}.tb-size .size-pick{width:28px;padding:9px 0}
+.tb-canvas{gap:5px}.tb-canvas .tool-btn{padding-left:10px;padding-right:10px;font-size:14.5px}
 </style>
 </head>
 <body>
@@ -680,6 +683,7 @@ button.pill:active{transform:scale(.97)}
       <div class="tb-row tb-canvas" id="tbCanvas">
         <button id="selMenuBtn" class="tool-btn tb-fix" aria-haspopup="menu" aria-expanded="false" title="Select Area, Select All, Select same…">▭ Select ▾</button>
         <span class="tb-split"><button id="tbPencilBtn" class="tool-btn tb-fix" title="Freehand drawing with the current brush">✏️ Pencil</button><button id="tbPencilMenuBtn" class="tool-btn tb-fix" aria-haspopup="menu" aria-expanded="false" title="Choose a brush">▾</button></span>
+        <span id="tbSize" class="size-combo tb-size tb-fix" title="Brush size"><input class="size-num" id="tbSizeNum" type="number" inputmode="decimal" min="0.05" step="0.05"><select class="size-pick" id="tbSizePick" title="Common sizes"></select></span>
         <button id="tbPenBtn" class="tool-btn tb-fix" title="Bézier Pen: tap for points, drag to curve">🖋️ Pen</button>
         <button id="tbEraserBtn" class="tool-btn tb-fix" title="Eraser">🧹 Eraser</button>
         <button id="strokePanelBtn" class="tool-btn" data-ovp="2" data-ovl="🖊️ Stroke tools" title="Show or hide the Stroke panel">🖊️ Stroke tools</button>
@@ -4560,7 +4564,7 @@ const SIZE_PRESETS=[0.1,0.25,0.5,0.75,1,1.5,2,3,4,5,6,8,10,12,16,20,24,32,48,64,
 function fmtSize(v){v=+v;if(!isFinite(v))return'';return v>=10?String(Math.round(v)):String(Math.round(v*100)/100);}
 function syncSizeNums(){
   document.querySelectorAll('.size-combo').forEach(c=>{
-    const r=c._range,n=c.querySelector('.size-num');
+    const r=c._range,n=c.querySelector(".size-num");if(!r||!n)return;
     if(document.activeElement!==n)n.value=fmtSize(r.value);
     n.max=r.max;
   });
@@ -5009,6 +5013,7 @@ function syncControlsFromSettings(){
   $('brushSizeVal').textContent=fmtSize(s.size);syncSizeNums();$('brushSpacingValCtl').textContent=Math.round(s.spacing)+'%';
   { const isNib=!eraserActive&&!!BrushEngine.getBrush(activeBrushId).nib;$('nibOptions').style.display=isNib?'block':'none';
     if(isNib){$('nibAngleCtl').value=s.nibAngle;$('nibAngleVal').textContent=Math.round(s.nibAngle)+'°';$('nibFlatCtl').value=s.nibFlat;$('nibFlatVal').textContent=Math.round(s.nibFlat)+'%';} }
+  try{tbSizeSync();}catch(e){}
   $('stampOptions').style.display=isStamp?'block':'none';
   $('stampFollow').checked=!!s.follow;$('stampTint').checked=!!s.tint;
   syncActiveBrushRecipeLine();
@@ -8179,6 +8184,22 @@ function tbBrushMenu(){
 }
 $('tbPencilBtn').onclick=()=>tbPencilGo();
 $('tbPencilMenuBtn').onclick=()=>tbBrushMenu();
+
+function tbSizeSync(){
+  const n=$('tbSizeNum');if(!n)return;
+  if(document.activeElement!==n)n.value=fmtSize(currentSettings().size);
+  n.max=$('brushSize').max;
+}
+{
+  const n=$('tbSizeNum'),sel=$('tbSizePick');
+  sel.innerHTML='<option value="">▾</option>'+SIZE_PRESETS.map(v=>'<option value="'+v+'">'+v+'</option>').join('');
+  const apply=v=>{v=+v;if(!isFinite(v)||v<=0)return;v=Math.min(Math.max(v,0.05),+$('brushSize').max||120);
+    patchCurrentSettings({size:v});$('brushSize').value=v;$('brushSizeVal').textContent=fmtSize(v);syncSizeNums();};
+  n.addEventListener('input',()=>{if(n.value!=='')apply(n.value);});
+  n.addEventListener('change',()=>{apply(n.value);n.value=fmtSize(currentSettings().size);});
+  sel.addEventListener('change',()=>{if(sel.value!==''){apply(sel.value);n.value=fmtSize(currentSettings().size);}sel.value='';});
+  $('tbSizeNum').closest('.size-combo')._range=$('brushSize'); // (kept in sync by tbSizeSync, not syncSizeNums)
+}
 
 async function boot(){
   applyTransform();
