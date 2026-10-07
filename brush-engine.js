@@ -430,19 +430,52 @@
   }
 
   // Motif brush: stamp the motif picture along the path. size = the motif's longest side in canvas px.
-  function renderStampStroke(ctx, stroke, brush, settings, alphaMul) {
-    const src = brush.stampCanvas; if (!src) return;
-    let img = src;
-    if (settings.tint) {
-      const key = stroke.color || '#000000';
-      img = brush.tinted[key];
-      if (!img) {
-        img = document.createElement('canvas'); img.width = src.width; img.height = src.height;
-        const g = img.getContext('2d'); g.drawImage(src, 0, 0);
-        g.globalCompositeOperation = 'source-in'; g.fillStyle = key; g.fillRect(0, 0, img.width, img.height);
-        brush.tinted[key] = img;
-      }
+  // Which picture to stamp with: the small default tip, or a sharper one when the stamp is going to be
+  // drawn bigger than that tip (size x the canvas's current scale, so deep zoom and hi-res layers count).
+  //  - motifs supply brush.tipFn(px), which redraws the motif from its saved vector strokes at that size;
+  //  - bitmap-only tips use progressively larger copies of the ORIGINAL picture (never enlarged beyond it).
+  // Tips come in power-of-two sizes so they are reused instead of rebuilt for every size tweak.
+  function tipFor(brush, needed) {
+    const base = brush.stampCanvas, bl = Math.max(base.width, base.height);
+    if (needed <= bl * 0.9) return base;
+    if (brush.tipFn) { try { const t = brush.tipFn(needed); if (t) return t; } catch (e) { /* fall back */ } }
+    const img = brush.stampImg; if (!img) return base;
+    const nw = img.naturalWidth || img.width, nh = img.naturalHeight || img.height, nl = Math.max(nw, nh);
+    if (nl <= bl * 1.05) return base;
+    let bucket = bl * 2; while (bucket < needed && bucket < nl) bucket *= 2;
+    bucket = Math.min(bucket, nl, 2048);
+    if (bucket <= bl * 1.05) return base;
+    brush.mip = brush.mip || {};
+    let m = brush.mip[bucket];
+    if (!m) {
+      const k = bucket / nl; m = document.createElement('canvas');
+      m.width = Math.max(1, Math.round(nw * k)); m.height = Math.max(1, Math.round(nh * k));
+      const g = m.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(img, 0, 0, m.width, m.height);
+      brush.mip[bucket] = m;
     }
+    return m;
+  }
+  function tintedTip(brush, src, key) {
+    const k = src.width + 'x' + src.height + '|' + key;
+    let t = brush.tinted[k];
+    if (!t) {
+      // keep tinted copies of big tips from piling up (memory on iPad)
+      brush.tintedN = (brush.tintedN || 0) + 1;
+      if (brush.tintedN > 24) { brush.tinted = {}; brush.tintedN = 1; }
+      t = document.createElement('canvas'); t.width = src.width; t.height = src.height;
+      const g = t.getContext('2d'); g.drawImage(src, 0, 0);
+      g.globalCompositeOperation = 'source-in'; g.fillStyle = key; g.fillRect(0, 0, t.width, t.height);
+      brush.tinted[k] = t;
+    }
+    return t;
+  }
+  function renderStampStroke(ctx, stroke, brush, settings, alphaMul) {
+    if (!brush.stampCanvas) return;
+    let sc = 1;
+    try { const m = ctx.getTransform(); sc = Math.hypot(m.a, m.b) || 1; } catch (e) { /* old browser */ }
+    const src = tipFor(brush, settings.size * sc);
+    let img = src;
+    if (settings.tint) img = tintedTip(brush, src, stroke.color || '#000000');
     const pts0 = stroke.points; if (!pts0 || !pts0.length) return;
     const spacingPx = Math.max(2, (settings.spacing / 100) * settings.size);
     let pts = pts0.length < 2 ? pts0.slice() : resample(pts0, spacingPx);
@@ -459,15 +492,7 @@
     for (let i = 0; i < pts.length; i++) {
       const pt = pts[i];
       if (variants) {
-        const key = variants[Math.floor(rv() * 8)];
-        let tv = brush.tinted[key];
-        if (!tv) {
-          tv = document.createElement('canvas'); tv.width = src.width; tv.height = src.height;
-          const g = tv.getContext('2d'); g.drawImage(src, 0, 0);
-          g.globalCompositeOperation = 'source-in'; g.fillStyle = key; g.fillRect(0, 0, tv.width, tv.height);
-          brush.tinted[key] = tv;
-        }
-        img = tv;
+        img = tintedTip(brush, src, variants[Math.floor(rv() * 8)]);
       }
       const sz = settings.size * pressureFactor(pt.pressure, settings.pressureWidth) * taperAt(brush, i, pts.length);
       const op = (settings.opacity / 100) * pressureFactor(pt.pressure, settings.pressureOpacity) * alphaMul;
