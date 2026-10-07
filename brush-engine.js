@@ -333,7 +333,65 @@
     out.push(points[points.length - 1]);
     return out;
   }
-
+  // Shape outlines and node-edited paths have deliberate corners. The "curve through the midpoints"
+  // smoothing below used to round every one of them (a rectangle came out as a blob with one sharp
+  // corner at the seam, i.e. a teardrop). Corners are now kept sharp: a point flagged corner:true
+  // (set by the shape generators and by corner nodes), every vertex of a polygonal shape, and for
+  // shapes / node paths any vertex that turns by more than ~40 degrees (covers older saved shapes).
+  // Closed outlines are built as one closed loop so the seam is clean. Freehand strokes (no shape,
+  // no nodes) keep the original smoothing exactly.
+  const SHARP_SHAPES = { line: 1, rect: 1, triangle: 1, diamond: 1, polygon: 1, star: 1 };
+  function cornerFlags(stroke, pts, closed) {
+    const n = pts.length, sharpAll = !!(stroke.shape && SHARP_SHAPES[stroke.shape.type]);
+    const auto = !!(stroke.shape || stroke.nodes || stroke.cornerAuto);
+    const flags = new Array(n).fill(false);
+    let any = false;
+    for (let i = 0; i < n; i++) {
+      let f = pts[i].corner === true || sharpAll;
+      if (!f && auto) {
+        const a = pts[closed ? (i - 1 + n) % n : i - 1], c = pts[closed ? (i + 1) % n : i + 1];
+        if (a && c) {
+          const a1 = Math.atan2(pts[i].y - a.y, pts[i].x - a.x), a2 = Math.atan2(c.y - pts[i].y, c.x - pts[i].x);
+          let d = Math.abs(a2 - a1); if (d > Math.PI) d = 2 * Math.PI - d;
+          if (d > 0.7) f = true;
+        }
+      }
+      if (f) any = true;
+      flags[i] = f;
+    }
+    return { flags: flags, any: any };
+  }
+  function pathThrough(ctx, pts, closed, flags) {
+    const n = pts.length, mid = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+    if (!closed) {
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < n - 1; i++) {
+        if (flags[i]) { ctx.lineTo(pts[i].x, pts[i].y); continue; }
+        const m = mid(pts[i], pts[i + 1]);
+        ctx.quadraticCurveTo(pts[i].x, pts[i].y, m.x, m.y);
+      }
+      ctx.lineTo(pts[n - 1].x, pts[n - 1].y);
+      return;
+    }
+    const k = flags.indexOf(true);
+    if (k >= 0) {
+      ctx.moveTo(pts[k].x, pts[k].y);
+      for (let j = 1; j <= n; j++) {
+        const i = (k + j) % n;
+        if (flags[i]) { ctx.lineTo(pts[i].x, pts[i].y); continue; }
+        const m = mid(pts[i], pts[(i + 1) % n]);
+        ctx.quadraticCurveTo(pts[i].x, pts[i].y, m.x, m.y);
+      }
+    } else {
+      const m0 = mid(pts[0], pts[1]);
+      ctx.moveTo(m0.x, m0.y);
+      for (let j = 1; j <= n; j++) {
+        const i = j % n, m = mid(pts[i], pts[(i + 1) % n]);
+        ctx.quadraticCurveTo(pts[i].x, pts[i].y, m.x, m.y);
+      }
+    }
+    ctx.closePath();
+  }
   // Monoline pens: one true anti-aliased curved path (round caps/joins) instead of
   // stamped dabs, so edges stay perfectly smooth at any zoom.
   function renderPathStroke(ctx, stroke, settings, alphaMul) {
@@ -347,17 +405,25 @@
     ctx.globalAlpha = Math.max(0, Math.min(1, (settings.opacity / 100) * alphaMul));
     ctx.strokeStyle = color; ctx.fillStyle = color;
     ctx.lineWidth = settings.size; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    let closed = !!stroke.closed && (stroke.shape || stroke.nodes || stroke.cornerAuto) && pts.length > 3;
+    if (closed && Math.hypot(pts[0].x - pts[pts.length - 1].x, pts[0].y - pts[pts.length - 1].y) < 0.5) pts.pop();
+    else closed = false;
     if (pts.length < 2) {
       ctx.beginPath(); ctx.arc(pts[0].x, pts[0].y, settings.size / 2, 0, Math.PI * 2); ctx.fill();
     } else {
+      const cf = (stroke.shape || stroke.nodes || stroke.cornerAuto || closed) ? cornerFlags(stroke, pts, closed) : null;
       ctx.beginPath();
-      ctx.moveTo(pts[0].x, pts[0].y);
-      for (let i = 1; i < pts.length - 1; i++) {
-        const mx = (pts[i].x + pts[i + 1].x) / 2, my = (pts[i].y + pts[i + 1].y) / 2;
-        ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
+      if (cf && (cf.any || closed)) {
+        pathThrough(ctx, pts, closed, cf.flags);
+      } else {
+        ctx.moveTo(pts[0].x, pts[0].y);
+        for (let i = 1; i < pts.length - 1; i++) {
+          const mx = (pts[i].x + pts[i + 1].x) / 2, my = (pts[i].y + pts[i + 1].y) / 2;
+          ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
+        }
+        const e = pts[pts.length - 1];
+        ctx.lineTo(e.x, e.y);
       }
-      const e = pts[pts.length - 1];
-      ctx.lineTo(e.x, e.y);
       ctx.stroke();
     }
     ctx.restore();
