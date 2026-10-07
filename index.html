@@ -327,6 +327,9 @@ html.in-suite .suite-only{display:block!important}
 .tb-size{margin:0 2px;flex:none}.tb-size-l{font-size:12px;opacity:.7;margin-right:4px}
 .tb-size .size-num{width:50px;padding:9px 2px;font-size:16px}.tb-size .size-pick{width:28px;padding:9px 0}
 .tb-canvas{gap:5px}.tb-canvas .tool-btn{padding-left:10px;padding-right:10px;font-size:14.5px}
+.fp-grip-wrap{position:sticky;bottom:-8px;height:0;overflow:visible;pointer-events:none;z-index:3}
+.fp-grip{position:absolute;right:-8px;bottom:0;width:38px;height:38px;pointer-events:auto;cursor:nwse-resize;touch-action:none;-webkit-user-select:none;user-select:none;display:flex;align-items:flex-end;justify-content:flex-end;padding:0 8px 8px 0;box-sizing:border-box;color:var(--muted);opacity:.6;font-size:15px;line-height:1}
+.fp-grip:active{opacity:1}
 </style>
 </head>
 <body>
@@ -8203,6 +8206,42 @@ function tbSizeSync(){
   sel.addEventListener('change',()=>{if(sel.value!==''){apply(sel.value);n.value=fmtSize(currentSettings().size);}sel.value='';});
   $('tbSizeNum').closest('.size-combo')._range=$('brushSize'); // (kept in sync by tbSizeSync, not syncSizeNums)
 }
+
+// ---- Resizable floating panels: drag the ◢ corner; size is remembered; double-tap it to reset ----
+(function(){
+  let saved={};try{saved=JSON.parse(localStorage.getItem('sp-fpSize')||'{}')||{};}catch(e){}
+  const persist=()=>{try{localStorage.setItem('sp-fpSize',JSON.stringify(saved));}catch(e){}};
+  document.querySelectorAll('.float-panel').forEach(panel=>{
+    const wrapEl=document.createElement('div');wrapEl.className='fp-grip-wrap';
+    const grip=document.createElement('div');grip.className='fp-grip';grip.textContent='◢';grip.title='Drag to resize (double-tap to reset)';
+    wrapEl.appendChild(grip);panel.appendChild(wrapEl);
+    const sz=saved[panel.id];if(sz){if(sz.w)panel.style.width=sz.w+'px';if(sz.h)panel.style.height=sz.h+'px';}
+    let lastTap=0;
+    grip.addEventListener('pointerdown',e=>{
+      e.preventDefault();e.stopPropagation();
+      const now=Date.now();
+      if(now-lastTap<350){panel.style.width='';panel.style.height='';delete saved[panel.id];persist();lastTap=0;
+        if(panel.id==='blendPanel'||panel.id==='groupBar')panel.style.width='300px';return;}
+      lastTap=now;
+      const sx=e.clientX,sy=e.clientY,w0=panel.offsetWidth,h0=panel.offsetHeight;
+      try{grip.setPointerCapture(e.pointerId);}catch(err){}
+      const move=ev=>{
+        const vr=viewportOuter.getBoundingClientRect();
+        const w=Math.min(vr.width-16,Math.max(220,w0+ev.clientX-sx)),h=Math.min(vr.height-16,Math.max(140,h0+ev.clientY-sy));
+        panel.style.width=w+'px';panel.style.height=h+'px';
+        // grow leftwards/upwards instead of off-screen when the panel sits against the canvas edge
+        const pr=panel.getBoundingClientRect();let l=pr.left,t=pr.top;
+        if(pr.right>vr.right-8)l=Math.max(vr.left+8,vr.right-8-w);
+        if(pr.bottom>vr.bottom-8)t=Math.max(vr.top+8,vr.bottom-8-h);
+        panel.style.left=l+'px';panel.style.top=t+'px';
+        if(typeof floatPanelPositions!=='undefined')floatPanelPositions[panel.id]={x:l,y:t};
+      };
+      const up=()=>{grip.removeEventListener('pointermove',move);saved[panel.id]={w:panel.offsetWidth,h:panel.offsetHeight};persist();};
+      grip.addEventListener('pointermove',move);
+      grip.addEventListener('pointerup',up,{once:true});grip.addEventListener('pointercancel',up,{once:true});
+    });
+  });
+})();
 
 async function boot(){
   applyTransform();

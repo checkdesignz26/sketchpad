@@ -155,3 +155,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## Size box in the toolbar (v57)
 - Number box + ▾ presets next to Pencil sets the size of the current brush (or the eraser while it's on); synced with the Size slider in the side panel. With the side panel open on a 10.2" iPad, zoom % and Stroke tools sit in ⋯ More.
+
+## Resizable floating panels (v58)
+- Every floating panel (Stroke, Blend, Group, Rotate, Edit Path…) has a ◢ grip at its bottom-right: drag to resize (grows left/up if it's against the canvas edge, scrolls inside when smaller), size remembered (localStorage `sp-fpSize`), double-tap the grip to reset.
