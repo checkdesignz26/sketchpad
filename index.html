@@ -592,6 +592,7 @@ html.in-suite .suite-only{display:block!important}
       <button id="shapeFlipVBtn" class="btn mini" style="flex:1">Flip V</button>
     </div>
     <button id="actionsEditPathBtn" class="btn mini primary" style="width:100%;margin-top:6px;">✎ Edit Path</button>
+    <div class="row" style="margin-top:6px;gap:6px;"><button id="selSameColourBtn" class="btn mini" style="flex:1" title="Select every stroke with this colour">🎯 Same colour</button><button id="selSameStrokeBtn" class="btn mini" style="flex:1" title="Select every stroke with this brush and thickness">🎯 Same stroke</button><button id="selSameFillBtn" class="btn mini" style="flex:1" title="Select every shape with this fill colour">🎯 Same fill</button></div>
     <div class="row" style="margin-top:6px;gap:6px;"><button id="duplicateStrokeBtn" class="btn mini" style="flex:1">⧉ Duplicate</button><button id="openRotatePanelBtn" class="btn mini" style="flex:1">&#8635; Rotate &amp; Repeat</button></div>
     <div class="row" style="margin-top:6px;gap:6px;"><button id="strokeActionsUndoBtn" class="btn mini" style="display:none">↩️ Undo</button><button id="openBlendBtn" class="btn mini" style="flex:1" title="Create steps between this shape and another">&#127744; Blend</button><button id="deleteStrokeBtn" class="btn mini danger" style="flex:1">✕ Delete</button></div>
   </div>
@@ -605,6 +606,7 @@ html.in-suite .suite-only{display:block!important}
     <div class="row" style="margin-top:6px;gap:6px;"><button id="grpLockBtn" class="btn mini active" style="flex:1" title="Keep the shape's proportions while resizing">🔒 Proportions locked</button><button id="grpScaleStrokesBtn" class="btn mini active" style="flex:1" title="Line thickness grows and shrinks with the artwork">〰️ Scale strokes: On</button></div>
     <div class="row" style="margin-top:6px;gap:6px;align-items:center;"><span style="font-size:12.5px;opacity:.8;width:44px;">Size</span><input id="grpSizePct" type="number" min="5" max="1000" value="100" style="width:70px;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);">%<button id="grpSizeBtn" class="btn mini" style="flex:1">Resize</button></div>
     <div class="row" style="margin-top:6px;gap:6px;align-items:center;"><span style="font-size:12.5px;opacity:.8;width:44px;">Turn</span><input id="grpTurnDeg" type="number" min="-360" max="360" value="90" style="width:70px;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);">°<button id="grpTurnBtn" class="btn mini" style="flex:1">Turn</button></div>
+    <div class="row" style="margin-top:6px;gap:6px;align-items:center;"><span style="font-size:12.5px;opacity:.8;width:44px;">Colour</span><input id="grpColour" type="color" value="#000000" style="width:44px;height:34px;padding:0;border:none;background:none;"><span style="font-size:12.5px;opacity:.8;margin-left:6px;">Line</span><input id="grpWidth" type="number" min="1" max="200" placeholder="size" style="width:62px;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"><button id="grpEditAllBtn" class="btn mini" style="flex:1" title="Apply the colour and line size to everything selected">Apply to all</button></div>
     <div class="row" style="margin-top:6px;gap:6px;"><button id="grpAddBtn" class="btn mini" style="flex:1" title="Tap more things to add or remove them">＋ Add / remove</button><button id="grpInsideBtn" class="btn mini" style="flex:1" title="Select one part of the group to edit it">✎ Edit inside</button></div>
     <div class="row" style="margin-top:6px;gap:6px;"><button id="grpDeleteBtn" class="btn mini danger" style="flex:1">✕ Delete selection</button></div>
   </div>
@@ -3539,6 +3541,43 @@ function releaseMotifToGroup(){
   rebuildAllLayers();pushHist();syncStrokeSelectionUI();updateSelectedControls();redraw();
   setStatus('⤴️ Released as '+made.length+' vector strokes in one group. Resize it as much as you like and it stays sharp. The motif is still in your tray.');
 }
+
+// ---- Select Same + edit together -------------------------------------------------------------------------
+function selectSame(kind){
+  const ref=strokes.find(s=>s.id===selectedStrokeId);
+  if(!ref){setStatus('Tap a stroke first, then choose what to match.');return;}
+  const skip=new Set(layers.filter(l=>l.locked||l.visible===false).map(l=>l.id));
+  const nh=c=>normHex(c||''),sz=s=>{try{return Math.round((strokeSettings(s).size||0)*10);}catch(e){return 0;}};
+  let test;
+  if(kind==='fill'){
+    if(!ref.fillColor){setStatus('This stroke has no fill. Tap a filled shape first.');return;}
+    test=s=>s.fillColor&&nh(s.fillColor)===nh(ref.fillColor);
+  }else if(kind==='colour'){
+    const c=ref.fillColor?nh(ref.fillColor):nh(ref.color);
+    test=s=>(s.fillColor?nh(s.fillColor):nh(s.color))===c;
+  }else test=s=>!s.fillColor&&!ref.fillColor&&s.brushId===ref.brushId&&sz(s)===sz(ref);
+  const ids=strokes.filter(s=>!skip.has(s.layerId)&&s.points&&s.points.length&&test(s)).map(s=>s.id);
+  setMulti(ids,[],null);selAddArmed=false;groupInsideId=null;
+  syncStrokeSelectionUI();updateSelectedControls();redraw();
+  setStatus('🎯 Selected '+ids.length+' matching stroke'+(ids.length===1?'':'s')+'. Change the colour or line size for all of them in the panel, or resize them with the handles.');
+}
+function editAllSelected(){
+  if(!multiSel)return;
+  const {st}=selMembers(),col=$('grpColour').value,w=parseFloat($('grpWidth').value);
+  if(!st.length)return;
+  st.forEach(s=>{
+    if($('grpColour').dataset.touched){s.color=col;if(s.fillColor)s.fillColor=col;}
+    if(w>0&&!s.fillColor)s.settings=Object.assign({},strokeSettings(s),{size:w});
+  });
+  rebuildAllLayers();pushHist();redraw();
+  delete $('grpColour').dataset.touched;
+  setStatus('Changed '+st.length+' stroke'+(st.length===1?'':'s')+' together. Undo returns them.');
+}
+(function(){
+  $('selSameColourBtn').onclick=()=>selectSame('colour');$('selSameStrokeBtn').onclick=()=>selectSame('stroke');$('selSameFillBtn').onclick=()=>selectSame('fill');
+  $('grpColour').oninput=e=>{e.target.dataset.touched='1';};
+  $('grpEditAllBtn').onclick=editAllSelected;
+})();
 (function bindGroupUI(){
   $('selectAllBtn').onclick=selectAllArtwork;
   $('groupBtn').onclick=groupSelection;$('ungroupBtn').onclick=ungroupSelection;
@@ -6435,7 +6474,11 @@ function procreateArchive(which,name){
   return bplistBuild({d:{'$version':100000,'$archiver':'NSKeyedArchiver','$top':{d:{root:{u:t.top}}},'$objects':{a:objs}}});
 }
 // Tip canvases ---------------------------------------------------------------------------------------
-function imageTip(img,px){
+function imageTip(img,px,entry){
+  // Motifs keep their real strokes, so the brush picture is redrawn from them at full size instead of enlarging the small PNG.
+  if(entry&&entry.source&&entry.source.bounds){
+    try{const b=entry.source.bounds;img=renderSourceHi(entry,Math.max(1,(px*0.88)/Math.max(b.w,b.h)));}catch(e){console.warn('[sketchpad] sharp brush tip failed',e);}
+  }
   const c=document.createElement('canvas');c.width=px;c.height=px;const g=c.getContext('2d');
   const w=img.naturalWidth||img.width,h=img.naturalHeight||img.height,k=(px*0.88)/Math.max(w,h);
   g.imageSmoothingQuality='high';g.drawImage(img,(px-w*k)/2,(px-h*k)/2,w*k,h*k);return c;
@@ -6499,11 +6542,11 @@ async function runBrushSetExport(kind){
     const used=new Set(),items=[];
     for(const m of chosen){
       let nm=m.name,n=2;while(used.has(nm.toLowerCase()))nm=m.name+' '+(n++);used.add(nm.toLowerCase());
-      items.push({name:nm,img:m.img});
+      items.push({name:nm,img:m.img,entry:m});
     }
     if(kind==='brushset'){
       const files=[],ids=[];
-      for(const it of items){const id=crypto.randomUUID().toUpperCase();ids.push(id);const tip=imageTip(it.img,px);try{(await procreateBrushFiles(it.name,tip)).forEach(f=>files.push({name:id+'/'+f.name,data:f.data}));}finally{freeCanvas(tip);}}
+      for(const it of items){const id=crypto.randomUUID().toUpperCase();ids.push(id);const tip=imageTip(it.img,px,it.entry);try{(await procreateBrushFiles(it.name,tip)).forEach(f=>files.push({name:id+'/'+f.name,data:f.data}));}finally{freeCanvas(tip);}}
       const esc=t=>t.replace(/&/g,'&amp;').replace(/</g,'&lt;');
       const plist='<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0">\n<dict>\n<key>brushes</key>\n<array>\n'+ids.map(i=>'<string>'+i+'</string>').join('\n')+'\n</array>\n<key>name</key>\n<string>'+esc(setName)+'</string>\n</dict>\n</plist>\n';
       files.unshift({name:'brushset.plist',data:new TextEncoder().encode(plist)});
@@ -6511,7 +6554,7 @@ async function runBrushSetExport(kind){
       setStatus('🖌️ Brush set "'+setName+'" saved ('+items.length+' brush'+(items.length===1?'':'es')+'). Open it in Procreate and test before selling.');
     }else if(kind==='brushes'){
       const files=[];
-      for(const it of items){const tip=imageTip(it.img,px);try{const bf=await procreateBrushFiles(it.name,tip);files.push({name:safeFileName(it.name)+'.brush',data:await blobBytes(makeZip(bf))});}finally{freeCanvas(tip);}}
+      for(const it of items){const tip=imageTip(it.img,px,it.entry);try{const bf=await procreateBrushFiles(it.name,tip);files.push({name:safeFileName(it.name)+'.brush',data:await blobBytes(makeZip(bf))});}finally{freeCanvas(tip);}}
       saveFileBlob(makeZip(files),base+'-brushes.zip');
       setStatus('🖌️ '+items.length+' separate .brush file'+(items.length===1?'':'s')+' saved in a zip. Unzip, then tap each .brush to import it into Procreate.');
     }else{
