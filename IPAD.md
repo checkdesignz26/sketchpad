@@ -135,3 +135,7 @@ screen" step. Replace the placeholder icon by dropping your 1024x1024 artwork in
 ## Local web preview
 
 Open `index.html` in a browser, as before. To check the offline bundle: `npm run build:web`.
+
+## Fine stroke sizes (v52)
+- Brush Size and selected-stroke Width now go down to 0.05 (slider step 0.05).
+- Each has a number box (type any value, e.g. 0.25 or 2) plus a ▾ dropdown of common sizes (0.1 … 400).
