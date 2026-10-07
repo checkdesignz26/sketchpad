@@ -33,6 +33,7 @@ Native behaviour lives in `native-bridge.js` and only switches on inside the iPa
 - **Smooth Pen** is a true monoline vector path (default 3 px) with smooth edges at any zoom.
 - **On-canvas handles.** A selected stroke shows three handles: the round one at the top turns it (drag, or tap for a 45 degree step: 45, 90, 135, 180...; dragging turns in controlled 15 degree steps with the angle shown, and the box turns with it), the square one at the corner resizes it (drag, or tap for 25% bigger), and the colour dot at the top-left changes its colour.
 - **Rotate by an exact amount** (Stroke panel: type degrees, positive is clockwise) and **Repeat around a point**: choose the total number of copies, the angle between them (auto = 360 / copies) and the centre (start, end or middle of the stroke, middle of the canvas, or a point you tap). One Undo removes all the copies. Good for flowers, rosettes and borders.
+- **Repeat last move** (like Affinity's duplicate-and-transform): tap Duplicate, then move, turn or resize the copy, then tap Repeat (set how many times with the x field). Every repeat applies the same step again, so spirals, fans and borders are quick. One Undo removes the whole batch.
 - **Edit Path.** Tap another stroke while editing to switch to it; the stroke keeps the shape it was drawn with.
 - **Live brush preview** under the brush controls matches the canvas stroke and updates as you adjust.
 - **Motif brushes.** Capture a drawing (or just a box-selected part with **Capture Area**) and it becomes a brush that

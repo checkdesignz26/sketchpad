@@ -546,6 +546,8 @@ html.in-suite .suite-only{display:block!important}
     </div>
     <button id="actionsEditPathBtn" class="btn mini primary" style="width:100%;margin-top:6px;">✎ Edit Path</button>
     <button id="duplicateStrokeBtn" class="btn mini" style="width:100%;margin-top:6px;">⧉ Duplicate</button>
+    <div class="row" style="margin-top:6px;align-items:center;gap:6px;"><button id="repeatDupBtn" class="btn mini" style="flex:1" title="Tap Duplicate, then move, turn or resize the copy. Repeat does the same again and again.">&#128257; Repeat last move</button><span style="flex:none;opacity:.8;">&times;</span><input id="repeatDupTimes" type="number" min="1" max="100" step="1" value="1" title="How many times" style="width:54px;flex:none;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></div>
+    <div class="hint" style="margin-top:4px;">Duplicate, move or turn the copy, then Repeat continues the same step (like Cmd+J).</div>
     <button id="strokeActionsUndoBtn" class="btn mini" style="width:100%;margin-top:6px;">↩️ Undo</button>
     <button id="deleteStrokeBtn" class="btn mini danger" style="width:100%;margin-top:14px;">✕ Delete Stroke</button>
   </div>
@@ -2330,6 +2332,49 @@ function flipSelectedStroke(axis){
     }
   });
 }
+// "Duplicate and repeat": the step you applied to the copy (any mix of move, turn and resize) is worked out as one
+// similarity transform from the original's points to the copy's points, then applied again and again.
+let dupLink=null,repeatT=null;
+function similarityFromPoints(A,B){
+  const n=A.length;if(!n||B.length!==n)return null;
+  let ax=0,ay=0,bx=0,by=0;for(let i=0;i<n;i++){ax+=A[i].x;ay+=A[i].y;bx+=B[i].x;by+=B[i].y;}
+  ax/=n;ay/=n;bx/=n;by/=n;
+  let d=0,c=0,v=0;
+  for(let i=0;i<n;i++){const px=A[i].x-ax,py=A[i].y-ay,qx=B[i].x-bx,qy=B[i].y-by;d+=px*qx+py*qy;c+=px*qy-py*qx;v+=px*px+py*py;}
+  if(v<1e-6)return {ax,ay,bx,by,th:0,s:1,tx:bx-ax,ty:by-ay,pureMove:true};
+  return {ax,ay,bx,by,th:Math.atan2(c,d),s:Math.sqrt(d*d+c*c)/v};
+}
+function applySimilarity(stroke,T){
+  const cs=Math.cos(T.th)*T.s,sn=Math.sin(T.th)*T.s;
+  const f=(x,y)=>({x:cs*(x-T.ax)-sn*(y-T.ay)+T.bx,y:sn*(x-T.ax)+cs*(y-T.ay)+T.by});
+  if(stroke.shape){
+    const sh=stroke.shape,m=f((sh.x0+sh.x1)/2,(sh.y0+sh.y1)/2),cx=(sh.x0+sh.x1)/2,cy=(sh.y0+sh.y1)/2;
+    sh.x0=m.x+(sh.x0-cx)*T.s;sh.x1=m.x+(sh.x1-cx)*T.s;sh.y0=m.y+(sh.y0-cy)*T.s;sh.y1=m.y+(sh.y1-cy)*T.s;
+    sh.rotation=(sh.rotation||0)+T.th*180/Math.PI;stroke.points=shapeToPoints(sh);
+  }else transformStrokePoints(stroke,f);
+}
+function repeatLastDuplicate(){
+  const stroke=strokes.find(s=>s.id===selectedStrokeId);
+  if(!stroke){setStatus('Select a stroke first.');return;}
+  if(!repeatT){
+    if(!dupLink||dupLink.copyId!==stroke.id){setStatus('Tap Duplicate, move or turn the copy, then tap Repeat.');return;}
+    const T=similarityFromPoints(dupLink.srcPts,stroke.points);
+    if(!T){setStatus('The copy has changed shape since it was duplicated, so its step cannot be repeated. Duplicate again.');return;}
+    const moved=Math.abs(T.th)>1e-4||Math.abs(T.s-1)>1e-4||Math.hypot(T.bx-T.ax,T.by-T.ay)>1e-3;
+    if(!moved){setStatus('Move, turn or resize the copy first, then tap Repeat.');return;}
+    repeatT=T;
+  }
+  const times=Math.max(1,Math.min(100,Math.round(+$('repeatDupTimes').value)||1));
+  let cur=stroke;
+  for(let i=0;i<times;i++){
+    const copy=JSON.parse(JSON.stringify(cur));copy.id=crypto.randomUUID();
+    applySimilarity(copy,repeatT);
+    strokes.push(copy);appendStrokeToLayer(copy);cur=copy;
+  }
+  selectedStrokeId=cur.id;
+  syncStrokeSelectionUI();pushHist();redraw();
+  setStatus('\ud83d\udd01 Repeated '+times+(times===1?' time':' times')+'. Tap again to carry on.');
+}
 function duplicateSelectedStroke(){
   const stroke=strokes.find(s=>s.id===selectedStrokeId);if(!stroke)return;
   const copy=JSON.parse(JSON.stringify(stroke));
@@ -2338,11 +2383,12 @@ function duplicateSelectedStroke(){
   copy.points=copy.points.map(p=>({...p,x:p.x+offset,y:p.y+offset}));
   if(copy.nodes)copy.nodes=copy.nodes.map(n=>({...n,x:n.x+offset,y:n.y+offset}));
   if(copy.shape){copy.shape.x0+=offset;copy.shape.y0+=offset;copy.shape.x1+=offset;copy.shape.y1+=offset;}
+  dupLink={copyId:copy.id,srcPts:stroke.points.map(p=>({x:p.x,y:p.y}))};repeatT=null;
   strokes.push(copy);appendStrokeToLayer(copy);
   selectedStrokeId=copy.id;
   syncStrokeSelectionUI();
   pushHist();redraw();
-  setStatus('⧉ Duplicated.');
+  setStatus('⧉ Duplicated. Move or turn the copy, then tap Repeat to keep going the same way.');
 }
 // Convert to Path deletes stroke.shape outright rather than keeping it alongside the nodes — from
 // this point on stroke.nodes/points is the ONLY geometry, editable exactly like a hand-drawn path
@@ -3086,6 +3132,7 @@ function applyTypedRotation(){
   rotateSelectedStroke(v);setStatus('Rotated '+v+'\u00b0.');
 }
 $('rotApplyBtn').onclick=applyTypedRotation;
+$('repeatDupBtn').onclick=repeatLastDuplicate;
 $('rotAmountInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();applyTypedRotation();}});
 // Turn one stroke around any point (shapes keep their parametric form).
 function rotateStrokeAbout(stroke,deg,px,py){
