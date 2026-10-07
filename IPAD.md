@@ -145,3 +145,7 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## Calligraphy brush (v54)
 - New "Calligraphy" brush (Inking family): flat nib at a fixed angle. Size = nib width; Nib angle (0–180°) and Nib thickness (2–60%) sliders appear under the brush settings. Drawn as one filled shape so opacity stays even; Pencil pressure thins the nib slightly.
+
+## Bézier Pen + quick Pen/Eraser (v55)
+- Top toolbar (row 2) now has 🖋️ Pen and 🧹 Eraser buttons next to Select.
+- Pen: tap = corner point, drag = pull smooth curve handles, tap the pink first point (or Close shape) = close, Done/Enter = finish. Drag points/handles to reshape, double-tap a point = smooth/corner. Result is a normal stroke in the selected brush; keeps `stroke.bez` so Edit Mode → 🖋️ Edit Curve reopens it (hidden once the stroke has been moved/scaled/node-edited). Finger pans; Pencil/mouse places points. Symmetry is not applied to Pen paths.

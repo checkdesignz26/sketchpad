@@ -318,6 +318,8 @@ html.in-suite .suite-only{display:block!important}
 .size-combo input.size-num{width:58px;min-width:0;padding:6px 4px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:15px;text-align:center}
 .size-combo select.size-pick{width:30px;padding:6px 0;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:14px}
 .slider-row.has-size{grid-template-columns:64px 1fr auto}
+.pen-bar{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;z-index:30;display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;max-width:94%;padding:8px 10px;border-radius:14px;background:var(--btnBg);border:1px solid var(--btnBorder);box-shadow:0 6px 18px rgba(0,0,0,.18);font-size:12.5px;color:var(--muted)}
+.pen-bar .btn{min-height:38px}
 </style>
 </head>
 <body>
@@ -656,6 +658,7 @@ html.in-suite .suite-only{display:block!important}
       <button id="shapeFlipVBtn" class="btn mini" style="flex:1">Flip V</button>
     </div>
     <button id="actionsEditPathBtn" class="btn mini primary" style="width:100%;margin-top:6px;">✎ Edit Path</button>
+    <button id="actionsEditCurveBtn" class="btn mini" style="width:100%;margin-top:6px;display:none;">🖋️ Edit Curve (Bézier)</button>
     <div class="row" style="margin-top:6px;gap:6px;"><button id="selSameColourBtn" class="btn mini" style="flex:1" title="Select every stroke with this colour">🎯 Same colour</button><button id="selSameStrokeBtn" class="btn mini" style="flex:1" title="Select every stroke with this brush and thickness">🎯 Same stroke</button><button id="selSameFillBtn" class="btn mini" style="flex:1" title="Select every shape with this fill colour">🎯 Same fill</button></div>
     <div class="row" style="margin-top:6px;gap:6px;"><button id="duplicateStrokeBtn" class="btn mini" style="flex:1">⧉ Duplicate</button><button id="openRotatePanelBtn" class="btn mini" style="flex:1">&#8635; Rotate &amp; Repeat</button></div>
     <div class="row" style="margin-top:6px;gap:6px;"><button id="strokeActionsUndoBtn" class="btn mini" style="display:none">↩️ Undo</button><button id="openBlendBtn" class="btn mini" style="flex:1" title="Create steps between this shape and another">&#127744; Blend</button><button id="deleteStrokeBtn" class="btn mini danger" style="flex:1">✕ Delete</button></div>
@@ -690,6 +693,8 @@ html.in-suite .suite-only{display:block!important}
       </div>
       <div class="tb-row tb-canvas" id="tbCanvas">
         <button id="selMenuBtn" class="tool-btn tb-fix" aria-haspopup="menu" aria-expanded="false" title="Select Area, Select All, Select same…">▭ Select ▾</button>
+        <button id="tbPenBtn" class="tool-btn tb-fix" title="Bézier Pen: tap for points, drag to curve">🖋️ Pen</button>
+        <button id="tbEraserBtn" class="tool-btn tb-fix" title="Eraser">🧹 Eraser</button>
         <button id="strokePanelBtn" class="tool-btn" data-ovp="2" data-ovl="🖊️ Stroke tools" title="Show or hide the Stroke panel">🖊️ Stroke tools</button>
         <div class="toolbar-spacer"></div>
         <button id="paintModePill" class="pill" style="display:none;cursor:pointer;">🎨 Paint Inside — tap for Free Paint</button>
@@ -1477,7 +1482,7 @@ function applyTransform(){
       renderScaleTimer=setTimeout(()=>commitRenderScale(newScale),120);
     }
   }
-  canvas.style.transform=`translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom*baseScale}) rotate(${rot}deg)`;invalidateDetail();overlayViewChanged();try{viewMenuSync();}catch(e){}$("zoomPill").textContent=Math.round(zoom*100)+'% ▾';$('zoomPopPct').textContent='— '+Math.round(zoom*100)+'%';{const to=$('tileOutline');to.style.setProperty('--vs',zoom*baseScale);to.style.transform=`translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom*baseScale}) rotate(${rot}deg)`;}$('rotateChip').textContent='Canvas '+Math.round(rot)+'°';updateSelectionBox();updatePaintBBoxOverlay();updateSymAxis();if(pathEditNodes)renderPathNodeOverlay();paintFabric();
+  canvas.style.transform=`translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom*baseScale}) rotate(${rot}deg)`;invalidateDetail();overlayViewChanged();try{viewMenuSync();}catch(e){}try{penOverlayRender();}catch(e){}$("zoomPill").textContent=Math.round(zoom*100)+'% ▾';$('zoomPopPct').textContent='— '+Math.round(zoom*100)+'%';{const to=$('tileOutline');to.style.setProperty('--vs',zoom*baseScale);to.style.transform=`translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom*baseScale}) rotate(${rot}deg)`;}$('rotateChip').textContent='Canvas '+Math.round(rot)+'°';updateSelectionBox();updatePaintBBoxOverlay();updateSymAxis();if(pathEditNodes)renderPathNodeOverlay();paintFabric();
 }
 function screenToCanvas(x,y){const r=canvas.getBoundingClientRect();const cx=x-(r.left+r.width/2),cy=y-(r.top+r.height/2);const a=-rot*Math.PI/180;const s=zoom*baseScale;const ux=(cx*Math.cos(a)-cy*Math.sin(a))/s+W/2;const uy=(cx*Math.sin(a)+cy*Math.cos(a))/s+H/2;return {x:ux,y:uy};}
 function canvasToScreen(x,y){const rect=canvas.getBoundingClientRect(),wrapRect=wrap.getBoundingClientRect();const cx=rect.left+rect.width/2-wrapRect.left,cy=rect.top+rect.height/2-wrapRect.top;const a=rot*Math.PI/180;const s=zoom*baseScale;const px=(x-W/2)*s,py=(y-H/2)*s;return {x:cx+px*Math.cos(a)-py*Math.sin(a),y:cy+px*Math.sin(a)+py*Math.cos(a)};}
@@ -1966,6 +1971,7 @@ canvas.addEventListener('pointerdown',e=>{
   }
   e.preventDefault();try{canvas.setPointerCapture(e.pointerId);}catch(err){} // capture is best-effort — a stroke must still start even if it's refused
   const p=screenToCanvas(e.clientX,e.clientY),pressure=(e.pressure&&e.pressure>0)?e.pressure:.5;
+  if(penOn&&!armedShapeType&&!eraserActive){penDown(e);return;}
   if(armedShapeType){
     drawing=true;shapeDrawStart=p;
     const shape=defaultShapeParams(armedShapeType);
@@ -2436,7 +2442,7 @@ function syncStrokeSelectionUI(){
   if(editPathBtnEl){
     const isPaint=!!(stroke&&stroke.clipStrokeId);
     const isMultiRegion=!!(stroke&&stroke.regions&&stroke.regions.length>1);
-    editPathBtnEl.disabled=!stroke||isPaint||isMultiRegion;{const a=$('actionsEditPathBtn');if(a)a.disabled=editPathBtnEl.disabled;}
+    editPathBtnEl.disabled=!stroke||isPaint||isMultiRegion;try{const cb=$('actionsEditCurveBtn');if(cb)cb.style.display=penBezValid(stroke)?'':'none';}catch(e){}{const a=$('actionsEditPathBtn');if(a)a.disabled=editPathBtnEl.disabled;}
     editPathBtnEl.title=isPaint?'Painted content is edited by dragging its bounding-box handles on the canvas, not as individual nodes.'
       :isMultiRegion?'This shape has a hole or several separate pieces — node editing a multi-piece Shape Tools result isn\'t supported yet. It\'s still a real, movable, recolourable vector shape.'
       :'';
@@ -4302,7 +4308,7 @@ $('shapeMultiSelectToggle').onclick=()=>{
 $('shapeMergeBtn').onclick=()=>runShapeOp('merge');
 $('shapeSubtractBtn').onclick=()=>runShapeOp('subtract');
 $('shapeIntersectBtn').onclick=()=>runShapeOp('intersect');
-function syncMode(){$('drawModeBtn').classList.toggle('active',mode==='draw');$('editModeBtn').classList.toggle('active',mode==='edit');canvas.style.cursor=mode==='draw'?'crosshair':'grab';setStatus(mode==='draw'?'✏️ Draw Mode: Apple Pencil draws, two fingers move the canvas.':'↔️ Edit Mode: tap motif with Pencil/mouse, then move, scale, rotate or flip.');;if(typeof syncStrokeSelectionUI==='function')syncStrokeSelectionUI();}
+function syncMode(){try{if(penOn&&mode==='edit')penSet(false);}catch(e){}$('drawModeBtn').classList.toggle('active',mode==='draw');$('editModeBtn').classList.toggle('active',mode==='edit');canvas.style.cursor=mode==='draw'?'crosshair':'grab';setStatus(mode==='draw'?'✏️ Draw Mode: Apple Pencil draws, two fingers move the canvas.':'↔️ Edit Mode: tap motif with Pencil/mouse, then move, scale, rotate or flip.');;if(typeof syncStrokeSelectionUI==='function')syncStrokeSelectionUI();}
 $('drawModeBtn').onclick=()=>{if(pathEditStrokeId)commitEditPath();if(joinPendingStrokeId)endJoinPick();disarmAreaFill();disarmShapeMultiSelect();armedShapeType=null;syncShapeToolUI();mode='draw';selected=null;selectedStrokeId=null;multiSel=null;selAddArmed=false;groupInsideId=null;multiSelectMode=false;multiSelectIds=[];$('multiSelectToggle').textContent='🔢 Multi-Select: Off';$('multiSelectToggle').classList.remove('active');syncAlignUI();syncStrokeSelectionUI();syncMode();redraw()};$('editModeBtn').onclick=()=>{disarmAreaFill();armedShapeType=null;syncShapeToolUI();mode='edit';syncMode()};$('captureBtn').onclick=()=>captureMotif();
 // Capture Area: drag a box on the canvas; only strokes inside it become the motif.
 function setCaptureArea(on){
@@ -4987,7 +4993,7 @@ function renderBrushFamilies(){
 }
 function syncRecents(){const host=$('brushRecents');const ids=BrushEngine.getRecents().filter(id=>BrushEngine.BRUSHES.some(x=>x.id===id));if(!ids.length){host.innerHTML='<div class="hint" style="margin:0;">Brushes you use appear here.</div>';return}host.innerHTML='';ids.forEach(id=>{const b=BrushEngine.getBrush(id);if(b)host.appendChild(makeBrushSwatch(b));});}
 function syncFavorites(){const host=$('brushFavorites');const ids=BrushEngine.getFavorites().filter(id=>BrushEngine.BRUSHES.some(x=>x.id===id));if(!ids.length){host.innerHTML='<div class="hint" style="margin:0;">Tap ★ on a brush to favourite it.</div>';return}host.innerHTML='';ids.forEach(id=>{const b=BrushEngine.getBrush(id);if(b)host.appendChild(makeBrushSwatch(b));});}
-function syncActiveSwatches(){document.querySelectorAll('.brush-swatch').forEach(el=>el.classList.toggle('active',!eraserActive&&el.dataset.brush===activeBrushId));$('eraserToggle').classList.toggle('active',eraserActive);}
+function syncActiveSwatches(){document.querySelectorAll('.brush-swatch').forEach(el=>el.classList.toggle('active',!eraserActive&&el.dataset.brush===activeBrushId));$('eraserToggle').classList.toggle('active',eraserActive);{const tb=$('tbEraserBtn');if(tb)tb.classList.toggle('active',!!eraserActive);}}
 function syncControlsFromSettings(){
   const s=currentSettings();
   $('brushSize').value=s.size;$('brushSizeVal').textContent=fmtSize(s.size);
@@ -7954,6 +7960,197 @@ try{new ResizeObserver(tbFitSoon).observe($('toolbar'));}catch(e){}
 try{const mo=new MutationObserver(tbFitSoon);['tbMain','tbCanvas'].forEach(id=>mo.observe($(id),{childList:true,characterData:true,subtree:true}));}catch(e){}
 try{new MutationObserver(tbSyncSelect).observe($('selectAreaBtn'),{attributes:true,attributeFilter:['class']});}catch(e){}
 tbSyncSelect();viewMenuSync();tbFit();
+// ================= Bézier Pen =================
+// Tap = corner point · drag = pull out smooth curve handles · tap the first point = close the shape ·
+// drag points/handles to reshape · double-tap a point = switch smooth/corner. Finishing makes an
+// ordinary stroke (any brush), keeping its anchors (stroke.bez) so "Edit Curve" can reopen it.
+let penOn=false,penA=[],penClosed=false,penDrag=null,penEdit=null,penLastTap={i:-1,t:0},penSel=-1;
+const penOv=document.createElement('canvas');penOv.id='penOverlay';
+penOv.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:7';
+wrap.appendChild(penOv);
+{const bar=document.createElement('div');bar.id='penBar';bar.className='pen-bar';bar.style.display='none';
+ bar.innerHTML='<span id="penHint"></span><button id="penDoneBtn" class="btn mini primary">✓ Done</button><button id="penCloseBtn" class="btn mini">⭕ Close shape</button><button id="penUndoBtn" class="btn mini">↶ Point</button><button id="penCancelBtn" class="btn mini">✕ Cancel</button>';
+ wrap.appendChild(bar);}
+const penCorner=a=>!(a.hi&&a.ho);
+function penFlatten(A,closed){
+  const out=[],n=A.length;if(!n)return out;
+  if(n===1)return [{x:A[0].x,y:A[0].y,pressure:1}];
+  const segs=closed?n:n-1;
+  for(let i=0;i<segs;i++){
+    const a=A[i],b=A[(i+1)%n];
+    const p0={x:a.x,y:a.y},p1=a.ho||p0,p3={x:b.x,y:b.y},p2=b.hi||p3;
+    const len=Math.hypot(p1.x-p0.x,p1.y-p0.y)+Math.hypot(p2.x-p1.x,p2.y-p1.y)+Math.hypot(p3.x-p2.x,p3.y-p2.y);
+    const steps=Math.max(2,Math.min(80,Math.ceil(len/5)));
+    for(let s=0;s<steps;s++){
+      const t=s/steps,u=1-t;
+      const pt={x:u*u*u*p0.x+3*u*u*t*p1.x+3*u*t*t*p2.x+t*t*t*p3.x,y:u*u*u*p0.y+3*u*u*t*p1.y+3*u*t*t*p2.y+t*t*t*p3.y,pressure:1};
+      if(s===0&&penCorner(a))pt.corner=true;
+      out.push(pt);
+    }
+  }
+  if(closed)out.push({...out[0]});else{const l=A[n-1];out.push({x:l.x,y:l.y,pressure:1});}
+  return out;
+}
+function penClone(A){return A.map(a=>({x:a.x,y:a.y,hi:a.hi?{x:a.hi.x,y:a.hi.y}:null,ho:a.ho?{x:a.ho.x,y:a.ho.y}:null}));}
+function penBezValid(stroke){
+  try{
+    if(!stroke||!stroke.bez||!Array.isArray(stroke.bez.a)||stroke.bez.a.length<2||stroke.nodes||stroke.regions||stroke.shape)return false;
+    const f=penFlatten(stroke.bez.a,!!stroke.bez.closed),P=stroke.points;
+    if(f.length!==P.length)return false;
+    return [0,f.length>>1,f.length-1].every(i=>Math.hypot(f[i].x-P[i].x,f[i].y-P[i].y)<0.5);
+  }catch(e){return false;}
+}
+function penOverlayRender(){
+  const r=wrap.getBoundingClientRect(),dpr=window.devicePixelRatio||1;
+  const w=Math.max(1,Math.round(r.width*dpr)),h=Math.max(1,Math.round(r.height*dpr));
+  if(penOv.width!==w||penOv.height!==h){penOv.width=w;penOv.height=h;}
+  const c=penOv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,r.width,r.height);
+  if(!penOn||!penA.length)return;
+  const s=zoom*baseScale,S=p=>canvasToScreen(p.x,p.y);
+  const flat=penFlatten(penA,penClosed).map(S);
+  c.lineCap='round';c.lineJoin='round';
+  if(flat.length>1){
+    const size=(()=>{try{return currentSettings().size;}catch(e){return 4;}})();
+    c.globalAlpha=.55;c.strokeStyle=currentColor;c.lineWidth=Math.max(1,Math.min(40,size*s));
+    c.beginPath();flat.forEach((q,i)=>i?c.lineTo(q.x,q.y):c.moveTo(q.x,q.y));c.stroke();
+    c.globalAlpha=.9;c.strokeStyle='#8f6bd8';c.lineWidth=1.2;
+    c.beginPath();flat.forEach((q,i)=>i?c.lineTo(q.x,q.y):c.moveTo(q.x,q.y));c.stroke();
+  }
+  c.globalAlpha=1;
+  penA.forEach((a,i)=>{
+    const q=S(a);
+    ['hi','ho'].forEach(k=>{if(!a[k])return;const hq=S(a[k]);
+      c.strokeStyle='#9a8fb0';c.lineWidth=1.2;c.beginPath();c.moveTo(q.x,q.y);c.lineTo(hq.x,hq.y);c.stroke();
+      c.fillStyle='#fff';c.strokeStyle='#8f6bd8';c.lineWidth=2;c.beginPath();c.arc(hq.x,hq.y,6,0,Math.PI*2);c.fill();c.stroke();});
+    const first=i===0&&penA.length>=2&&!penClosed,sel=i===penSel||i===penA.length-1;
+    c.fillStyle=first?'#f08fb0':(sel?'#8f6bd8':'#fff');c.strokeStyle=first?'#c2417a':'#8f6bd8';c.lineWidth=2.2;
+    const rr=first?9:7;c.beginPath();
+    if(penCorner(a))c.rect(q.x-rr,q.y-rr,rr*2,rr*2);else c.arc(q.x,q.y,rr,0,Math.PI*2);
+    c.fill();c.stroke();
+  });
+}
+function penBarSync(){
+  $('penBar').style.display=penOn?'flex':'none';
+  $('tbPenBtn').classList.toggle('active',penOn);
+  $('penHint').textContent=penA.length?(penA.length+' point'+(penA.length>1?'s':'')+' · drag a point to move · double-tap = smooth/corner'):'Tap to place a point · drag to curve · tap the pink first point to close';
+  $('penDoneBtn').disabled=penA.length<2;$('penCloseBtn').disabled=penA.length<2||penClosed;$('penUndoBtn').disabled=!penA.length;
+}
+function penHit(sx,sy){
+  const near=(p,r)=>{const q=canvasToScreen(p.x,p.y);return Math.hypot(q.x-sx,q.y-sy)<=r;};
+  for(let i=penA.length-1;i>=0;i--){const a=penA[i];for(const k of ['hi','ho']){if(a[k]&&near(a[k],15)&&!near(a,9))return{i,k};}}
+  for(let i=penA.length-1;i>=0;i--)if(near(penA[i],19))return{i,k:'a'};
+  return null;
+}
+function penDown(e){
+  const r=wrap.getBoundingClientRect(),sx=e.clientX-r.left,sy=e.clientY-r.top,p=screenToCanvas(e.clientX,e.clientY);
+  const h=penHit(sx,sy);
+  if(penClosed&&!h)return;
+  if(h){
+    penSel=h.i;
+    penDrag={kind:h.k==='a'?'anchor':'handle',i:h.i,k:h.k,last:p,moved:false,sx,sy,closeTry:h.k==='a'&&h.i===0&&penA.length>=2&&!penClosed};
+  }else{
+    penA.push({x:p.x,y:p.y,hi:null,ho:null});penSel=penA.length-1;
+    penDrag={kind:'new',i:penA.length-1,moved:false,sx,sy};
+  }
+  penBarSync();penOverlayRender();
+}
+function penMove(e){
+  if(!penDrag)return;
+  const r=wrap.getBoundingClientRect(),sx=e.clientX-r.left,sy=e.clientY-r.top,p=screenToCanvas(e.clientX,e.clientY);
+  if(!penDrag.moved&&Math.hypot(sx-penDrag.sx,sy-penDrag.sy)<5)return;
+  penDrag.moved=true;
+  const a=penA[penDrag.i];if(!a)return;
+  if(penDrag.kind==='new'){a.ho={x:p.x,y:p.y};a.hi={x:2*a.x-p.x,y:2*a.y-p.y};}
+  else if(penDrag.kind==='anchor'){
+    const dx=p.x-penDrag.last.x,dy=p.y-penDrag.last.y;penDrag.last=p;
+    a.x+=dx;a.y+=dy;['hi','ho'].forEach(k=>{if(a[k]){a[k].x+=dx;a[k].y+=dy;}});
+  }else{
+    const k=penDrag.k,o=k==='hi'?'ho':'hi';a[k]={x:p.x,y:p.y};
+    const vx=a.x-p.x,vy=a.y-p.y,len0=a[o]?Math.hypot(a[o].x-a.x,a[o].y-a.y):Math.hypot(vx,vy),L=Math.hypot(vx,vy)||1;
+    a[o]={x:a.x+vx/L*len0,y:a.y+vy/L*len0};
+  }
+  penOverlayRender();
+}
+function penUp(){
+  if(!penDrag)return;const d=penDrag;penDrag=null;
+  if(d.kind!=='new'&&!d.moved){
+    if(d.closeTry){penClosed=true;penFinish();return;}
+    if(d.kind==='anchor'){
+      const now=Date.now();
+      if(penLastTap.i===d.i&&now-penLastTap.t<400){penToggleSmooth(d.i);penLastTap={i:-1,t:0};}else penLastTap={i:d.i,t:now};
+    }
+  }
+  penBarSync();penOverlayRender();
+}
+function penToggleSmooth(i){
+  const a=penA[i],n=penA.length;if(!a)return;
+  if(!penCorner(a)){a.hi=null;a.ho=null;return;}
+  const prev=penA[i-1]||(penClosed?penA[(i-1+n)%n]:null),next=penA[i+1]||(penClosed?penA[(i+1)%n]:null);
+  const ref0=prev||a,ref1=next||a;let tx=ref1.x-ref0.x,ty=ref1.y-ref0.y;const L=Math.hypot(tx,ty);
+  if(L<1)return;tx/=L;ty/=L;
+  const len=Math.min(prev?Math.hypot(a.x-prev.x,a.y-prev.y):1e9,next?Math.hypot(next.x-a.x,next.y-a.y):1e9)/3;
+  const m=isFinite(len)&&len<1e8?len:40;
+  a.ho={x:a.x+tx*m,y:a.y+ty*m};a.hi={x:a.x-tx*m,y:a.y-ty*m};
+}
+function penFinish(){
+  if(penA.length<2){penCancel();return;}
+  const layer=layers.find(l=>l.id===(penEdit?penEdit.stroke.layerId:activeLayerId));
+  if(!layer||layer.locked){setStatus('🔒 That layer is locked — unlock it in Layers, or pick another layer.');return;}
+  const pts=penFlatten(penA,penClosed),bez={closed:penClosed,a:penClone(penA)};
+  if(penEdit){
+    const s=penEdit.stroke;s.points=pts;s.closed=penClosed;s.cornerAuto=true;s.nodes=null;s.bez=bez;
+    rebuildLayer(s.layerId);
+  }else{
+    const settings=Object.assign({},currentSettings());
+    const stroke={id:crypto.randomUUID(),brushId:activeBrushId,layerId:activeLayerId,color:currentColor,settings,points:pts,nodes:null,closed:penClosed,cornerAuto:true,clipStrokeId:(paintMode==='inside')?paintInsideTargetId:null,shape:null,bez};
+    strokes.push(stroke);appendStrokeToLayer(stroke);
+    BrushEngine.touchRecent(activeBrushId);try{syncRecents();}catch(e){}
+  }
+  penReset();pushHist();redraw();setStatus('🖋️ Pen path placed. Tap it in Edit mode, then 🖋️ Edit Curve, to reshape it.');
+}
+function penReset(){penA=[];penClosed=false;penDrag=null;penEdit=null;penSel=-1;penBarSync();penOverlayRender();}
+function penCancel(){
+  const e=penEdit;penReset();
+  if(e){rebuildLayer(e.stroke.layerId);redraw();}
+}
+function penSet(on){
+  if(!!on===penOn)return;
+  if(on){
+    if(mode==='edit')$('drawModeBtn').onclick();
+    if(eraserActive){eraserActive=false;syncControlsFromSettings();syncActiveSwatches();}
+    armedShapeType=null;try{syncShapeToolUI();disarmAreaFill();}catch(e){}
+    penOn=true;penBarSync();penOverlayRender();
+    setStatus('🖋️ Pen: tap to add points, drag to curve. Tap Done (or the pink first point to close).');
+  }else{
+    if(penA.length>=2)penFinish();else penCancel();
+    penOn=false;penBarSync();penOverlayRender();
+  }
+}
+function penEditStroke(stroke){
+  if(!penBezValid(stroke)){setStatus('This path was moved or reshaped, so its curve points are gone — use Edit Path instead.');return;}
+  const s=stroke;
+  $('drawModeBtn').onclick();
+  penOn=true;penA=penClone(s.bez.a);penClosed=!!s.bez.closed;penSel=-1;penEdit={stroke:s};
+  rebuildLayerDimmed(s.layerId,s.id,0);redraw();
+  penBarSync();penOverlayRender();
+}
+
+canvas.addEventListener('pointermove',e=>{if(penDrag)penMove(e);});
+canvas.addEventListener('pointerup',()=>penUp());
+canvas.addEventListener('pointercancel',()=>penUp());
+$('tbPenBtn').onclick=()=>penSet(!penOn);
+$('penDoneBtn').onclick=()=>penFinish();
+$('penCloseBtn').onclick=()=>{if(penA.length>=2){penClosed=true;penFinish();}};
+$('penUndoBtn').onclick=()=>{if(penClosed&&penEdit){penClosed=false;}else penA.pop();penSel=penA.length-1;if(!penA.length&&penEdit){}penBarSync();penOverlayRender();};
+$('penCancelBtn').onclick=()=>{penCancel();penOn=false;penBarSync();};
+$('tbEraserBtn').onclick=()=>{
+  if(penOn)penSet(false);
+  if(mode==='edit')$('drawModeBtn').onclick();
+  $('eraserToggle').onclick();
+};
+document.addEventListener('keydown',e=>{if(!penOn)return;if(e.key==='Enter'){penFinish();}else if(e.key==='Escape'){penCancel();penOn=false;penBarSync();}});
+
+$('actionsEditCurveBtn').onclick=()=>{const st=strokes.find(x=>x.id===selectedStrokeId);if(st)penEditStroke(st);};
 async function boot(){
   applyTransform();
   $('guidesBtn').classList.toggle('active',showGuides);
