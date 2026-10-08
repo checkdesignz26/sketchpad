@@ -8614,6 +8614,98 @@ function vtBridge(outer,hole){
   return out;
 }
 function vtInPoly(p,x,y){let c=false;for(let i=0,j=p.length-1;i<p.length;j=i++){if(((p[i].y>y)!==(p[j].y>y))&&(x<(p[j].x-p[i].x)*(y-p[i].y)/(p[j].y-p[i].y)+p[i].x))c=!c;}return c;}
+// ---- Centre-line mode: thin the ink to 1px skeleton, trace it into open/closed paths, give each a stroke width ----
+function vtThin(src,w,h){
+  const W2=w+2,H2=h+2,m=new Uint8Array(W2*H2);
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(src[y*w+x])m[(y+1)*W2+x+1]=1;
+  const rem=[];let changed=true;
+  while(changed){changed=false;
+    for(let pass=0;pass<2;pass++){
+      rem.length=0;
+      for(let y=1;y<H2-1;y++)for(let x=1;x<W2-1;x++){
+        const i=y*W2+x;if(!m[i])continue;
+        const p2=m[i-W2],p3=m[i-W2+1],p4=m[i+1],p5=m[i+W2+1],p6=m[i+W2],p7=m[i+W2-1],p8=m[i-1],p9=m[i-W2-1];
+        const B=p2+p3+p4+p5+p6+p7+p8+p9;if(B<2||B>6)continue;
+        const A=(!p2&&p3)+(!p3&&p4)+(!p4&&p5)+(!p5&&p6)+(!p6&&p7)+(!p7&&p8)+(!p8&&p9)+(!p9&&p2);if(A!==1)continue;
+        if(pass===0){if(p2&&p4&&p6)continue;if(p4&&p6&&p8)continue;}else{if(p2&&p4&&p8)continue;if(p2&&p6&&p8)continue;}
+        rem.push(i);
+      }
+      if(rem.length){changed=true;for(let k=0;k<rem.length;k++)m[rem[k]]=0;}
+    }
+  }
+  // delete redundant staircase pixels: any pixel whose neighbours already form ONE 8-connected group (and which isn't an endpoint)
+  let any=true;const r8=[-W2,-W2+1,1,W2+1,W2,W2-1,-1,-W2-1],par=new Int8Array(8);
+  const fnd=a=>{while(par[a]!==a)a=par[a];return a;};
+  while(any){any=false;
+    for(let y=1;y<H2-1;y++)for(let x=1;x<W2-1;x++){
+      const i=y*W2+x;if(!m[i])continue;
+      let B=0;for(let k=0;k<8;k++){par[k]=k;if(m[i+r8[k]])B++;}
+      if(B<2)continue;
+      for(let k=0;k<8;k++){if(!m[i+r8[k]])continue;
+        const k1=(k+1)&7;if(m[i+r8[k1]])par[fnd(k)]=fnd(k1);
+        if(!(k&1)){const k2=(k+2)&7;if(m[i+r8[k2]])par[fnd(k)]=fnd(k2);}}
+      let comps=0,root=-1;for(let k=0;k<8;k++)if(m[i+r8[k]]){const f=fnd(k);if(f!==root&&!(root>=0&&fnd(root)===f)){comps++;root=f;}}
+      if(comps===1){m[i]=0;any=true;}
+    }
+  }
+  return {m,W2,H2};
+}
+function vtDist(src,w,h){ // chamfer 3-4 distance to the nearest non-ink pixel, in pixels (padded grid W2)
+  const W2=w+2,H2=h+2,d=new Float32Array(W2*H2);
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++)d[(y+1)*W2+x+1]=src[y*w+x]?1e6:0;
+  for(let y=1;y<H2-1;y++)for(let x=1;x<W2-1;x++){const i=y*W2+x;if(!d[i])continue;d[i]=Math.min(d[i],d[i-1]+3,d[i-W2]+3,d[i-W2-1]+4,d[i-W2+1]+4);}
+  for(let y=H2-2;y>=1;y--)for(let x=W2-2;x>=1;x--){const i=y*W2+x;if(!d[i])continue;d[i]=Math.min(d[i],d[i+1]+3,d[i+W2]+3,d[i+W2+1]+4,d[i+W2-1]+4);}
+  for(let i=0;i<d.length;i++)d[i]/=3;
+  return d;
+}
+function vtCentreLines(labels,w,h,opts,dt){
+  const ink=new Uint8Array(w*h);for(let i=0;i<w*h;i++)ink[i]=labels[i]===1?1:0;
+  const {m,W2,H2}=vtThin(ink,w,h),dist=vtDist(ink,w,h);
+  const N=W2*H2,OFF=[-W2-1,-W2,-W2+1,-1,1,W2-1,W2,W2+1];
+  const nbrs=i=>{const r=[];for(let k=0;k<8;k++){const j=i+OFF[k];if(m[j])r.push(j);}return r;};
+  const deg=new Uint8Array(N);for(let i=0;i<N;i++)if(m[i])deg[i]=nbrs(i).length;
+  const seen=new Set(),ek=(a,b)=>a<b?a*N+b:b*N+a,used=new Uint8Array(N),paths=[];
+  const walk=(u,v)=>{
+    const p=[u,v];seen.add(ek(u,v));let prev=u,cur=v;
+    while(deg[cur]===2){
+      used[cur]=1;const nb=nbrs(cur);let nx=-1;for(const q of nb)if(q!==prev){nx=q;break;}
+      if(nx<0||seen.has(ek(cur,nx)))break;
+      seen.add(ek(cur,nx));p.push(nx);prev=cur;cur=nx;
+    }
+    return {p,endDeg:deg[cur],startDeg:deg[u],closed:false};
+  };
+  for(let u=0;u<N;u++){if(!m[u]||deg[u]===2||deg[u]===0)continue;
+    for(const v of nbrs(u)){if(seen.has(ek(u,v)))continue;paths.push(walk(u,v));}}
+  for(let u=0;u<N;u++){if(!m[u]||deg[u]!==2||used[u])continue;
+    const nb=nbrs(u);if(!nb.length)continue;
+    const r=walk(u,nb[0]);used[u]=1;
+    if(r.p.length>3&&r.p[r.p.length-1]===u||nbrs(r.p[r.p.length-1]).includes(u)){r.closed=true;if(r.p[r.p.length-1]===u)r.p.pop();paths.push(r);}else paths.push(r);
+  }
+  const eps=Math.max(0.5,1.9-0.15*dt),out=[];let wSum=0,wN=0;
+  for(const r of paths){
+    const L=r.p.length;
+    if(!r.closed){if(L<3)continue;if(L<6&&(r.startDeg===1||r.endDeg===1))continue;}
+    if(r.closed&&L<8)continue;
+    let pts=r.p.map(i=>({x:(i%W2)-1+0.5,y:Math.floor(i/W2)-1+0.5}));
+    const ds=r.p.map(i=>dist[i]).sort((a,b)=>a-b),med=ds[ds.length>>1];
+    const width=Math.max(1,2*med-0.6);
+    let nodes;
+    if(r.closed){
+      const d=vtSmooth(pts,3),n=d.length;if(n<4)continue;
+      const idx=vtSimplifyClosed(d,eps);if(idx.length<3)continue;
+      const k=Math.max(2,Math.min(8,Math.floor(n/12)));
+      nodes=idx.map(i=>{const p=d[i],a=d[(i-k+n*4)%n],c=d[(i+k)%n];const a1=Math.atan2(p.y-a.y,p.x-a.x),a2=Math.atan2(c.y-p.y,c.x-p.x);let g=Math.abs(a2-a1);if(g>Math.PI)g=2*Math.PI-g;return {x:p.x,y:p.y,pressure:1,type:g>0.95?'corner':'smooth'};});
+    }else{
+      let d=pts;for(let it=0;it<3;it++){const B=d.map(q=>({x:q.x,y:q.y}));for(let i=1;i<d.length-1;i++){B[i].x=(d[i-1].x+2*d[i].x+d[i+1].x)/4;B[i].y=(d[i-1].y+2*d[i].y+d[i+1].y)/4;}d=B;}
+      const n=d.length,keep=new Uint8Array(n);keep[0]=1;keep[n-1]=1;vtRdp(d,eps,0,n-1,keep);
+      const idx=[];for(let i=0;i<n;i++)if(keep[i])idx.push(i);if(idx.length<2)continue;
+      const k=Math.max(2,Math.min(6,Math.floor(n/10)));
+      nodes=idx.map((i,j)=>{const p=d[i];if(i===0||i===n-1)return {x:p.x,y:p.y,pressure:1,type:'corner'};const a=d[Math.max(0,i-k)],c=d[Math.min(n-1,i+k)];const a1=Math.atan2(p.y-a.y,p.x-a.x),a2=Math.atan2(c.y-p.y,c.x-p.x);let g=Math.abs(a2-a1);if(g>Math.PI)g=2*Math.PI-g;return {x:p.x,y:p.y,pressure:1,type:g>0.95?'corner':'smooth'};});
+    }
+    out.push({nodes,closed:r.closed,width,len:L});wSum+=width;wN++;
+  }
+  return {kind:'stroke',strokes:out,shapes:[],count:out.length,colours:1,w,h,hex:opts.ink};
+}
 async function vtRun(opts,onProgress){
   // Detail 1 = bold, simple shapes (low-res, heavy clean-up); 10 = fine detail (high-res, light clean-up)
   const dt=opts.detail,maxDim=Math.round(400+dt*110);
@@ -8626,6 +8718,7 @@ async function vtRun(opts,onProgress){
   }else{const q=vtQuantize(px,opts.smooth?Math.min(32,Math.max(opts.colours*2,16)):opts.colours);cols=q.colours;
     // clean-up: edge pixels that blended into in-between colours become ring-shaped slivers; a majority filter absorbs them
     labels=dt>=9?q.labels:(dt>=6?vtMajority(q.labels,w,h,cols.length,1,1):vtMajority(q.labels,w,h,cols.length,2,dt<=3?3:1));}
+  if(opts.mode==='line'&&opts.output==='stroke'){onProgress&&onProgress('Finding the centre of each line…');await new Promise(r=>setTimeout(r,0));return vtCentreLines(labels,w,h,opts,dt);}
   const areas=new Array(cols.length).fill(0),border=new Array(cols.length).fill(0);
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){const l=labels[y*w+x];if(l<0)continue;areas[l]++;if(x===0||y===0||x===w-1||y===h-1)border[l]++;}
   let bg=-1;
@@ -8671,6 +8764,17 @@ function vtInstall(res,name,where){
   const layer=makeLayer(('Trace: '+name).slice(0,28));
   layers.push(layer);activeLayerId=layer.id;
   let n=0;
+  if(res.kind==='stroke'){
+    const base=Object.assign({},BrushEngine.getSettings('smoothPen'));
+    res.strokes.forEach(s=>{
+      const nodes=T(s.nodes),pts=nodesToPoints(nodes,s.closed);
+      const settings=Object.assign({},base,{size:Math.max(0.5,Math.round(s.width*pl.sc*10)/10)});if('pressureWidth' in settings)settings.pressureWidth=0;
+      strokes.push({id:crypto.randomUUID(),brushId:'smoothPen',layerId:layer.id,color:res.hex,settings,points:pts,nodes,closed:s.closed,cornerAuto:false,clipStrokeId:null,shape:null,traced:true});
+      n++;
+    });
+    rebuildLayer(layer.id);renderLayersList();pushHist();redraw();
+    return n;
+  }
   res.shapes.forEach(s=>{
     const nodes=T(s.nodes);let pts=nodesToPoints(nodes,true),useNodes=nodes;
     if(s.holes.length){
@@ -8690,6 +8794,15 @@ function vtDrawPreview(cv,res,z,pnx,pny){
   const mx=X=>S/2+pnx*S+(X-S/2)*z,my=Y=>S/2+pny*S+(Y-S/2)*z;
   c.clearRect(0,0,S,S);
   const samples=z>3?20:(z>1.5?12:8);
+  if(res.kind==='stroke'){
+    c.lineCap='round';c.lineJoin='round';c.strokeStyle=res.hex;
+    res.strokes.forEach(s=>{
+      c.lineWidth=Math.max(0.6,s.width*sc*z);c.beginPath();
+      nodesToPoints(s.nodes,s.closed,samples).forEach((q,i)=>{const x=mx(ox+q.x*sc),y=my(oy+q.y*sc);if(i)c.lineTo(x,y);else c.moveTo(x,y);});
+      c.stroke();
+    });
+    return;
+  }
   res.shapes.forEach(s=>{
     c.beginPath();
     [s.nodes].concat(s.holes).forEach(nd=>{
@@ -8750,6 +8863,7 @@ function openTraceImage(){
   const cols=mkRange(2,24,8),rCols=row('Number of colours',cols);
   const thr=mkRange(10,245,128),rThr=row('Ink threshold',thr);rThr.style.display='none';
   const ink=document.createElement('input');ink.type='color';ink.value='#000000';const rInk=row('Ink colour',ink);rInk.style.display='none';
+  const outSel=document.createElement('select');outSel.className='pj-input';[['fill','⬛ Filled shapes (outlines become solid shapes)'],['stroke','〰️ Centre-line strokes (each line becomes one editable stroke)']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;outSel.appendChild(o);});const rOut=row('Result',outSel);rOut.style.display='none';
   const det=mkRange(1,10,6);row('Detail (simple ⇄ detailed)',det);
   const where=document.createElement('select');where.className='pj-input';[['canvas','Fill the canvas — shown once, not tiled'],['tile','Fit inside one repeat tile (for patterns)']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;where.appendChild(o);});row('Size on canvas',where);
   const bgL=pjEl('label');bgL.style.cssText='display:flex;gap:8px;align-items:center;font-size:14px;margin:8px 0';const bg=document.createElement('input');bg.type='checkbox';bg.checked=true;bgL.appendChild(bg);bgL.appendChild(document.createTextNode('Remove the background colour'));box.appendChild(bgL);
@@ -8758,7 +8872,7 @@ function openTraceImage(){
   const btns=pjEl('div','pj-dlg-btns vt-sticky');const cancel=pjEl('button','btn','Cancel'),go=pjEl('button','btn primary','✨ Place on canvas');go.disabled=true;btns.appendChild(cancel);btns.appendChild(go);box.appendChild(btns);
   const close=()=>{st.runId++;clearTimeout(st.timer);back.remove();if(st.url)URL.revokeObjectURL(st.url);};
   cancel.onclick=close;
-  const opts=()=>({img:st.img,mode:mode.value,colours:+cols.input.value,threshold:+thr.input.value,ink:ink.value,detail:+det.input.value,removeBg:bg.checked,smooth:sm.checked&&mode.value!=='line'});
+  const opts=()=>({img:st.img,mode:mode.value,colours:+cols.input.value,threshold:+thr.input.value,ink:ink.value,detail:+det.input.value,removeBg:bg.checked,output:(mode.value==='line'?outSel.value:'fill'),smooth:sm.checked&&mode.value!=='line'});
   const preview=async()=>{
     if(!st.img)return;
     const id=++st.runId;spin.style.display='flex';go.disabled=true;
@@ -8768,13 +8882,13 @@ function openTraceImage(){
       if(!res||id!==st.runId)return;
       spin.style.display='none';
       if(!res.count){st.res=null;showAfter();ap.t.textContent='After — nothing traced';msg.textContent='Nothing to trace with those settings — try more colours, higher detail, or a different threshold.';return;}
-      st.res=res;showAfter();ap.t.textContent='After — '+res.count+' vector shapes, '+res.colours+' colour'+(res.colours===1?'':'s');
+      st.res=res;showAfter();ap.t.textContent=res.kind==='stroke'?('After — '+res.count+' editable strokes'):('After — '+res.count+' vector shapes, '+res.colours+' colour'+(res.colours===1?'':'s'));
       msg.textContent='Traced in '+((Date.now()-t0)/1000).toFixed(1)+'s. Happy with it? Tap Place on canvas — or adjust the options.';go.disabled=false;
     }catch(e){console.error(e);if(id===st.runId){spin.style.display='none';msg.textContent='Trace failed: '+(e.message||e);}}
   };
   const soon=()=>{clearTimeout(st.timer);st.timer=setTimeout(preview,350);};
-  [mode,where].forEach(e=>e.addEventListener('change',()=>{if(e===mode){const line=mode.value==='line';rCols.style.display=line?'none':'';rThr.style.display=line?'':'none';rInk.style.display=line?'':'none';bgL.style.display=line?'none':'flex';smL.style.display=line?'none':'flex';}if(e===mode)soon();}));
-  [cols.input,thr.input,det.input].forEach(e=>e.addEventListener('input',soon));sm.addEventListener('change',soon);
+  [mode,where].forEach(e=>e.addEventListener('change',()=>{if(e===mode){const line=mode.value==='line';rCols.style.display=line?'none':'';rThr.style.display=line?'':'none';rInk.style.display=line?'':'none';rOut.style.display=line?'':'none';bgL.style.display=line?'none':'flex';smL.style.display=line?'none':'flex';}if(e===mode)soon();}));
+  [cols.input,thr.input,det.input].forEach(e=>e.addEventListener('input',soon));sm.addEventListener('change',soon);outSel.addEventListener('change',soon);
   ink.addEventListener('input',soon);bg.addEventListener('change',soon);
   inp.onchange=async()=>{
     const f=inp.files&&inp.files[0];if(!f)return;
@@ -8790,7 +8904,7 @@ function openTraceImage(){
     const n=vtInstall(st.res,(st.file.name||'image').replace(/\.[^.]+$/,''),where.value);
     if(where.value==='canvas'&&showTiling){try{$('tilingBtn').click();}catch(e){}} // show it once, not repeated
     const cnt=st.res.colours;close();
-    setStatus('✨ Placed '+n+' vector shapes ('+cnt+' colour'+(cnt===1?'':'s')+') on a new layer. Undo to remove.');
+    setStatus(st.res.kind==='stroke'?('✨ Placed '+n+' editable strokes on a new layer. Undo to remove.'):('✨ Placed '+n+' vector shapes ('+cnt+' colour'+(cnt===1?'':'s')+') on a new layer. Undo to remove.'));
   };
   back.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape')close();});
   document.body.appendChild(back);
