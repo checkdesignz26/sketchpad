@@ -175,3 +175,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 ## v62 — Trace: Detail slider + zoom
 - The Detail slider now visibly changes the result (resolution, simplification, speckle clean-up, smoothing).
 - Before/After preview has zoom (− / slider / + / Fit), drag to pan, pinch and mouse-wheel. The vector side is redrawn sharp at every zoom level.
+
+## v63 — Minimum default size 1
+- Any saved brush size below 1 (e.g. a Pencil left at 0.1) is reset to 1 once; arming a shape tool with a size under 1 sets it to 1 so shapes stay visible. You can still type smaller sizes yourself.
