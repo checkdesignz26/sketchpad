@@ -240,3 +240,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## v81
 - Centre-line trace keeps tiny dark dots (eyes, buttons) that used to be discarded as too short; only clearly dark ones, so paper speckle is ignored.
+
+## v82
+- Trace dialog: "Trace just an area" - drag a box on the Before picture (zoom first if you like) and only that region is traced, which keeps small details sharp on big sheets. "Whole picture" goes back.
