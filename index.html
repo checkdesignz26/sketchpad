@@ -4420,6 +4420,7 @@ document.querySelectorAll('.shape-btn').forEach(btn=>{
   btn.onclick=()=>{
     const type=btn.dataset.shape;
     armedShapeType=(armedShapeType===type)?null:type; // tap again to cancel
+    if(armedShapeType&&!eraserActive){try{const st=BrushEngine.getSettings(activeBrushId);if(typeof st.size==='number'&&st.size<1){BrushEngine.setSettings(activeBrushId,{size:1});syncControlsFromSettings();}}catch(e){}}
     if(armedShapeType){if(pathEditStrokeId)commitEditPath();if(joinPendingStrokeId)endJoinPick();disarmAreaFill();mode='draw';selected=null;selectedStrokeId=null;syncStrokeSelectionUI();syncMode();}
     syncShapeToolUI();redraw();
   };
@@ -6563,6 +6564,7 @@ $('bmSave').onclick=()=>{
 };
 registerCustomDefs(customDefs,true).then(()=>{renderBrushFamilies();syncRecents();syncFavorites();syncControlsFromSettings();syncActiveSwatches();});
 // One-time: the Smooth Pen is now a finer line by default (3 px); move any older remembered size across.
+try{if(!localStorage.getItem('sp-minsize1-v1')){const st=JSON.parse(localStorage.getItem('pkmBrushSettingsV1')||'{}');Object.keys(st).forEach(id=>{if(st[id]&&typeof st[id].size==='number'&&st[id].size<1)BrushEngine.setSettings(id,{size:1});});localStorage.setItem('sp-minsize1-v1','1');}}catch(e){}
 try{if(!localStorage.getItem('sp-smoothpen-fine-v1')){BrushEngine.setSettings('smoothPen',{size:3});localStorage.setItem('sp-smoothpen-fine-v1','1');}}catch(e){}
 renderBrushFamilies();syncRecents();syncFavorites();syncControlsFromSettings();
 document.querySelectorAll('.layout-btn').forEach(b=>b.onclick=()=>{document.querySelectorAll('.layout-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');layout=b.dataset.layout;$('layoutPill').textContent='📍 '+b.textContent+' Mode';redraw();});$('tilingBtn').onclick=()=>{showTiling=!showTiling;$('tilingBtn').classList.toggle('active',showTiling);$('tilingBtn').textContent=showTiling?'Tiling On':'Tiling Off';redraw();};$('guidesBtn').onclick=()=>{showGuides=!showGuides;$('guidesBtn').classList.toggle('active',showGuides);sessionStorage.setItem('sp-showGuides',showGuides?'1':'0');redraw();};
