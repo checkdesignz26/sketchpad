@@ -565,6 +565,20 @@ html.in-suite .suite-only{display:block!important}
       </div>
     </section>
   </aside>
+  <div class="float-panel" id="qaPanel" style="display:none;width:226px;padding:10px;">
+    <div class="float-panel-handle" id="qaPanelHandle">
+      <span>⚡ Quick actions</span>
+      <span class="float-panel-handle-actions"><button id="qaCloseBtn" class="btn mini float-panel-done" title="Close">✕</button><span class="float-panel-grip" title="Drag to move">⠿</span></span>
+    </div>
+    <div id="qaGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;">
+      <button id="qaSelect" class="btn" title="Edit mode: tap a shape, stroke or picture to select it">☝️ Select</button>
+      <button id="qaMove" class="btn" title="Drag any shape, stroke or picture to move it — no need to select first">✥ Move</button>
+      <button id="qaDup" class="btn" title="Duplicate the selection">⧉ Duplicate</button>
+      <button id="qaDel" class="btn danger" title="Delete the selection (Undo brings it back)">🗑 Delete</button>
+      <button id="qaErase" class="btn" title="Eraser on/off">🧹 Erase</button>
+      <button id="qaDraw" class="btn" title="Back to drawing">✏️ Draw</button>
+    </div>
+  </div>
   <div class="float-panel" id="pathEditBar" style="display:none;">
     <div class="float-panel-handle" id="pathEditBarHandle">
       <span>✎ Edit Path</span>
@@ -708,6 +722,7 @@ html.in-suite .suite-only{display:block!important}
       </div>
       <div class="tb-row tb-canvas" id="tbCanvas">
         <button id="selMenuBtn" class="tool-btn tb-fix" aria-haspopup="menu" aria-expanded="false" title="Select Area, Select All, Select same…">▭ Select ▾</button>
+        <button id="tbQuickBtn" class="tool-btn tb-fix" title="Quick actions panel: Select, Move, Duplicate, Delete, Erase — floats anywhere on the canvas">⚡</button>
         <button id="tbDupBtn" class="tool-btn tb-fix" title="Duplicate the selected shape, stroke or picture (also: double-tap it)">⧉ Duplicate</button>
         <span class="tb-split"><button id="tbPencilBtn" class="tool-btn tb-fix" title="Freehand drawing with the current brush">✏️ Pencil</button><button id="tbPencilMenuBtn" class="tool-btn tb-fix" aria-haspopup="menu" aria-expanded="false" title="Choose a brush">▾</button></span>
         <span id="tbSize" class="size-combo tb-size tb-fix" title="Brush size"><input class="size-num" id="tbSizeNum" type="number" inputmode="decimal" min="0.05" step="0.05"><select class="size-pick" id="tbSizePick" title="Common sizes"></select></span>
@@ -3459,7 +3474,7 @@ $('duplicateLayerBtn').onclick=()=>{
   renderLayersList();rebuildLayer(copy.id);pushHist();redraw();
   setStatus('⧉ Duplicated "'+src.name+'".');
 };
-let dragMotif=null,dragStroke=null;
+let dragMotif=null,dragStroke=null,quickMoveOn=false;
 canvas.addEventListener('pointerdown',e=>{
   if(mode!=='edit'||!isPen(e))return;
   if(captureAreaArmed)return;
@@ -3481,7 +3496,7 @@ canvas.addEventListener('pointerdown',e=>{
   if(selected){
     const p=screenToCanvas(e.clientX,e.clientY),m=getSel();
     dragMotif={dx:p.x-m.x,dy:p.y-m.y};try{canvas.setPointerCapture(e.pointerId);}catch(err){}
-  }else if(selectedStrokeId&&selectedStrokeId===prevSelectedStrokeId){
+  }else if(selectedStrokeId&&(selectedStrokeId===prevSelectedStrokeId||quickMoveOn)){
     const p=screenToCanvas(e.clientX,e.clientY);
     dragStroke={strokeId:selectedStrokeId,startX:p.x,startY:p.y,totalDx:0,totalDy:0,moved:false};
     try{canvas.setPointerCapture(e.pointerId);}catch(err){}
@@ -8934,6 +8949,46 @@ $('tbDupBtn').onclick=()=>{
   if(mode!=='edit'&&!selectedStrokeId&&!selected&&!multiSel){setStatus('⧉ Switch to Edit mode and tap a shape, stroke or picture, then Duplicate.');return;}
   quickDuplicate();
 };
+// ---- Quick actions floating panel: Select · Move · Duplicate · Delete · Erase (+ Draw) ----
+function qaDelete(){
+  if(pathEditStrokeId){setStatus('Finish Edit Path first, then delete.');return;}
+  if(multiSel&&(multiSel.strokeIds.length||multiSel.placedIds.length)){deleteMultiSel();return;}
+  if(selectedStrokeId&&strokes.find(x=>x.id===selectedStrokeId)){deleteSelectedStroke();setStatus('🗑 Deleted. Undo brings it back.');return;}
+  if(selected&&placed.find(p=>p.id===selected)){$('deleteSel').click();setStatus('🗑 Deleted. Undo brings it back.');return;}
+  setStatus('🗑 Nothing selected — tap a shape, stroke or picture first (Select or Move).');
+}
+function qaSync(){
+  if(mode!=='edit')quickMoveOn=false;
+  if($('qaPanel').style.display==='none')return;
+  const edit=mode==='edit';
+  $('qaSelect').classList.toggle('primary',edit&&!quickMoveOn);
+  $('qaMove').classList.toggle('primary',edit&&quickMoveOn);
+  $('qaErase').classList.toggle('primary',!!eraserActive&&mode!=='edit');
+  $('qaDraw').classList.toggle('primary',mode!=='edit'&&!eraserActive);
+}
+function qaToEdit(move){
+  quickMoveOn=!!move;
+  if(mode!=='edit')$('editModeBtn').click();
+  setStatus(move?'✥ Move: drag any shape, stroke or picture to move it.':'☝️ Select: tap a shape, stroke or picture.');
+  qaSync();
+}
+$('qaSelect').onclick=()=>qaToEdit(false);
+$('qaMove').onclick=()=>qaToEdit(true);
+$('qaDup').onclick=()=>{quickDuplicate();qaSync();};
+$('qaDel').onclick=()=>{qaDelete();qaSync();};
+$('qaErase').onclick=()=>{quickMoveOn=false;if(mode==='edit')$('drawModeBtn').click();$('tbEraserBtn').click();setStatus('🧹 Eraser — rub over strokes to erase. Tap again to switch off.');qaSync();};
+$('qaDraw').onclick=()=>{quickMoveOn=false;if(mode==='edit')$('drawModeBtn').click();if(eraserActive)$('tbEraserBtn').click();else $('tbPencilBtn').click();qaSync();};
+function qaOpen(open){
+  const p=$('qaPanel');
+  if(open===undefined)open=p.style.display==='none';
+  p.style.display=open?'block':'none';if(!open)quickMoveOn=false;
+  $('tbQuickBtn').classList.toggle('active',open);
+  if(open){const vr=viewportOuter.getBoundingClientRect();positionFloatPanel('qaPanel',vr.left+16,vr.bottom-236);qaSync();}
+}
+$('tbQuickBtn').onclick=()=>qaOpen();
+$('qaCloseBtn').onclick=()=>qaOpen(false);
+makeFloatPanelDraggable('qaPanel','qaPanelHandle');
+setInterval(qaSync,500);
 let dblTapLast={t:0,x:0,y:0,sel:null};
 function dblSelSnap(){return {sid:selectedStrokeId,pid:selected,multi:multiSel};}
 function dblTapCheck(e){
