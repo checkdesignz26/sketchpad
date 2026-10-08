@@ -228,6 +228,8 @@ html.in-suite .suite-only{display:block!important}
 .layer-row.locked{opacity:.7}
 .layer-name-input{flex:1;min-width:0;font-size:16px;padding:4px 6px;border-radius:8px;border:1px solid var(--pink);background:var(--btnBg);color:var(--text)}
 .layer-icon-btn{border:0;background:transparent;font-size:14px;cursor:pointer;padding:2px;width:22px;flex-shrink:0;color:var(--text)}
+.layer-alpha.on{background:var(--pink);color:#fff}
+.layer-blend{max-width:92px;font-size:12px;padding:4px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text)}
 .layer-name{flex:1 1 96px;font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:96px}
 .layer-opacity{width:46px;flex-shrink:0}
 .recipe-text{font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:0;white-space:pre-line;background:var(--btnBg);border-radius:10px;padding:8px 10px}
@@ -714,7 +716,8 @@ html.in-suite .suite-only{display:block!important}
     <div class="row" style="margin-top:6px;gap:6px;"><button id="grpLockBtn" class="btn mini active" style="flex:1" title="Keep the shape's proportions while resizing">🔒 Proportions locked</button><button id="grpScaleStrokesBtn" class="btn mini active" style="flex:1" title="Line thickness grows and shrinks with the artwork">〰️ Scale strokes: On</button></div>
     <div class="row" style="margin-top:6px;gap:6px;align-items:center;"><span style="font-size:12.5px;opacity:.8;width:44px;">Size</span><input id="grpSizePct" type="number" min="5" max="1000" value="100" style="width:70px;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);">%<button id="grpSizeBtn" class="btn mini" style="flex:1">Resize</button></div>
     <div class="row" style="margin-top:6px;gap:6px;align-items:center;"><span style="font-size:12.5px;opacity:.8;width:44px;">Turn</span><input id="grpTurnDeg" type="number" min="-360" max="360" value="90" style="width:70px;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);">°<button id="grpTurnBtn" class="btn mini" style="flex:1">Turn</button></div>
-    <div class="row" style="margin-top:6px;gap:6px;align-items:center;"><span style="font-size:12.5px;opacity:.8;width:44px;">Colour</span><input id="grpColour" type="color" value="#000000" style="width:44px;height:34px;padding:0;border:none;background:none;"><span style="font-size:12.5px;opacity:.8;margin-left:6px;">Line</span><input id="grpWidth" type="number" min="1" max="200" placeholder="size" style="width:62px;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"><button id="grpEditAllBtn" class="btn mini" style="flex:1" title="Apply the colour and line size to everything selected">Apply to all</button></div>
+    <div class="row" style="margin-top:6px;gap:6px;align-items:center;"><span style="font-size:12.5px;opacity:.8;width:44px;">Colour</span><input id="grpColour" type="color" value="#000000" style="width:44px;height:34px;padding:0;border:none;background:none;"><span style="font-size:12.5px;opacity:.8;margin-left:6px;">Line</span><input id="grpWidth" type="number" min="1" max="200" placeholder="size" style="width:62px;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"><button id="grpEditAllBtn" class="btn mini" style="flex:1" title="Apply the colour, line size and opacity to everything selected">Apply to all</button></div>
+    <div class="row" style="margin-top:6px;gap:6px;align-items:center;"><span style="font-size:12.5px;opacity:.8;width:44px;">Opacity</span><input id="grpOpacity" type="number" min="1" max="100" placeholder="%" style="width:62px;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"><button id="grpUseBrushBtn" class="btn mini" style="flex:1" title="Redraws every selected stroke with the brush you have chosen now, keeping each stroke's own colour and size">🖌️ Use my current brush</button></div>
     <div class="row" style="margin-top:6px;gap:6px;"><button id="grpAddBtn" class="btn mini" style="flex:1" title="Tap more things to add or remove them">＋ Add / remove</button><button id="grpInsideBtn" class="btn mini" style="flex:1" title="Select one part of the group to edit it">✎ Edit inside</button></div>
     <div class="row" style="margin-top:6px;gap:6px;"><button id="grpBlendBtn" class="btn mini" style="flex:1" title="Select two motifs or two groups, then Blend to make steps between them">🌀 Blend two…</button></div>
     <div class="row" style="margin-top:6px;gap:6px;"><button id="grpDeleteBtn" class="btn mini danger" style="flex:1">✕ Delete selection</button></div>
@@ -820,7 +823,7 @@ html.in-suite .suite-only{display:block!important}
     </div>
     <div id="backupsPanel" style="display:none;position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:90;background:var(--sideBg);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:0 18px 50px rgba(0,0,0,.35);font-size:13.5px;max-width:min(560px,calc(100vw - 24px));max-height:70vh;overflow:auto;"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:800;margin-bottom:6px;">🕘 Earlier saves<button id="backupsClose" class="btn mini">Close</button></div><div id="backupsList"></div><div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);"><button id="newBlankBtn" class="btn mini" style="width:100%;">➕ New Project</button><div class="hint">Your current project is saved first, then a fresh one opens. Find every project under 📁 Projects.</div></div></div>
     <div id="restoreBanner" style="display:none;"><span id="restoreBannerText">📂 Autosaved session found from </span><span id="restoreBannerTime"></span> <button id="restoreAcceptBtn" class="btn mini primary">Restore</button><button id="restoreDeclineBtn" class="btn mini">Start Fresh</button><button id="restoreOkBtn" class="btn mini primary" style="display:none;">OK</button></div>
-    <div id="canvasViewportOuter" class="canvas-viewport-outer"><div id="canvasWrap" class="canvas-wrap"><div id="viewPopover" class="sym-pop"><div class="section-title">🧭 Canvas / View</div><div class="row" style="margin-bottom:10px;align-items:center;gap:8px;"><div id="viewRotVal" class="pill" style="flex:1;text-align:center;">Rotation 0°</div><button id="viewRotResetBtn" class="tool-btn" style="flex:1" title="Turn the canvas back upright">Reset to 0°</button></div><button id="viewGuidesBtn" class="tool-btn" style="width:100%;margin-bottom:10px;">📐 Guides: Off</button><button id="viewResetBtn" class="tool-btn" style="width:100%;margin-bottom:10px;" title="0°, centred and fitted">🔍 Reset view (0°, fit)</button><button id="symToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">🦋 Symmetry Off</button><div class="row" style="margin-bottom:10px;"><button id="tilingBtn" class="tool-btn active" style="flex:1">Tiling On</button><div id="layoutPill" class="pill">📍 Grid Mode</div></div><button id="themeToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">☀️ Light Mode</button><button id="clearDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear Drawing &amp; Motifs</button><button id="clearAllDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear All Layers &amp; Motifs</button><label class="row" style="gap:8px;align-items:center;margin:6px 0;font-size:13px;"><input type="checkbox" id="dblDupChk" checked> Double-tap a selected item to duplicate it</label><button id="viewCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="zoomPopover" class="sym-pop"><div class="section-title">🔍 View <span id="zoomPopPct" class="small"></span></div><div class="zoom-row"><button id="zoomOutBtn" class="tool-btn" aria-label="Zoom out">−</button><button id="zoomInBtn" class="tool-btn" aria-label="Zoom in">+</button></div><button id="zoom100Btn" class="tool-btn" style="width:100%;margin-bottom:8px;">100% — actual size</button><button id="zoomFitBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">Fit to View</button><button id="zoomRotResetBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">↺ Reset rotation to 0°</button><button id="zoomResetBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;">Reset View (0°, centre, fit)</button><button id="updateAppBtn" class="tool-btn" style="width:100%;margin-bottom:8px;" title="Fetch the newest version of the app">⟳ Get latest version <span style="opacity:.6;font-weight:600">(you have v100)</span></button><div class="hint" style="margin-bottom:8px;">These always work, even if the canvas has scrolled out of sight.</div><button id="zoomCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="svgPopover" class="sym-pop"><div class="section-title">🖋️ Export SVG</div><div class="hint" style="margin-bottom:8px;">Vector strokes and fills only. Pictures (placed motifs, background image) are not vector, so they are left out.</div><div class="row" style="margin-bottom:8px;"><button class="tool-btn svg-preset" data-size="780">780</button><button class="tool-btn svg-preset" data-size="1800">1800</button><button class="tool-btn svg-preset" data-size="3600">3600</button></div><div class="slider-row" style="grid-template-columns:64px 1fr 30px;"><label>Size</label><input id="svgSizeInput" type="number" min="64" max="20000" step="1" value="3600" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><span>px</span></div><div class="hint" style="margin-bottom:8px;">Width and height of the square file. 3600 × 3600 is the usual pattern size. The artwork scales exactly.</div><button id="svgSaveBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;min-height:44px;">⬇️ Save SVG</button><button id="svgCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="recolourPopover" class="sym-pop"><div class="section-title">🎨 Recolour Parts</div><div class="hint" style="margin-bottom:8px;">Motif: <b id="recolourName"></b>. Each row is one colour used in the motif. Pick a new colour for any of them.</div><div id="recolourRows"></div><button id="recolourApplyBtn" class="tool-btn primary" style="width:100%;margin:8px 0;min-height:44px;">Apply to this motif</button><button id="recolourNewBtn" class="tool-btn" style="width:100%;margin-bottom:8px;min-height:44px;">Save as new colourway</button><div class="row"><button id="recolourResetBtn" class="btn mini" style="flex:1">Reset</button><button id="recolourCloseBtn" class="btn mini" style="flex:1">✕ Close</button></div></div><div id="symPopover" class="sym-pop"><div class="section-title">🦋 Symmetry</div><div class="grid"><button class="sym-btn btn active" data-sym="off">Off</button><button class="sym-btn btn" data-sym="vertical">Vertical</button><button class="sym-btn btn" data-sym="horizontal">Horizontal</button><button class="sym-btn btn" data-sym="quad">Quad</button><button class="sym-btn btn" data-sym="diamond">Diamond</button></div><div class="slider-row"><label>Axis X</label><input id="symX" type="range" min="0" max="1800" value="900"><span id="symXVal">50%</span></div><div class="slider-row"><label>Axis Y</label><input id="symY" type="range" min="0" max="1800" value="900"><span id="symYVal">50%</span></div><div class="row"><button id="symCentre" class="btn mini">Centre Axis</button><button id="symClose" class="btn mini">Done</button></div><div class="hint">Move the mirror point to make flowers, leaves and playful asymmetric symmetry.</div></div><canvas id="fabricCanvas" aria-hidden="true"></canvas><canvas id="canvas" width="1800" height="1800"></canvas><div id="tileOutline" aria-hidden="true"></div><div id="selectionBox" class="selection-box"><button id="motifEditChip" class="btn mini primary" style="display:none">✏️ Edit Motif</button><div id="resizeHandle" class="handle"></div><div id="rotateHandle" class="rotHandle"></div></div><div id="pivotMarker" style="display:none;position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;border:2px solid var(--pink);border-radius:50%;background:rgba(255,255,255,.85);pointer-events:none;z-index:5;"><div style="position:absolute;left:50%;top:-6px;bottom:-6px;width:2px;margin-left:-1px;background:var(--pink)"></div><div style="position:absolute;top:50%;left:-6px;right:-6px;height:2px;margin-top:-1px;background:var(--pink)"></div></div><div id="paintBBoxOverlay" class="selection-box" style="display:none;"><div id="paintResizeHandle" class="handle" title="Drag to resize. Tap to make 25% bigger."></div><div id="paintRotateHandle" class="rotHandle" title="Drag to rotate. Tap to turn 45 degrees."></div><input id="strokeColourHandle" class="sel-colour strokeColourHandle" type="color" value="#000000" title="Tap to change colour"></div><div id="groupBox" class="selection-box" style="display:none;"><div class="gh" data-h="nw" style="left:0%;top:0%;cursor:nwse-resize"></div><div class="gh" data-h="n" style="left:50%;top:0%;cursor:ns-resize"></div><div class="gh" data-h="ne" style="left:100%;top:0%;cursor:nesw-resize"></div><div class="gh" data-h="e" style="left:100%;top:50%;cursor:ew-resize"></div><div class="gh" data-h="se" style="left:100%;top:100%;cursor:nwse-resize"></div><div class="gh" data-h="s" style="left:50%;top:100%;cursor:ns-resize"></div><div class="gh" data-h="sw" style="left:0%;top:100%;cursor:nesw-resize"></div><div class="gh" data-h="w" style="left:0%;top:50%;cursor:ew-resize"></div><div id="grpRotHandle" class="rotHandle" title="Drag to turn. Tap to turn 45 degrees."></div></div><div id="symAxis" class="sym-axis"></div><div id="rotateChip" class="rotate-chip">Canvas 0°</div><div id="pathNodeOverlay"></div></div></div>
+    <div id="canvasViewportOuter" class="canvas-viewport-outer"><div id="canvasWrap" class="canvas-wrap"><div id="viewPopover" class="sym-pop"><div class="section-title">🧭 Canvas / View</div><div class="row" style="margin-bottom:10px;align-items:center;gap:8px;"><div id="viewRotVal" class="pill" style="flex:1;text-align:center;">Rotation 0°</div><button id="viewRotResetBtn" class="tool-btn" style="flex:1" title="Turn the canvas back upright">Reset to 0°</button></div><button id="viewGuidesBtn" class="tool-btn" style="width:100%;margin-bottom:10px;">📐 Guides: Off</button><button id="viewResetBtn" class="tool-btn" style="width:100%;margin-bottom:10px;" title="0°, centred and fitted">🔍 Reset view (0°, fit)</button><button id="symToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">🦋 Symmetry Off</button><div class="row" style="margin-bottom:10px;"><button id="tilingBtn" class="tool-btn active" style="flex:1">Tiling On</button><div id="layoutPill" class="pill">📍 Grid Mode</div></div><button id="themeToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">☀️ Light Mode</button><button id="clearDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear Drawing &amp; Motifs</button><button id="clearAllDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear All Layers &amp; Motifs</button><label class="row" style="gap:8px;align-items:center;margin:6px 0;font-size:13px;"><input type="checkbox" id="dblDupChk" checked> Double-tap a selected item to duplicate it</label><button id="viewCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="zoomPopover" class="sym-pop"><div class="section-title">🔍 View <span id="zoomPopPct" class="small"></span></div><div class="zoom-row"><button id="zoomOutBtn" class="tool-btn" aria-label="Zoom out">−</button><button id="zoomInBtn" class="tool-btn" aria-label="Zoom in">+</button></div><button id="zoom100Btn" class="tool-btn" style="width:100%;margin-bottom:8px;">100% — actual size</button><button id="zoomFitBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">Fit to View</button><button id="zoomRotResetBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">↺ Reset rotation to 0°</button><button id="zoomResetBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;">Reset View (0°, centre, fit)</button><button id="updateAppBtn" class="tool-btn" style="width:100%;margin-bottom:8px;" title="Fetch the newest version of the app">⟳ Get latest version <span style="opacity:.6;font-weight:600">(you have v102)</span></button><div class="hint" style="margin-bottom:8px;">These always work, even if the canvas has scrolled out of sight.</div><button id="zoomCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="svgPopover" class="sym-pop"><div class="section-title">🖋️ Export SVG</div><div class="hint" style="margin-bottom:8px;">Vector strokes and fills only. Pictures (placed motifs, background image) are not vector, so they are left out.</div><div class="row" style="margin-bottom:8px;"><button class="tool-btn svg-preset" data-size="780">780</button><button class="tool-btn svg-preset" data-size="1800">1800</button><button class="tool-btn svg-preset" data-size="3600">3600</button></div><div class="slider-row" style="grid-template-columns:64px 1fr 30px;"><label>Size</label><input id="svgSizeInput" type="number" min="64" max="20000" step="1" value="3600" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><span>px</span></div><div class="hint" style="margin-bottom:8px;">Width and height of the square file. 3600 × 3600 is the usual pattern size. The artwork scales exactly.</div><button id="svgSaveBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;min-height:44px;">⬇️ Save SVG</button><button id="svgCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="recolourPopover" class="sym-pop"><div class="section-title">🎨 Recolour Parts</div><div class="hint" style="margin-bottom:8px;">Motif: <b id="recolourName"></b>. Each row is one colour used in the motif. Pick a new colour for any of them.</div><div id="recolourRows"></div><button id="recolourApplyBtn" class="tool-btn primary" style="width:100%;margin:8px 0;min-height:44px;">Apply to this motif</button><button id="recolourNewBtn" class="tool-btn" style="width:100%;margin-bottom:8px;min-height:44px;">Save as new colourway</button><div class="row"><button id="recolourResetBtn" class="btn mini" style="flex:1">Reset</button><button id="recolourCloseBtn" class="btn mini" style="flex:1">✕ Close</button></div></div><div id="symPopover" class="sym-pop"><div class="section-title">🦋 Symmetry</div><div class="grid"><button class="sym-btn btn active" data-sym="off">Off</button><button class="sym-btn btn" data-sym="vertical">Vertical</button><button class="sym-btn btn" data-sym="horizontal">Horizontal</button><button class="sym-btn btn" data-sym="quad">Quad</button><button class="sym-btn btn" data-sym="diamond">Diamond</button></div><div class="slider-row"><label>Axis X</label><input id="symX" type="range" min="0" max="1800" value="900"><span id="symXVal">50%</span></div><div class="slider-row"><label>Axis Y</label><input id="symY" type="range" min="0" max="1800" value="900"><span id="symYVal">50%</span></div><div class="row"><button id="symCentre" class="btn mini">Centre Axis</button><button id="symClose" class="btn mini">Done</button></div><div class="hint">Move the mirror point to make flowers, leaves and playful asymmetric symmetry.</div></div><canvas id="fabricCanvas" aria-hidden="true"></canvas><canvas id="canvas" width="1800" height="1800"></canvas><div id="tileOutline" aria-hidden="true"></div><div id="selectionBox" class="selection-box"><button id="motifEditChip" class="btn mini primary" style="display:none">✏️ Edit Motif</button><div id="resizeHandle" class="handle"></div><div id="rotateHandle" class="rotHandle"></div></div><div id="pivotMarker" style="display:none;position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;border:2px solid var(--pink);border-radius:50%;background:rgba(255,255,255,.85);pointer-events:none;z-index:5;"><div style="position:absolute;left:50%;top:-6px;bottom:-6px;width:2px;margin-left:-1px;background:var(--pink)"></div><div style="position:absolute;top:50%;left:-6px;right:-6px;height:2px;margin-top:-1px;background:var(--pink)"></div></div><div id="paintBBoxOverlay" class="selection-box" style="display:none;"><div id="paintResizeHandle" class="handle" title="Drag to resize. Tap to make 25% bigger."></div><div id="paintRotateHandle" class="rotHandle" title="Drag to rotate. Tap to turn 45 degrees."></div><input id="strokeColourHandle" class="sel-colour strokeColourHandle" type="color" value="#000000" title="Tap to change colour"></div><div id="groupBox" class="selection-box" style="display:none;"><div class="gh" data-h="nw" style="left:0%;top:0%;cursor:nwse-resize"></div><div class="gh" data-h="n" style="left:50%;top:0%;cursor:ns-resize"></div><div class="gh" data-h="ne" style="left:100%;top:0%;cursor:nesw-resize"></div><div class="gh" data-h="e" style="left:100%;top:50%;cursor:ew-resize"></div><div class="gh" data-h="se" style="left:100%;top:100%;cursor:nwse-resize"></div><div class="gh" data-h="s" style="left:50%;top:100%;cursor:ns-resize"></div><div class="gh" data-h="sw" style="left:0%;top:100%;cursor:nesw-resize"></div><div class="gh" data-h="w" style="left:0%;top:50%;cursor:ew-resize"></div><div id="grpRotHandle" class="rotHandle" title="Drag to turn. Tap to turn 45 degrees."></div></div><div id="symAxis" class="sym-axis"></div><div id="rotateChip" class="rotate-chip">Canvas 0°</div><div id="pathNodeOverlay"></div></div></div>
     <div id="status" class="status">✨ Apple Pencil draws | one finger protected | two fingers pan/pinch/rotate | two-finger tap Undo | three-finger tap Redo | Capture Motif saves drawing ✨</div>
   </main>
 </div>
@@ -1080,7 +1083,7 @@ function renderDetail(){
           renderStrokeClipped(sc,s,brush,settings,s.id===pathEditStrokeId?0:1); // Edit Path shows its own live copy instead
         });
         sc.restore();
-        d.save();d.setTransform(1,0,0,1,0,0);d.globalAlpha=l.opacity/100;d.drawImage(detailScratch,0,0);d.restore();
+        d.save();d.setTransform(1,0,0,1,0,0);d.globalAlpha=l.opacity/100;d.globalCompositeOperation=l.blend||'source-over';d.drawImage(detailScratch,0,0);d.restore();
       });
     });
     drawPlaced();drawMultiSelectHighlights();drawShapeToolsHighlights();drawStrokeSelection();drawTileBoundary();if(showGuides)drawGuides();
@@ -1355,7 +1358,20 @@ function rebuildLayersClippedBy(strokeId){
   const layerIds=new Set(strokes.filter(s=>s.clipStrokeId===strokeId).map(s=>s.layerId));
   layerIds.forEach(id=>rebuildLayer(id));
 }
+// Alpha lock: a stroke made on an alpha-locked layer only lands where the layer already has paint (source-atop). It is
+// drawn on its own small scratch picture first, because some brushes set their own blend mode and would otherwise ignore it.
+function renderStrokeAtop(ctx,stroke,brush,settings,alphaMul){
+  const bb=strokeBoundsPad(stroke);if(!bb)return;
+  const bx=Math.max(0,Math.floor(bb.x0)),by=Math.max(0,Math.floor(bb.y0)),bw=Math.min(W,Math.ceil(bb.x1))-bx,bh=Math.min(H,Math.ceil(bb.y1))-by;
+  if(bw<=0||bh<=0)return;
+  const m=ctx.getTransform?ctx.getTransform():null,sc=m?Math.abs(m.a)||1:1;
+  const t=document.createElement('canvas');t.width=Math.max(1,Math.ceil(bw*sc));t.height=Math.max(1,Math.ceil(bh*sc));
+  const tc=t.getContext('2d');tc.setTransform(sc,0,0,sc,-bx*sc,-by*sc);
+  renderStrokeClipped(tc,{...stroke,atop:false},brush,settings,alphaMul);
+  ctx.save();ctx.globalCompositeOperation='source-atop';ctx.drawImage(t,0,0,t.width,t.height,bx,by,bw,bh);ctx.restore();
+}
 function renderStrokeClipped(ctx,stroke,brush,settings,alphaMul){
+  if(stroke.atop)return renderStrokeAtop(ctx,stroke,brush,settings,alphaMul);
   // Shape Tools multi-region result (a hole, or several separate pieces from Subtract/Merge) —
   // each region is just stroked independently with the SAME brush/settings, which is exactly
   // correct for a hole (the outer boundary AND the inner hole boundary both get an outline, like
@@ -1438,7 +1454,7 @@ function appendStrokeToLayer(stroke){
   renderStrokeClipped(layer.dctx,stroke,brush,settings);
   compositeDirty=true;
 }
-function updateComposite(){compositeCtx.clearRect(0,0,W,H);layers.forEach(l=>{if(!l.visible)return;compositeCtx.save();compositeCtx.globalAlpha=l.opacity/100;compositeCtx.drawImage(l.canvas,0,0);compositeCtx.restore();});}
+function updateComposite(){compositeCtx.clearRect(0,0,W,H);layers.forEach(l=>{if(!l.visible)return;compositeCtx.save();compositeCtx.globalAlpha=l.opacity/100;compositeCtx.globalCompositeOperation=l.blend||'source-over';compositeCtx.drawImage(l.canvas,0,0);compositeCtx.restore();});}
 // Same flattening as updateComposite() above, but from each layer's HI-RES dcanvas into
 // displayCanvas — this is what the on-screen canvas actually paints from (see redraw/drawTiles),
 // so what's on screen is a fresh render at the current display resolution, never a stretched
@@ -1446,11 +1462,11 @@ function updateComposite(){compositeCtx.clearRect(0,0,W,H);layers.forEach(l=>{if
 // resizeRenderTargets), so drawImage's dest size must be given explicitly as W,H (the LOGICAL
 // size) rather than left to the image's own (already renderScale-sized) natural pixel size —
 // otherwise the transform would scale an already-scaled bitmap up a second time.
-function updateDisplayComposite(){displayCtx.clearRect(0,0,W,H);layers.forEach(l=>{if(!l.visible)return;displayCtx.save();displayCtx.globalAlpha=l.opacity/100;displayCtx.drawImage(l.dcanvas,0,0,W,H);displayCtx.restore();});}
+function updateDisplayComposite(){displayCtx.clearRect(0,0,W,H);layers.forEach(l=>{if(!l.visible)return;displayCtx.save();displayCtx.globalAlpha=l.opacity/100;displayCtx.globalCompositeOperation=l.blend||'source-over';displayCtx.drawImage(l.dcanvas,0,0,W,H);displayCtx.restore();});}
 function snapshot(){
   return {
     strokesJSON:JSON.stringify(strokes),
-    layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity}))),
+    layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock}))),
     activeLayerId,
     placed:JSON.stringify(placed.map(p=>({...p,img:null}))),
     selected,selectedStrokeId,
@@ -1481,7 +1497,7 @@ function restore(s){
 // layerId onto the top (most visible) layer so nothing that used to be visible disappears.
 function applyLayerMeta(layerMeta,wantActiveId){
   if(layerMeta&&layerMeta.length){
-    layers=layerMeta.map(m=>{const l=makeLayer(m.name);l.id=m.id;l.kind=m.kind||'vector';l.visible=m.visible!==false;l.locked=!!m.locked;l.opacity=(m.opacity!=null)?m.opacity:100;return l;});
+    layers=layerMeta.map(m=>{const l=makeLayer(m.name);l.id=m.id;l.kind=m.kind||'vector';l.visible=m.visible!==false;l.locked=!!m.locked;l.opacity=(m.opacity!=null)?m.opacity:100;l.blend=m.blend||'source-over';l.alphaLock=!!m.alphaLock;return l;});
   }else{
     layers=defaultLayers();
   }
@@ -2081,7 +2097,7 @@ canvas.addEventListener('pointerdown',e=>{
     drawing=true;shapeDrawStart=p;
     const shape=defaultShapeParams(armedShapeType);
     updateShapeDragBox(shape,p,p,constrainShape);
-    shapeDrawStroke={id:crypto.randomUUID(),brushId:activeBrushId,layerId:activeLayerId,color:currentColor,settings:Object.assign({},currentSettings()),points:shapeToPoints(shape),nodes:null,closed:SHAPE_CLOSED[armedShapeType],clipStrokeId:(paintMode==='inside')?paintInsideTargetId:null,shape};
+    shapeDrawStroke={id:crypto.randomUUID(),brushId:activeBrushId,layerId:activeLayerId,atop:!!((layers.find(l=>l.id===activeLayerId)||{}).alphaLock),color:currentColor,settings:Object.assign({},currentSettings()),points:shapeToPoints(shape),nodes:null,closed:SHAPE_CLOSED[armedShapeType],clipStrokeId:(paintMode==='inside')?paintInsideTargetId:null,shape};
     liveActive=true;lctx.clearRect(0,0,W,H);liveOvBegin();
     liveDraw(c=>renderStrokeClipped(c,shapeDrawStroke,BrushEngine.getBrush(activeBrushId),shapeDrawStroke.settings),true);
     redraw();
@@ -2236,7 +2252,7 @@ canvas.addEventListener('pointerup',e=>{
     const committedClosed=committedShape?!!SHAPE_CLOSED[committedShape.type]:false;
     symmetryTransforms().forEach((tf,idx)=>{
       const pts=currentPoints.map(pt=>{const t=tf(pt);return{x:t.x,y:t.y,pressure:pt.pressure};});
-      const stroke={id:crypto.randomUUID(),brushId:activeBrushId,layerId:activeLayerId,color:currentColor,settings:Object.assign({},settingsSnapshot),points:pts,nodes:null,closed:committedClosed,clipStrokeId,shape:(idx===0&&committedShape)?committedShape:null};
+      const stroke={id:crypto.randomUUID(),brushId:activeBrushId,layerId:activeLayerId,atop:!!((layers.find(l=>l.id===activeLayerId)||{}).alphaLock),color:currentColor,settings:Object.assign({},settingsSnapshot),points:pts,nodes:null,closed:committedClosed,clipStrokeId,shape:(idx===0&&committedShape)?committedShape:null};
       strokes.push(stroke);appendStrokeToLayer(stroke);
     });
     BrushEngine.touchRecent(activeBrushId);syncRecents();
@@ -2306,7 +2322,7 @@ function captureMotif(subset,stayInEdit){
   if(!preview){if(subset){strokes=allStrokes;rebuildAllLayers();}setStatus('Nothing to capture yet — draw with Apple Pencil first.');return}
   const source={
     strokesJSON:JSON.stringify(strokes),
-    layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity}))),
+    layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock}))),
     bounds:preview.bounds,
   };
   // returnToDraw=true: the user was mid-drawing when they captured — see the comment on
@@ -3454,6 +3470,7 @@ function syncActiveBrushRecipeLine(){
 
 // ---- Layers panel -----------------------------------------------------------------------------
 function escapeHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+const LAYER_BLENDS=[['source-over','Normal'],['multiply','Multiply'],['screen','Screen'],['overlay','Overlay'],['soft-light','Soft light'],['hard-light','Hard light'],['darken','Darken'],['lighten','Lighten'],['color-dodge','Dodge'],['color-burn','Burn'],['color','Colour'],['luminosity','Luminosity']];
 function renderLayersList(){
   const host=$('layersList');if(!host)return;
   host.innerHTML='';
@@ -3464,6 +3481,8 @@ function renderLayersList(){
       '<button type="button" class="layer-icon-btn layer-vis" title="Show/hide">'+(layer.visible?'👁️':'🚫')+'</button>'
       +'<button type="button" class="layer-icon-btn layer-lock" title="Lock/unlock">'+(layer.locked?'🔒':'🔓')+'</button>'
       +'<span class="layer-name" title="Tap to rename">'+escapeHtml(layer.name)+'</span>'
+      +'<button type="button" class="layer-icon-btn layer-alpha'+(layer.alphaLock?' on':'')+'" title="Alpha lock: paint only where this layer already has paint">α</button>'
+      +'<select class="layer-blend" title="Blend mode">'+LAYER_BLENDS.map(b=>'<option value="'+b[0]+'"'+((layer.blend||'source-over')===b[0]?' selected':'')+'>'+b[1]+'</option>').join('')+'</select>'
       +'<input type="range" class="layer-opacity" min="0" max="100" value="'+layer.opacity+'" title="Opacity">'
       +'<button type="button" class="layer-icon-btn layer-up" title="Move up">↑</button>'
       +'<button type="button" class="layer-icon-btn layer-down" title="Move down">↓</button>'
@@ -3472,6 +3491,9 @@ function renderLayersList(){
     row.querySelector('.layer-lock').onclick=e=>{e.stopPropagation();layer.locked=!layer.locked;renderLayersList();pushHist();};
     row.querySelector('.layer-name').onclick=e=>{e.stopPropagation();activeLayerId=layer.id;startLayerRename(layer.id);};
     row.querySelector('.layer-name').ondblclick=null;
+    row.querySelector('.layer-alpha').onclick=e=>{e.stopPropagation();layer.alphaLock=!layer.alphaLock;renderLayersList();pushHist();setStatus(layer.alphaLock?'α Alpha lock on for "'+layer.name+'": new paint only lands where this layer already has paint. Undo returns it.':'α Alpha lock off.');};
+    const blendSel=row.querySelector('.layer-blend');blendSel.onclick=e=>e.stopPropagation();
+    blendSel.onchange=e=>{e.stopPropagation();layer.blend=blendSel.value;compositeDirty=true;pushHist();invalidateDetail&&invalidateDetail();redraw();};
     const opacityInput=row.querySelector('.layer-opacity');
     opacityInput.oninput=e=>{layer.opacity=+e.target.value;compositeDirty=true;redraw();};
     opacityInput.onchange=()=>pushHist();
@@ -4139,13 +4161,14 @@ function selectSame(kind){
 }
 function editAllSelected(){
   if(!multiSel)return;
-  const {st}=selMembers(),col=$('grpColour').value,w=parseFloat($('grpWidth').value);
+  const {st}=selMembers(),col=$('grpColour').value,w=parseFloat($('grpWidth').value),op=parseFloat($('grpOpacity')&&$('grpOpacity').value);
   if(!st.length)return;
   st.forEach(s=>{
     if($('grpColour').dataset.touched){s.color=col;if(s.fillColor)s.fillColor=col;}
     if(w>0&&!s.fillColor)s.settings=Object.assign({},strokeSettings(s),{size:w});
+    if(op>0&&op<=100&&!s.fillColor)s.settings=Object.assign({},strokeSettings(s),{opacity:op});
   });
-  rebuildAllLayers();pushHist();redraw();
+  new Set(st.map(s=>s.layerId)).forEach(id=>rebuildLayer(id));pushHist();redraw();
   delete $('grpColour').dataset.touched;
   setStatus('Changed '+st.length+' stroke'+(st.length===1?'':'s')+' together. Undo returns them.');
 }
@@ -4153,6 +4176,15 @@ function editAllSelected(){
   $('selSameColourBtn').onclick=()=>selectSame('colour');$('selSameStrokeBtn').onclick=()=>selectSame('stroke');$('selSameFillBtn').onclick=()=>selectSame('fill');
   $('grpColour').oninput=e=>{e.target.dataset.touched='1';};
   $('grpEditAllBtn').onclick=editAllSelected;
+  $('grpUseBrushBtn').onclick=()=>{
+    if(!multiSel)return;const {st}=selMembers();if(!st.length)return;
+    if(eraserActive){setStatus('Pick a drawing brush first, not the eraser.');return;}
+    const cur=BrushEngine.getSettings(activeBrushId);let n=0;
+    st.forEach(s=>{if(s.fillColor||s.brushId==='eraser')return;const old=strokeSettings(s);
+      s.brushId=activeBrushId;s.settings=Object.assign({},cur,{size:old.size});n++;});
+    new Set(st.map(s=>s.layerId)).forEach(id=>rebuildLayer(id));pushHist();redraw();
+    setStatus('Redrawn '+n+' stroke'+(n===1?'':'s')+' with the current brush, keeping their colours and sizes. Undo returns them.');
+  };
 })();
 (function bindGroupUI(){
   $('selectAllBtn').onclick=selectAllArtwork;
@@ -6737,7 +6769,7 @@ function enterEditMotif(){
  armedShapeType=null;syncShapeToolUI();
  editingMotifStash={
   strokesJSON:JSON.stringify(strokes),
-  layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity}))),
+  layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock}))),
   activeLayerId,mode,
  };
  editingMotifId=entry.id;
@@ -6788,7 +6820,7 @@ function finishEditMotif(){
   setStatus('✓ Motif updated — every linked instance now reflects your changes.');
  };
  if(entry&&preview){
-  entry.source={strokesJSON:JSON.stringify(strokes),layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity}))),bounds:preview.bounds};
+  entry.source={strokesJSON:JSON.stringify(strokes),layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock}))),bounds:preview.bounds};
   const img=new Image();
   img.onload=()=>{
    entry.img=img;entry.src=preview.src;
@@ -6831,7 +6863,7 @@ function recolourStrokeList(list,map){
 // trick Edit Motif uses, so Paint Inside clips and layer opacity come out identical), then restoring.
 function renderMotifSourcePreview(source){
   if(editingMotifId)return null;
-  const stash={strokesJSON:JSON.stringify(strokes),layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity}))),activeLayerId};
+  const stash={strokesJSON:JSON.stringify(strokes),layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock}))),activeLayerId};
   let preview=null;
   try{
     strokes=JSON.parse(source.strokesJSON);
@@ -7392,7 +7424,7 @@ let traceSource=null; // the picture last used in Trace Image to Vector, kept wi
 function buildDocObject(){
   return {
     strokesJSON:JSON.stringify(strokes),
-    layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity}))),
+    layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock}))),
     activeLayerId,
     placedJSON:JSON.stringify(placed.map(p=>({...p,img:null}))),
     groupsJSON:JSON.stringify(groups),
@@ -7439,7 +7471,7 @@ function idbMulti(names,fn){if(window.__spFailWrites)return Promise.reject(new E
 function queueJob(fn){const job=saveChain.then(fn,fn);saveChain=job.then(()=>{},()=>{});return job;}
 function blankDoc(lay){
   const dl=defaultLayers();
-  return {format:'sketchpad-project',version:2,strokesJSON:'[]',layersJSON:JSON.stringify(dl.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity}))),activeLayerId:dl[dl.length-1].id,placedJSON:'[]',groupsJSON:'{}',motifs:[],editingMotifId:null,editingMotifStash:null,bgSrc:null,bgOpacity:1,bgShown:true,tracesJSON:'[]',traceLocked:true,customBrushes:[],layout:lay||'grid',activeTemplate:null,savedPalettes:savedPalettes.map(p=>({id:crypto.randomUUID(),name:p.name,hexes:p.hexes.slice()})),savedAt:Date.now()};
+  return {format:'sketchpad-project',version:2,strokesJSON:'[]',layersJSON:JSON.stringify(dl.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock}))),activeLayerId:dl[dl.length-1].id,placedJSON:'[]',groupsJSON:'{}',motifs:[],editingMotifId:null,editingMotifStash:null,bgSrc:null,bgOpacity:1,bgShown:true,tracesJSON:'[]',traceLocked:true,customBrushes:[],layout:lay||'grid',activeTemplate:null,savedPalettes:savedPalettes.map(p=>({id:crypto.randomUUID(),name:p.name,hexes:p.hexes.slice()})),savedAt:Date.now()};
 }
 function docCounts(d){const n=j=>{try{return JSON.parse(j||'[]').length;}catch(e){return 0;}};return {strokes:n(d.strokesJSON),motifs:(d.motifs||[]).length};}
 function makeThumb(){
@@ -7959,7 +7991,7 @@ async function applyDocObject(doc){
       if(entry){
         const preview=renderCurrentArtworkPreview();
         if(preview){
-          entry.source={strokesJSON:JSON.stringify(strokes),layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity}))),bounds:preview.bounds};
+          entry.source={strokesJSON:JSON.stringify(strokes),layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock}))),bounds:preview.bounds};
           await new Promise(res=>{const img=new Image();img.onload=()=>{entry.img=img;entry.src=preview.src;placed.forEach(p=>{if(p.motifId===entry.id)p.img=img;});res();};img.onerror=res;img.src=preview.src;});
         }
       }
@@ -8329,7 +8361,7 @@ function penFinish(){
     rebuildLayer(s.layerId);
   }else{
     const settings=Object.assign({},currentSettings());
-    const stroke={id:crypto.randomUUID(),brushId:activeBrushId,layerId:activeLayerId,color:currentColor,settings,points:pts,nodes:null,closed:penClosed,cornerAuto:true,clipStrokeId:(paintMode==='inside')?paintInsideTargetId:null,shape:null,bez};
+    const stroke={id:crypto.randomUUID(),brushId:activeBrushId,layerId:activeLayerId,atop:!!((layers.find(l=>l.id===activeLayerId)||{}).alphaLock),color:currentColor,settings,points:pts,nodes:null,closed:penClosed,cornerAuto:true,clipStrokeId:(paintMode==='inside')?paintInsideTargetId:null,shape:null,bez};
     strokes.push(stroke);appendStrokeToLayer(stroke);
     BrushEngine.touchRecent(activeBrushId);try{syncRecents();}catch(e){}
   }
@@ -9383,7 +9415,7 @@ boot();
 // Read-only introspection for debugging/testing — mirrors the small hooks already used for
 // Seamlessly Creative suite integration (see the bottom of this file once frozen into the
 // suite), just exposed unconditionally here since it's harmless and useful standalone too.
-window.__sketchpadGetState=()=>({strokeCount:strokes.length,strokes,placed,motifs,activeBrushId,eraserActive,selectedStrokeId,groups,multiSel,groupInsideId,selAddArmed,histLen:history.length,hIndex,layout,layers:layers.map(l=>({id:l.id,name:l.name,visible:l.visible,locked:l.locked,opacity:l.opacity})),activeLayerId,pathEditStrokeId,pathEditNodes,pathEditClosed,selectedNodeIndex,pathEditTool,copiedBrushStyle,continueStrokeId,joinPendingStrokeId,paintMode,paintInsideTargetId,armedShapeType,constrainShape,holdTriggered,holdCorrectedShape,currentPointsLength:currentPoints.length,zoom,panX,panY,baseScale,renderScale,rot,canvasBackingWidth:canvas.width,displayBackingWidth:displayCanvas.width,sidebarCollapsed});
+window.__sketchpadGetState=()=>({strokeCount:strokes.length,strokes,placed,motifs,activeBrushId,eraserActive,selectedStrokeId,groups,multiSel,groupInsideId,selAddArmed,histLen:history.length,hIndex,layout,layers:layers.map(l=>({id:l.id,name:l.name,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock})),activeLayerId,pathEditStrokeId,pathEditNodes,pathEditClosed,selectedNodeIndex,pathEditTool,copiedBrushStyle,continueStrokeId,joinPendingStrokeId,paintMode,paintInsideTargetId,armedShapeType,constrainShape,holdTriggered,holdCorrectedShape,currentPointsLength:currentPoints.length,zoom,panX,panY,baseScale,renderScale,rot,canvasBackingWidth:canvas.width,displayBackingWidth:displayCanvas.width,sidebarCollapsed});
 // Test-only: exposes the app's own screen<->canvas coordinate mapping directly, so a test can
 // place a real pointer event at the exact screen position corresponding to a given canvas-space
 // point (or vice versa) at whatever zoom/pan/rotation is currently active, without having to
