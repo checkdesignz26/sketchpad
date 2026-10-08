@@ -285,3 +285,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## v95 — Smoother pinch zoom
 - The sharpness re-render no longer runs while two fingers are still on the screen (it froze the app mid-pinch, which made the zoom stutter and jump). It waits until you let go.
+
+## v96 — Pinch zoom no longer jumps
+- If two fingers start very close together, the pinch used to multiply the zoom by a huge ratio and shoot to maximum. The starting gap now has a minimum, and zoom can change by at most 1.5x per touch update, so a stalled frame cannot cause a leap.
