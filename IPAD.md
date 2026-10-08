@@ -294,3 +294,6 @@ Groups with many strokes (or raster brushes) are drawn once into a picture while
 
 ## v98 — Lighter group resize/move
 While dragging a big group the preview picture is half-size, the canvas is no longer fully recomposited on every frame (about 4x less work per frame in my test), and letting go only redraws the layers the group sits on.
+
+## v99 — Motifs stay where you drew them
+Capture Motif / Capture Area now place the motif exactly where the drawing was, at its real size (no more jumping to the centre). New "Turn into motif (fast)" button in the Group panel for heavy drawings. A "Edit Motif" button now sits under a selected motif.
