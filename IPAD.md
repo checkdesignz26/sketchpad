@@ -190,3 +190,7 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## v67 — Trace dialog: options higher up
 - "Remove the background" and "Smooth shading" checkboxes now sit directly under Mode, and the preview panes are a little shorter, so they're visible without scrolling on iPad.
+
+## v68 — Quick Duplicate + double-tap
+- New **⧉ Duplicate** button in the second toolbar row (moves into ⋯ More when the bar is narrow). Duplicates the selected shape/stroke, picture, or a multi-selection/group (copies appear offset, ungrouped).
+- **Double-tap (or double-click) a selected item in Edit mode** to duplicate it. Turn this off any time in View ▾ → "Double-tap a selected item to duplicate it".
