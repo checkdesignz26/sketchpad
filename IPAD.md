@@ -279,3 +279,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## v93 — Faster drawing in tiled mode
 - While the pen is down only the tile you draw in is updated (other tiles catch up when you lift). Zoomed in with tiling on, the live stroke used to be redrawn 9 times per frame. New toggle "Live tile preview" (Off by default) brings the old behaviour back.
+
+## v94 — Fewer re-renders while zooming
+- Zooming back and forth around a sharpness threshold no longer re-renders every stroke each time (added hysteresis), and re-rendering at a coarser resolution waits until zooming settles.
