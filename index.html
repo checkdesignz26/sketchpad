@@ -347,7 +347,7 @@ html.in-suite .suite-only{display:block!important}
       <button class="btn mini template-btn" data-tpl="dotGrid">Dot Grid</button>
     </div><label class="upload accentPurple" style="margin-top:8px">📥 Import Template from Magic Builder<input id="templateImportInput" type="file" accept="application/json,.json" style="display:none"></label><button id="templateClear" class="btn mini danger" style="width:100%;margin-top:8px">✕ Clear Template</button><div class="hint">Pick a layout above, or import a template's layout exported from Magic Builder ("export for playground"), then tap a motif below to drop it into the next empty slot - bigger (hero) slots take your focal motifs, smaller (accent/filler) slots take details.</div></section>
     <section class="section"><div class="section-title">🖼️ Motif Tray</div><div id="motifTray" class="motif-tray"></div><div id="motifEmpty" class="hint">Captured drawings and uploaded motifs appear here.</div></section>
-    <section class="section"><div class="section-title">📚 Trace Reference</div><label class="upload accentTeal">➕ Trace Artwork<input id="traceInput" type="file" accept="image/*" multiple style="display:none"></label><div id="traceList" class="trace-list" style="margin-top:8px"></div><div class="slider-row"><label>Opacity</label><input id="traceOpacity" type="range" min="5" max="100" value="35"><span id="traceOpacityVal">35%</span></div><div class="slider-row"><label>Scale</label><input id="traceScale" type="range" min="20" max="400" value="100"><span id="traceScaleVal">100%</span></div><div class="row"><button id="traceFit" class="btn mini">Fit</button><button id="traceCentre" class="btn mini">Centre</button><button id="traceLock" class="btn mini active">🔒 Locked</button><button id="traceClear" class="btn mini danger">Clear</button></div></section>
+    <section class="section"><div class="section-title">📚 Trace Reference</div><button id="traceToVectorBtn" class="btn primary" style="width:100%;margin-bottom:8px;">✨ Trace Image to Vector</button><label class="upload accentTeal">➕ Trace Artwork<input id="traceInput" type="file" accept="image/*" multiple style="display:none"></label><div id="traceList" class="trace-list" style="margin-top:8px"></div><div class="slider-row"><label>Opacity</label><input id="traceOpacity" type="range" min="5" max="100" value="35"><span id="traceOpacityVal">35%</span></div><div class="slider-row"><label>Scale</label><input id="traceScale" type="range" min="20" max="400" value="100"><span id="traceScaleVal">100%</span></div><div class="row"><button id="traceFit" class="btn mini">Fit</button><button id="traceCentre" class="btn mini">Centre</button><button id="traceLock" class="btn mini active">🔒 Locked</button><button id="traceClear" class="btn mini danger">Clear</button></div></section>
     <section class="section" id="colourSection">
       <div class="section-title">🎨 Colour</div>
       <div class="hint" style="margin-top:0;">Pick a target below, then tap any swatch to send that colour there. Adjusting hero/vibe/richness or an image upload only regenerates the swatches — it never recolours anything on its own.</div>
@@ -7942,6 +7942,8 @@ function tbProjectMenu(){
     {label:'💾 Save',sub:$('saveStatusPill').textContent,disabled:!activeProject,run:pressLegacy('quickSaveBtn')},
     {label:'⬇️ Download Project',sub:'.json backup',run:pressLegacy('downloadProjectBtn')},
     {label:'📥 Import Project',sub:'from a file',run:()=>$('openProjectInput').click()},
+    {sep:1},
+    {label:'✨ Trace Image to Vector…',sub:'picture → shapes',run:()=>openTraceImage()},
     {label:'🕘 Earlier Saves',disabled:!activeProject,run:pressLegacy('backupsBtn')},
   ]);
 }
@@ -8444,6 +8446,279 @@ $('warpSize').oninput=e=>{warpR=+e.target.value;try{localStorage.setItem('sp-war
   const r=wrap.getBoundingClientRect();warpRingAt(r.left+r.width/2,r.top+r.height/2,true);clearTimeout(warpSet._t);warpSet._t=setTimeout(()=>warpRingAt(0,0,false),900);};
 $('warpStrength').oninput=e=>{warpStr=+e.target.value/100;try{localStorage.setItem('sp-warpS',String(warpStr));}catch(err){}};
 
+// ================= Trace Image to Vector =================
+// Picks an image, reduces it to N flat colours (or black ink on paper), then traces every colour
+// region into smooth filled vector shapes on a NEW layer. Colours are stacked (biggest at the
+// bottom) so there are no gaps; holes are kept. Shapes without holes keep editable nodes.
+const VT={maxDim:800};
+function vtLoadImage(file){
+  return new Promise((res,rej)=>{
+    const url=URL.createObjectURL(file),img=new Image();
+    img.onload=()=>{res({img,url});};img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('Could not read that image.'));};img.src=url;
+  });
+}
+function vtPixels(img){
+  const sc=Math.min(1,VT.maxDim/Math.max(img.naturalWidth,img.naturalHeight));
+  const w=Math.max(1,Math.round(img.naturalWidth*sc)),h=Math.max(1,Math.round(img.naturalHeight*sc));
+  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d',{willReadFrequently:true});
+  x.drawImage(img,0,0,w,h);
+  const d=x.getImageData(0,0,w,h).data;
+  // light 3x3 box blur on colour so anti-aliasing and noise don't create speckles
+  const out=new Uint8ClampedArray(d.length);
+  for(let y=0;y<h;y++)for(let xx=0;xx<w;xx++){
+    let r=0,g=0,b=0,a=0,n=0;
+    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+      const px=Math.min(w-1,Math.max(0,xx+dx)),py=Math.min(h-1,Math.max(0,y+dy)),i=(py*w+px)*4,al=d[i+3];
+      r+=d[i]*al;g+=d[i+1]*al;b+=d[i+2]*al;a+=al;n++;
+    }
+    const o=(y*w+xx)*4;
+    if(a>0){out[o]=r/a;out[o+1]=g/a;out[o+2]=b/a;}
+    out[o+3]=d[(y*w+xx)*4+3];
+  }
+  return {w,h,d:out};
+}
+function vtOtsu(px){
+  const hist=new Array(256).fill(0);let n=0;
+  for(let i=0;i<px.d.length;i+=4){if(px.d[i+3]<128)continue;hist[Math.round(0.299*px.d[i]+0.587*px.d[i+1]+0.114*px.d[i+2])]++;n++;}
+  let sum=0;for(let t=0;t<256;t++)sum+=t*hist[t];
+  let sB=0,wB=0,best=0,thr=128;
+  for(let t=0;t<256;t++){wB+=hist[t];if(!wB)continue;const wF=n-wB;if(!wF)break;sB+=t*hist[t];
+    const mB=sB/wB,mF=(sum-sB)/wF,v=wB*wF*(mB-mF)*(mB-mF);if(v>best){best=v;thr=t;}}
+  return thr;
+}
+// returns {labels:Int16Array(-1 = transparent), colours:[[r,g,b]...]}
+function vtQuantize(px,k){
+  const {w,h,d}=px,N=w*h,labels=new Int16Array(N).fill(-1);
+  const samp=[];const step=Math.max(1,Math.floor(N/20000));
+  for(let i=0;i<N;i+=step)if(d[i*4+3]>=128)samp.push([d[i*4],d[i*4+1],d[i*4+2]]);
+  if(!samp.length)return {labels,colours:[]};
+  k=Math.min(k,samp.length);
+  let seed=12345;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+  const cents=[samp[Math.floor(rnd()*samp.length)].slice()];
+  const dist2=(a,b)=>{const x=a[0]-b[0],y=a[1]-b[1],z=a[2]-b[2];return x*x+y*y+z*z;};
+  while(cents.length<k){
+    const ds=samp.map(s=>{let m=1e18;for(const c of cents){const v=dist2(s,c);if(v<m)m=v;}return m;});
+    let tot=0;ds.forEach(v=>tot+=v);if(tot<=0)break;
+    let r=rnd()*tot,idx=0;for(;idx<ds.length-1;idx++){r-=ds[idx];if(r<=0)break;}
+    cents.push(samp[idx].slice());
+  }
+  for(let it=0;it<10;it++){
+    const sums=cents.map(()=>[0,0,0,0]);
+    for(const s of samp){let bi=0,bd=1e18;for(let c=0;c<cents.length;c++){const v=dist2(s,cents[c]);if(v<bd){bd=v;bi=c;}}
+      const a=sums[bi];a[0]+=s[0];a[1]+=s[1];a[2]+=s[2];a[3]++;}
+    cents.forEach((c,i)=>{const a=sums[i];if(a[3]){c[0]=a[0]/a[3];c[1]=a[1]/a[3];c[2]=a[2]/a[3];}});
+  }
+  for(let i=0;i<N;i++){
+    if(d[i*4+3]<128)continue;
+    const p=[d[i*4],d[i*4+1],d[i*4+2]];let bi=0,bd=1e18;
+    for(let c=0;c<cents.length;c++){const v=dist2(p,cents[c]);if(v<bd){bd=v;bi=c;}}
+    labels[i]=bi;
+  }
+  return {labels,colours:cents.map(c=>c.map(v=>Math.round(v)))};
+}
+function vtLineArt(px,thr){
+  const {w,h,d}=px,labels=new Int16Array(w*h).fill(-1);
+  for(let i=0;i<w*h;i++){
+    if(d[i*4+3]<128){labels[i]=0;continue;}
+    labels[i]=(0.299*d[i*4]+0.587*d[i*4+1]+0.114*d[i*4+2])<thr?1:0;
+  }
+  return labels;
+}
+function vtMajority(labels,w,h,K,r,passes){
+  let A=labels,B=new Int16Array(labels.length);const cnt=new Int32Array(K+1);
+  for(let p=0;p<passes;p++){
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      const i=y*w+x;if(A[i]<0){B[i]=-1;continue;}
+      cnt.fill(0);
+      const y0=Math.max(0,y-r),y1=Math.min(h-1,y+r),x0=Math.max(0,x-r),x1=Math.min(w-1,x+r);
+      for(let yy=y0;yy<=y1;yy++)for(let xx=x0;xx<=x1;xx++){const l=A[yy*w+xx];if(l>=0)cnt[l]++;}
+      let bl=A[i],bc=cnt[bl];for(let l=0;l<K;l++)if(cnt[l]>bc){bc=cnt[l];bl=l;}
+      B[i]=bl;
+    }
+    const t=A;A=B;B=(t===labels)?new Int16Array(labels.length):t;
+  }
+  return A;
+}
+// closed loops (arrays of {x,y}) around every region where mask(i) is true; outer loops have area>0, holes area<0
+function vtLoops(w,h,inside){
+  const VW=w+1,out1=new Int32Array(VW*(h+1)).fill(-1),out2=new Int32Array(VW*(h+1)).fill(-1);
+  const add=(sx,sy,ex,ey)=>{const s=sy*VW+sx,e=ey*VW+ex;if(out1[s]<0)out1[s]=e;else out2[s]=e;};
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    if(!inside(y*w+x))continue;
+    if(y===0||!inside((y-1)*w+x))add(x,y,x+1,y);
+    if(x===w-1||!inside(y*w+x+1))add(x+1,y,x+1,y+1);
+    if(y===h-1||!inside((y+1)*w+x))add(x+1,y+1,x,y+1);
+    if(x===0||!inside(y*w+x-1))add(x,y+1,x,y);
+  }
+  const loops=[];
+  for(let s=0;s<out1.length;s++){
+    while(out1[s]>=0||out2[s]>=0){
+      const pts=[];let v=s;
+      do{
+        let e;if(out1[v]>=0){e=out1[v];out1[v]=-1;}else{e=out2[v];out2[v]=-1;}
+        const vx=v%VW,vy=(v-vx)/VW,ex=e%VW,ey=(e-ex)/VW;
+        pts.push({x:(vx+ex)/2,y:(vy+ey)/2});
+        v=e;
+      }while(v!==s);
+      loops.push(pts);
+    }
+  }
+  return loops;
+}
+function vtArea(p){let a=0;for(let i=0,n=p.length;i<n;i++){const q=p[(i+1)%n];a+=p[i].x*q.y-q.x*p[i].y;}return a/2;}
+function vtSmooth(p,iters){
+  const n=p.length;if(n<5)return p;let A=p,B=p.map(q=>({x:q.x,y:q.y}));
+  for(let k=0;k<iters;k++){for(let i=0;i<n;i++){const a=A[(i-1+n)%n],b=A[i],c=A[(i+1)%n];B[i].x=(a.x+2*b.x+c.x)/4;B[i].y=(a.y+2*b.y+c.y)/4;}const t=A;A=B;B=t;}
+  return A;
+}
+function vtRdp(p,eps,lo,hi,keep){
+  let md=-1,mi=-1;const a=p[lo],b=p[hi],dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1e-9;
+  for(let i=lo+1;i<hi;i++){const d=Math.abs((p[i].x-a.x)*dy-(p[i].y-a.y)*dx)/L;if(d>md){md=d;mi=i;}}
+  if(md>eps){vtRdp(p,eps,lo,mi,keep);keep[mi]=1;vtRdp(p,eps,mi,hi,keep);}
+}
+function vtSimplifyClosed(p,eps){ // returns kept indices
+  const n=p.length;if(n<4)return p.map((_,i)=>i);
+  let far=0,fd=-1;for(let i=1;i<n;i++){const d=Math.hypot(p[i].x-p[0].x,p[i].y-p[0].y);if(d>fd){fd=d;far=i;}}
+  const keep=new Uint8Array(n);keep[0]=1;keep[far]=1;
+  vtRdp(p,eps,0,far,keep);
+  const q=p.slice(far).concat([p[0]]);const k2=new Uint8Array(q.length);vtRdp(q,eps,0,q.length-1,k2);
+  const out=[];for(let i=0;i<=far;i++)if(keep[i])out.push(i);
+  for(let i=1;i<q.length-1;i++)if(k2[i])out.push(far+i);
+  return out;
+}
+// simplified loop (canvas coords) -> smooth/corner nodes. Corners are judged on the dense outline (not on the
+// simplified polygon), so a coarse circle does not turn into an octagon.
+function vtLoopToNodes(loop,eps){
+  const d=vtSmooth(loop,2),n=d.length;
+  const idx=vtSimplifyClosed(d,eps),m=idx.length;
+  if(m<3)return null;
+  const k=Math.max(2,Math.min(8,Math.floor(n/12)));
+  return idx.map(i=>{
+    const p=d[i],a=d[(i-k+n*4)%n],c=d[(i+k)%n];
+    const a1=Math.atan2(p.y-a.y,p.x-a.x),a2=Math.atan2(c.y-p.y,c.x-p.x);let ang=Math.abs(a2-a1);if(ang>Math.PI)ang=2*Math.PI-ang;
+    return {x:p.x,y:p.y,pressure:1,type:ang>0.95?'corner':'smooth'};
+  });
+}
+function vtBridge(outer,hole){
+  // outer/hole: dense closed arrays WITHOUT repeated end point; joins them with a zero-width slit
+  let bi=0,bj=0,bd=1e18;const so=Math.max(1,Math.floor(outer.length/400)),sh=Math.max(1,Math.floor(hole.length/200));
+  for(let i=0;i<outer.length;i+=so)for(let j=0;j<hole.length;j+=sh){const d=(outer[i].x-hole[j].x)**2+(outer[i].y-hole[j].y)**2;if(d<bd){bd=d;bi=i;bj=j;}}
+  const out=outer.slice(0,bi+1);
+  for(let k=0;k<=hole.length;k++)out.push(hole[(bj+k)%hole.length]);
+  out.push(outer[bi]);
+  for(let i=bi+1;i<outer.length;i++)out.push(outer[i]);
+  return out;
+}
+function vtInPoly(p,x,y){let c=false;for(let i=0,j=p.length-1;i<p.length;j=i++){if(((p[i].y>y)!==(p[j].y>y))&&(x<(p[j].x-p[i].x)*(y-p[i].y)/(p[j].y-p[i].y)+p[i].x))c=!c;}return c;}
+async function vtRun(opts,onProgress){
+  const px=vtPixels(opts.img),{w,h}=px;
+  const sc=Math.min(W/w,H/h),ox=(W-w*sc)/2,oy=(H-h*sc)/2;
+  const eps=Math.max(0.2,1.15-0.1*opts.detail),minArea=Math.max(2,40-4*opts.detail);
+  let labels,cols;
+  if(opts.mode==='line'){
+    labels=vtLineArt(px,opts.threshold);
+    const hex=opts.ink;cols=[null,[parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16)]];
+  }else{const q=vtQuantize(px,opts.colours);cols=q.colours;
+    // clean-up: edge pixels that blended into in-between colours become ring-shaped slivers; a majority filter absorbs them
+    labels=opts.detail>=8?vtMajority(q.labels,w,h,cols.length,1,1):vtMajority(q.labels,w,h,cols.length,2,opts.detail<=3?2:1);}
+  const areas=new Array(cols.length).fill(0),border=new Array(cols.length).fill(0);
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const l=labels[y*w+x];if(l<0)continue;areas[l]++;if(x===0||y===0||x===w-1||y===h-1)border[l]++;}
+  let bg=-1;
+  if(opts.mode==='line')bg=0;
+  else if(opts.removeBg){let bb=0;border.forEach((v,i)=>{if(v>bb){bb=v;bg=i;}});if(bb<(2*(w+h))*0.3)bg=-1;}
+  const order=[];cols.forEach((c,i)=>{if(i!==bg&&c&&areas[i]>0)order.push(i);});
+  order.sort((a,b)=>areas[b]-areas[a]);
+  const rank=new Int16Array(cols.length).fill(-1);order.forEach((l,i)=>{rank[l]=i;});
+  const rk=new Int16Array(w*h);for(let i=0;i<w*h;i++){const l=labels[i];rk[i]=l<0?-1:rank[l];}
+  const shapes=[];
+  const tx=p=>({x:ox+p.x*sc,y:oy+p.y*sc});
+  for(let oi=0;oi<order.length;oi++){
+    onProgress&&onProgress('Tracing colour '+(oi+1)+' of '+order.length+'…');
+    await new Promise(r=>setTimeout(r,0));
+    const lab=order[oi],c=cols[lab],hex='#'+c.map(v=>('0'+v.toString(16)).slice(-2)).join('');
+    const loops=vtLoops(w,h,i=>rk[i]>=oi);
+    const outers=[],holes=[];
+    loops.forEach(lp=>{const a=vtArea(lp);if(Math.abs(a)<minArea)return;(a>0?outers:holes).push({lp,a});});
+    holes.forEach(hl=>{
+      const q=hl.lp[0];let best=null;
+      outers.forEach(o=>{if(!o.bb){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;o.lp.forEach(p=>{if(p.x<x0)x0=p.x;if(p.x>x1)x1=p.x;if(p.y<y0)y0=p.y;if(p.y>y1)y1=p.y;});o.bb=[x0,y0,x1,y1];}
+        if(q.x<o.bb[0]||q.x>o.bb[2]||q.y<o.bb[1]||q.y>o.bb[3])return;
+        if((!best||o.a<best.a)&&vtInPoly(o.lp,q.x,q.y))best=o;});
+      if(best)(best.holes=best.holes||[]).push(hl);
+    });
+    for(const o of outers){
+      const on=vtLoopToNodes(o.lp.map(tx),eps*sc);if(!on)continue;
+      const hs=(o.holes||[]).map(hl=>vtLoopToNodes(hl.lp.map(tx),eps*sc)).filter(Boolean);
+      shapes.push({hex,nodes:on,holes:hs});
+    }
+  }
+  return {shapes,count:shapes.length,colours:order.length};
+}
+function vtInstall(result,name){
+  const layer=makeLayer(('Trace: '+name).slice(0,28));
+  layers.push(layer);activeLayerId=layer.id;
+  let n=0;
+  result.shapes.forEach(s=>{
+    const nodes=s.nodes;let pts=nodesToPoints(nodes,true);
+    let useNodes=nodes;
+    if(s.holes.length){
+      let poly=pts.slice(0,-1);
+      s.holes.forEach(hn=>{const hp=nodesToPoints(hn,true).slice(0,-1);poly=vtBridge(poly,hp);});
+      pts=poly.concat([poly[0]]);useNodes=null;
+    }
+    strokes.push({id:crypto.randomUUID(),brushId:activeBrushId,layerId:layer.id,color:s.hex,fillColor:s.hex,fillOpacity:1,settings:null,points:pts,nodes:useNodes,closed:true,clipStrokeId:null,shape:null,traced:true});
+    n++;
+  });
+  rebuildLayer(layer.id);renderLayersList();pushHist();redraw();
+  return n;
+}
+window.__sketchpadVT={run:(...a)=>vtRun(...a),px:vtPixels};
+function openTraceImage(){
+  const back=pjEl('div','pj-back'),box=pjEl('div','pj-dlg');back.appendChild(box);
+  box.appendChild(pjEl('div','pj-dlg-title','✨ Trace Image to Vector'));
+  box.appendChild(pjEl('div','pj-dlg-msg','Turns a picture into clean, filled vector shapes on a new layer. Works best on logos, clipart, drawings and flat artwork.'));
+  const st={file:null,img:null,url:null};
+  const row=(label,el)=>{const r=pjEl('div','pj-field');r.appendChild(pjEl('label',null,label));r.appendChild(el);box.appendChild(r);return r;};
+  const pick=pjEl('label','btn primary','🖼️ Choose image…');pick.style.cssText='display:block;text-align:center;cursor:pointer';
+  const inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.style.display='none';pick.appendChild(inp);box.appendChild(pick);
+  const prev=document.createElement('img');prev.style.cssText='display:none;max-width:100%;max-height:160px;margin:10px auto;border-radius:10px;border:1px solid var(--line);background:#fff';box.appendChild(prev);
+  const mode=document.createElement('select');mode.className='pj-input';[['colour','🎨 Colours (full colour artwork)'],['line','✏️ Line art (black ink on paper)']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;mode.appendChild(o);});row('Mode',mode);
+  const mkRange=(min,max,val)=>{const wrapR=pjEl('div');wrapR.style.cssText='display:flex;gap:10px;align-items:center';const r=document.createElement('input');r.type='range';r.min=min;r.max=max;r.value=val;r.style.flex='1';const s=pjEl('span',null,String(val));s.style.minWidth='28px';r.oninput=()=>{s.textContent=r.value;};wrapR.appendChild(r);wrapR.appendChild(s);wrapR.input=r;wrapR.span=s;return wrapR;};
+  const cols=mkRange(2,24,8),rCols=row('Number of colours',cols);
+  const thr=mkRange(10,245,128),rThr=row('Ink threshold',thr);rThr.style.display='none';
+  const ink=document.createElement('input');ink.type='color';ink.value='#000000';const rInk=row('Ink colour',ink);rInk.style.display='none';
+  const det=mkRange(1,10,6);row('Detail (simple ⇄ detailed)',det);
+  const bgL=pjEl('label');bgL.style.cssText='display:flex;gap:8px;align-items:center;font-size:14px;margin:8px 0';const bg=document.createElement('input');bg.type='checkbox';bg.checked=true;bgL.appendChild(bg);bgL.appendChild(document.createTextNode('Remove the background colour'));const rBg=bgL;box.appendChild(bgL);
+  const msg=pjEl('div','pj-dlg-note','Choose an image to begin.');box.appendChild(msg);
+  const btns=pjEl('div','pj-dlg-btns');const cancel=pjEl('button','btn','Cancel'),go=pjEl('button','btn primary','✨ Trace');go.disabled=true;btns.appendChild(cancel);btns.appendChild(go);box.appendChild(btns);
+  const close=()=>{back.remove();if(st.url)URL.revokeObjectURL(st.url);};
+  cancel.onclick=close;
+  mode.onchange=()=>{const line=mode.value==='line';rCols.style.display=line?'none':'';rThr.style.display=line?'':'none';rInk.style.display=line?'':'none';rBg.style.display=line?'none':'flex';};
+  inp.onchange=async()=>{
+    const f=inp.files&&inp.files[0];if(!f)return;
+    try{
+      if(st.url)URL.revokeObjectURL(st.url);
+      const r=await vtLoadImage(f);st.file=f;st.img=r.img;st.url=r.url;prev.src=r.url;prev.style.display='block';
+      go.disabled=false;msg.textContent=f.name+' — '+r.img.naturalWidth+'×'+r.img.naturalHeight+'. Adjust the options, then tap Trace.';
+      try{const px=vtPixels(r.img);const t=vtOtsu(px);thr.input.value=t;thr.span.textContent=t;}catch(e){}
+    }catch(e){msg.textContent=e.message||'Could not read that image.';}
+  };
+  go.onclick=async()=>{
+    if(!st.img)return;go.disabled=true;cancel.disabled=true;
+    try{
+      const t0=Date.now();
+      const res=await vtRun({img:st.img,mode:mode.value,colours:+cols.input.value,threshold:+thr.input.value,ink:ink.value,detail:+det.input.value,removeBg:bg.checked},t=>{msg.textContent=t;});
+      if(!res.count){msg.textContent='Nothing to trace with those settings — try more colours, higher detail, or a different threshold.';go.disabled=false;cancel.disabled=false;return;}
+      const n=vtInstall(res,(st.file.name||'image').replace(/\.[^.]+$/,''));
+      close();
+      setStatus('✨ Traced '+n+' vector shapes in '+res.colours+' colour'+(res.colours===1?'':'s')+' ('+((Date.now()-t0)/1000).toFixed(1)+'s) on a new layer. Undo to try other settings.');
+    }catch(e){console.error(e);msg.textContent='Trace failed: '+(e.message||e);go.disabled=false;cancel.disabled=false;}
+  };
+  back.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape')close();});
+  document.body.appendChild(back);
+}
+
+$('traceToVectorBtn').onclick=()=>openTraceImage();
 async function boot(){
   applyTransform();
   $('guidesBtn').classList.toggle('active',showGuides);
