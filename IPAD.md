@@ -231,3 +231,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## v78
 - Line-art trace, Filled shapes: no pre-blur, up to 2x sampling and adaptive thresholding, so fine hatching like pine needles stays as separate thin shapes instead of merging.
+
+## v79
+- Centre-line trace: small thick clumps (needle junctions, dots) stay as line work; only large dark areas become solid fills.
