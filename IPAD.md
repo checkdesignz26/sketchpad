@@ -276,3 +276,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## v92 — Less lag with raster brushes
 - Raster strokes now read the canvas once per stroke instead of dozens of times (what made the iPad stall), use fewer dabs, and skip colour pick-up when Wet mix is near zero.
+
+## v93 — Faster drawing in tiled mode
+- While the pen is down only the tile you draw in is updated (other tiles catch up when you lift). Zoomed in with tiling on, the live stroke used to be redrawn 9 times per frame. New toggle "Live tile preview" (Off by default) brings the old behaviour back.
