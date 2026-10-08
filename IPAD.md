@@ -194,3 +194,7 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 ## v68 — Quick Duplicate + double-tap
 - New **⧉ Duplicate** button in the second toolbar row (moves into ⋯ More when the bar is narrow). Duplicates the selected shape/stroke, picture, or a multi-selection/group (copies appear offset, ungrouped).
 - **Double-tap (or double-click) a selected item in Edit mode** to duplicate it. Turn this off any time in View ▾ → "Double-tap a selected item to duplicate it".
+
+## v69 — Trace: centre-line strokes
+- In **Line art** mode the trace dialog has a new **Result** menu: *Filled shapes* (as before) or *Centre-line strokes*. Centre-line thins each ink line to its middle and places it as a normal editable Smooth Pen stroke (curved nodes, width taken from the original line), so you can restyle, recolour, change width/brush or Edit Path afterwards.
+- Works best on clean line art with fairly even line thickness. Lines that meet are split into separate strokes at the junction.
