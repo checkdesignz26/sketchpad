@@ -331,6 +331,7 @@ html.in-suite .suite-only{display:block!important}
 .fp-grip{position:absolute;right:-8px;bottom:0;width:38px;height:38px;pointer-events:auto;cursor:nwse-resize;touch-action:none;-webkit-user-select:none;user-select:none;display:flex;align-items:flex-end;justify-content:flex-end;padding:0 8px 8px 0;box-sizing:border-box;color:var(--muted);opacity:.6;font-size:15px;line-height:1}
 .fp-grip:active{opacity:1}
 .pen-bar label{display:inline-flex;align-items:center;gap:6px}.pen-bar input[type=range]{width:120px}
+.pj-dlg-btns.vt-sticky{position:sticky;bottom:-20px;background:var(--sideBg);padding:10px 0 4px;margin-top:6px}
 </style>
 </head>
 <body>
@@ -8612,7 +8613,6 @@ function vtBridge(outer,hole){
 function vtInPoly(p,x,y){let c=false;for(let i=0,j=p.length-1;i<p.length;j=i++){if(((p[i].y>y)!==(p[j].y>y))&&(x<(p[j].x-p[i].x)*(y-p[i].y)/(p[j].y-p[i].y)+p[i].x))c=!c;}return c;}
 async function vtRun(opts,onProgress){
   const px=vtPixels(opts.img),{w,h}=px;
-  const sc=Math.min(W/w,H/h),ox=(W-w*sc)/2,oy=(H-h*sc)/2;
   const eps=Math.max(0.2,1.15-0.1*opts.detail),minArea=Math.max(2,40-4*opts.detail);
   let labels,cols;
   if(opts.mode==='line'){
@@ -8631,10 +8631,10 @@ async function vtRun(opts,onProgress){
   const rank=new Int16Array(cols.length).fill(-1);order.forEach((l,i)=>{rank[l]=i;});
   const rk=new Int16Array(w*h);for(let i=0;i<w*h;i++){const l=labels[i];rk[i]=l<0?-1:rank[l];}
   const shapes=[];
-  const tx=p=>({x:ox+p.x*sc,y:oy+p.y*sc});
   for(let oi=0;oi<order.length;oi++){
     onProgress&&onProgress('Tracing colour '+(oi+1)+' of '+order.length+'…');
     await new Promise(r=>setTimeout(r,0));
+    if(opts.cancelled&&opts.cancelled())return null;
     const lab=order[oi],c=cols[lab],hex='#'+c.map(v=>('0'+v.toString(16)).slice(-2)).join('');
     const loops=vtLoops(w,h,i=>rk[i]>=oi);
     const outers=[],holes=[];
@@ -8647,23 +8647,29 @@ async function vtRun(opts,onProgress){
       if(best)(best.holes=best.holes||[]).push(hl);
     });
     for(const o of outers){
-      const on=vtLoopToNodes(o.lp.map(tx),eps*sc);if(!on)continue;
-      const hs=(o.holes||[]).map(hl=>vtLoopToNodes(hl.lp.map(tx),eps*sc)).filter(Boolean);
+      const on=vtLoopToNodes(o.lp,eps);if(!on)continue;
+      const hs=(o.holes||[]).map(hl=>vtLoopToNodes(hl.lp,eps)).filter(Boolean);
       shapes.push({hex,nodes:on,holes:hs});
     }
   }
-  return {shapes,count:shapes.length,colours:order.length};
+  return {shapes,count:shapes.length,colours:order.length,w,h};
 }
-function vtInstall(result,name){
+// Placement: 'tile' fits the artwork inside one repeat tile (so the pattern doesn't overlap itself); 'canvas' fills the whole canvas.
+function vtPlacement(res,where){
+  const box=where==='canvas'?W:TILE*0.9;
+  const sc=Math.min(box/res.w,box/res.h);
+  return {sc,ox:W/2-res.w*sc/2,oy:H/2-res.h*sc/2};
+}
+function vtInstall(res,name,where){
+  const pl=vtPlacement(res,where),T=n=>n.map(p=>({...p,x:pl.ox+p.x*pl.sc,y:pl.oy+p.y*pl.sc}));
   const layer=makeLayer(('Trace: '+name).slice(0,28));
   layers.push(layer);activeLayerId=layer.id;
   let n=0;
-  result.shapes.forEach(s=>{
-    const nodes=s.nodes;let pts=nodesToPoints(nodes,true);
-    let useNodes=nodes;
+  res.shapes.forEach(s=>{
+    const nodes=T(s.nodes);let pts=nodesToPoints(nodes,true),useNodes=nodes;
     if(s.holes.length){
       let poly=pts.slice(0,-1);
-      s.holes.forEach(hn=>{const hp=nodesToPoints(hn,true).slice(0,-1);poly=vtBridge(poly,hp);});
+      s.holes.forEach(hn=>{poly=vtBridge(poly,nodesToPoints(T(hn),true).slice(0,-1));});
       pts=poly.concat([poly[0]]);useNodes=null;
     }
     strokes.push({id:crypto.randomUUID(),brushId:activeBrushId,layerId:layer.id,color:s.hex,fillColor:s.hex,fillOpacity:1,settings:null,points:pts,nodes:useNodes,closed:true,clipStrokeId:null,shape:null,traced:true});
@@ -8672,53 +8678,89 @@ function vtInstall(result,name){
   rebuildLayer(layer.id);renderLayersList();pushHist();redraw();
   return n;
 }
-window.__sketchpadVT={run:(...a)=>vtRun(...a),px:vtPixels};
+function vtDrawPreview(cv,res){
+  const c=cv.getContext('2d'),sc=Math.min(cv.width/res.w,cv.height/res.h),ox=(cv.width-res.w*sc)/2,oy=(cv.height-res.h*sc)/2;
+  c.clearRect(0,0,cv.width,cv.height);
+  res.shapes.forEach(s=>{
+    c.beginPath();
+    [s.nodes].concat(s.holes).forEach(nd=>{
+      const p=nodesToPoints(nd,true,8);
+      p.forEach((q,i)=>{const x=ox+q.x*sc,y=oy+q.y*sc;if(i)c.lineTo(x,y);else c.moveTo(x,y);});c.closePath();
+    });
+    c.fillStyle=s.hex;c.fill('evenodd');
+  });
+}
+window.__sketchpadVT={run:(...a)=>vtRun(...a),px:vtPixels,install:vtInstall};
 function openTraceImage(){
-  const back=pjEl('div','pj-back'),box=pjEl('div','pj-dlg');back.appendChild(box);
+  const back=pjEl('div','pj-back'),box=pjEl('div','pj-dlg');back.appendChild(box);box.style.width='min(760px,100%)';
   box.appendChild(pjEl('div','pj-dlg-title','✨ Trace Image to Vector'));
-  box.appendChild(pjEl('div','pj-dlg-msg','Turns a picture into clean, filled vector shapes on a new layer. Works best on logos, clipart, drawings and flat artwork.'));
-  const st={file:null,img:null,url:null};
+  box.appendChild(pjEl('div','pj-dlg-msg','Turns a picture into clean, filled vector shapes on a new layer. Works best on logos, clipart, drawings and flat artwork. The result updates as you change the options.'));
+  const st={file:null,img:null,url:null,res:null,runId:0,timer:0};
   const row=(label,el)=>{const r=pjEl('div','pj-field');r.appendChild(pjEl('label',null,label));r.appendChild(el);box.appendChild(r);return r;};
   const pick=pjEl('label','btn primary','🖼️ Choose image…');pick.style.cssText='display:block;text-align:center;cursor:pointer';
   const inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.style.display='none';pick.appendChild(inp);box.appendChild(pick);
-  const prev=document.createElement('img');prev.style.cssText='display:none;max-width:100%;max-height:160px;margin:10px auto;border-radius:10px;border:1px solid var(--line);background:#fff';box.appendChild(prev);
+  // before / after
+  const cmp=pjEl('div');cmp.style.cssText='display:none;gap:10px;margin:12px 0;flex-wrap:wrap';
+  const mkPane=(title)=>{const p=pjEl('div');p.style.cssText='flex:1 1 280px;min-width:0';const t=pjEl('div',null,title);t.style.cssText='font-weight:900;font-size:13px;margin-bottom:4px;opacity:.8';p.appendChild(t);return {p,t};};
+  const bp=mkPane('Before'),ap=mkPane('After — vector');
+  const frameCss='width:100%;aspect-ratio:1/1;border-radius:12px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden;';
+  const bf=pjEl('div');bf.style.cssText=frameCss+'background:#fff';const prev=document.createElement('img');prev.style.cssText='max-width:100%;max-height:100%;object-fit:contain';bf.appendChild(prev);bp.p.appendChild(bf);
+  const af=pjEl('div');af.style.cssText=frameCss+'background:conic-gradient(#e8e4dc 25%,#fff 0 50%,#e8e4dc 0 75%,#fff 0) 0 0/16px 16px;position:relative';
+  const after=document.createElement('canvas');after.width=560;after.height=560; // drawn off-screen, shown as an image (the page's global canvas styles would distort a visible canvas)
+  const afterImg=document.createElement('img');afterImg.style.cssText='width:100%;height:100%;object-fit:contain';af.appendChild(afterImg);const showAfter=()=>{afterImg.src=after.toDataURL();};
+  const spin=pjEl('div',null,'Tracing…');spin.style.cssText='position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(255,255,255,.6);font-weight:900';af.appendChild(spin);ap.p.appendChild(af);
+  cmp.appendChild(bp.p);cmp.appendChild(ap.p);box.appendChild(cmp);
   const mode=document.createElement('select');mode.className='pj-input';[['colour','🎨 Colours (full colour artwork)'],['line','✏️ Line art (black ink on paper)']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;mode.appendChild(o);});row('Mode',mode);
   const mkRange=(min,max,val)=>{const wrapR=pjEl('div');wrapR.style.cssText='display:flex;gap:10px;align-items:center';const r=document.createElement('input');r.type='range';r.min=min;r.max=max;r.value=val;r.style.flex='1';const s=pjEl('span',null,String(val));s.style.minWidth='28px';r.oninput=()=>{s.textContent=r.value;};wrapR.appendChild(r);wrapR.appendChild(s);wrapR.input=r;wrapR.span=s;return wrapR;};
   const cols=mkRange(2,24,8),rCols=row('Number of colours',cols);
   const thr=mkRange(10,245,128),rThr=row('Ink threshold',thr);rThr.style.display='none';
   const ink=document.createElement('input');ink.type='color';ink.value='#000000';const rInk=row('Ink colour',ink);rInk.style.display='none';
   const det=mkRange(1,10,6);row('Detail (simple ⇄ detailed)',det);
-  const bgL=pjEl('label');bgL.style.cssText='display:flex;gap:8px;align-items:center;font-size:14px;margin:8px 0';const bg=document.createElement('input');bg.type='checkbox';bg.checked=true;bgL.appendChild(bg);bgL.appendChild(document.createTextNode('Remove the background colour'));const rBg=bgL;box.appendChild(bgL);
+  const where=document.createElement('select');where.className='pj-input';[['canvas','Fill the canvas — shown once, not tiled'],['tile','Fit inside one repeat tile (for patterns)']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;where.appendChild(o);});row('Size on canvas',where);
+  const bgL=pjEl('label');bgL.style.cssText='display:flex;gap:8px;align-items:center;font-size:14px;margin:8px 0';const bg=document.createElement('input');bg.type='checkbox';bg.checked=true;bgL.appendChild(bg);bgL.appendChild(document.createTextNode('Remove the background colour'));box.appendChild(bgL);
   const msg=pjEl('div','pj-dlg-note','Choose an image to begin.');box.appendChild(msg);
-  const btns=pjEl('div','pj-dlg-btns');const cancel=pjEl('button','btn','Cancel'),go=pjEl('button','btn primary','✨ Trace');go.disabled=true;btns.appendChild(cancel);btns.appendChild(go);box.appendChild(btns);
-  const close=()=>{back.remove();if(st.url)URL.revokeObjectURL(st.url);};
+  const btns=pjEl('div','pj-dlg-btns vt-sticky');const cancel=pjEl('button','btn','Cancel'),go=pjEl('button','btn primary','✨ Place on canvas');go.disabled=true;btns.appendChild(cancel);btns.appendChild(go);box.appendChild(btns);
+  const close=()=>{st.runId++;clearTimeout(st.timer);back.remove();if(st.url)URL.revokeObjectURL(st.url);};
   cancel.onclick=close;
-  mode.onchange=()=>{const line=mode.value==='line';rCols.style.display=line?'none':'';rThr.style.display=line?'':'none';rInk.style.display=line?'':'none';rBg.style.display=line?'none':'flex';};
+  const opts=()=>({img:st.img,mode:mode.value,colours:+cols.input.value,threshold:+thr.input.value,ink:ink.value,detail:+det.input.value,removeBg:bg.checked});
+  const preview=async()=>{
+    if(!st.img)return;
+    const id=++st.runId;spin.style.display='flex';go.disabled=true;
+    try{
+      const o=opts();o.cancelled=()=>id!==st.runId;
+      const t0=Date.now(),res=await vtRun(o,t=>{if(id===st.runId)msg.textContent=t;});
+      if(!res||id!==st.runId)return;
+      spin.style.display='none';
+      if(!res.count){st.res=null;after.getContext('2d').clearRect(0,0,after.width,after.height);showAfter();ap.t.textContent='After — nothing traced';msg.textContent='Nothing to trace with those settings — try more colours, higher detail, or a different threshold.';return;}
+      st.res=res;vtDrawPreview(after,res);showAfter();ap.t.textContent='After — '+res.count+' vector shapes, '+res.colours+' colour'+(res.colours===1?'':'s');
+      msg.textContent='Traced in '+((Date.now()-t0)/1000).toFixed(1)+'s. Happy with it? Tap Place on canvas — or adjust the options.';go.disabled=false;
+    }catch(e){console.error(e);if(id===st.runId){spin.style.display='none';msg.textContent='Trace failed: '+(e.message||e);}}
+  };
+  const soon=()=>{clearTimeout(st.timer);st.timer=setTimeout(preview,350);};
+  [mode,where].forEach(e=>e.addEventListener('change',()=>{if(e===mode){const line=mode.value==='line';rCols.style.display=line?'none':'';rThr.style.display=line?'':'none';rInk.style.display=line?'':'none';bgL.style.display=line?'none':'flex';}if(e===mode)soon();}));
+  [cols.input,thr.input,det.input].forEach(e=>e.addEventListener('input',soon));
+  ink.addEventListener('input',soon);bg.addEventListener('change',soon);
   inp.onchange=async()=>{
     const f=inp.files&&inp.files[0];if(!f)return;
     try{
       if(st.url)URL.revokeObjectURL(st.url);
-      const r=await vtLoadImage(f);st.file=f;st.img=r.img;st.url=r.url;prev.src=r.url;prev.style.display='block';
-      go.disabled=false;msg.textContent=f.name+' — '+r.img.naturalWidth+'×'+r.img.naturalHeight+'. Adjust the options, then tap Trace.';
+      const r=await vtLoadImage(f);st.file=f;st.img=r.img;st.url=r.url;prev.src=r.url;cmp.style.display='flex';
       try{const px=vtPixels(r.img);const t=vtOtsu(px);thr.input.value=t;thr.span.textContent=t;}catch(e){}
+      preview();
     }catch(e){msg.textContent=e.message||'Could not read that image.';}
   };
-  go.onclick=async()=>{
-    if(!st.img)return;go.disabled=true;cancel.disabled=true;
-    try{
-      const t0=Date.now();
-      const res=await vtRun({img:st.img,mode:mode.value,colours:+cols.input.value,threshold:+thr.input.value,ink:ink.value,detail:+det.input.value,removeBg:bg.checked},t=>{msg.textContent=t;});
-      if(!res.count){msg.textContent='Nothing to trace with those settings — try more colours, higher detail, or a different threshold.';go.disabled=false;cancel.disabled=false;return;}
-      const n=vtInstall(res,(st.file.name||'image').replace(/\.[^.]+$/,''));
-      close();
-      setStatus('✨ Traced '+n+' vector shapes in '+res.colours+' colour'+(res.colours===1?'':'s')+' ('+((Date.now()-t0)/1000).toFixed(1)+'s) on a new layer. Undo to try other settings.');
-    }catch(e){console.error(e);msg.textContent='Trace failed: '+(e.message||e);go.disabled=false;cancel.disabled=false;}
+  go.onclick=()=>{
+    if(!st.res)return;
+    const n=vtInstall(st.res,(st.file.name||'image').replace(/\.[^.]+$/,''),where.value);
+    if(where.value==='canvas'&&showTiling){try{$('tilingBtn').click();}catch(e){}} // show it once, not repeated
+    const cnt=st.res.colours;close();
+    setStatus('✨ Placed '+n+' vector shapes ('+cnt+' colour'+(cnt===1?'':'s')+') on a new layer. Undo to remove.');
   };
   back.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape')close();});
   document.body.appendChild(back);
 }
-
 $('traceToVectorBtn').onclick=()=>openTraceImage();
+
 async function boot(){
   applyTransform();
   $('guidesBtn').classList.toggle('active',showGuides);

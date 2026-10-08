@@ -167,3 +167,7 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 ## Trace Image to Vector (v60)
 - ✨ Trace Image to Vector (sidebar → Trace Reference, and the project name menu): pick an image → Colours (k-means, 2–24 colours, background removable) or Line art (threshold + ink colour) + Detail slider → filled vector shapes on a new "Trace: …" layer. Colours are stacked big→small (no gaps), holes/islands kept (holes use a zero-width slit so shapes stay single closed fills; those shapes have no nodes), shapes without holes keep editable smooth/corner nodes. Image is traced at ≤800 px then fitted to the canvas; undo removes the whole trace. SVG export works via the existing fill export.
 - Test hook: `window.__sketchpadVT.run(opts)`.
+
+## Trace: before/after + not tiled (v61)
+- The trace dialog now shows Before and After (live vector preview, updates as options change; checkerboard shows removed background) and only places the result when you tap Place on canvas.
+- "Size on canvas" defaults to filling the canvas; placing it turns tiling off so it's shown once. "Fit inside one repeat tile" is still available for patterns.
