@@ -251,3 +251,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## v84 — Small areas trace in more detail
 - When the picture or boxed area is small (under 500 px), it is enlarged up to 5x before tracing, so tiny details like house windows survive.
+
+## v85 — Curve smoothing
+- New "Curve smoothing (sharp to rounded)" slider (0-10, default 4) for centre-line traces. Higher = rounder curves and fewer sharp corners (good for lace and scrollwork). Saved with the project.
