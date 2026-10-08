@@ -248,3 +248,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 - **↺ Reset area & zoom** button.
 - The picture (and its settings) you trace from is saved with the project; Done no longer loses it. "Forget" removes it.
 - Adjust the area: drag inside to move it, drag edges/corners to resize, drag outside to draw a new one.
+
+## v84 — Small areas trace in more detail
+- When the picture or boxed area is small (under 500 px), it is enlarged up to 5x before tracing, so tiny details like house windows survive.
