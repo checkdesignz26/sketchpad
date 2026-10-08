@@ -8755,7 +8755,7 @@ async function vtRun(opts,onProgress){
 }
 // Placement: 'tile' fits the artwork inside one repeat tile (so the pattern doesn't overlap itself); 'canvas' fills the whole canvas.
 function vtPlacement(res,where){
-  const box=where==='canvas'?W:TILE*0.9;
+  const box=where==='canvas'?W:(where==='tilefull'?TILE:TILE*0.9);
   const sc=Math.min(box/res.w,box/res.h);
   return {sc,ox:W/2-res.w*sc/2,oy:H/2-res.h*sc/2};
 }
@@ -8865,7 +8865,7 @@ function openTraceImage(){
   const ink=document.createElement('input');ink.type='color';ink.value='#000000';const rInk=row('Ink colour',ink);rInk.style.display='none';
   const outSel=document.createElement('select');outSel.className='pj-input';[['fill','⬛ Filled shapes (outlines become solid shapes)'],['stroke','〰️ Centre-line strokes (each line becomes one editable stroke)']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;outSel.appendChild(o);});const rOut=row('Result',outSel);rOut.style.display='none';
   const det=mkRange(1,10,6);row('Detail (simple ⇄ detailed)',det);
-  const where=document.createElement('select');where.className='pj-input';[['canvas','Fill the canvas — shown once, not tiled'],['tile','Fit inside one repeat tile (for patterns)']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;where.appendChild(o);});row('Size on canvas',where);
+  const where=document.createElement('select');where.className='pj-input';[['canvas','Fill the canvas — shown once, not tiled'],['tilefull','Exactly one repeat tile (for a seamless pattern tile)'],['tile','Fit inside one repeat tile, with a margin (for a single motif)']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;where.appendChild(o);});row('Size on canvas',where);
   const bgL=pjEl('label');bgL.style.cssText='display:flex;gap:8px;align-items:center;font-size:14px;margin:8px 0';const bg=document.createElement('input');bg.type='checkbox';bg.checked=true;bgL.appendChild(bg);bgL.appendChild(document.createTextNode('Remove the background colour'));box.appendChild(bgL);
   const smL=pjEl('label');smL.style.cssText='display:flex;gap:8px;align-items:center;font-size:14px;margin:8px 0';const sm=document.createElement('input');sm.type='checkbox';smL.appendChild(sm);smL.appendChild(document.createTextNode('🌈 Smooth shading — more tones for gradients & shadows (more shapes)'));box.appendChild(smL);box.insertBefore(smL,rCols);box.insertBefore(bgL,smL);
   const msg=pjEl('div','pj-dlg-note','Choose an image to begin.');box.appendChild(msg);
