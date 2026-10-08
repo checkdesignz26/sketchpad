@@ -209,3 +209,9 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 ## v72 — ⚡ Quick actions floating panel
 - New **⚡** button in the toolbar (next to Select) opens a floating panel you can drag anywhere on the canvas (it remembers where you left it): **☝️ Select**, **✥ Move**, **⧉ Duplicate**, **🗑 Delete**, **🧹 Erase**, **✏️ Draw**.
 - **Move** lets you drag any shape, stroke or picture straight away (no select-first step). Delete works on shapes, strokes, pictures and multi-selections, and Undo brings them back. Erase toggles the eraser; Draw returns to the pen.
+
+## v73 — Centre-line trace refinements (dense line art)
+- Higher source resolution for centre-line mode (up to ~2600 px at Detail 10), so fine hatching stays separate.
+- Solid black areas (thick blobs, filled flames, etc.) are now traced as filled shapes instead of fat strokes; only genuine lines become strokes.
+- Short corner stubs left by thinning are removed, and long straight runs get extra nodes so rounded rectangles stay clean (no overshoot "ticks").
+- The dialog reports "N editable strokes + M solid shapes".
