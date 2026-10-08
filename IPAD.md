@@ -184,3 +184,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## v65 — Updates bypass the browser's HTTP cache
 - The service worker now revalidates files with the server (cache: 'no-cache') so "⟳ Get latest version" picks up new releases straight away instead of a copy cached for up to ~10 minutes.
+
+## v66 — Trace: Smooth shading
+- New "🌈 Smooth shading" checkbox in the trace dialog (colour mode): uses at least 16 tones (up to 32) so gradients and shadows blend with finer steps instead of a few flat bands. More shapes, still fully vector.
