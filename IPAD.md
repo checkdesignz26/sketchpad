@@ -297,3 +297,6 @@ While dragging a big group the preview picture is half-size, the canvas is no lo
 
 ## v99 — Motifs stay where you drew them
 Capture Motif / Capture Area now place the motif exactly where the drawing was, at its real size (no more jumping to the centre). New "Turn into motif (fast)" button in the Group panel for heavy drawings. A "Edit Motif" button now sits under a selected motif.
+
+## v100 — Edit Motif in place, softer brush preview
+Editing a motif now shows its strokes exactly where that motif sits (same position, size and turn) and hides the picture of it meanwhile, so there is no second copy. Tap Done and it goes back. The brush preview for very light colours uses a soft lilac instead of dark grey.
