@@ -187,3 +187,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## v66 — Trace: Smooth shading
 - New "🌈 Smooth shading" checkbox in the trace dialog (colour mode): uses at least 16 tones (up to 32) so gradients and shadows blend with finer steps instead of a few flat bands. More shapes, still fully vector.
+
+## v67 — Trace dialog: options higher up
+- "Remove the background" and "Smooth shading" checkboxes now sit directly under Mode, and the preview panes are a little shorter, so they're visible without scrolling on iPad.

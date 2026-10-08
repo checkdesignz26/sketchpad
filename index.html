@@ -8711,7 +8711,7 @@ function openTraceImage(){
   const cmp=pjEl('div');cmp.style.cssText='display:none;gap:10px;margin:12px 0;flex-wrap:wrap';
   const mkPane=(title)=>{const p=pjEl('div');p.style.cssText='flex:1 1 280px;min-width:0';const t=pjEl('div',null,title);t.style.cssText='font-weight:900;font-size:13px;margin-bottom:4px;opacity:.8';p.appendChild(t);return {p,t};};
   const bp=mkPane('Before'),ap=mkPane('After — vector');
-  const frameCss='width:min(100%,38vh);margin:0 auto;aspect-ratio:1/1;border-radius:12px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden;';
+  const frameCss='width:min(100%,30vh);margin:0 auto;aspect-ratio:1/1;border-radius:12px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden;';
   const bf=pjEl('div');bf.style.cssText=frameCss+'background:#fff';const prev=document.createElement('img');prev.style.cssText='max-width:100%;max-height:100%;object-fit:contain';bf.appendChild(prev);bp.p.appendChild(bf);
   const af=pjEl('div');af.style.cssText=frameCss+'background:conic-gradient(#e8e4dc 25%,#fff 0 50%,#e8e4dc 0 75%,#fff 0) 0 0/16px 16px;position:relative';
   const after=document.createElement('canvas');after.width=720;after.height=720; // drawn off-screen, shown as an image (the page's global canvas styles would distort a visible canvas)
@@ -8752,7 +8752,7 @@ function openTraceImage(){
   const det=mkRange(1,10,6);row('Detail (simple ⇄ detailed)',det);
   const where=document.createElement('select');where.className='pj-input';[['canvas','Fill the canvas — shown once, not tiled'],['tile','Fit inside one repeat tile (for patterns)']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;where.appendChild(o);});row('Size on canvas',where);
   const bgL=pjEl('label');bgL.style.cssText='display:flex;gap:8px;align-items:center;font-size:14px;margin:8px 0';const bg=document.createElement('input');bg.type='checkbox';bg.checked=true;bgL.appendChild(bg);bgL.appendChild(document.createTextNode('Remove the background colour'));box.appendChild(bgL);
-  const smL=pjEl('label');smL.style.cssText='display:flex;gap:8px;align-items:center;font-size:14px;margin:8px 0';const sm=document.createElement('input');sm.type='checkbox';smL.appendChild(sm);smL.appendChild(document.createTextNode('🌈 Smooth shading — more tones for gradients & shadows (more shapes)'));box.appendChild(smL);
+  const smL=pjEl('label');smL.style.cssText='display:flex;gap:8px;align-items:center;font-size:14px;margin:8px 0';const sm=document.createElement('input');sm.type='checkbox';smL.appendChild(sm);smL.appendChild(document.createTextNode('🌈 Smooth shading — more tones for gradients & shadows (more shapes)'));box.appendChild(smL);box.insertBefore(smL,rCols);box.insertBefore(bgL,smL);
   const msg=pjEl('div','pj-dlg-note','Choose an image to begin.');box.appendChild(msg);
   const btns=pjEl('div','pj-dlg-btns vt-sticky');const cancel=pjEl('button','btn','Cancel'),go=pjEl('button','btn primary','✨ Place on canvas');go.disabled=true;btns.appendChild(cancel);btns.appendChild(go);box.appendChild(btns);
   const close=()=>{st.runId++;clearTimeout(st.timer);back.remove();if(st.url)URL.revokeObjectURL(st.url);};
