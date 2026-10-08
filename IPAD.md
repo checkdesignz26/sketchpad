@@ -198,3 +198,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 ## v69 — Trace: centre-line strokes
 - In **Line art** mode the trace dialog has a new **Result** menu: *Filled shapes* (as before) or *Centre-line strokes*. Centre-line thins each ink line to its middle and places it as a normal editable Smooth Pen stroke (curved nodes, width taken from the original line), so you can restyle, recolour, change width/brush or Edit Path afterwards.
 - Works best on clean line art with fairly even line thickness. Lines that meet are split into separate strokes at the junction.
+
+## v70 — Trace: exactly one repeat tile
+- "Size on canvas" has a new option **Exactly one repeat tile (for a seamless pattern tile)**: the traced picture is placed to fill exactly the repeat tile (edge to edge), with tiling left on. Untick "Remove the background colour" when the picture is a full tile with its own background.
