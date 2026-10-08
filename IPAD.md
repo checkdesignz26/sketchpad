@@ -307,3 +307,6 @@ Editing a motif now shows its strokes exactly where that motif sits (same positi
 
 ## v103 — Double-tap a motif opens it for editing
 Double-tapping a selected motif with editable artwork now opens Edit Motif instead of making a duplicate. The Duplicate button still copies.
+
+## v104 — Edit Motif banner
+While a motif is being edited a Done / Cancel banner stays at the top of the canvas (the old Done pill could be hidden in the cut-off toolbar). Cancel leaves the motif unchanged. After Done or Cancel the motif stays selected. Pressing Edit Motif while already editing now says so.
