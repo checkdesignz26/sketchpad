@@ -313,3 +313,6 @@ While a motif is being edited a Done / Cancel banner stays at the top of the can
 
 ## v105 — Edit Motif opens in select mode
 Editing a motif now starts in Edit (select) mode so tapping a stroke brings up its stroke panel (colour, width, Edit Path). Switch to Draw to add strokes.
+
+## v106 — Error toast
+If a script error happens a red note appears at the bottom of the screen with the message, so a screenshot shows exactly what failed. The More menu also reports its own errors there.
