@@ -282,3 +282,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## v94 — Fewer re-renders while zooming
 - Zooming back and forth around a sharpness threshold no longer re-renders every stroke each time (added hysteresis), and re-rendering at a coarser resolution waits until zooming settles.
+
+## v95 — Smoother pinch zoom
+- The sharpness re-render no longer runs while two fingers are still on the screen (it froze the app mid-pinch, which made the zoom stutter and jump). It waits until you let go.
