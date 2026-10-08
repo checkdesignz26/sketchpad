@@ -593,6 +593,7 @@
     let spacingPx = Math.max(1, (settings.spacing / 100) * Math.max(4, settings.size));
     const narrow = Math.max(0.35, 1 - settings.pressureWidth / 100);
     spacingPx = Math.max(0.2, Math.min(spacingPx, settings.size * narrow * 0.6));
+    spacingPx = Math.max(spacingPx, Math.min(settings.size * 0.25, 6)); // the scratch buffer saturates anyway, so fewer dabs look the same
     const pts = resample(stroke.points, spacingPx);
     const rand = seededRandom(stroke.id || 'live');
     const n = pts.length, dabs = [];
@@ -634,7 +635,8 @@
     b.setTransform(1, 0, 0, 1, 0, 0); b.clearRect(0, 0, Math.min(_buf.width, pw + 2), Math.min(_buf.height, ph + 2));
     b.setTransform(se, 0, 0, se, -bx * se, -by * se);
     // colour pick-up from what is already on the layer
-    const wet = Math.max(0, Math.min(100, settings.wetMix || 0)) / 100;
+    let wet = Math.max(0, Math.min(100, settings.wetMix || 0)) / 100;
+    if (wet < 0.04) wet = 0;
     const U = global.BrushEngine && global.BrushEngine.underlay;
     let uctx = null, ux = 1, uy = 1, ue = 0, uf = 0;
     if (wet > 0) {
@@ -645,13 +647,32 @@
     }
     const live = !!(U && U.canvas);
     if (live && _sampleCache.id !== stroke.id) { _sampleCache.id = stroke.id; _sampleCache.map.clear(); }
+    // Committed strokes: ONE read of the area under the stroke instead of dozens of tiny reads
+    // (readbacks are what make the iPad stall). Live strokes keep a few cached single reads.
+    let region = null, rx0 = 0, ry0 = 0, rw = 0, rh = 0;
+    if (uctx && !live) {
+      try {
+        rx0 = Math.max(0, Math.floor(bx * ux + ue) - 2); ry0 = Math.max(0, Math.floor(by * uy + uf) - 2);
+        const rx1 = Math.min(uctx.canvas.width, Math.ceil(bx1 * ux + ue) + 2), ry1 = Math.min(uctx.canvas.height, Math.ceil(by1 * uy + uf) + 2);
+        rw = rx1 - rx0; rh = ry1 - ry0;
+        if (rw > 2 && rh > 2 && rw * rh <= 900000) region = uctx.getImageData(rx0, ry0, rw, rh).data;
+      } catch (e) { region = null; }
+    }
     const base = parseRgb(stroke.color || '#000000');
     let cur = base.slice();
-    const every = Math.max(4, Math.ceil(dabs.length / 24));
+    const every = Math.max(region ? 3 : 6, Math.ceil(dabs.length / (region ? 40 : 10)));
     dabs.forEach((d, k) => {
       if (uctx && k % every === 0) {
         let sm = live ? _sampleCache.map.get(d.i) : undefined;
-        if (sm === undefined) {
+        if (sm === undefined && region) {
+          sm = null;
+          const px = Math.round(d.x * ux + ue) - rx0, py = Math.round(d.y * uy + uf) - ry0;
+          if (px > 1 && py > 1 && px < rw - 2 && py < rh - 2) {
+            let r = 0, g = 0, bl = 0, a = 0;
+            for (let yy = -1; yy <= 1; yy++) for (let xx = -1; xx <= 1; xx++) { const q = ((py + yy) * rw + (px + xx)) * 4, al = region[q + 3] / 255; r += region[q] * al; g += region[q + 1] * al; bl += region[q + 2] * al; a += al; }
+            if (a > 0.5) sm = [r / a, g / a, bl / a, Math.min(1, a / 9)];
+          }
+        } else if (sm === undefined && (!uctx || uctx)) {
           sm = null;
           try {
             const px = Math.round(d.x * ux + ue), py = Math.round(d.y * uy + uf);
