@@ -225,3 +225,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## v76 — Slimmer side panel
 - Left tools panel is narrower (236 px, was 300) and the collapse bar is thinner (22 px, was 40), so the whole top toolbar (Select, ⚡, Duplicate, Pencil, size, Pen, Eraser, View, More) fits on iPad.
+
+## v77
+- Line-art centre-line trace: adaptive (local-mean) thresholding so dense detail like pine needles no longer fuses into black blobs; solid-area detection is measured only on clearly dark pixels, faint borderline ink still becomes thin strokes.
