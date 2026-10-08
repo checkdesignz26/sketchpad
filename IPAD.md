@@ -228,3 +228,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## v77
 - Line-art centre-line trace: adaptive (local-mean) thresholding so dense detail like pine needles no longer fuses into black blobs; solid-area detection is measured only on clearly dark pixels, faint borderline ink still becomes thin strokes.
+
+## v78
+- Line-art trace, Filled shapes: no pre-blur, up to 2x sampling and adaptive thresholding, so fine hatching like pine needles stays as separate thin shapes instead of merging.
