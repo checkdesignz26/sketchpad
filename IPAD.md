@@ -261,3 +261,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 ## v87 — Vector / Raster engine switch
 - Every drawing brush now has an Engine switch (Vector | Raster) under the brush preview. Raster paints with grain and soft build-up, and can pick up colour already on the layer (Wet mix) or break up like dry media (Dry / grainy). Strokes are still kept as editable points, so undo, saving, the eraser and Apply Style all still work.
 - Gouache, Dry Brush and the new Watercolour and Dry Ink brushes start on Raster. Switching engine only affects new strokes.
+
+## v88 — Faster eraser
+- The eraser now rubs out pixels instantly while you drag and does the exact stroke re-render once when you lift, and skips strokes that are nowhere near the eraser. Much smoother on drawings with lots of strokes.
