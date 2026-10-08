@@ -257,3 +257,7 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## v86 — Remove background in Line art
 - New "Remove the background (coloured or dark backdrop)" option in Line art mode, with a Background tolerance slider. Finds the backdrop colour from the picture edge and clears it so it is not traced as ink. Off by default; saved with the project.
+
+## v87 — Vector / Raster engine switch
+- Every drawing brush now has an Engine switch (Vector | Raster) under the brush preview. Raster paints with grain and soft build-up, and can pick up colour already on the layer (Wet mix) or break up like dry media (Dry / grainy). Strokes are still kept as editable points, so undo, saving, the eraser and Apply Style all still work.
+- Gouache, Dry Brush and the new Watercolour and Dry Ink brushes start on Raster. Switching engine only affects new strokes.
