@@ -8711,7 +8711,7 @@ function openTraceImage(){
   const cmp=pjEl('div');cmp.style.cssText='display:none;gap:10px;margin:12px 0;flex-wrap:wrap';
   const mkPane=(title)=>{const p=pjEl('div');p.style.cssText='flex:1 1 280px;min-width:0';const t=pjEl('div',null,title);t.style.cssText='font-weight:900;font-size:13px;margin-bottom:4px;opacity:.8';p.appendChild(t);return {p,t};};
   const bp=mkPane('Before'),ap=mkPane('After — vector');
-  const frameCss='width:100%;aspect-ratio:1/1;border-radius:12px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden;';
+  const frameCss='width:min(100%,38vh);margin:0 auto;aspect-ratio:1/1;border-radius:12px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden;';
   const bf=pjEl('div');bf.style.cssText=frameCss+'background:#fff';const prev=document.createElement('img');prev.style.cssText='max-width:100%;max-height:100%;object-fit:contain';bf.appendChild(prev);bp.p.appendChild(bf);
   const af=pjEl('div');af.style.cssText=frameCss+'background:conic-gradient(#e8e4dc 25%,#fff 0 50%,#e8e4dc 0 75%,#fff 0) 0 0/16px 16px;position:relative';
   const after=document.createElement('canvas');after.width=720;after.height=720; // drawn off-screen, shown as an image (the page's global canvas styles would distort a visible canvas)
@@ -8722,13 +8722,13 @@ function openTraceImage(){
   const spin=pjEl('div',null,'Tracing…');spin.style.cssText='position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(255,255,255,.6);font-weight:900';af.appendChild(spin);ap.p.appendChild(af);
   cmp.appendChild(bp.p);cmp.appendChild(ap.p);box.appendChild(cmp);
   bf.style.touchAction='none';af.style.touchAction='none';bf.style.cursor=af.style.cursor='grab';prev.style.transition='none';prev.draggable=false;
-  const zoomRow=pjEl('div');zoomRow.style.cssText='display:none;gap:10px;align-items:center;margin:0 0 10px';
+  const zoomRow=pjEl('div');zoomRow.style.cssText='display:none;gap:10px;align-items:center;margin:12px 0 0';
   zoomRow.appendChild(pjEl('span',null,'🔍 Zoom'));
   const zr=document.createElement('div');zr.input=document.createElement('input');zr.input.type='range';zr.input.min=1;zr.input.max=12;zr.input.step=0.1;zr.input.value=1;zr.input.style.flex='1';zr.span=pjEl('span',null,'1×');zr.span.style.minWidth='38px';
   const fit=pjEl('button','btn mini','Fit');fit.type='button';
   const mkB=(t,d)=>{const b=pjEl('button','btn mini',t);b.type='button';b.onclick=()=>{view.z=Math.min(12,Math.max(1,view.z*d));clampView();applyView();};return b;};
   zoomRow.appendChild(mkB('−',1/1.5));zoomRow.appendChild(zr.input);zoomRow.appendChild(zr.span);zoomRow.appendChild(mkB('+',1.5));zoomRow.appendChild(fit);
-  box.appendChild(zoomRow);
+  box.insertBefore(zoomRow,cmp);
   const clampView=()=>{const m=(view.z-1)/2+0.05;view.x=Math.max(-m,Math.min(m,view.x));view.y=Math.max(-m,Math.min(m,view.y));if(view.z<=1.001){view.x=0;view.y=0;}};
   zr.input.oninput=()=>{view.z=+zr.input.value;clampView();applyView();};
   fit.onclick=()=>{view.z=1;view.x=0;view.y=0;applyView();};
