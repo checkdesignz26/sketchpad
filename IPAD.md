@@ -254,3 +254,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## v85 — Curve smoothing
 - New "Curve smoothing (sharp to rounded)" slider (0-10, default 4) for centre-line traces. Higher = rounder curves and fewer sharp corners (good for lace and scrollwork). Saved with the project.
+
+## v86 — Remove background in Line art
+- New "Remove the background (coloured or dark backdrop)" option in Line art mode, with a Background tolerance slider. Finds the backdrop colour from the picture edge and clears it so it is not traced as ink. Off by default; saved with the project.
