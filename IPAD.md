@@ -243,3 +243,8 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## v82
 - Trace dialog: "Trace just an area" - drag a box on the Before picture (zoom first if you like) and only that region is traced, which keeps small details sharp on big sheets. "Whole picture" goes back.
+
+## v83 — Trace dialog
+- **↺ Reset area & zoom** button.
+- The picture (and its settings) you trace from is saved with the project; Done no longer loses it. "Forget" removes it.
+- Adjust the area: drag inside to move it, drag edges/corners to resize, drag outside to draw a new one.
