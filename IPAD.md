@@ -171,3 +171,7 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 ## Trace: before/after + not tiled (v61)
 - The trace dialog now shows Before and After (live vector preview, updates as options change; checkerboard shows removed background) and only places the result when you tap Place on canvas.
 - "Size on canvas" defaults to filling the canvas; placing it turns tiling off so it's shown once. "Fit inside one repeat tile" is still available for patterns.
+
+## v62 — Trace: Detail slider + zoom
+- The Detail slider now visibly changes the result (resolution, simplification, speckle clean-up, smoothing).
+- Before/After preview has zoom (− / slider / + / Fit), drag to pan, pinch and mouse-wheel. The vector side is redrawn sharp at every zoom level.
