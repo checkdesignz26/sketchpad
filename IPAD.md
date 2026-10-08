@@ -237,3 +237,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## v80
 - Trace dialog: "Line weight" slider for Centre-line strokes (60-220%, default 120%) so lines can be made bolder or thinner.
+
+## v81
+- Centre-line trace keeps tiny dark dots (eyes, buttons) that used to be discarded as too short; only clearly dark ones, so paper speckle is ignored.
