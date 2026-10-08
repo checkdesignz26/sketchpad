@@ -330,6 +330,7 @@ html.in-suite .suite-only{display:block!important}
 .fp-grip-wrap{position:sticky;bottom:-8px;height:0;overflow:visible;pointer-events:none;z-index:3}
 .fp-grip{position:absolute;right:-8px;bottom:0;width:38px;height:38px;pointer-events:auto;cursor:nwse-resize;touch-action:none;-webkit-user-select:none;user-select:none;display:flex;align-items:flex-end;justify-content:flex-end;padding:0 8px 8px 0;box-sizing:border-box;color:var(--muted);opacity:.6;font-size:15px;line-height:1}
 .fp-grip:active{opacity:1}
+.pen-bar label{display:inline-flex;align-items:center;gap:6px}.pen-bar input[type=range]{width:120px}
 </style>
 </head>
 <body>
@@ -521,6 +522,7 @@ html.in-suite .suite-only{display:block!important}
       <div class="row" style="margin-top:6px;flex-wrap:wrap;">
         <button id="useThisBrushBtn" class="btn mini" style="flex:1 1 45%;">Use This Brush</button>
         <button id="editPathBtn" class="btn mini" style="flex:1 1 45%;">✎ Edit Path</button>
+        <button class="btn mini smooth-path-btn" style="flex:1 1 45%;">〰️ Smooth Path</button>
         <button id="copyBrushStyleBtn" class="btn mini" style="flex:1 1 45%;">Copy Style</button>
         <button id="applyBrushStyleBtn" class="btn mini" style="flex:1 1 45%;" disabled>Apply Style</button>
       </div>
@@ -668,6 +670,8 @@ html.in-suite .suite-only{display:block!important}
       <button id="shapeFlipVBtn" class="btn mini" style="flex:1">Flip V</button>
     </div>
     <button id="actionsEditPathBtn" class="btn mini primary" style="width:100%;margin-top:6px;">✎ Edit Path</button>
+    <div class="slider-row" style="margin:6px 0 2px"><label>Smooth</label><input class="smooth-amt" type="range" min="1" max="10" step="1" value="4"><span class="smooth-amt-val">4</span></div>
+    <button class="btn mini smooth-path-btn" style="width:100%;margin-top:4px;">〰️ Smooth Path</button>
     <button id="actionsEditCurveBtn" class="btn mini" style="width:100%;margin-top:6px;display:none;">🖋️ Edit Curve (Bézier)</button>
     <div class="row" style="margin-top:6px;gap:6px;"><button id="selSameColourBtn" class="btn mini" style="flex:1" title="Select every stroke with this colour">🎯 Same colour</button><button id="selSameStrokeBtn" class="btn mini" style="flex:1" title="Select every stroke with this brush and thickness">🎯 Same stroke</button><button id="selSameFillBtn" class="btn mini" style="flex:1" title="Select every shape with this fill colour">🎯 Same fill</button></div>
     <div class="row" style="margin-top:6px;gap:6px;"><button id="duplicateStrokeBtn" class="btn mini" style="flex:1">⧉ Duplicate</button><button id="openRotatePanelBtn" class="btn mini" style="flex:1">&#8635; Rotate &amp; Repeat</button></div>
@@ -707,6 +711,7 @@ html.in-suite .suite-only{display:block!important}
         <span id="tbSize" class="size-combo tb-size tb-fix" title="Brush size"><input class="size-num" id="tbSizeNum" type="number" inputmode="decimal" min="0.05" step="0.05"><select class="size-pick" id="tbSizePick" title="Common sizes"></select></span>
         <button id="tbPenBtn" class="tool-btn tb-fix" title="Bézier Pen: tap for points, drag to curve">🖋️ Pen</button>
         <button id="tbEraserBtn" class="tool-btn tb-fix" title="Eraser">🧹 Eraser</button>
+        <button id="tbWarpBtn" class="tool-btn" data-ovp="2" data-ovl="🌀 Warp" title="Warp: drag to push and bend strokes">🌀 Warp</button>
         <button id="strokePanelBtn" class="tool-btn" data-ovp="2" data-ovl="🖊️ Stroke tools" title="Show or hide the Stroke panel">🖊️ Stroke tools</button>
         <div class="toolbar-spacer"></div>
         <button id="paintModePill" class="pill" style="display:none;cursor:pointer;">🎨 Paint Inside — tap for Free Paint</button>
@@ -1983,6 +1988,7 @@ canvas.addEventListener('pointerdown',e=>{
   }
   e.preventDefault();try{canvas.setPointerCapture(e.pointerId);}catch(err){} // capture is best-effort — a stroke must still start even if it's refused
   const p=screenToCanvas(e.clientX,e.clientY),pressure=(e.pressure&&e.pressure>0)?e.pressure:.5;
+  if(warpOn&&!armedShapeType&&!eraserActive){warpDown(e);return;}
   if(penOn&&!armedShapeType&&!eraserActive){penDown(e);return;}
   if(armedShapeType){
     drawing=true;shapeDrawStart=p;
@@ -4320,7 +4326,7 @@ $('shapeMultiSelectToggle').onclick=()=>{
 $('shapeMergeBtn').onclick=()=>runShapeOp('merge');
 $('shapeSubtractBtn').onclick=()=>runShapeOp('subtract');
 $('shapeIntersectBtn').onclick=()=>runShapeOp('intersect');
-function syncMode(){try{tbToolSync();}catch(e){}try{if(penOn&&mode==='edit')penSet(false);}catch(e){}$('drawModeBtn').classList.toggle('active',mode==='draw');$('editModeBtn').classList.toggle('active',mode==='edit');canvas.style.cursor=mode==='draw'?'crosshair':'grab';setStatus(mode==='draw'?'✏️ Draw Mode: Apple Pencil draws, two fingers move the canvas.':'↔️ Edit Mode: tap motif with Pencil/mouse, then move, scale, rotate or flip.');;if(typeof syncStrokeSelectionUI==='function')syncStrokeSelectionUI();}
+function syncMode(){try{tbToolSync();}catch(e){}try{if(penOn&&mode==='edit')penSet(false);if(warpOn&&mode==='edit')warpSet(false);}catch(e){}$('drawModeBtn').classList.toggle('active',mode==='draw');$('editModeBtn').classList.toggle('active',mode==='edit');canvas.style.cursor=mode==='draw'?'crosshair':'grab';setStatus(mode==='draw'?'✏️ Draw Mode: Apple Pencil draws, two fingers move the canvas.':'↔️ Edit Mode: tap motif with Pencil/mouse, then move, scale, rotate or flip.');;if(typeof syncStrokeSelectionUI==='function')syncStrokeSelectionUI();}
 $('drawModeBtn').onclick=()=>{if(pathEditStrokeId)commitEditPath();if(joinPendingStrokeId)endJoinPick();disarmAreaFill();disarmShapeMultiSelect();armedShapeType=null;syncShapeToolUI();mode='draw';selected=null;selectedStrokeId=null;multiSel=null;selAddArmed=false;groupInsideId=null;multiSelectMode=false;multiSelectIds=[];$('multiSelectToggle').textContent='🔢 Multi-Select: Off';$('multiSelectToggle').classList.remove('active');syncAlignUI();syncStrokeSelectionUI();syncMode();redraw()};$('editModeBtn').onclick=()=>{disarmAreaFill();armedShapeType=null;syncShapeToolUI();mode='edit';syncMode()};$('captureBtn').onclick=()=>captureMotif();
 // Capture Area: drag a box on the canvas; only strokes inside it become the motif.
 function setCaptureArea(on){
@@ -5237,7 +5243,7 @@ function rdpSimplify(points,epsilon){
 // Close Shape outline, ...) onto two coincident nodes with no usable outline left to drag.
 // rdpSimplifyClosedLoop sidesteps this entirely by anchoring on the loop's two genuinely
 // farthest-apart points instead of an arbitrary (and, for a closed loop, degenerate) array edge.
-function pointsToNodes(points,closed,detectCorners){
+function pointsToNodes(points,closed,detectCorners,eps=1.5){
   let src=points;
   if(closed&&src.length>1){
     const first=src[0],last=src[src.length-1];
@@ -5247,7 +5253,7 @@ function pointsToNodes(points,closed,detectCorners){
   // small loops) on a complex hand-drawn stroke the instant Edit Path was entered, before the
   // user had touched anything. 5 keeps noticeably more of the original shape while still cutting
   // a dense resampled polyline down to a manageable, actually-draggable handful of nodes.
-  const simplified=closed?rdpSimplifyClosedLoop(src,1.5):rdpSimplify(src,1.5); // tight fit: Edit Path must not change how the line looks
+  const simplified=closed?rdpSimplifyClosedLoop(src,eps):rdpSimplify(src,eps); // tight fit: Edit Path must not change how the line looks
   // Sharp points (flagged by the shape generators, or - for shapes - any big turn) become corner
   // nodes, so the heart's cusp and the teardrop's tip are not rounded off the moment they are edited.
   const m=simplified.length;
@@ -5262,12 +5268,55 @@ function pointsToNodes(points,closed,detectCorners){
 }
 // Nodes for editing a stroke: polygonal shapes keep their exact vertices as corner nodes (never
 // run through smoothing), other shapes keep their sharp tips, everything else is simplified as before.
+function nodeDeviation(points,nodes,closed){
+  const rec=nodesToPoints(nodes,closed,10);let m=0;
+  const step=Math.max(1,Math.floor(points.length/120));
+  for(let i=0;i<points.length;i+=step){
+    const p=points[i];let best=1e9;
+    for(let j=1;j<rec.length;j++){
+      const a=rec[j-1],b=rec[j],dx=b.x-a.x,dy=b.y-a.y,l2=dx*dx+dy*dy||1;
+      let t=((p.x-a.x)*dx+(p.y-a.y)*dy)/l2;t=Math.max(0,Math.min(1,t));
+      const d=Math.hypot(p.x-(a.x+dx*t),p.y-(a.y+dy*t));if(d<best)best=d;
+    }
+    if(best>m)m=best;
+  }
+  return m;
+}
+// Fewest nodes whose curve still hugs the original outline to within `tol`.
+function simplestNodes(points,closed,detectCorners,tol){
+  let best=pointsToNodes(points,closed,detectCorners);
+  for(const eps of [3,6,12,24,48,96]){
+    const nn=pointsToNodes(points,closed,detectCorners,eps);
+    if(nn.length>=best.length)continue;
+    if(nn.length<(closed?3:2))break;
+    if(nodeDeviation(points,nn,closed)<=tol)best=nn;else break;
+  }
+  return best;
+}
+// A circle/ellipse needs only 8 smooth nodes (placed a hair outside so the spline stays within ~0.5%).
+function ellipseEditNodes(shape){
+  const cx=(shape.x0+shape.x1)/2,cy=(shape.y0+shape.y1)/2;
+  const hw=Math.max(0.5,Math.abs(shape.x1-shape.x0)/2),hh=Math.max(0.5,Math.abs(shape.y1-shape.y0)/2);
+  const rot=(shape.rotation||0)*Math.PI/180,cr=Math.cos(rot),sr=Math.sin(rot),out=[];
+  for(let k=0;k<8;k++){
+    const a=k*Math.PI/4;let px=Math.cos(a)*1.004,py=Math.sin(a)*1.004;
+    const lx=(shape.flipH?-px:px)*hw,ly=(shape.flipV?-py:py)*hh;
+    out.push({x:cx+lx*cr-ly*sr,y:cy+lx*sr+ly*cr,pressure:0.65,type:'smooth'});
+  }
+  return out;
+}
 function strokeToEditNodes(stroke){
-  if(stroke.shape&&SHAPE_POLYGONAL[stroke.shape.type]){
+  const sh=stroke.shape;
+  if(sh&&SHAPE_POLYGONAL[sh.type]){
     const src=stroke.closed&&stroke.points.length>1?stroke.points.slice(0,-1):stroke.points;
     return src.map(p=>({x:p.x,y:p.y,pressure:p.pressure,type:'corner'}));
   }
-  return pointsToNodes(stroke.points,stroke.closed,!!stroke.shape);
+  if(sh&&stroke.closed&&(sh.type==='circle'||sh.type==='ellipse'))return ellipseEditNodes(sh);
+  if(sh&&sh.type!=='spiral'){
+    let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;stroke.points.forEach(p=>{x0=Math.min(x0,p.x);y0=Math.min(y0,p.y);x1=Math.max(x1,p.x);y1=Math.max(y1,p.y);});
+    return simplestNodes(stroke.points,stroke.closed,true,Math.max(1.5,Math.hypot(x1-x0,y1-y0)*0.004));
+  }
+  return pointsToNodes(stroke.points,stroke.closed,!!sh);
 }
 function catmullRom(p0,p1,p2,p3,t){const t2=t*t,t3=t2*t;return 0.5*((2*p1)+(-p0+p2)*t+(2*p0-5*p1+4*p2-p3)*t2+(-p0+3*p1-3*p2+p3)*t3);}
 // `closed` wraps the segment index around the node array (using modulo neighbours for the
@@ -8129,6 +8178,7 @@ function penCancel(){
 function penSet(on){
   if(!!on===penOn)return;
   if(on){
+    if(warpOn)warpSet(false);
     if(mode==='edit')$('drawModeBtn').onclick();
     if(eraserActive){eraserActive=false;syncControlsFromSettings();syncActiveSwatches();}
     armedShapeType=null;try{syncShapeToolUI();disarmAreaFill();}catch(e){}
@@ -8158,6 +8208,7 @@ $('penUndoBtn').onclick=()=>{if(penClosed&&penEdit){penClosed=false;}else penA.p
 $('penCancelBtn').onclick=()=>{penCancel();penOn=false;penBarSync();};
 $('tbEraserBtn').onclick=()=>{
   if(penOn)penSet(false);
+  if(warpOn)warpSet(false);
   if(mode==='edit')$('drawModeBtn').onclick();
   $('eraserToggle').onclick();
 };
@@ -8165,12 +8216,13 @@ document.addEventListener('keydown',e=>{if(!penOn)return;if(e.key==='Enter'){pen
 
 $('actionsEditCurveBtn').onclick=()=>{const st=strokes.find(x=>x.id===selectedStrokeId);if(st)penEditStroke(st);};
 function tbToolSync(){
-  const free=!penOn&&!eraserActive&&!armedShapeType&&mode==='draw';
+  const free=!penOn&&!warpOn&&!eraserActive&&!armedShapeType&&mode==='draw';
   const b=$('tbPencilBtn');if(b)b.classList.toggle('active',free);
   const e=$('tbEraserBtn');if(e)e.classList.toggle('active',!!eraserActive);
 }
 function tbPencilGo(){
   if(penOn)penSet(false);
+  if(warpOn)warpSet(false);
   eraserActive=false;armedShapeType=null;try{syncShapeToolUI();disarmAreaFill();}catch(e){}
   if(mode==='edit')$('drawModeBtn').onclick();
   syncControlsFromSettings();syncActiveSwatches();tbToolSync();
@@ -8242,6 +8294,155 @@ function tbSizeSync(){
     });
   });
 })();
+
+// ---- Smooth Path: relaxes a stroke's outline (wobble out, shape kept) — amount 1–10 ----
+let smoothAmount=4;try{smoothAmount=Math.min(10,Math.max(1,+localStorage.getItem('sp-smoothAmt')||4));}catch(e){}
+function smoothStrokeGeometry(stroke,amount){
+  if(!stroke||stroke.regions)return false;
+  const closed=!!stroke.closed;
+  const src=stroke.nodes?nodesToPoints(stroke.nodes,closed):stroke.points;
+  if(!src||src.length<3)return false;
+  let P=BrushEngine.resample(src,3).map(p=>({x:p.x,y:p.y,pressure:p.pressure==null?1:p.pressure}));
+  if(closed&&P.length>3&&Math.hypot(P[0].x-P[P.length-1].x,P[0].y-P[P.length-1].y)<4)P.pop();
+  const n=P.length;if(n<4)return false;
+  const iters=Math.min(600,Math.round(amount*amount*4));
+  let A=P,B=P.map(p=>({...p}));
+  for(let k=0;k<iters;k++){
+    const lo=closed?0:1,hi=closed?n:n-1;
+    for(let i=lo;i<hi;i++){
+      const a=A[(i-1+n)%n],c=A[(i+1)%n],b=A[i];
+      B[i].x=(a.x+2*b.x+c.x)/4;B[i].y=(a.y+2*b.y+c.y)/4;B[i].pressure=(a.pressure+2*b.pressure+c.pressure)/4;
+    }
+    if(!closed){B[0].x=A[0].x;B[0].y=A[0].y;B[0].pressure=A[0].pressure;B[n-1].x=A[n-1].x;B[n-1].y=A[n-1].y;B[n-1].pressure=A[n-1].pressure;}
+    const t=A;A=B;B=t;
+  }
+  const out=A.map(p=>({x:p.x,y:p.y,pressure:p.pressure}));
+  if(closed)out.push({...out[0]});
+  stroke.points=out;stroke.nodes=null;stroke.shape=null;delete stroke.bez;
+  if(closed)stroke.cornerAuto=true;
+  return true;
+}
+function smoothSelectedStroke(){
+  const s=strokes.find(x=>x.id===selectedStrokeId);if(!s){setStatus('Select a stroke in Edit mode first.');return;}
+  const layer=layers.find(l=>l.id===s.layerId);if(layer&&layer.locked){setStatus('🔒 "'+layer.name+'" is locked.');return;}
+  if(!smoothStrokeGeometry(s,smoothAmount)){setStatus('That stroke is too short to smooth.');return;}
+  rebuildLayer(s.layerId);try{rebuildLayersClippedBy(s.id);}catch(e){}
+  redraw();pushHist();try{syncStrokeSelectionUI();}catch(e){}
+  setStatus('〰️ Path smoothed (amount '+smoothAmount+'). Tap again for more, or Undo.');
+}
+document.querySelectorAll('.smooth-amt').forEach(r=>{
+  r.value=smoothAmount;
+  r.addEventListener('input',()=>{smoothAmount=+r.value;try{localStorage.setItem('sp-smoothAmt',String(smoothAmount));}catch(e){}
+    document.querySelectorAll('.smooth-amt').forEach(o=>{o.value=smoothAmount;});document.querySelectorAll('.smooth-amt-val').forEach(v=>{v.textContent=smoothAmount;});});
+});
+document.querySelectorAll('.smooth-amt-val').forEach(v=>{v.textContent=smoothAmount;});
+document.querySelectorAll('.smooth-path-btn').forEach(b=>{b.onclick=smoothSelectedStroke;});
+
+// ================= Warp tool =================
+// Drag across the canvas to push/bend strokes on the active layer (like a finger in wet paint).
+// Radius and strength are adjustable. Shapes and node paths become ordinary free paths when warped.
+let warpOn=false,warpR=80,warpStr=0.8,warpDrag=null,warpRaf=0;
+try{warpR=Math.min(400,Math.max(10,+localStorage.getItem('sp-warpR')||80));warpStr=Math.min(1,Math.max(0.1,+localStorage.getItem('sp-warpS')||0.8));}catch(e){}
+{
+  const ring=document.createElement('div');ring.id='warpRing';ring.style.cssText='position:absolute;display:none;pointer-events:none;z-index:8;border:2px dashed #8f6bd8;border-radius:50%;box-sizing:border-box;background:rgba(143,107,216,.08)';
+  wrap.appendChild(ring);
+  const bar=document.createElement('div');bar.id='warpBar';bar.className='pen-bar';bar.style.display='none';
+  bar.innerHTML='<b>🌀 Warp</b><label>Size <input id="warpSize" type="range" min="10" max="400" step="1"></label><label>Strength <input id="warpStrength" type="range" min="10" max="100" step="1"></label><button id="warpDoneBtn" class="btn mini primary">✓ Done</button><span style="flex-basis:100%;text-align:center">Drag on the canvas to push strokes on the active layer.</span>';
+  wrap.appendChild(bar);
+}
+function warpRingAt(clientX,clientY,show){
+  const ring=$('warpRing');if(!show){ring.style.display='none';return;}
+  const r=wrap.getBoundingClientRect(),d=2*warpR*zoom*baseScale;
+  ring.style.width=d+'px';ring.style.height=d+'px';ring.style.left=(clientX-r.left-d/2)+'px';ring.style.top=(clientY-r.top-d/2)+'px';ring.style.display='block';
+}
+function warpSyncUI(){
+  $('warpBar').style.display=warpOn?'flex':'none';
+  $('tbWarpBtn').classList.toggle('active',warpOn);
+  $('warpSize').value=warpR;$('warpStrength').value=Math.round(warpStr*100);
+  try{tbToolSync();}catch(e){}
+}
+function warpSet(on){
+  if(!!on===warpOn)return;
+  if(on){
+    if(penOn)penSet(false);
+    if(mode==='edit')$('drawModeBtn').onclick();
+    if(eraserActive){eraserActive=false;syncControlsFromSettings();syncActiveSwatches();}
+    armedShapeType=null;try{syncShapeToolUI();disarmAreaFill();}catch(e){}
+    warpOn=true;setStatus('🌀 Warp: drag on the canvas to push strokes. Tap Done when finished.');
+  }else{warpOn=false;warpDrag=null;warpRingAt(0,0,false);}
+  warpSyncUI();
+}
+function segDist(px,py,a,b){
+  const dx=b.x-a.x,dy=b.y-a.y,l2=dx*dx+dy*dy;
+  let t=l2?((px-a.x)*dx+(py-a.y)*dy)/l2:0;t=Math.max(0,Math.min(1,t));
+  return Math.hypot(px-(a.x+dx*t),py-(a.y+dy*t));
+}
+function warpStroke(s,cx,cy,dx,dy){
+  const R=warpR,src=s.nodes?nodesToPoints(s.nodes,!!s.closed):s.points;
+  if(!src||src.length<2||s.regions)return false;
+  const maxSeg=Math.max(1.5,R/12);let touched=false;
+  for(let i=0;i<src.length;i++){
+    if(Math.hypot(src[i].x-cx,src[i].y-cy)<R){touched=true;break;}
+    if(i&&segDist(cx,cy,src[i-1],src[i])<R){touched=true;break;}
+  }
+  if(!touched)return false;
+  const P=[src[0]];
+  for(let i=1;i<src.length;i++){
+    const a=src[i-1],b=src[i],len=Math.hypot(b.x-a.x,b.y-a.y);
+    if(len>maxSeg&&segDist(cx,cy,a,b)<R*1.25){
+      const n=Math.ceil(len/maxSeg);
+      for(let k=1;k<n;k++){const t=k/n;P.push({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,pressure:(a.pressure==null?1:a.pressure)+((b.pressure==null?1:b.pressure)-(a.pressure==null?1:a.pressure))*t});}
+    }
+    P.push(b);
+  }
+  const out=P.map(p=>{
+    const d=Math.hypot(p.x-cx,p.y-cy);
+    if(d>=R)return p;
+    const t=d/R,w=(1-t*t),k=w*w*warpStr;
+    return {...p,x:p.x+dx*k,y:p.y+dy*k};
+  });
+  s.points=out;
+  if(s.nodes||s.shape||s.bez){s.nodes=null;s.shape=null;delete s.bez;}
+  if(s.closed)s.cornerAuto=true;
+  return true;
+}
+function warpFlush(){
+  warpRaf=0;if(!warpDrag)return;
+  warpDrag.dirty.forEach(id=>rebuildLayer(id));warpDrag.dirty.clear();redraw();
+}
+function warpDown(e){
+  const layer=getActiveLayer();
+  const p=screenToCanvas(e.clientX,e.clientY);
+  warpDrag={last:p,dirty:new Set(),moved:false};
+  warpRingAt(e.clientX,e.clientY,true);
+}
+function warpMove(e){
+  if(!warpDrag)return;
+  const p=screenToCanvas(e.clientX,e.clientY),dx=p.x-warpDrag.last.x,dy=p.y-warpDrag.last.y;
+  warpRingAt(e.clientX,e.clientY,true);
+  if(Math.hypot(dx,dy)<0.01)return;
+  warpDrag.last=p;
+  strokes.forEach(s=>{
+    if(s.layerId!==activeLayerId)return;
+    const layer=layers.find(l=>l.id===s.layerId);if(!layer||layer.locked)return;
+    if(warpStroke(s,p.x,p.y,dx,dy)){warpDrag.dirty.add(s.layerId);warpDrag.moved=true;}
+  });
+  if(warpDrag.dirty.size&&!warpRaf)warpRaf=requestAnimationFrame(warpFlush);
+}
+function warpUp(){
+  if(!warpDrag)return;const d=warpDrag;warpDrag=null;warpRingAt(0,0,false);
+  if(warpRaf){cancelAnimationFrame(warpRaf);warpRaf=0;}
+  d.dirty.forEach(id=>rebuildLayer(id));
+  if(d.moved){redraw();pushHist();}
+}
+canvas.addEventListener('pointermove',e=>{if(warpDrag&&isPen(e))warpMove(e);});
+canvas.addEventListener('pointerup',()=>warpUp());
+canvas.addEventListener('pointercancel',()=>warpUp());
+$('tbWarpBtn').onclick=()=>warpSet(!warpOn);
+$('warpDoneBtn').onclick=()=>warpSet(false);
+$('warpSize').oninput=e=>{warpR=+e.target.value;try{localStorage.setItem('sp-warpR',String(warpR));}catch(err){}
+  const r=wrap.getBoundingClientRect();warpRingAt(r.left+r.width/2,r.top+r.height/2,true);clearTimeout(warpSet._t);warpSet._t=setTimeout(()=>warpRingAt(0,0,false),900);};
+$('warpStrength').oninput=e=>{warpStr=+e.target.value/100;try{localStorage.setItem('sp-warpS',String(warpStr));}catch(err){}};
 
 async function boot(){
   applyTransform();

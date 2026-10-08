@@ -158,3 +158,8 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## Resizable floating panels (v58)
 - Every floating panel (Stroke, Blend, Group, Rotate, Edit Path…) has a ◢ grip at its bottom-right: drag to resize (grows left/up if it's against the canvas edge, scrolls inside when smaller), size remembered (localStorage `sp-fpSize`), double-tap the grip to reset.
+
+## Warp, Smooth Path, simpler shape nodes (v59)
+- 🌀 Warp (toolbar; in ⋯ More when narrow): drag to push/bend strokes on the active layer. Size and Strength sliders in its bar; shapes/node paths become free paths when warped. One undo step per drag.
+- 〰️ Smooth Path (Stroke panel, both floating and left): amount 1–10, relaxes wobble, repeatable.
+- Edit Path on a circle/ellipse now opens with 8 smooth nodes (was ~dozens); other curvy shapes (heart, teardrop, rounded rect) use the fewest nodes that stay within ~0.4% of the outline.
