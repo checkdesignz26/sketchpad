@@ -270,3 +270,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## v90 — Layer names in a narrow panel
 - When the left panel is narrow, each layer row now wraps: the name stays readable and the opacity slider and buttons move to a second line.
+
+## v91 — Raster brush stability
+- Raster brushes now redraw the whole stroke while you draw (no more seams or blobby stacking from drawing it in slices), cap the size of their scratch image so the iPad does not run out of memory when zoomed in, and fall back to the vector look if anything goes wrong.

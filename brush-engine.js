@@ -624,9 +624,11 @@
     } catch (e) {}
     const bw = bx1 - bx, bh = by1 - by;
     if (bw < 1 || bh < 1) return;
-    const se = Math.min(sc, 4096 / Math.max(bw, bh));
+    // keep the scratch image small (<= ~2.5M pixels): iPads kill the page when canvases get huge
+    const se = Math.min(sc, 2048 / Math.max(bw, bh), Math.sqrt(2500000 / (bw * bh)));
     const pw = Math.max(1, Math.ceil(bw * se)), ph = Math.max(1, Math.ceil(bh * se));
     if (!_buf) _buf = document.createElement('canvas');
+    if (_buf.width * _buf.height > 6500000 && pw * ph < 1500000) { _buf.width = 1; _buf.height = 1; }
     if (_buf.width < pw || _buf.height < ph) { _buf.width = Math.max(_buf.width, pw); _buf.height = Math.max(_buf.height, ph); }
     const b = _buf.getContext('2d');
     b.setTransform(1, 0, 0, 1, 0, 0); b.clearRect(0, 0, Math.min(_buf.width, pw + 2), Math.min(_buf.height, ph + 2));
@@ -687,7 +689,7 @@
     if (!stroke.points || stroke.points.length === 0) return;
     if (alphaMul === undefined) alphaMul = 1;
     if (alphaMul <= 0) return; // fully hidden — skip dabs entirely rather than stamp at opacity 0
-    if (settings && settings.engine === 'raster' && !brush.stamp && !brush.nib && !brush.path && !brush.fx && brush.id !== 'eraser') { renderRaster(ctx, stroke, brush, settings, alphaMul); return; }
+    if (settings && settings.engine === 'raster' && !brush.stamp && !brush.nib && !brush.path && !brush.fx && brush.id !== 'eraser') { try { renderRaster(ctx, stroke, brush, settings, alphaMul); } catch (e) { try { renderBase(ctx, stroke, brush, settings, alphaMul); } catch (e2) {} } return; }
     if (brush.fx && fxActive(brush)) { renderWithFx(ctx, stroke, brush, settings, alphaMul); return; }
     renderBase(ctx, stroke, brush, settings, alphaMul);
   }
