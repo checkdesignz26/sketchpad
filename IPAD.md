@@ -273,3 +273,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## v91 — Raster brush stability
 - Raster brushes now redraw the whole stroke while you draw (no more seams or blobby stacking from drawing it in slices), cap the size of their scratch image so the iPad does not run out of memory when zoomed in, and fall back to the vector look if anything goes wrong.
+
+## v92 — Less lag with raster brushes
+- Raster strokes now read the canvas once per stroke instead of dozens of times (what made the iPad stall), use fewer dabs, and skip colour pick-up when Wet mix is near zero.
