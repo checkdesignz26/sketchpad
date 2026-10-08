@@ -267,3 +267,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## v89 — Eraser, exact and fast
 - v88 erased pixels live and put some back when you lifted the pen, which looked odd. The eraser now redraws only the strokes near what it cut (exact every frame) instead of the whole layer, and no longer paints over thick strokes it did not actually touch.
+
+## v90 — Layer names in a narrow panel
+- When the left panel is narrow, each layer row now wraps: the name stays readable and the opacity slider and buttons move to a second line.
