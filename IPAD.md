@@ -310,3 +310,6 @@ Double-tapping a selected motif with editable artwork now opens Edit Motif inste
 
 ## v104 — Edit Motif banner
 While a motif is being edited a Done / Cancel banner stays at the top of the canvas (the old Done pill could be hidden in the cut-off toolbar). Cancel leaves the motif unchanged. After Done or Cancel the motif stays selected. Pressing Edit Motif while already editing now says so.
+
+## v105 — Edit Motif opens in select mode
+Editing a motif now starts in Edit (select) mode so tapping a stroke brings up its stroke panel (colour, width, Edit Path). Switch to Draw to add strokes.
