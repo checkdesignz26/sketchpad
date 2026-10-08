@@ -205,3 +205,7 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 ## v71 — Duplicate button always visible; sturdier double-tap
 - The **⧉ Duplicate** button now sits right next to Select and never moves into ⋯ More.
 - Double-tap duplicate is more forgiving (500 ms / 45 px) and always duplicates what the first tap selected. Use Apple Pencil (or mouse) in Edit mode — finger taps pan/zoom, as elsewhere in the app.
+
+## v72 — ⚡ Quick actions floating panel
+- New **⚡** button in the toolbar (next to Select) opens a floating panel you can drag anywhere on the canvas (it remembers where you left it): **☝️ Select**, **✥ Move**, **⧉ Duplicate**, **🗑 Delete**, **🧹 Erase**, **✏️ Draw**.
+- **Move** lets you drag any shape, stroke or picture straight away (no select-first step). Delete works on shapes, strokes, pictures and multi-selections, and Undo brings them back. Erase toggles the eraser; Draw returns to the pen.
