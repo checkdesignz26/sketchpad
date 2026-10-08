@@ -288,3 +288,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## v96 — Pinch zoom no longer jumps
 - If two fingers start very close together, the pinch used to multiply the zoom by a huge ratio and shoot to maximum. The starting gap now has a minimum, and zoom can change by at most 1.5x per touch update, so a stalled frame cannot cause a leap.
+
+## v97 — Big groups resize smoothly
+Groups with many strokes (or raster brushes) are drawn once into a picture while you drag a handle, so resizing the goose no longer redraws 381 strokes every frame. The sharp redraw happens once when you let go.
