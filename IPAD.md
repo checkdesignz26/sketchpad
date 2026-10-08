@@ -304,3 +304,6 @@ Editing a motif now shows its strokes exactly where that motif sits (same positi
 ## v101-v102 — Style many strokes, alpha lock, blend modes
 - Group panel: Opacity box (with Apply to all) and "Use my current brush" redraws every selected stroke with the chosen brush, keeping each stroke colour and size.
 - Layers: α button = alpha lock (new paint only lands where the layer already has paint, so you can recolour without spilling). Blend-mode picker per layer (Multiply, Screen, Overlay, Soft light, Hard light, Darken, Lighten, Dodge, Burn, Colour, Luminosity). Both are saved with the project and undo.
+
+## v103 — Double-tap a motif opens it for editing
+Double-tapping a selected motif with editable artwork now opens Edit Motif instead of making a duplicate. The Duplicate button still copies.
