@@ -218,3 +218,7 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## v74 — Version number shown
 - The "⟳ Get latest version" button (View ▾ / ⋯ More, in the View panel) now shows which version you have, e.g. "(you have v74)". Bump this label with sw.js each release.
+
+## v75 — Get latest version bypasses all caches
+- "⟳ Get latest version" now re-downloads index/script files with cache bypass, clears the app's cached copies, then reloads with a fresh `?v=` address, so an update shows up on the first tap.
+- If an update ever doesn't appear: open the site address in Safari with `?v=1` on the end, and check the repo's **Actions** tab for a failed "pages build and deployment".
