@@ -300,3 +300,7 @@ Capture Motif / Capture Area now place the motif exactly where the drawing was, 
 
 ## v100 — Edit Motif in place, softer brush preview
 Editing a motif now shows its strokes exactly where that motif sits (same position, size and turn) and hides the picture of it meanwhile, so there is no second copy. Tap Done and it goes back. The brush preview for very light colours uses a soft lilac instead of dark grey.
+
+## v101-v102 — Style many strokes, alpha lock, blend modes
+- Group panel: Opacity box (with Apply to all) and "Use my current brush" redraws every selected stroke with the chosen brush, keeping each stroke colour and size.
+- Layers: α button = alpha lock (new paint only lands where the layer already has paint, so you can recolour without spilling). Blend-mode picker per layer (Multiply, Screen, Overlay, Soft light, Hard light, Darken, Lighten, Dodge, Burn, Colour, Luminosity). Both are saved with the project and undo.
