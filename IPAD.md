@@ -181,3 +181,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## v64 — Trace dialog layout
 - Zoom row moved above the Before/After panes; panes capped at 38% of screen height so zoom, panes and options fit without scrolling on iPad.
+
+## v65 — Updates bypass the browser's HTTP cache
+- The service worker now revalidates files with the server (cache: 'no-cache') so "⟳ Get latest version" picks up new releases straight away instead of a copy cached for up to ~10 minutes.
