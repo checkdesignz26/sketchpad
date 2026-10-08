@@ -201,3 +201,7 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## v70 — Trace: exactly one repeat tile
 - "Size on canvas" has a new option **Exactly one repeat tile (for a seamless pattern tile)**: the traced picture is placed to fill exactly the repeat tile (edge to edge), with tiling left on. Untick "Remove the background colour" when the picture is a full tile with its own background.
+
+## v71 — Duplicate button always visible; sturdier double-tap
+- The **⧉ Duplicate** button now sits right next to Select and never moves into ⋯ More.
+- Double-tap duplicate is more forgiving (500 ms / 45 px) and always duplicates what the first tap selected. Use Apple Pencil (or mouse) in Edit mode — finger taps pan/zoom, as elsewhere in the app.

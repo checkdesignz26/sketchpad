@@ -708,11 +708,12 @@ html.in-suite .suite-only{display:block!important}
       </div>
       <div class="tb-row tb-canvas" id="tbCanvas">
         <button id="selMenuBtn" class="tool-btn tb-fix" aria-haspopup="menu" aria-expanded="false" title="Select Area, Select All, Select same…">▭ Select ▾</button>
+        <button id="tbDupBtn" class="tool-btn tb-fix" title="Duplicate the selected shape, stroke or picture (also: double-tap it)">⧉ Duplicate</button>
         <span class="tb-split"><button id="tbPencilBtn" class="tool-btn tb-fix" title="Freehand drawing with the current brush">✏️ Pencil</button><button id="tbPencilMenuBtn" class="tool-btn tb-fix" aria-haspopup="menu" aria-expanded="false" title="Choose a brush">▾</button></span>
         <span id="tbSize" class="size-combo tb-size tb-fix" title="Brush size"><input class="size-num" id="tbSizeNum" type="number" inputmode="decimal" min="0.05" step="0.05"><select class="size-pick" id="tbSizePick" title="Common sizes"></select></span>
         <button id="tbPenBtn" class="tool-btn tb-fix" title="Bézier Pen: tap for points, drag to curve">🖋️ Pen</button>
         <button id="tbEraserBtn" class="tool-btn tb-fix" title="Eraser">🧹 Eraser</button>
-        <button id="tbDupBtn" class="tool-btn" data-ovp="1" data-ovl="⧉ Duplicate" title="Duplicate the selected shape, stroke or picture (also: double-tap it)">⧉ Duplicate</button>
+        
         <button id="tbWarpBtn" class="tool-btn" data-ovp="2" data-ovl="🌀 Warp" title="Warp: drag to push and bend strokes">🌀 Warp</button>
         <button id="strokePanelBtn" class="tool-btn" data-ovp="2" data-ovl="🖊️ Stroke tools" title="Show or hide the Stroke panel">🖊️ Stroke tools</button>
         <div class="toolbar-spacer"></div>
@@ -8933,16 +8934,22 @@ $('tbDupBtn').onclick=()=>{
   if(mode!=='edit'&&!selectedStrokeId&&!selected&&!multiSel){setStatus('⧉ Switch to Edit mode and tap a shape, stroke or picture, then Duplicate.');return;}
   quickDuplicate();
 };
-let dblTapLast={t:0,x:0,y:0};
+let dblTapLast={t:0,x:0,y:0,sel:null};
+function dblSelSnap(){return {sid:selectedStrokeId,pid:selected,multi:multiSel};}
 function dblTapCheck(e){
   const chk=$('dblDupChk');if(chk&&!chk.checked)return;
-  const now=performance.now(),near=Math.hypot(e.clientX-dblTapLast.x,e.clientY-dblTapLast.y)<28;
-  const isDbl=now-dblTapLast.t<350&&near;
-  dblTapLast={t:now,x:e.clientX,y:e.clientY};
+  const now=performance.now(),near=Math.hypot(e.clientX-dblTapLast.x,e.clientY-dblTapLast.y)<45;
+  const isDbl=now-dblTapLast.t<500&&near&&dblTapLast.sel;
+  const prev=dblTapLast.sel;
+  dblTapLast={t:now,x:e.clientX,y:e.clientY,sel:dblSelSnap()};
   if(!isDbl)return;
-  dblTapLast={t:0,x:0,y:0};
-  const hasSel=(selectedStrokeId&&strokes.find(x=>x.id===selectedStrokeId))||(selected&&placed.find(p=>p.id===selected))||(multiSel&&(multiSel.strokeIds.length||multiSel.placedIds.length));
-  if(hasSel)quickDuplicate();
+  dblTapLast={t:0,x:0,y:0,sel:null};
+  // use what the FIRST tap selected, even if the second tap's own select logic changed or cleared it
+  if(prev.sid&&strokes.find(x=>x.id===prev.sid)){selectedStrokeId=prev.sid;selected=null;multiSel=null;}
+  else if(prev.pid&&placed.find(p=>p.id===prev.pid)){selected=prev.pid;selectedStrokeId=null;multiSel=null;}
+  else if(prev.multi){multiSel=prev.multi;selected=null;selectedStrokeId=null;}
+  else return;
+  quickDuplicate();
 }
 try{const v=localStorage.getItem('sp-dblDup');if(v==='0')$('dblDupChk').checked=false;$('dblDupChk').addEventListener('change',()=>{try{localStorage.setItem('sp-dblDup',$('dblDupChk').checked?'1':'0');}catch(e){}});}catch(e){}
 async function boot(){
