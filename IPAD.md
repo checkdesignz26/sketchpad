@@ -264,3 +264,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## v88 — Faster eraser
 - The eraser now rubs out pixels instantly while you drag and does the exact stroke re-render once when you lift, and skips strokes that are nowhere near the eraser. Much smoother on drawings with lots of strokes.
+
+## v89 — Eraser, exact and fast
+- v88 erased pixels live and put some back when you lifted the pen, which looked odd. The eraser now redraws only the strokes near what it cut (exact every frame) instead of the whole layer, and no longer paints over thick strokes it did not actually touch.
