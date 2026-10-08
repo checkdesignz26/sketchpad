@@ -99,10 +99,10 @@
 
     // -- Paint / Texture (raster-only, see file header) --
     { id: 'gouache', name: 'Gouache', family: 'paint', renderMode: 'vector',
-      defaults: { size: 34, opacity: 95, smoothing: 15, pressureWidth: 35, pressureOpacity: 15, spacing: 14 },
+      defaults: { size: 34, opacity: 95, smoothing: 15, pressureWidth: 35, pressureOpacity: 15, spacing: 14, engine: 'raster', wetMix: 35, dryness: 0 },
       hardness: 0.8, jitter: 0.12, streaky: 0.06, taper: 'none' },
     { id: 'dryBrush', name: 'Dry Brush', family: 'paint', renderMode: 'vector',
-      defaults: { size: 26, opacity: 85, smoothing: 10, pressureWidth: 40, pressureOpacity: 35, spacing: 8 },
+      defaults: { size: 26, opacity: 85, smoothing: 10, pressureWidth: 40, pressureOpacity: 35, spacing: 8, engine: 'raster', wetMix: 12, dryness: 60 },
       hardness: 0.5, jitter: 0.3, streaky: 0.45, taper: 'none' },
     { id: 'chalk', name: 'Chalk', family: 'paint', renderMode: 'vector',
       defaults: { size: 20, opacity: 70, smoothing: 5, pressureWidth: 20, pressureOpacity: 40, spacing: 6 },
@@ -110,6 +110,12 @@
     { id: 'crayon', name: 'Crayon', family: 'paint', renderMode: 'vector',
       defaults: { size: 16, opacity: 80, smoothing: 5, pressureWidth: 25, pressureOpacity: 25, spacing: 5 },
       hardness: 0.6, jitter: 0.25, streaky: 0.3, taper: 'none' },
+    { id: 'watercolour', name: 'Watercolour', family: 'paint', renderMode: 'vector',
+      defaults: { size: 44, opacity: 55, smoothing: 20, pressureWidth: 30, pressureOpacity: 40, spacing: 8, engine: 'raster', wetMix: 55, dryness: 12 },
+      hardness: 0.3, jitter: 0.08, streaky: 0, taper: 'none' },
+    { id: 'dryInk', name: 'Dry Ink', family: 'inking', renderMode: 'vector',
+      defaults: { size: 10, opacity: 100, smoothing: 18, pressureWidth: 55, pressureOpacity: 30, spacing: 6, engine: 'raster', wetMix: 0, dryness: 55 },
+      hardness: 0.85, jitter: 0.06, streaky: 0, taper: 'none' },
   ];
 
   const FAMILY_ORDER = ['inking', 'pencil', 'marker', 'paint', 'custom', 'stamp'];
@@ -554,10 +560,134 @@
     ctx.restore();
   }
 
+  // ---- Raster-feel engine -------------------------------------------------
+  // Paints like pixels: dabs go into a scratch buffer (so overlaps inside one stroke don't pile
+  // up), a paper-tooth grain can be knocked out of it (dryness), the paint can pick up colour
+  // already on the layer (wet mix), then the buffer is laid onto the layer at the stroke opacity.
+  // The stroke is still retained as points and replayed in order, so undo, saving, the vector
+  // eraser and re-brushing all keep working. Deterministic: same stroke + same layer = same pixels.
+  let _buf = null, _grain = null;
+  const _sampleCache = { id: null, map: new Map() };
+  function grainTile() {
+    if (_grain) return _grain;
+    const N = 48, c = document.createElement('canvas'); c.width = c.height = N * 2;
+    const sm = document.createElement('canvas'); sm.width = sm.height = N;
+    const sx = sm.getContext('2d'), id = sx.createImageData(N, N), r = seededRandom('paper-tooth');
+    for (let i = 0; i < N * N; i++) { const v = r() * 255; id.data[i * 4 + 3] = v < 105 ? 0 : Math.min(255, (v - 105) * 3); }
+    sx.putImageData(id, 0, 0);
+    const x = c.getContext('2d'); x.imageSmoothingEnabled = true; x.drawImage(sm, 0, 0, N * 2, N * 2);
+    _grain = c; return c;
+  }
+  function parseRgb(col) {
+    let m = /^#([0-9a-f]{6})$/i.exec(col || '');
+    if (m) { const n = parseInt(m[1], 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+    m = /^#([0-9a-f]{3})$/i.exec(col || '');
+    if (m) { const h = m[1]; return [parseInt(h[0] + h[0], 16), parseInt(h[1] + h[1], 16), parseInt(h[2] + h[2], 16)]; }
+    m = /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/.exec(col || '');
+    if (m) return [+m[1], +m[2], +m[3]];
+    return [0, 0, 0];
+  }
+  function renderRaster(ctx, stroke, brush, settings, alphaMul) {
+    const m = ctx.getTransform ? ctx.getTransform() : { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 };
+    const sc = Math.max(0.05, Math.hypot(m.a, m.b));
+    let spacingPx = Math.max(1, (settings.spacing / 100) * Math.max(4, settings.size));
+    const narrow = Math.max(0.35, 1 - settings.pressureWidth / 100);
+    spacingPx = Math.max(0.2, Math.min(spacingPx, settings.size * narrow * 0.6));
+    const pts = resample(stroke.points, spacingPx);
+    const rand = seededRandom(stroke.id || 'live');
+    const n = pts.length, dabs = [];
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity, pSum = 0;
+    pts.forEach((pt, i) => {
+      const widthMul = pressureFactor(pt.pressure, settings.pressureWidth);
+      const opMul = pressureFactor(pt.pressure, settings.pressureOpacity);
+      let radius = (settings.size / 2) * widthMul * taperAt(brush, i, n);
+      let op = opMul;
+      if (brush.jitter > 0) { radius *= (1 - brush.jitter * 0.3) + rand() * brush.jitter * 0.6; op *= (1 - brush.jitter * 0.2) + rand() * brush.jitter * 0.4; }
+      if (brush.streaky > 0 && rand() < brush.streaky) return;
+      let x = pt.x, y = pt.y;
+      if (brush.jitter > 0) { const jr = radius * brush.jitter * 0.5; x += (rand() - 0.5) * jr; y += (rand() - 0.5) * jr; }
+      if (radius <= 0) return;
+      dabs.push({ x, y, r: radius, op, i });
+      pSum += (pt.pressure == null ? 0.5 : pt.pressure);
+      if (x - radius < minX) minX = x - radius; if (x + radius > maxX) maxX = x + radius;
+      if (y - radius < minY) minY = y - radius; if (y + radius > maxY) maxY = y + radius;
+    });
+    if (!dabs.length) return;
+    let bx = Math.floor(minX) - 2, by = Math.floor(minY) - 2, bx1 = Math.ceil(maxX) + 2, by1 = Math.ceil(maxY) + 2;
+    try { // only the part that is actually on this canvas matters
+      if (ctx.canvas && typeof DOMMatrix !== 'undefined' && ctx.getTransform) {
+        const inv = m.inverse(), cw = ctx.canvas.width, ch = ctx.canvas.height, xs = [], ys = [];
+        [[0, 0], [cw, 0], [0, ch], [cw, ch]].forEach((c) => { const q = inv.transformPoint(new DOMPoint(c[0], c[1])); xs.push(q.x); ys.push(q.y); });
+        bx = Math.max(bx, Math.floor(Math.min.apply(null, xs)) - 2); by = Math.max(by, Math.floor(Math.min.apply(null, ys)) - 2);
+        bx1 = Math.min(bx1, Math.ceil(Math.max.apply(null, xs)) + 2); by1 = Math.min(by1, Math.ceil(Math.max.apply(null, ys)) + 2);
+      }
+    } catch (e) {}
+    const bw = bx1 - bx, bh = by1 - by;
+    if (bw < 1 || bh < 1) return;
+    const se = Math.min(sc, 4096 / Math.max(bw, bh));
+    const pw = Math.max(1, Math.ceil(bw * se)), ph = Math.max(1, Math.ceil(bh * se));
+    if (!_buf) _buf = document.createElement('canvas');
+    if (_buf.width < pw || _buf.height < ph) { _buf.width = Math.max(_buf.width, pw); _buf.height = Math.max(_buf.height, ph); }
+    const b = _buf.getContext('2d');
+    b.setTransform(1, 0, 0, 1, 0, 0); b.clearRect(0, 0, Math.min(_buf.width, pw + 2), Math.min(_buf.height, ph + 2));
+    b.setTransform(se, 0, 0, se, -bx * se, -by * se);
+    // colour pick-up from what is already on the layer
+    const wet = Math.max(0, Math.min(100, settings.wetMix || 0)) / 100;
+    const U = global.BrushEngine && global.BrushEngine.underlay;
+    let uctx = null, ux = 1, uy = 1, ue = 0, uf = 0;
+    if (wet > 0) {
+      try {
+        if (U && U.canvas) { uctx = U.canvas.getContext('2d'); ux = U.sx; uy = U.sy; }
+        else if (ctx.canvas && !m.b && !m.c) { uctx = ctx.canvas.getContext('2d'); ux = m.a; uy = m.d; ue = m.e; uf = m.f; }
+      } catch (e) { uctx = null; }
+    }
+    const live = !!(U && U.canvas);
+    if (live && _sampleCache.id !== stroke.id) { _sampleCache.id = stroke.id; _sampleCache.map.clear(); }
+    const base = parseRgb(stroke.color || '#000000');
+    let cur = base.slice();
+    const every = Math.max(4, Math.ceil(dabs.length / 24));
+    dabs.forEach((d, k) => {
+      if (uctx && k % every === 0) {
+        let sm = live ? _sampleCache.map.get(d.i) : undefined;
+        if (sm === undefined) {
+          sm = null;
+          try {
+            const px = Math.round(d.x * ux + ue), py = Math.round(d.y * uy + uf);
+            if (px > 1 && py > 1 && px < uctx.canvas.width - 2 && py < uctx.canvas.height - 2) {
+              const dt = uctx.getImageData(px - 1, py - 1, 3, 3).data; let r = 0, g = 0, bl = 0, a = 0;
+              for (let q = 0; q < 36; q += 4) { const al = dt[q + 3] / 255; r += dt[q] * al; g += dt[q + 1] * al; bl += dt[q + 2] * al; a += al; }
+              if (a > 0.5) sm = [r / a, g / a, bl / a, Math.min(1, a / 9)];
+            }
+          } catch (e) { sm = null; }
+          if (live) _sampleCache.map.set(d.i, sm);
+        }
+        if (sm && sm[3] > 0.15) {
+          const kk = Math.min(0.6, wet * 0.4 * sm[3]);
+          cur = [cur[0] * (1 - kk) + sm[0] * kk, cur[1] * (1 - kk) + sm[1] * kk, cur[2] * (1 - kk) + sm[2] * kk];
+        }
+        cur = [cur[0] * 0.96 + base[0] * 0.04, cur[1] * 0.96 + base[1] * 0.04, cur[2] * 0.96 + base[2] * 0.04];
+      }
+      stampDab(b, d.x, d.y, d.r, d.op, 'rgb(' + (cur[0] | 0) + ',' + (cur[1] | 0) + ',' + (cur[2] | 0) + ')', brush.hardness);
+    });
+    const dry = Math.max(0, Math.min(100, settings.dryness || 0)) / 100;
+    if (dry > 0) {
+      b.save(); b.setTransform(se, 0, 0, se, -bx * se, -by * se);
+      b.globalCompositeOperation = 'destination-out';
+      b.globalAlpha = Math.min(1, dry * (1 - 0.45 * Math.min(1, pSum / dabs.length)));
+      b.fillStyle = b.createPattern(grainTile(), 'repeat');
+      b.fillRect(bx, by, bw, bh); b.restore();
+    }
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, Math.min(1, (settings.opacity / 100) * alphaMul));
+    if (brush.id === 'watercolour') ctx.globalCompositeOperation = 'multiply';
+    ctx.drawImage(_buf, 0, 0, pw, ph, bx, by, pw / se, ph / se);
+    ctx.restore();
+  }
   function renderStroke(ctx, stroke, brush, settings, alphaMul) {
     if (!stroke.points || stroke.points.length === 0) return;
     if (alphaMul === undefined) alphaMul = 1;
     if (alphaMul <= 0) return; // fully hidden — skip dabs entirely rather than stamp at opacity 0
+    if (settings && settings.engine === 'raster' && !brush.stamp && !brush.nib && !brush.path && !brush.fx && brush.id !== 'eraser') { renderRaster(ctx, stroke, brush, settings, alphaMul); return; }
     if (brush.fx && fxActive(brush)) { renderWithFx(ctx, stroke, brush, settings, alphaMul); return; }
     renderBase(ctx, stroke, brush, settings, alphaMul);
   }
@@ -769,6 +899,6 @@
     getSettings, setSettings,
     touchRecent, getRecents,
     isFavorite, toggleFavorite, getFavorites,
-    pressureFactor, stampDab, colorWithAlpha, resample, renderStroke, smoothPoints, seededRandom,
+    underlay: null, pressureFactor, stampDab, colorWithAlpha, resample, renderStroke, smoothPoints, seededRandom,
   };
 })(window);
