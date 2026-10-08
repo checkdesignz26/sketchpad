@@ -234,3 +234,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## v79
 - Centre-line trace: small thick clumps (needle junctions, dots) stay as line work; only large dark areas become solid fills.
+
+## v80
+- Trace dialog: "Line weight" slider for Centre-line strokes (60-220%, default 120%) so lines can be made bolder or thinner.
