@@ -8674,9 +8674,59 @@ function vtDist(src,w,h){ // chamfer 3-4 distance to the nearest non-ink pixel, 
   for(let i=0;i<d.length;i++)d[i]/=3;
   return d;
 }
+// solid areas of a mask -> filled shapes {hex,nodes,holes}
+function vtMaskToShapes(w,h,mask,eps,minArea,sIt,hex){
+  const loops=vtLoops(w,h,i=>mask[i]===1),outers=[],holes=[],shapes=[];
+  loops.forEach(lp=>{const a=vtArea(lp);if(Math.abs(a)<minArea)return;(a>0?outers:holes).push({lp,a});});
+  holes.forEach(hl=>{
+    const q=hl.lp[0];let best=null;
+    outers.forEach(o=>{if(!o.bb){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;o.lp.forEach(p=>{if(p.x<x0)x0=p.x;if(p.x>x1)x1=p.x;if(p.y<y0)y0=p.y;if(p.y>y1)y1=p.y;});o.bb=[x0,y0,x1,y1];}
+      if(q.x<o.bb[0]||q.x>o.bb[2]||q.y<o.bb[1]||q.y>o.bb[3])return;
+      if((!best||o.a<best.a)&&vtInPoly(o.lp,q.x,q.y))best=o;});
+    if(best)(best.holes=best.holes||[]).push(hl);
+  });
+  for(const o of outers){
+    const on=vtLoopToNodes(o.lp,eps,sIt);if(!on)continue;
+    const hs=(o.holes||[]).map(hl=>vtLoopToNodes(hl.lp,eps,sIt)).filter(Boolean);
+    shapes.push({hex,nodes:on,holes:hs});
+  }
+  return shapes;
+}
+// long straight runs between two distant nodes make Catmull-Rom overshoot at the ends: add evenly spaced nodes along them
+function vtDensify(d,idx,closed,maxGap){
+  const out=[],n=d.length,cnt=idx.length;
+  const arc=(a,b)=>{let L=0;for(let i=a;i<b;i++)L+=Math.hypot(d[i+1].x-d[i].x,d[i+1].y-d[i].y);return L;};
+  for(let k=0;k<cnt;k++){
+    const a=idx[k];out.push(a);
+    let b=(k+1<cnt)?idx[k+1]:(closed?idx[0]+n:-1);if(b<0)continue;
+    const seg=[];const get=i=>d[i%n];
+    let L=0;for(let i=a;i<b;i++){const p=get(i),q=get(i+1);L+=Math.hypot(q.x-p.x,q.y-p.y);}
+    if(L>maxGap){const parts=Math.round(L/maxGap);let acc=0,next=L/parts,c=1;
+      for(let i=a;i<b&&c<parts;i++){const p=get(i),q=get(i+1);acc+=Math.hypot(q.x-p.x,q.y-p.y);if(acc>=next*c){out.push((i+1)%n);c++;}}}
+  }
+  return out;
+}
 function vtCentreLines(labels,w,h,opts,dt){
-  const ink=new Uint8Array(w*h);for(let i=0;i<w*h;i++)ink[i]=labels[i]===1?1:0;
-  const {m,W2,H2}=vtThin(ink,w,h),dist=vtDist(ink,w,h);
+  let ink=new Uint8Array(w*h);for(let i=0;i<w*h;i++)ink[i]=labels[i]===1?1:0;
+  let th=vtThin(ink,w,h),dist=vtDist(ink,w,h);
+  const W2=th.W2,H2=th.H2;let m=th.m;
+  // typical line width, from the skeleton; anything much thicker than that is a solid area, not a line
+  const ds=[];for(let i=0;i<m.length;i++)if(m[i])ds.push(dist[i]);
+  ds.sort((a,b)=>a-b);const medW=ds.length?ds[ds.length>>1]:1;
+  const T=Math.max(3.5,2.6*medW);let solidShapes=[];
+  {
+    const thick=new Uint8Array(w*h);let nThick=0;
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x;if(ink[i]&&dist[(y+1)*W2+x+1]>=T){thick[i]=1;nThick++;}}
+    if(nThick>20){
+      const notThick=new Uint8Array(w*h);for(let i=0;i<w*h;i++)notThick[i]=thick[i]?0:1;
+      const dT=vtDist(notThick,w,h),solid=new Uint8Array(w*h);let nSolid=0;
+      for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x;if(ink[i]&&(thick[i]||dT[(y+1)*W2+x+1]<=T+0.7)){solid[i]=1;nSolid++;}}
+      const eps0=Math.max(0.12,2.6-0.26*dt)*(w/800+0.4),minA=Math.max(1.5,(150-14*dt)*(w/800+0.3));
+      solidShapes=vtMaskToShapes(w,h,solid,eps0,minA*2,dt>=8?1:2,opts.ink);
+      const ink2=new Uint8Array(w*h);for(let i=0;i<w*h;i++)ink2[i]=(ink[i]&&!solid[i])?1:0;
+      ink=ink2;th=vtThin(ink,w,h);m=th.m;dist=vtDist(ink,w,h);
+    }
+  }
   const N=W2*H2,OFF=[-W2-1,-W2,-W2+1,-1,1,W2-1,W2,W2+1];
   const nbrs=i=>{const r=[];for(let k=0;k<8;k++){const j=i+OFF[k];if(m[j])r.push(j);}return r;};
   const deg=new Uint8Array(N);for(let i=0;i<N;i++)if(m[i])deg[i]=nbrs(i).length;
@@ -8700,31 +8750,38 @@ function vtCentreLines(labels,w,h,opts,dt){
   const eps=Math.max(0.5,1.9-0.15*dt),out=[];let wSum=0,wN=0;
   for(const r of paths){
     const L=r.p.length;
-    if(!r.closed){if(L<3)continue;if(L<6&&(r.startDeg===1||r.endDeg===1))continue;}
-    if(r.closed&&L<8)continue;
-    let pts=r.p.map(i=>({x:(i%W2)-1+0.5,y:Math.floor(i/W2)-1+0.5}));
     const ds=r.p.map(i=>dist[i]).sort((a,b)=>a-b),med=ds[ds.length>>1];
     const width=Math.max(1,2*med-0.6);
+    if(!r.closed){
+      if(L<3)continue;
+      if(L<6&&(r.startDeg===1||r.endDeg===1))continue;
+      // short stub hanging off a junction (corner spurs left by thinning): not a real line
+      if((r.startDeg===1||r.endDeg===1)&&(r.startDeg>=3||r.endDeg>=3)&&L<2.5*width+3)continue;
+    }
+    if(r.closed&&L<8)continue;
+    let pts=r.p.map(i=>({x:(i%W2)-1+0.5,y:Math.floor(i/W2)-1+0.5}));
     let nodes;
     if(r.closed){
       const d=vtSmooth(pts,3),n=d.length;if(n<4)continue;
-      const idx=vtSimplifyClosed(d,eps);if(idx.length<3)continue;
+      const idx0=vtSimplifyClosed(d,eps);if(idx0.length<3)continue;
+      const idx=vtDensify(d,idx0,true,Math.max(14,width*2.5));
       const k=Math.max(2,Math.min(8,Math.floor(n/12)));
       nodes=idx.map(i=>{const p=d[i],a=d[(i-k+n*4)%n],c=d[(i+k)%n];const a1=Math.atan2(p.y-a.y,p.x-a.x),a2=Math.atan2(c.y-p.y,c.x-p.x);let g=Math.abs(a2-a1);if(g>Math.PI)g=2*Math.PI-g;return {x:p.x,y:p.y,pressure:1,type:g>0.95?'corner':'smooth'};});
     }else{
       let d=pts;for(let it=0;it<3;it++){const B=d.map(q=>({x:q.x,y:q.y}));for(let i=1;i<d.length-1;i++){B[i].x=(d[i-1].x+2*d[i].x+d[i+1].x)/4;B[i].y=(d[i-1].y+2*d[i].y+d[i+1].y)/4;}d=B;}
       const n=d.length,keep=new Uint8Array(n);keep[0]=1;keep[n-1]=1;vtRdp(d,eps,0,n-1,keep);
-      const idx=[];for(let i=0;i<n;i++)if(keep[i])idx.push(i);if(idx.length<2)continue;
+      const idx0=[];for(let i=0;i<n;i++)if(keep[i])idx0.push(i);if(idx0.length<2)continue;
+      const idx=vtDensify(d,idx0,false,Math.max(14,width*2.5)).sort((a,b)=>a-b);
       const k=Math.max(2,Math.min(6,Math.floor(n/10)));
       nodes=idx.map((i,j)=>{const p=d[i];if(i===0||i===n-1)return {x:p.x,y:p.y,pressure:1,type:'corner'};const a=d[Math.max(0,i-k)],c=d[Math.min(n-1,i+k)];const a1=Math.atan2(p.y-a.y,p.x-a.x),a2=Math.atan2(c.y-p.y,c.x-p.x);let g=Math.abs(a2-a1);if(g>Math.PI)g=2*Math.PI-g;return {x:p.x,y:p.y,pressure:1,type:g>0.95?'corner':'smooth'};});
     }
     out.push({nodes,closed:r.closed,width,len:L});wSum+=width;wN++;
   }
-  return {kind:'stroke',strokes:out,shapes:[],count:out.length,colours:1,w,h,hex:opts.ink};
+  return {kind:'stroke',strokes:out,shapes:solidShapes,count:out.length+solidShapes.length,nStrokes:out.length,colours:1,w,h,hex:opts.ink};
 }
 async function vtRun(opts,onProgress){
   // Detail 1 = bold, simple shapes (low-res, heavy clean-up); 10 = fine detail (high-res, light clean-up)
-  const dt=opts.detail,maxDim=Math.round(400+dt*110);
+  const dt=opts.detail,maxDim=(opts.mode==='line'&&opts.output==='stroke')?Math.round(700+dt*190):Math.round(400+dt*110);
   const px=vtPixels(opts.img,maxDim),{w,h}=px;
   const eps=Math.max(0.12,2.6-0.26*dt)*(w/800+0.4),minArea=Math.max(1.5,(150-14*dt)*(w/800+0.3));
   let labels,cols;
@@ -8780,7 +8837,8 @@ function vtInstall(res,name,where){
   const layer=makeLayer(('Trace: '+name).slice(0,28));
   layers.push(layer);activeLayerId=layer.id;
   let n=0;
-  if(res.kind==='stroke'){
+  const addStrokes=()=>{
+    if(res.kind!=='stroke')return;
     const base=Object.assign({},BrushEngine.getSettings('smoothPen'));
     res.strokes.forEach(s=>{
       const nodes=T(s.nodes),pts=nodesToPoints(nodes,s.closed);
@@ -8788,9 +8846,7 @@ function vtInstall(res,name,where){
       strokes.push({id:crypto.randomUUID(),brushId:'smoothPen',layerId:layer.id,color:res.hex,settings,points:pts,nodes,closed:s.closed,cornerAuto:false,clipStrokeId:null,shape:null,traced:true});
       n++;
     });
-    rebuildLayer(layer.id);renderLayersList();pushHist();redraw();
-    return n;
-  }
+  };
   res.shapes.forEach(s=>{
     const nodes=T(s.nodes);let pts=nodesToPoints(nodes,true),useNodes=nodes;
     if(s.holes.length){
@@ -8801,6 +8857,7 @@ function vtInstall(res,name,where){
     strokes.push({id:crypto.randomUUID(),brushId:activeBrushId,layerId:layer.id,color:s.hex,fillColor:s.hex,fillOpacity:1,settings:null,points:pts,nodes:useNodes,closed:true,clipStrokeId:null,shape:null,traced:true});
     n++;
   });
+  addStrokes();
   rebuildLayer(layer.id);renderLayersList();pushHist();redraw();
   return n;
 }
@@ -8810,15 +8867,15 @@ function vtDrawPreview(cv,res,z,pnx,pny){
   const mx=X=>S/2+pnx*S+(X-S/2)*z,my=Y=>S/2+pny*S+(Y-S/2)*z;
   c.clearRect(0,0,S,S);
   const samples=z>3?20:(z>1.5?12:8);
-  if(res.kind==='stroke'){
+  const drawStrokes=()=>{
+    if(res.kind!=='stroke')return;
     c.lineCap='round';c.lineJoin='round';c.strokeStyle=res.hex;
     res.strokes.forEach(s=>{
       c.lineWidth=Math.max(0.6,s.width*sc*z);c.beginPath();
       nodesToPoints(s.nodes,s.closed,samples).forEach((q,i)=>{const x=mx(ox+q.x*sc),y=my(oy+q.y*sc);if(i)c.lineTo(x,y);else c.moveTo(x,y);});
       c.stroke();
     });
-    return;
-  }
+  };
   res.shapes.forEach(s=>{
     c.beginPath();
     [s.nodes].concat(s.holes).forEach(nd=>{
@@ -8827,6 +8884,7 @@ function vtDrawPreview(cv,res,z,pnx,pny){
     });
     c.fillStyle=s.hex;c.fill('evenodd');
   });
+  drawStrokes();
 }
 window.__sketchpadVT={run:(...a)=>vtRun(...a),px:vtPixels,install:vtInstall};
 function openTraceImage(){
@@ -8898,7 +8956,7 @@ function openTraceImage(){
       if(!res||id!==st.runId)return;
       spin.style.display='none';
       if(!res.count){st.res=null;showAfter();ap.t.textContent='After — nothing traced';msg.textContent='Nothing to trace with those settings — try more colours, higher detail, or a different threshold.';return;}
-      st.res=res;showAfter();ap.t.textContent=res.kind==='stroke'?('After — '+res.count+' editable strokes'):('After — '+res.count+' vector shapes, '+res.colours+' colour'+(res.colours===1?'':'s'));
+      st.res=res;showAfter();ap.t.textContent=res.kind==='stroke'?('After — '+(res.nStrokes||0)+' editable strokes'+(res.shapes&&res.shapes.length?(' + '+res.shapes.length+' solid shapes'):'')):('After — '+res.count+' vector shapes, '+res.colours+' colour'+(res.colours===1?'':'s'));
       msg.textContent='Traced in '+((Date.now()-t0)/1000).toFixed(1)+'s. Happy with it? Tap Place on canvas — or adjust the options.';go.disabled=false;
     }catch(e){console.error(e);if(id===st.runId){spin.style.display='none';msg.textContent='Trace failed: '+(e.message||e);}}
   };
@@ -8920,7 +8978,7 @@ function openTraceImage(){
     const n=vtInstall(st.res,(st.file.name||'image').replace(/\.[^.]+$/,''),where.value);
     if(where.value==='canvas'&&showTiling){try{$('tilingBtn').click();}catch(e){}} // show it once, not repeated
     const cnt=st.res.colours;close();
-    setStatus(st.res.kind==='stroke'?('✨ Placed '+n+' editable strokes on a new layer. Undo to remove.'):('✨ Placed '+n+' vector shapes ('+cnt+' colour'+(cnt===1?'':'s')+') on a new layer. Undo to remove.'));
+    setStatus(st.res.kind==='stroke'?('✨ Placed '+(st.res.nStrokes||n)+' editable strokes'+(st.res.shapes&&st.res.shapes.length?' and '+st.res.shapes.length+' solid shapes':'')+' on a new layer. Undo to remove.'):('✨ Placed '+n+' vector shapes ('+cnt+' colour'+(cnt===1?'':'s')+') on a new layer. Undo to remove.'));
   };
   back.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape')close();});
   document.body.appendChild(back);
