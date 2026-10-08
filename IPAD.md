@@ -222,3 +222,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 ## v75 — Get latest version bypasses all caches
 - "⟳ Get latest version" now re-downloads index/script files with cache bypass, clears the app's cached copies, then reloads with a fresh `?v=` address, so an update shows up on the first tap.
 - If an update ever doesn't appear: open the site address in Safari with `?v=1` on the end, and check the repo's **Actions** tab for a failed "pages build and deployment".
+
+## v76 — Slimmer side panel
+- Left tools panel is narrower (236 px, was 300) and the collapse bar is thinner (22 px, was 40), so the whole top toolbar (Select, ⚡, Duplicate, Pencil, size, Pen, Eraser, View, More) fits on iPad.
