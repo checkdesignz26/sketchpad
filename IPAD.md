@@ -291,3 +291,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 
 ## v97 — Big groups resize smoothly
 Groups with many strokes (or raster brushes) are drawn once into a picture while you drag a handle, so resizing the goose no longer redraws 381 strokes every frame. The sharp redraw happens once when you let go.
+
+## v98 — Lighter group resize/move
+While dragging a big group the preview picture is half-size, the canvas is no longer fully recomposited on every frame (about 4x less work per frame in my test), and letting go only redraws the layers the group sits on.
