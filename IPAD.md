@@ -215,3 +215,6 @@ Open `index.html` in a browser, as before. To check the offline bundle: `npm run
 - Solid black areas (thick blobs, filled flames, etc.) are now traced as filled shapes instead of fat strokes; only genuine lines become strokes.
 - Short corner stubs left by thinning are removed, and long straight runs get extra nodes so rounded rectangles stay clean (no overshoot "ticks").
 - The dialog reports "N editable strokes + M solid shapes".
+
+## v74 — Version number shown
+- The "⟳ Get latest version" button (View ▾ / ⋯ More, in the View panel) now shows which version you have, e.g. "(you have v74)". Bump this label with sw.js each release.
