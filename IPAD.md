@@ -349,3 +349,6 @@ With Symmetry on, the eraser also erases at the mirrored spot(s), like drawing d
 
 ## v117 — Long, draggable symmetry axis
 The mirror line(s) now run across the whole canvas (only the lines that matter for the chosen mode), and the pink circle can be dragged with the pen to move the axis anywhere. The sliders still work.
+
+## v118 — Axis locks on Done
+The symmetry axis can only be dragged while the Symmetry panel is open. Tap Done and it is fixed (the pink circle ignores touches). Reopen the panel to move it again.
