@@ -340,3 +340,6 @@ Quick actions (⚡) and Duplicate (⧉) are back on the main bar; Pen and Eraser
 
 ## v114 — Rotate the symmetry axis
 The Symmetry panel has an Angle slider (-90 to 90) plus 0° and 45° buttons. The mirror line(s) turn around the axis point, and the on-canvas crosshair now shows the real direction (and is longer).
+
+## v115 — Mirrored editing
+Strokes drawn together with Symmetry on now share a link (symId + their own mirror matrix). Move, resize, turn, Edit Path, colour or size on ONE of them and its twin(s) follow, mirrored. If both are changed in the same step (e.g. both in one group move) nothing extra happens. The eraser does not mirror. Older strokes have no link.
