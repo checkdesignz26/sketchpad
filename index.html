@@ -759,6 +759,7 @@ html.in-suite .suite-only{display:block!important}
         <button id="tbEraserBtn" class="tool-btn" data-ovp="7" data-ovl="🧹 Eraser" title="Eraser">🧹</button>
         <button id="tbSymBtn" class="tool-btn" data-ovp="9" data-ovl="🦋 Symmetry" title="Symmetry: mirror what you draw (vertical, horizontal, quad, diamond)">🦋<span id="tbSymLbl"></span></button>
         
+        <button id="tbTimelapseBtn" class="tool-btn" data-more="1" data-ovp="0" data-ovl="🎥 Timelapse" title="Timelapse: replay and export a video of your design coming to life">🎥 Timelapse</button>
         <button id="tbWarpBtn" class="tool-btn" data-more="1" data-ovp="2" data-ovl="🌀 Warp" title="Warp: drag to push and bend strokes">🌀 Warp</button>
         <div class="toolbar-spacer"></div>
         <button id="paintModePill" class="pill" style="display:none;cursor:pointer;">🎨 Paint Inside — tap for Free Paint</button>
@@ -837,7 +838,7 @@ html.in-suite .suite-only{display:block!important}
     </div>
     <div id="backupsPanel" style="display:none;position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:90;background:var(--sideBg);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:0 18px 50px rgba(0,0,0,.35);font-size:13.5px;max-width:min(560px,calc(100vw - 24px));max-height:70vh;overflow:auto;"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:800;margin-bottom:6px;">🕘 Earlier saves<button id="backupsClose" class="btn mini">Close</button></div><div id="backupsList"></div><div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);"><button id="newBlankBtn" class="btn mini" style="width:100%;">➕ New Project</button><div class="hint">Your current project is saved first, then a fresh one opens. Find every project under 📁 Projects.</div></div></div>
     <div id="restoreBanner" style="display:none;"><span id="restoreBannerText">📂 Autosaved session found from </span><span id="restoreBannerTime"></span> <button id="restoreAcceptBtn" class="btn mini primary">Restore</button><button id="restoreDeclineBtn" class="btn mini">Start Fresh</button><button id="restoreOkBtn" class="btn mini primary" style="display:none;">OK</button></div>
-    <div id="canvasViewportOuter" class="canvas-viewport-outer"><div id="canvasWrap" class="canvas-wrap"><div id="viewPopover" class="sym-pop"><div class="section-title">🧭 Canvas / View</div><div class="row" style="margin-bottom:10px;align-items:center;gap:8px;"><div id="viewRotVal" class="pill" style="flex:1;text-align:center;">Rotation 0°</div><button id="viewRotResetBtn" class="tool-btn" style="flex:1" title="Turn the canvas back upright">Reset to 0°</button></div><button id="viewGuidesBtn" class="tool-btn" style="width:100%;margin-bottom:10px;">📐 Guides: Off</button><button id="viewResetBtn" class="tool-btn" style="width:100%;margin-bottom:10px;" title="0°, centred and fitted">🔍 Reset view (0°, fit)</button><button id="symToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">🦋 Symmetry Off</button><div class="row" style="margin-bottom:10px;"><button id="tilingBtn" class="tool-btn active" style="flex:1">Tiling On</button><div id="layoutPill" class="pill">📍 Grid Mode</div></div><button id="themeToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">☀️ Light Mode</button><button id="clearDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear Drawing &amp; Motifs</button><button id="clearAllDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear All Layers &amp; Motifs</button><label class="row" style="gap:8px;align-items:center;margin:6px 0;font-size:13px;"><input type="checkbox" id="dblDupChk" checked> Double-tap a selected item to duplicate it (a motif opens for editing instead)</label><button id="viewCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="zoomPopover" class="sym-pop"><div class="section-title">🔍 View <span id="zoomPopPct" class="small"></span></div><div class="zoom-row"><button id="zoomOutBtn" class="tool-btn" aria-label="Zoom out">−</button><button id="zoomInBtn" class="tool-btn" aria-label="Zoom in">+</button></div><button id="zoom100Btn" class="tool-btn" style="width:100%;margin-bottom:8px;">100% — actual size</button><button id="zoomFitBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">Fit to View</button><button id="zoomRotResetBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">↺ Reset rotation to 0°</button><button id="zoomResetBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;">Reset View (0°, centre, fit)</button><button id="updateAppBtn" class="tool-btn" style="width:100%;margin-bottom:8px;" title="Fetch the newest version of the app">⟳ Get latest version <span style="opacity:.6;font-weight:600">(you have v119)</span></button><div class="hint" style="margin-bottom:8px;">These always work, even if the canvas has scrolled out of sight.</div><button id="zoomCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="svgPopover" class="sym-pop"><div class="section-title">🖋️ Export SVG</div><div class="hint" style="margin-bottom:8px;">Vector strokes and fills only. Pictures (placed motifs, background image) are not vector, so they are left out.</div><div class="row" style="margin-bottom:8px;"><button class="tool-btn svg-preset" data-size="780">780</button><button class="tool-btn svg-preset" data-size="1800">1800</button><button class="tool-btn svg-preset" data-size="3600">3600</button></div><div class="slider-row" style="grid-template-columns:64px 1fr 30px;"><label>Size</label><input id="svgSizeInput" type="number" min="64" max="20000" step="1" value="3600" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><span>px</span></div><div class="hint" style="margin-bottom:8px;">Width and height of the square file. 3600 × 3600 is the usual pattern size. The artwork scales exactly.</div><button id="svgSaveBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;min-height:44px;">⬇️ Save SVG</button><button id="svgCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="recolourPopover" class="sym-pop"><div class="section-title">🎨 Recolour Parts</div><div class="hint" style="margin-bottom:8px;">Motif: <b id="recolourName"></b>. Each row is one colour used in the motif. Pick a new colour for any of them.</div><div id="recolourRows"></div><button id="recolourApplyBtn" class="tool-btn primary" style="width:100%;margin:8px 0;min-height:44px;">Apply to this motif</button><button id="recolourNewBtn" class="tool-btn" style="width:100%;margin-bottom:8px;min-height:44px;">Save as new colourway</button><div class="row"><button id="recolourResetBtn" class="btn mini" style="flex:1">Reset</button><button id="recolourCloseBtn" class="btn mini" style="flex:1">✕ Close</button></div></div><div id="symPopover" class="sym-pop"><div class="section-title">🦋 Symmetry</div><div class="grid"><button class="sym-btn btn active" data-sym="off">Off</button><button class="sym-btn btn" data-sym="vertical">Vertical</button><button class="sym-btn btn" data-sym="horizontal">Horizontal</button><button class="sym-btn btn" data-sym="quad">Quad</button><button class="sym-btn btn" data-sym="diamond">Diamond</button></div><div class="slider-row"><label>Axis X</label><input id="symX" type="range" min="0" max="1800" value="900"><span id="symXVal">50%</span></div><div class="slider-row"><label>Axis Y</label><input id="symY" type="range" min="0" max="1800" value="900"><span id="symYVal">50%</span></div><div class="slider-row"><label>Angle</label><input id="symAng" type="range" min="-90" max="90" step="1" value="0"><span id="symAngVal">0°</span></div><div class="row"><button id="symAngReset" class="btn mini">0° Straight</button><button id="symAng45" class="btn mini">45°</button></div><div class="row" style="margin-top:6px;"><button id="symLenWhole" class="btn mini active" style="flex:1">Line: whole canvas</button><button id="symLenShort" class="btn mini" style="flex:1">Line: short</button></div><div class="slider-row" id="symLenRow" style="display:none"><label>Length</label><input id="symLen" type="range" min="100" max="1800" step="10" value="500"><span id="symLenVal">500</span></div><div class="row" style="margin-top:6px;"><button id="symCentre" class="btn mini">Centre Axis</button><button id="symClose" class="btn mini">Done</button></div><div class="hint">Move the mirror point to make flowers, leaves and playful asymmetric symmetry.</div></div><canvas id="fabricCanvas" aria-hidden="true"></canvas><canvas id="canvas" width="1800" height="1800"></canvas><div id="tileOutline" aria-hidden="true"></div><div id="selectionBox" class="selection-box"><button id="motifEditChip" class="btn mini primary" style="display:none">✏️ Edit Motif</button><div id="resizeHandle" class="handle"></div><div id="rotateHandle" class="rotHandle"></div></div><div id="pivotMarker" style="display:none;position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;border:2px solid var(--pink);border-radius:50%;background:rgba(255,255,255,.85);pointer-events:none;z-index:5;"><div style="position:absolute;left:50%;top:-6px;bottom:-6px;width:2px;margin-left:-1px;background:var(--pink)"></div><div style="position:absolute;top:50%;left:-6px;right:-6px;height:2px;margin-top:-1px;background:var(--pink)"></div></div><div id="paintBBoxOverlay" class="selection-box" style="display:none;"><div id="paintResizeHandle" class="handle" title="Drag to resize. Tap to make 25% bigger."></div><div id="paintRotateHandle" class="rotHandle" title="Drag to rotate. Tap to turn 45 degrees."></div><input id="strokeColourHandle" class="sel-colour strokeColourHandle" type="color" value="#000000" title="Tap to change colour"></div><div id="groupBox" class="selection-box" style="display:none;"><div class="gh" data-h="nw" style="left:0%;top:0%;cursor:nwse-resize"></div><div class="gh" data-h="n" style="left:50%;top:0%;cursor:ns-resize"></div><div class="gh" data-h="ne" style="left:100%;top:0%;cursor:nesw-resize"></div><div class="gh" data-h="e" style="left:100%;top:50%;cursor:ew-resize"></div><div class="gh" data-h="se" style="left:100%;top:100%;cursor:nwse-resize"></div><div class="gh" data-h="s" style="left:50%;top:100%;cursor:ns-resize"></div><div class="gh" data-h="sw" style="left:0%;top:100%;cursor:nesw-resize"></div><div class="gh" data-h="w" style="left:0%;top:50%;cursor:ew-resize"></div><div id="grpRotHandle" class="rotHandle" title="Drag to turn. Tap to turn 45 degrees."></div></div><div id="symAxis" class="sym-axis locked"></div><div id="rotateChip" class="rotate-chip">Canvas 0°</div><div id="pathNodeOverlay"></div></div></div>
+    <div id="canvasViewportOuter" class="canvas-viewport-outer"><div id="canvasWrap" class="canvas-wrap"><div id="viewPopover" class="sym-pop"><div class="section-title">🧭 Canvas / View</div><div class="row" style="margin-bottom:10px;align-items:center;gap:8px;"><div id="viewRotVal" class="pill" style="flex:1;text-align:center;">Rotation 0°</div><button id="viewRotResetBtn" class="tool-btn" style="flex:1" title="Turn the canvas back upright">Reset to 0°</button></div><button id="viewGuidesBtn" class="tool-btn" style="width:100%;margin-bottom:10px;">📐 Guides: Off</button><button id="viewResetBtn" class="tool-btn" style="width:100%;margin-bottom:10px;" title="0°, centred and fitted">🔍 Reset view (0°, fit)</button><button id="symToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">🦋 Symmetry Off</button><div class="row" style="margin-bottom:10px;"><button id="tilingBtn" class="tool-btn active" style="flex:1">Tiling On</button><div id="layoutPill" class="pill">📍 Grid Mode</div></div><button id="themeToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">☀️ Light Mode</button><button id="clearDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear Drawing &amp; Motifs</button><button id="clearAllDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear All Layers &amp; Motifs</button><label class="row" style="gap:8px;align-items:center;margin:6px 0;font-size:13px;"><input type="checkbox" id="dblDupChk" checked> Double-tap a selected item to duplicate it (a motif opens for editing instead)</label><button id="viewCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="zoomPopover" class="sym-pop"><div class="section-title">🔍 View <span id="zoomPopPct" class="small"></span></div><div class="zoom-row"><button id="zoomOutBtn" class="tool-btn" aria-label="Zoom out">−</button><button id="zoomInBtn" class="tool-btn" aria-label="Zoom in">+</button></div><button id="zoom100Btn" class="tool-btn" style="width:100%;margin-bottom:8px;">100% — actual size</button><button id="zoomFitBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">Fit to View</button><button id="zoomRotResetBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">↺ Reset rotation to 0°</button><button id="zoomResetBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;">Reset View (0°, centre, fit)</button><button id="updateAppBtn" class="tool-btn" style="width:100%;margin-bottom:8px;" title="Fetch the newest version of the app">⟳ Get latest version <span style="opacity:.6;font-weight:600">(you have v120)</span></button><div class="hint" style="margin-bottom:8px;">These always work, even if the canvas has scrolled out of sight.</div><button id="zoomCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="svgPopover" class="sym-pop"><div class="section-title">🖋️ Export SVG</div><div class="hint" style="margin-bottom:8px;">Vector strokes and fills only. Pictures (placed motifs, background image) are not vector, so they are left out.</div><div class="row" style="margin-bottom:8px;"><button class="tool-btn svg-preset" data-size="780">780</button><button class="tool-btn svg-preset" data-size="1800">1800</button><button class="tool-btn svg-preset" data-size="3600">3600</button></div><div class="slider-row" style="grid-template-columns:64px 1fr 30px;"><label>Size</label><input id="svgSizeInput" type="number" min="64" max="20000" step="1" value="3600" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><span>px</span></div><div class="hint" style="margin-bottom:8px;">Width and height of the square file. 3600 × 3600 is the usual pattern size. The artwork scales exactly.</div><button id="svgSaveBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;min-height:44px;">⬇️ Save SVG</button><button id="svgCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="recolourPopover" class="sym-pop"><div class="section-title">🎨 Recolour Parts</div><div class="hint" style="margin-bottom:8px;">Motif: <b id="recolourName"></b>. Each row is one colour used in the motif. Pick a new colour for any of them.</div><div id="recolourRows"></div><button id="recolourApplyBtn" class="tool-btn primary" style="width:100%;margin:8px 0;min-height:44px;">Apply to this motif</button><button id="recolourNewBtn" class="tool-btn" style="width:100%;margin-bottom:8px;min-height:44px;">Save as new colourway</button><div class="row"><button id="recolourResetBtn" class="btn mini" style="flex:1">Reset</button><button id="recolourCloseBtn" class="btn mini" style="flex:1">✕ Close</button></div></div><div id="symPopover" class="sym-pop"><div class="section-title">🦋 Symmetry</div><div class="grid"><button class="sym-btn btn active" data-sym="off">Off</button><button class="sym-btn btn" data-sym="vertical">Vertical</button><button class="sym-btn btn" data-sym="horizontal">Horizontal</button><button class="sym-btn btn" data-sym="quad">Quad</button><button class="sym-btn btn" data-sym="diamond">Diamond</button></div><div class="slider-row"><label>Axis X</label><input id="symX" type="range" min="0" max="1800" value="900"><span id="symXVal">50%</span></div><div class="slider-row"><label>Axis Y</label><input id="symY" type="range" min="0" max="1800" value="900"><span id="symYVal">50%</span></div><div class="slider-row"><label>Angle</label><input id="symAng" type="range" min="-90" max="90" step="1" value="0"><span id="symAngVal">0°</span></div><div class="row"><button id="symAngReset" class="btn mini">0° Straight</button><button id="symAng45" class="btn mini">45°</button></div><div class="row" style="margin-top:6px;"><button id="symLenWhole" class="btn mini active" style="flex:1">Line: whole canvas</button><button id="symLenShort" class="btn mini" style="flex:1">Line: short</button></div><div class="slider-row" id="symLenRow" style="display:none"><label>Length</label><input id="symLen" type="range" min="100" max="1800" step="10" value="500"><span id="symLenVal">500</span></div><div class="row" style="margin-top:6px;"><button id="symCentre" class="btn mini">Centre Axis</button><button id="symClose" class="btn mini">Done</button></div><div class="hint">Move the mirror point to make flowers, leaves and playful asymmetric symmetry.</div></div><canvas id="fabricCanvas" aria-hidden="true"></canvas><canvas id="canvas" width="1800" height="1800"></canvas><div id="tileOutline" aria-hidden="true"></div><div id="selectionBox" class="selection-box"><button id="motifEditChip" class="btn mini primary" style="display:none">✏️ Edit Motif</button><div id="resizeHandle" class="handle"></div><div id="rotateHandle" class="rotHandle"></div></div><div id="pivotMarker" style="display:none;position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;border:2px solid var(--pink);border-radius:50%;background:rgba(255,255,255,.85);pointer-events:none;z-index:5;"><div style="position:absolute;left:50%;top:-6px;bottom:-6px;width:2px;margin-left:-1px;background:var(--pink)"></div><div style="position:absolute;top:50%;left:-6px;right:-6px;height:2px;margin-top:-1px;background:var(--pink)"></div></div><div id="paintBBoxOverlay" class="selection-box" style="display:none;"><div id="paintResizeHandle" class="handle" title="Drag to resize. Tap to make 25% bigger."></div><div id="paintRotateHandle" class="rotHandle" title="Drag to rotate. Tap to turn 45 degrees."></div><input id="strokeColourHandle" class="sel-colour strokeColourHandle" type="color" value="#000000" title="Tap to change colour"></div><div id="groupBox" class="selection-box" style="display:none;"><div class="gh" data-h="nw" style="left:0%;top:0%;cursor:nwse-resize"></div><div class="gh" data-h="n" style="left:50%;top:0%;cursor:ns-resize"></div><div class="gh" data-h="ne" style="left:100%;top:0%;cursor:nesw-resize"></div><div class="gh" data-h="e" style="left:100%;top:50%;cursor:ew-resize"></div><div class="gh" data-h="se" style="left:100%;top:100%;cursor:nwse-resize"></div><div class="gh" data-h="s" style="left:50%;top:100%;cursor:ns-resize"></div><div class="gh" data-h="sw" style="left:0%;top:100%;cursor:nesw-resize"></div><div class="gh" data-h="w" style="left:0%;top:50%;cursor:ew-resize"></div><div id="grpRotHandle" class="rotHandle" title="Drag to turn. Tap to turn 45 degrees."></div></div><div id="symAxis" class="sym-axis locked"></div><div id="rotateChip" class="rotate-chip">Canvas 0°</div><div id="pathNodeOverlay"></div></div></div>
     <div id="status" class="status">✨ Apple Pencil draws | one finger protected | two fingers pan/pinch/rotate | two-finger tap Undo | three-finger tap Redo | Capture Motif saves drawing ✨</div>
   </main>
 </div>
@@ -1487,7 +1488,7 @@ function snapshot(){
     groupsJSON:JSON.stringify(groups),
   };
 }
-function pushHist(){try{pruneGroups();}catch(e){}try{symSync();}catch(e){console.warn('[sketchpad] symmetry sync failed',e);}try{if(typeof refreshBlends==='function')refreshBlends();if(typeof refreshObjBlends==='function')refreshObjBlends();}catch(e){console.warn('[sketchpad] blend refresh failed',e);}history=history.slice(0,hIndex+1);history.push(snapshot());if(history.length>40)history.shift();hIndex=history.length-1;scheduleAutosave();}
+function pushHist(){try{pruneGroups();}catch(e){}try{symSync();}catch(e){console.warn('[sketchpad] symmetry sync failed',e);}try{if(window.SPTimelapse)SPTimelapse.onPush();}catch(e){}try{if(typeof refreshBlends==='function')refreshBlends();if(typeof refreshObjBlends==='function')refreshObjBlends();}catch(e){console.warn('[sketchpad] blend refresh failed',e);}history=history.slice(0,hIndex+1);history.push(snapshot());if(history.length>40)history.shift();hIndex=history.length-1;try{if(window.SPTimelapse)SPTimelapse.afterPush();}catch(e){}scheduleAutosave();}
 // Synchronous now (no more toDataURL()/Image round-trip for the drawing layer) — cheaper AND
 // simpler: JSON-serialised stroke points are far smaller than a full 1800x1800 PNG snapshot per
 // undo step, and replaying them is deterministic so this never has to wait on an image decode.
@@ -1519,8 +1520,8 @@ function applyLayerMeta(layerMeta,wantActiveId){
   strokes.forEach(s=>{if(!s.layerId||!layers.find(l=>l.id===s.layerId))s.layerId=fallback.id;});
   activeLayerId=(wantActiveId&&layers.find(l=>l.id===wantActiveId))?wantActiveId:fallback.id;
 }
-function undo(){if(hIndex>0){hIndex--;restore(history[hIndex]);setStatus('↩️ Undo');}}
-function redo(){if(hIndex<history.length-1){hIndex++;restore(history[hIndex]);setStatus('↪️ Redo');}}
+function undo(){if(hIndex>0){hIndex--;restore(history[hIndex]);try{if(window.SPTimelapse)SPTimelapse.afterRestore('undo');}catch(e){}setStatus('↩️ Undo');}}
+function redo(){if(hIndex<history.length-1){hIndex++;restore(history[hIndex]);try{if(window.SPTimelapse)SPTimelapse.afterRestore('redo');}catch(e){}setStatus('↪️ Redo');}}
 // Resizes every render target's BACKING STORE (physical pixels) to the current renderScale,
 // without touching its on-screen CSS size — canvas.style.width/height keep it at logical W x H
 // so nothing about layout, pan or the existing zoom/rotate CSS transform math changes; only the
@@ -7505,7 +7506,7 @@ window.addEventListener('resize',updateBaseScale);
 // mockupStudioDB — origin-scoped, independent of the Seamlessly Creative suite's shared library.
 const DOC_DB_NAME='pkmSketchDocDB',DOC_STORE='doc',DOC_KEY='current';
 let docDBPromise=null;
-function openDocDB(){if(!docDBPromise)docDBPromise=new Promise((resolve,reject)=>{const req=indexedDB.open(DOC_DB_NAME,2);req.onupgradeneeded=()=>{const db=req.result;[DOC_STORE,'projects','projdocs','folders'].forEach(n=>{if(!db.objectStoreNames.contains(n))db.createObjectStore(n);});};req.onsuccess=()=>{req.result.onversionchange=()=>{req.result.close();docDBPromise=null;};resolve(req.result);};req.onerror=()=>reject(req.error);req.onblocked=()=>reject(new Error('Storage is blocked by another open tab — close other Pattern Sketch tabs and reload.'));});return docDBPromise;}
+function openDocDB(){if(!docDBPromise)docDBPromise=new Promise((resolve,reject)=>{const req=indexedDB.open(DOC_DB_NAME,3);req.onupgradeneeded=()=>{const db=req.result;[DOC_STORE,'projects','projdocs','folders','timelapse'].forEach(n=>{if(!db.objectStoreNames.contains(n))db.createObjectStore(n);});};req.onsuccess=()=>{req.result.onversionchange=()=>{req.result.close();docDBPromise=null;};resolve(req.result);};req.onerror=()=>reject(req.error);req.onblocked=()=>reject(new Error('Storage is blocked by another open tab — close other Pattern Sketch tabs and reload.'));});return docDBPromise;}
 // setSaveStatus drives #saveStatusPill: 'saving' shows a transient in-progress state, 'saved'
 // shows the time of the last successful save (ticking visibly so the user always has a fresh
 // answer to "did my work actually save?"), and 'failed' turns the pill red rather than failing
@@ -7662,6 +7663,7 @@ async function quickSaveNow(){
 async function flushBeforeSwitch(){
   if(!activeProject)return true;
   clearTimeout(autosaveTimer);commitPendingEdits();
+  try{if(window.SPTimelapse)await SPTimelapse.flush();}catch(e){}
   const ok=await saveActive({thumb:true});
   if(ok)return true;
   const r=await projAsk({title:'⚠️ Couldn’t save your work',message:'“'+activeProject.name+'” could not be written to storage, so nothing has been switched. Your artwork is still open and unchanged. Download a project file to keep a safe copy, then try again.',ok:'Stay here',cancel:null,extra:[{label:'⬇️ Download project file',value:'dl'}]});
@@ -7674,7 +7676,7 @@ async function fetchStoredDoc(){
 }
 // ---- Switching / loading ----
 function resetForLoad(){
-  commitPendingEdits();
+  commitPendingEdits();try{if(window.SPTimelapse)SPTimelapse.detach();}catch(e){}
   selectedStrokeId=null;selected=null;multiSel=null;groupInsideId=null;selAddArmed=false;
   hiddenStrokeIds.clear();hiddenPlacedIds.clear();
   editingMotifId=null;editingMotifStash=null;mode='draw';
@@ -7698,6 +7700,7 @@ function finishLoad(meta,doc){
   try{localStorage.setItem('sp-activeProject',meta.id);}catch(e){}
   syncProjectName();setSaveStatus('saved',meta.updatedAt||doc.savedAt);
   autosaveBlocked=false;
+  try{if(window.SPTimelapse)SPTimelapse.onProjectLoaded(meta,doc);}catch(e){}
   if(!meta.thumb)setTimeout(()=>saveActive({thumb:true}),1500);
 }
 async function loadProject(meta,doc,opts){
@@ -7825,6 +7828,7 @@ async function deleteForever(ids,label){
     try{
       const keys=((await idbReq(PDOC_STORE,'readonly',st=>st.getAllKeys()))||[]).filter(k=>k===id||String(k).startsWith('bak:'+id+':'));
       await queueJob(()=>idbMulti([PROJ_STORE,PDOC_STORE],s=>{s[PROJ_STORE].delete(id);keys.forEach(k=>s[PDOC_STORE].delete(k));}));
+      try{if(window.SPTimelapse)await SPTimelapse.deleteFor(id);}catch(e){}
     }catch(e){console.warn(e);}
   }
   renderProjects();
@@ -9561,6 +9565,7 @@ boot();
 // Read-only introspection for debugging/testing — mirrors the small hooks already used for
 // Seamlessly Creative suite integration (see the bottom of this file once frozen into the
 // suite), just exposed unconditionally here since it's harmless and useful standalone too.
+$('tbTimelapseBtn').onclick=()=>{if(window.SPTimelapse)SPTimelapse.open();else setStatus('Timelapse is still loading — try again in a moment.');};
 window.__sketchpadGetState=()=>({strokeCount:strokes.length,strokes,placed,motifs,activeBrushId,eraserActive,selectedStrokeId,groups,multiSel,groupInsideId,selAddArmed,histLen:history.length,hIndex,layout,layers:layers.map(l=>({id:l.id,name:l.name,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock})),activeLayerId,pathEditStrokeId,pathEditNodes,pathEditClosed,selectedNodeIndex,pathEditTool,copiedBrushStyle,continueStrokeId,joinPendingStrokeId,paintMode,paintInsideTargetId,armedShapeType,constrainShape,holdTriggered,holdCorrectedShape,currentPointsLength:currentPoints.length,zoom,panX,panY,baseScale,renderScale,rot,canvasBackingWidth:canvas.width,displayBackingWidth:displayCanvas.width,sidebarCollapsed});
 // Test-only: exposes the app's own screen<->canvas coordinate mapping directly, so a test can
 // place a real pointer event at the exact screen position corresponding to a given canvas-space
@@ -9610,6 +9615,854 @@ window.__sketchpadLayerAlphaNear=(layerId,x,y,radius)=>{
   for(let i=3;i<data.length;i+=4)if(data[i]>max)max=data[i];
   return max;
 };
+// ============================ Timelapse (see IPAD.md, v120) ============================
+/* Pattern Sketch — Timelapse
+ *
+ * What is recorded: a compact ACTION LOG of the artwork, not video frames and not the undo history.
+ * Every artwork change (a stroke, an erase, a fill, a move/resize, a layer change ...) is stored as a small
+ * delta against the previous state when the app records an undo step. Strokes are stored as the same
+ * point lists the app already draws from, so pixel brushes and vector strokes both replay exactly.
+ *   - Idle time is never stored: each action only keeps how long the pen was actually down.
+ *   - Undo / redo trim the log, so an edit that was undone never appears in the video.
+ *   - Zoom, pan and rotation are never recorded; frames are always the square artwork tile.
+ *   - The log is bounded: when it gets big, the oldest actions are folded into the starting picture.
+ * Replay re-draws the log into its own hidden layer canvases (the live canvases are never touched), so no menus,
+ * handles or guides can appear. Export encodes those frames: H.264 MP4 through WebCodecs where the device has an
+ * encoder (iPad Safari / the Capacitor app), otherwise MediaRecorder (MP4 on Safari, WebM on Chrome/Firefox).
+ *
+ * This file is a classic script loaded after the main script; it reads the app's globals (strokes, layers, ...).
+ */
+(function () {
+  'use strict';
+  var STORE = 'timelapse';
+  var MAX_BYTES = 8e6, MAX_EVENTS = 6000, CHUNK = 64, MIN_KEEP = 300;
+  var R2 = function (v) { return Math.round(v * 100) / 100; };
+  var rep = function (k, v) { if (typeof v === 'number') { if (k === 'x' || k === 'y') return R2(v); if (k === 'pressure') return Math.round(v * 1000) / 1000; return v; } if (k === 'symFp' || k === 'img' || k === 'i') return undefined; return v; };
+  var $ = function (id) { return document.getElementById(id); };
+
+  // ------------------------------------------------------------------ recorder state
+  var S = {
+    on: false, pid: null, base: null, log: [], folded: 0, marks: [], stash: [], bytes: 0,
+    L: null, lastT: 0, pd: 0, hb: -1, hl: 0, paused: false, marksBad: false,
+    dirtyFrom: 0, dirtyMeta: false, dirtyAll: false, saveTimer: 0, loading: false, saving: Promise.resolve(),
+    foldedFlag: false
+  };
+  var defaultOn = function () { try { return localStorage.getItem('sp-tlDefault') !== '0'; } catch (e) { return true; } };
+  var total = function () { return S.folded + S.log.length; };
+  var editing = function () { try { return !!editingMotifId; } catch (e) { return false; } };
+
+  function layersStr() {
+    return JSON.stringify(layers.map(function (l) { return { id: l.id, name: l.name, kind: l.kind, visible: l.visible, locked: l.locked, opacity: l.opacity, blend: l.blend || 'source-over', alphaLock: !!l.alphaLock }; }));
+  }
+  function bgSig() { try { return bgImg ? (bgShown ? 1 : 0) + '|' + bgOpacity + '|' + (bgImg.src || '').length + '|' + (bgImg.src || '').slice(-24) : 'none'; } catch (e) { return 'none'; } }
+  function bgObj() { try { return { has: !!bgImg, shown: !!bgShown, opacity: bgOpacity }; } catch (e) { return { has: false, shown: false, opacity: 1 }; } }
+  function placedJSON(p) { return JSON.stringify(p, rep); }
+
+  function hashPts(a) { var h = 0; if (!a) return 0; for (var i = 0; i < a.length; i++) { h = (h * 31 + Math.round(a[i].x * 10)) | 0; h = (h * 31 + Math.round(a[i].y * 10)) | 0; } return h; }
+  function hashStroke(s) { var h = hashPts(s.points) ^ (hashPts(s.nodes) * 7); if (s.regions) s.regions.forEach(function (r) { h = (h * 13 + hashPts(r)) | 0; }); return h; }
+  function mkRec(s) {
+    return { s: s, brushId: s.brushId, layerId: s.layerId, color: s.color, fillColor: s.fillColor, fillOpacity: s.fillOpacity, closed: !!s.closed, atop: !!s.atop,
+      clipStrokeId: s.clipStrokeId || null, groupId: s.groupId || null, n: s.points ? s.points.length : 0, pts: s.points, nodes: s.nodes, regions: s.regions, shape: s.shape,
+      settings: s.settings, setJ: null, hash: null, oldPts: s.points };
+  }
+  function setJ(rec) { if (rec.setJ == null) rec.setJ = JSON.stringify(rec.settings || null); return rec.setJ; }
+  function changed(rec, s) {
+    if (rec.brushId !== s.brushId || rec.layerId !== s.layerId || rec.color !== s.color || rec.fillColor !== s.fillColor || rec.fillOpacity !== s.fillOpacity ||
+      rec.closed !== !!s.closed || rec.atop !== !!s.atop || (rec.clipStrokeId || null) !== (s.clipStrokeId || null) || (rec.groupId || null) !== (s.groupId || null)) return true;
+    if (rec.settings !== s.settings && setJ(rec) !== JSON.stringify(s.settings || null)) return true;
+    if (rec.shape !== s.shape && JSON.stringify(rec.shape || null) !== JSON.stringify(s.shape || null)) return true;
+    if (rec.pts !== s.points || rec.nodes !== s.nodes || rec.regions !== s.regions) {
+      var n = s.points ? s.points.length : 0;
+      if (n !== rec.n) return true;
+      if (rec.hash == null) rec.hash = hashStroke({ points: rec.pts, nodes: rec.nodes, regions: rec.regions });
+      return hashStroke(s) !== rec.hash;
+    }
+    return false;
+  }
+  function snapLast() {
+    var m = new Map(), order = [];
+    strokes.forEach(function (s) { m.set(s.id, mkRec(s)); order.push(s.id); });
+    var pm = new Map(), po = [], pOK = true;
+    placed.forEach(function (p) { if (!p.id || pm.has(p.id)) pOK = false; pm.set(p.id, placedJSON(p)); po.push(p.id); });
+    return { strokes: m, order: order, layers: layersStr(), placed: pm, porder: po, pOK: pOK, bg: bgSig() };
+  }
+  function baseNow() {
+    return JSON.stringify({ s: strokes, l: JSON.parse(layersStr()), p: placed, g: bgObj() }, rep);
+  }
+
+  // ------------------------------------------------------------------ transform detection (group move/resize/turn)
+  function solveAffine(a, b) { // old points a -> new points b ; returns [m0..m5] or null
+    var n = a.length; if (n < 1) return null;
+    var p0 = a[0], i1 = -1, d1 = 0, i;
+    for (i = 1; i < n; i++) { var d = Math.hypot(a[i].x - p0.x, a[i].y - p0.y); if (d > d1) { d1 = d; i1 = i; } }
+    if (i1 < 0 || d1 < 1) return null;
+    var vx = a[i1].x - p0.x, vy = a[i1].y - p0.y, i2 = -1, d2 = 0;
+    for (i = 1; i < n; i++) { var c = Math.abs((a[i].x - p0.x) * vy - (a[i].y - p0.y) * vx) / d1; if (c > d2) { d2 = c; i2 = i; } }
+    if (i2 < 0 || d2 < 1) return null;
+    // solve x' = a x + c y + e ; y' = b x + d y + f using three points
+    var P = [p0, a[i1], a[i2]], Q = [b[0], b[i1], b[i2]];
+    var det = (P[1].x - P[0].x) * (P[2].y - P[0].y) - (P[2].x - P[0].x) * (P[1].y - P[0].y);
+    if (Math.abs(det) < 1e-6) return null;
+    function sol(u0, u1, u2) {
+      var A = ((u1 - u0) * (P[2].y - P[0].y) - (u2 - u0) * (P[1].y - P[0].y)) / det;
+      var C = ((u2 - u0) * (P[1].x - P[0].x) - (u1 - u0) * (P[2].x - P[0].x)) / det;
+      return [A, C, u0 - A * P[0].x - C * P[0].y];
+    }
+    var X = sol(Q[0].x, Q[1].x, Q[2].x), Y = sol(Q[0].y, Q[1].y, Q[2].y);
+    return [X[0], Y[0], X[1], Y[1], X[2], Y[2]];
+  }
+  function solveSimilarity(a, b) { // straight-line strokes: rotation + uniform scale + move from the two farthest points
+    var n = a.length, p0 = a[0], i1 = -1, d1 = 0;
+    for (var i = 1; i < n; i++) { var d = Math.hypot(a[i].x - p0.x, a[i].y - p0.y); if (d > d1) { d1 = d; i1 = i; } }
+    if (i1 < 0 || d1 < 1) return null;
+    var vx = a[i1].x - p0.x, vy = a[i1].y - p0.y, wx = b[i1].x - b[0].x, wy = b[i1].y - b[0].y, den = vx * vx + vy * vy;
+    var A = (vx * wx + vy * wy) / den, B = (vx * wy - vy * wx) / den; // x' = A x - B y + e ; y' = B x + A y + f
+    return [A, B, -B, A, b[0].x - (A * p0.x - B * p0.y), b[0].y - (B * p0.x + A * p0.y)];
+  }
+  function applyM(m, p) { return { x: m[0] * p.x + m[2] * p.y + m[4], y: m[1] * p.x + m[3] * p.y + m[5] }; }
+  function sameM(a, b) { for (var i = 0; i < 6; i++) { if (Math.abs(a[i] - b[i]) > (i < 4 ? 1e-3 : 0.6)) return false; } return true; }
+  function detectTransform(list) { // list of {rec,s}; returns {i:[ids],m,k} or null
+    var m = null, k = 1, kSet = false, j;
+    for (j = 0; j < list.length; j++) {
+      var r = list[j].rec, s = list[j].s;
+      if (r.nodes || s.nodes || r.regions || s.regions || r.shape || s.shape) return null;
+      if (!r.pts || !s.points || r.pts.length !== s.points.length) return null;
+      if (!m) { var mm = solveAffine(r.oldPts || r.pts, s.points) || solveSimilarity(r.oldPts || r.pts, s.points); if (mm) m = mm; }
+    }
+    if (!m) return null;
+    for (j = 0; j < list.length; j++) {
+      var o = list[j].rec, nw = list[j].s, pts = o.oldPts || o.pts;
+      for (var q = 0; q < pts.length; q++) { var t = applyM(m, pts[q]); if (Math.abs(t.x - nw.points[q].x) > 0.6 || Math.abs(t.y - nw.points[q].y) > 0.6) return null; }
+      // size: other settings must match; size ratio must be the same everywhere
+      var a = o.settings, b = nw.settings;
+      if (a !== b) {
+        if (!a || !b || typeof a.size !== 'number' || typeof b.size !== 'number') return null;
+        var A = Object.assign({}, a), B = Object.assign({}, b); delete A.size; delete B.size;
+        if (JSON.stringify(A) !== JSON.stringify(B)) return null;
+        var kk = b.size / a.size; if (!kSet) { k = kk; kSet = true; } else if (Math.abs(kk - k) > 0.01 * Math.max(1, k)) return null;
+      }
+    }
+    return { i: list.map(function (x) { return x.s.id; }), m: m.map(function (v) { return Math.round(v * 1e5) / 1e5; }), k: kSet ? Math.round(k * 1e4) / 1e4 : 1 };
+  }
+
+  // ------------------------------------------------------------------ recording
+  function evBytes(ev) { var n = 60; if (ev.u) n += ev.u.length; if (ev.pu) n += ev.pu.length; if (ev.l) n += ev.l.length; if (ev.pf) n += ev.pf.length; if (ev.o) n += ev.o.length * 38; if (ev.po) n += ev.po.length * 38; if (ev.r) n += ev.r.length * 38; if (ev.pr) n += ev.pr.length * 38; if (ev.t) n += ev.t.i.length * 38 + 80; return n; }
+  function record() {
+    var L = S.L, now = performance.now(), ev = { d: 0 }, any = false;
+    var m = new Map(), order = [], added = [], chg = [], seen = new Set();
+    strokes.forEach(function (s, i) {
+      seen.add(s.id); order.push(s.id);
+      var rec = L.strokes.get(s.id);
+      if (!rec) { added.push({ s: s, i: i }); m.set(s.id, mkRec(s)); }
+      else if (changed(rec, s)) { chg.push({ rec: rec, s: s }); var nr = mkRec(s); nr.oldPts = s.points; m.set(s.id, nr); }
+      else m.set(s.id, (rec.pts === s.points && rec.nodes === s.nodes && rec.regions === s.regions) ? rec : mkRec(s));
+    });
+    var removed = []; L.strokes.forEach(function (rec, id) { if (!seen.has(id)) removed.push(id); });
+    // ---- strokes
+    var tr = (chg.length && !added.length && !removed.length) ? detectTransform(chg) : null;
+    var rmSet = new Set(removed);
+    var oldKept = L.order.filter(function (id) { return !rmSet.has(id); });
+    var addSet = new Set(added.map(function (a) { return a.s.id; }));
+    var newKept = order.filter(function (id) { return !addSet.has(id); });
+    var sameRel = oldKept.length === newKept.length && oldKept.every(function (id, i) { return id === newKept[i]; });
+    var tail = added.every(function (a, k) { return a.i === order.length - added.length + k; });
+    if (removed.length) { ev.r = removed; any = true; }
+    if (tr) { ev.t = tr; any = true; }
+    else if (chg.length || added.length) {
+      ev.u = JSON.stringify(chg.map(function (c) { return c.s; }).concat(added.map(function (a) { return a.s; })), rep); any = true;
+      if (chg.length) ev.nc = chg.length;
+      if (added.length && sameRel && !tail) ev.n = added.map(function (a) { return a.i; });
+    }
+    if (!sameRel) { ev.o = order; any = true; }
+    // ---- layers
+    var ls = layersStr(); if (ls !== L.layers) { ev.l = ls; any = true; }
+    // ---- placed pictures
+    var pm = new Map(), po = [], pOK = true;
+    placed.forEach(function (p) { if (!p.id || pm.has(p.id)) pOK = false; pm.set(p.id, placedJSON(p)); po.push(p.id); });
+    var pChanged = pm.size !== L.placed.size;
+    if (!pChanged) pm.forEach(function (j, id) { if (L.placed.get(id) !== j) pChanged = true; });
+    if (!pChanged && po.join() !== L.porder.join()) pChanged = true;
+    if (pChanged) {
+      if (pOK && L.pOK) {
+        var pu = [], pr = [];
+        pm.forEach(function (j, id) { if (L.placed.get(id) !== j) pu.push(j); });
+        L.placed.forEach(function (j, id) { if (!pm.has(id)) pr.push(id); });
+        if (pu.length) ev.pu = '[' + pu.join(',') + ']';
+        if (pr.length) ev.pr = pr;
+        var okeptOld = L.porder.filter(function (id) { return pm.has(id); }), okeptNew = po.filter(function (id) { return L.placed.has(id); });
+        if (okeptOld.join() !== okeptNew.join()) ev.po = po;
+      } else ev.pf = JSON.stringify(placed, rep);
+      any = true;
+    }
+    var bs = bgSig(); if (bs !== L.bg) { ev.g = bgObj(); any = true; }
+    S.L = { strokes: m, order: order, layers: ls, placed: pm, porder: po, pOK: pOK, bg: bs };
+    if (!any) return;
+    // ---- time: only the time the pen was actually down counts, never idle thinking time
+    var dt = now - S.lastT;
+    if (S.pd && S.pd > S.lastT - 50) ev.d = Math.min(8000, Math.max(150, now - S.pd)); else ev.d = Math.min(450, Math.max(120, dt));
+    ev.d = Math.round(ev.d);
+    S.pd = 0; S.lastT = now;
+    S.log.push(ev); S.bytes += evBytes(ev);
+    markDirty(S.log.length - 1);
+    scheduleFold();
+  }
+  var foldTimer = 0;
+  function scheduleFold() {
+    if (foldTimer || (S.bytes <= MAX_BYTES && S.log.length <= MAX_EVENTS)) return;
+    foldTimer = setTimeout(function () { foldTimer = 0; if (S.pd && performance.now() - S.pd < 5000) { scheduleFold(); return; } try { fold(); } catch (e) { console.warn('[timelapse] fold failed', e); } }, 600);
+  }
+  function markDirty(idx) {
+    S.dirtyFrom = Math.min(S.dirtyFrom, Math.floor(Math.max(0, idx) / CHUNK)); S.dirtyMeta = true;
+    clearTimeout(S.saveTimer); S.saveTimer = setTimeout(function () { flush(); }, 4000);
+  }
+
+  // ---- folding the oldest actions into the starting picture keeps storage and RAM bounded
+  function fold() {
+    if (S.bytes <= MAX_BYTES && S.log.length <= MAX_EVENTS) return;
+    var n = Math.max(1, Math.floor(S.log.length * 0.3)); n = Math.min(n, S.bytes > MAX_BYTES ? S.log.length - 1 : S.log.length - MIN_KEEP); if (n < 1) return;
+    var st = newState(S.base);
+    for (var i = 0; i < n; i++) applyData(st, S.log[i]);
+    S.base = JSON.stringify({ s: st.strokes, l: st.layers, p: st.placed, g: st.bg });
+    var gone = S.log.splice(0, n); S.folded += n;
+    gone.forEach(function (e) { S.bytes -= evBytes(e); });
+    S.dirtyAll = true; S.baseDirty = true; S.dirtyFrom = 0; S.dirtyMeta = true; S.foldedFlag = true;
+    if (S.bytes > MAX_BYTES && S.log.length > 1) fold();
+  }
+
+  // ------------------------------------------------------------------ pure data state used by replay and folding
+  function newState(baseStr) {
+    var b = JSON.parse(baseStr);
+    var st = { strokes: b.s || [], layers: b.l || [], placed: b.p || [], bg: b.g || { has: false, shown: false, opacity: 1 } };
+    reindex(st); return st;
+  }
+  function reindex(st) { st.by = new Map(); st.strokes.forEach(function (s) { st.by.set(s.id, s); }); }
+  function strokeBBox(s) {
+    var pts = s.regions ? [].concat.apply([], s.regions) : s.points; if (!pts || !pts.length) return null;
+    var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (var i = 0; i < pts.length; i++) { var p = pts[i]; if (p.x < x0) x0 = p.x; if (p.x > x1) x1 = p.x; if (p.y < y0) y0 = p.y; if (p.y > y1) y1 = p.y; }
+    var sz = (s.settings && s.settings.size) || 20, pad = s.fillColor ? 4 : sz * 1.6 + 16;
+    return { x0: x0 - pad, y0: y0 - pad, x1: x1 + pad, y1: y1 + pad };
+  }
+  function addRect(info, r) { if (!r) return; if (!info.rect) info.rect = { x0: r.x0, y0: r.y0, x1: r.x1, y1: r.y1 }; else { info.rect.x0 = Math.min(info.rect.x0, r.x0); info.rect.y0 = Math.min(info.rect.y0, r.y0); info.rect.x1 = Math.max(info.rect.x1, r.x1); info.rect.y1 = Math.max(info.rect.y1, r.y1); } }
+  // Applies one event to the data state. info collects which layers/regions need re-drawing (before AND after).
+  function applyData(st, ev, info) {
+    info = info || { layers: new Map(), full: false };
+    var touch = function (s) { if (!s) return; var e = info.layers.get(s.layerId); if (!e) { e = {}; info.layers.set(s.layerId, e); } addRect(e, strokeBBox(s)); };
+    var by = st.by;
+    if (ev.r) { var rs = new Set(ev.r); ev.r.forEach(function (id) { touch(by.get(id)); }); st.strokes = st.strokes.filter(function (s) { return !rs.has(s.id); }); reindex(st); by = st.by; }
+    if (ev.t) {
+      var m = ev.t.m, k = ev.t.k || 1;
+      ev.t.i.forEach(function (id) {
+        var s = by.get(id); if (!s) return; touch(s);
+        s.points = s.points.map(function (p) { var t = applyM(m, p); var q = Object.assign({}, p); q.x = t.x; q.y = t.y; return q; });
+        if (k !== 1 && s.settings && typeof s.settings.size === 'number') { s.settings = Object.assign({}, s.settings, { size: Math.max(0.5, s.settings.size * k) }); }
+        touch(s);
+      });
+    }
+    if (ev.u) {
+      var arr = JSON.parse(ev.u), nc = ev.nc || 0, fresh = [];
+      arr.forEach(function (n, j) {
+        var old = by.get(n.id);
+        if (old) { touch(old); var ix = st.strokes.indexOf(old); st.strokes[ix] = n; touch(n); }
+        else fresh.push({ s: n, j: j - nc });
+      });
+      if (fresh.length) {
+        if (ev.n && ev.n.length === fresh.length) {
+          fresh.map(function (f, q) { return { s: f.s, idx: ev.n[q] }; }).sort(function (a, b) { return a.idx - b.idx; }).forEach(function (f) { st.strokes.splice(Math.min(f.idx, st.strokes.length), 0, f.s); touch(f.s); });
+        } else fresh.forEach(function (f) { st.strokes.push(f.s); touch(f.s); });
+      }
+      reindex(st); by = st.by;
+    }
+    if (ev.o) { var mp = new Map(); st.strokes.forEach(function (s) { mp.set(s.id, s); }); var ns = []; ev.o.forEach(function (id) { if (mp.has(id)) ns.push(mp.get(id)); }); st.strokes = ns; reindex(st); info.full = true; }
+    if (ev.l) { st.layers = JSON.parse(ev.l); info.full = true; }
+    if (ev.pf) { st.placed = JSON.parse(ev.pf); info.placed = true; }
+    if (ev.pr) { var ps = new Set(ev.pr); st.placed = st.placed.filter(function (p) { return !ps.has(p.id); }); info.placed = true; }
+    if (ev.pu) { JSON.parse(ev.pu).forEach(function (n) { var ix = -1; for (var i = 0; i < st.placed.length; i++) if (st.placed[i].id === n.id) { ix = i; break; } if (ix >= 0) st.placed[ix] = n; else st.placed.push(n); }); info.placed = true; }
+    if (ev.po) { var pmx = new Map(); st.placed.forEach(function (p) { pmx.set(p.id, p); }); var np = []; ev.po.forEach(function (id) { if (pmx.has(id)) np.push(pmx.get(id)); }); st.placed = np; }
+    if (ev.g) st.bg = ev.g;
+    return info;
+  }
+
+  // ------------------------------------------------------------------ marks (undo / redo trimming)
+  // marks[i] belongs to history[i]: {n: log length at that undo step, h: fingerprint of the artwork at that step}.
+  // Undo cuts the log back to the step's length (so the undone edit never shows in the video); the fingerprint is a
+  // safety check — if the app jumped somewhere the log does not know about, a correction action is recorded instead.
+  function idHash(id) { var h = 0, s = String(id); for (var i = Math.max(0, s.length - 8); i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return h; }
+  function stateHash() {
+    var h = strokes.length;
+    for (var i = 0; i < strokes.length; i++) h = (h * 31 + idHash(strokes[i].id)) | 0;
+    h = (h * 17 + placed.length) | 0; for (var j = 0; j < placed.length; j++) h = (h * 31 + idHash(placed[j].id || j)) | 0;
+    var ls = layersStr(); h = (h * 13 + ls.length) | 0; return h;
+  }
+  function mkMark() { return { n: total(), h: stateHash() }; }
+  function afterPush() {
+    if (!S.on) return;
+    if (S.paused) { S.marksBad = true; return; }
+    var okBefore = !S.marksBad && S.marks.length === S.hl;
+    if (okBefore) { S.marks = S.marks.slice(0, S.hb + 1); S.marks.push(mkMark()); if (S.marks.length > 40) S.marks.shift(); }
+    else { S.marks = history.map(function (x, i) { return i === history.length - 1 ? mkMark() : { n: total(), h: null }; }); S.marksBad = false; }
+    S.stash = [];
+  }
+  function afterRestore(kind) {
+    if (!S.on || S.paused || editing()) return;
+    var mk = S.marks.length === history.length ? S.marks[hIndex] : null, cur = stateHash(), ok = false;
+    if (mk && mk.h === cur) {
+      if (kind === 'undo') {
+        var from = Math.max(0, mk.n - S.folded);
+        if (from < S.log.length) { var gone = S.log.splice(from); gone.forEach(function (e) { S.bytes -= evBytes(e); }); S.stash = gone.concat(S.stash); markDirty(from); }
+        ok = true;
+      } else {
+        var need = mk.n - total();
+        if (need <= 0) ok = true;
+        else if (S.stash.length >= need) { var back = S.stash.splice(0, need); back.forEach(function (e) { S.bytes += evBytes(e); S.log.push(e); }); markDirty(S.log.length - need); ok = true; }
+      }
+    }
+    if (ok) { S.L = snapLast(); }
+    else { // the log cannot say how we got here: record the difference as a normal action
+      S.stash = []; try { record(); } catch (e) { S.L = snapLast(); }
+      if (S.marks.length !== history.length) S.marks = history.map(function () { return { n: total(), h: null }; });
+      S.marks[hIndex] = mkMark();
+    }
+    S.lastT = performance.now(); S.pd = 0;
+  }
+
+  // ------------------------------------------------------------------ storage (own IndexedDB store, chunked)
+  function idbOK() { return typeof idbMulti === 'function' && typeof dbGet === 'function'; }
+  function flush() {
+    clearTimeout(S.saveTimer);
+    if (!S.pid || !idbOK() || (!S.dirtyMeta && !S.dirtyAll)) return S.saving;
+    var pid = S.pid, base = S.base, baseDirty = S.baseDirty, folded = S.folded, on = S.on;
+    var nChunks = Math.ceil(S.log.length / CHUNK), from = S.dirtyAll ? 0 : S.dirtyFrom;
+    var writes = [];
+    for (var c = from; c < nChunks; c++) writes.push([pid + '#' + c, S.log.slice(c * CHUNK, (c + 1) * CHUNK)]);
+    S.baseDirty = false;
+    var oldN = S.savedChunks || 0, meta = { v: 2, on: on, folded: folded, chunks: nChunks, count: S.log.length, bytes: S.bytes, savedAt: Date.now() };
+    S.dirtyFrom = 1e9; S.dirtyMeta = false; S.dirtyAll = false;
+    S.saving = S.saving.then(function () {
+      return idbMulti([STORE], function (o) {
+        writes.forEach(function (w) { o[STORE].put(w[1], w[0]); });
+        for (var c = nChunks; c < oldN; c++) o[STORE].delete(pid + '#' + c);
+        if (baseDirty) o[STORE].put(base, pid + '#base');
+        o[STORE].put(meta, pid);
+      });
+    }).then(function () { if (S.pid === pid) S.savedChunks = nChunks; }, function (e) { console.warn('[timelapse] save failed', e); S.dirtyMeta = true; S.dirtyFrom = 0; if (baseDirty) S.baseDirty = true; });
+    return S.saving;
+  }
+  async function loadFor(pid) {
+    var meta = null; try { meta = await dbGet(STORE, pid); } catch (e) { }
+    if (!meta) return null;
+    if (meta.base == null) { try { meta.base = await dbGet(STORE, pid + '#base'); } catch (e) { } }
+    if (meta.base == null) return null;
+    var log = [];
+    for (var c = 0; c < (meta.chunks || 0); c++) { var ch = null; try { ch = await dbGet(STORE, pid + '#' + c); } catch (e) { } if (ch) log = log.concat(ch); }
+    return { meta: meta, log: log };
+  }
+  function deleteFor(pid) {
+    if (!idbOK() || !pid) return Promise.resolve();
+    return dbGet(STORE, pid).then(function (meta) {
+      return idbMulti([STORE], function (o) { var n = meta ? meta.chunks || 0 : 0; for (var c = 0; c < n; c++) o[STORE].delete(pid + '#' + c); o[STORE].delete(pid + '#base'); o[STORE].delete(pid); });
+    }).catch(function () { });
+  }
+
+  // Make the recorder's idea of "where the log ends" match the artwork as it is now, recording any difference as one quick
+  // action (used when resuming after recording was off, and when reopening a project whose last autosave outran the log).
+  function closeEnough(a, b) {
+    if (a.brushId !== b.brushId || a.layerId !== b.layerId || a.color !== b.color || (a.fillColor || null) !== (b.fillColor || null) || !!a.closed !== !!b.closed || !!a.atop !== !!b.atop) return false;
+    if (JSON.stringify(a.settings || null) !== JSON.stringify(b.settings || null)) return false;
+    var pa = a.points || [], pb = b.points || []; if (pa.length !== pb.length) return false;
+    for (var i = 0; i < pa.length; i++) if (Math.abs(pa[i].x - pb[i].x) > 0.03 || Math.abs(pa[i].y - pb[i].y) > 0.03) return false;
+    var na = a.nodes || [], nb = b.nodes || []; if (na.length !== nb.length) return false;
+    for (var j = 0; j < na.length; j++) if (Math.abs(na[j].x - nb[j].x) > 0.03 || Math.abs(na[j].y - nb[j].y) > 0.03) return false;
+    if ((a.regions ? a.regions.length : 0) !== (b.regions ? b.regions.length : 0)) return false;
+    return true;
+  }
+  function reconcile() {
+    var st = newState(S.base); S.log.forEach(function (e) { applyData(st, e); });
+    var by = new Map(); strokes.forEach(function (s) { by.set(s.id, s); });
+    var m = new Map(), order = [];
+    st.strokes.forEach(function (o) { var a = by.get(o.id); m.set(o.id, mkRec(a && closeEnough(o, a) ? a : o)); order.push(o.id); });
+    var pm = new Map(), po = [], pOK = true;
+    st.placed.forEach(function (p) { if (!p.id || pm.has(p.id)) pOK = false; pm.set(p.id, placedJSON(p)); po.push(p.id); });
+    S.L = { strokes: m, order: order, layers: JSON.stringify(st.layers), placed: pm, porder: po, pOK: pOK, bg: bgSig() };
+    S.lastT = performance.now() - 150; S.pd = 0;
+    record();
+  }
+
+  // ------------------------------------------------------------------ public hooks called by the app
+  function detach() {
+    try { if (S.on && S.pid) flush(); } catch (e) { }
+    S.on = false; S.pid = null; S.log = []; S.base = null; S.marks = []; S.stash = []; S.bytes = 0; S.L = null; S.folded = 0; S.savedChunks = 0; S.paused = false; S.marksBad = false;
+    refreshPanel();
+  }
+  function startRecording(fresh) {
+    if (!activeProject) return;
+    S.pid = activeProject.id; S.base = baseNow(); S.log = []; S.folded = 0; S.bytes = 0; S.stash = [];
+    S.L = snapLast(); S.marks = history.map(function () { return mkMark(); }); S.marksBad = false; S.lastT = performance.now(); S.pd = 0;
+    S.on = true; S.dirtyAll = true; S.baseDirty = true; S.dirtyFrom = 0; S.dirtyMeta = true; flush(); refreshPanel();
+  }
+  function stopRecording() { S.on = false; S.dirtyMeta = true; flush(); refreshPanel(); }
+  async function onProjectLoaded(meta, doc) {
+    detach();
+    var pid = meta && meta.id; if (!pid) return;
+    S.loading = true;
+    var d = await loadFor(pid);
+    S.loading = false;
+    if (!activeProject || activeProject.id !== pid) return;
+    S.pid = pid;
+    if (d) {
+      S.base = d.meta.base; S.log = d.log; S.folded = d.meta.folded || 0; S.savedChunks = d.meta.chunks || 0;
+      S.bytes = 0; S.log.forEach(function (e) { S.bytes += evBytes(e); });
+      S.on = !!d.meta.on;
+    } else if (strokes.length === 0 && placed.length === 0 && defaultOn()) {
+      S.base = baseNow(); S.log = []; S.folded = 0; S.bytes = 0; S.savedChunks = 0; S.on = true; S.dirtyAll = true; S.baseDirty = true; S.dirtyMeta = true; flush();
+    } else { S.on = false; S.base = null; S.log = []; }
+    if (d && S.on) { try { reconcile(); } catch (e) { console.warn('[timelapse] reconcile', e); S.L = snapLast(); } } else S.L = snapLast();
+    S.marks = history.map(function () { return mkMark(); }); S.marksBad = false; S.stash = []; S.lastT = performance.now(); S.pd = 0;
+    refreshPanel();
+  }
+  window.SPTimelapse = {
+    onPush: function () {
+      if (!S.on) return;
+      S.hb = hIndex; S.hl = history.length;
+      S.paused = editing();
+      if (S.paused || !S.L) return;
+      try { record(); } catch (e) { console.warn('[timelapse] record failed', e); }
+    },
+    afterPush: function () { try { afterPush(); } catch (e) { console.warn('[timelapse]', e); } },
+    afterRestore: function (k) { try { afterRestore(k); } catch (e) { console.warn('[timelapse]', e); } },
+    detach: detach, onProjectLoaded: onProjectLoaded, flush: flush, deleteFor: deleteFor,
+    status: function () { return { on: S.on, events: S.log.length, bytes: S.bytes, folded: S.folded, pid: S.pid }; },
+    _S: S, _newState: newState, _applyData: applyData
+  };
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') flush(); });
+  window.addEventListener('pagehide', function () { flush(); });
+  document.addEventListener('pointerdown', function (e) { if (S.on && e.target && e.target.id === 'canvas') S.pd = performance.now(); }, true);
+
+  // ------------------------------------------------------------------ replay engine (hidden canvases)
+  function mkCanvas(w, h) { var c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+  function Player(baseStr, log, opts) {
+    this.base = baseStr; this.log = log; this.opts = opts || {};
+    this.cv = new Map(); this.comp = mkCanvas(W, H); this.pre = null; this.tile = mkCanvas(TILE, TILE);
+    this.pos = 0; this.anim = null; this.dirty = true; this.endT = 0;
+    this.layoutNow = layout;
+    this.reset();
+  }
+  Player.prototype.canvasFor = function (id) { var c = this.cv.get(id); if (!c) { c = mkCanvas(W, H); this.cv.set(id, c); } return c; };
+  Player.prototype.reset = function () {
+    this.st = newState(this.base); this.pos = 0; this.anim = null; this.cv.forEach(function (c) { c.width = 1; c.height = 1; }); this.cv.clear();
+    this.rebuildAll(); this.dirty = true;
+  };
+  Player.prototype.free = function () { this.cv.forEach(function (c) { c.width = 1; c.height = 1; }); this.cv.clear(); this.comp.width = 1; this.comp.height = 1; if (this.pre) { this.pre.width = 1; this.pre.height = 1; this.pre = null; } this.tile.width = 1; this.tile.height = 1; };
+  Player.prototype.renderStrokes = function (g, list) {
+    var svS = strokes, svC = ctx;
+    strokes = this.st.strokes; ctx = g;
+    try {
+      list.forEach(function (s) {
+        try { var br = BrushEngine.getBrush(s.brushId), se = s.settings || BrushEngine.getSettings(s.brushId); renderStrokeClipped(g, s, br, se); } catch (e) { }
+      });
+    } finally { strokes = svS; ctx = svC; }
+  };
+  Player.prototype.rebuildLayer = function (id, rect) {
+    var c = this.canvasFor(id), g = c.getContext('2d'), list = this.st.strokes.filter(function (s) { return s.layerId === id; });
+    g.save();
+    if (rect) {
+      var x = Math.max(0, Math.floor(rect.x0)), y = Math.max(0, Math.floor(rect.y0)), w = Math.min(W, Math.ceil(rect.x1)) - x, h = Math.min(H, Math.ceil(rect.y1)) - y;
+      if (w <= 0 || h <= 0) { g.restore(); return; }
+      g.beginPath(); g.rect(x, y, w, h); g.clip(); g.clearRect(x, y, w, h);
+      list = list.filter(function (s) { var b = strokeBBox(s); return b && b.x1 >= x && b.x0 <= x + w && b.y1 >= y && b.y0 <= y + h; });
+    } else g.clearRect(0, 0, W, H);
+    this.renderStrokes(g, list); g.restore(); this.dirty = true;
+  };
+  Player.prototype.rebuildAll = function () {
+    var me = this, ids = new Set(); this.st.layers.forEach(function (l) { ids.add(l.id); me.rebuildLayer(l.id); });
+    this.cv.forEach(function (c, id) { if (!ids.has(id)) { c.width = 1; c.height = 1; me.cv.delete(id); } });
+  };
+  Player.prototype.applyEvent = function (i) {
+    var ev = this.log[i], info = applyData(this.st, ev), me = this;
+    if (info.full) this.rebuildAll();
+    else info.layers.forEach(function (e, id) { me.rebuildLayer(id, e.rect); });
+    this.dirty = true;
+  };
+  // is event i a single new stroke added on top (so it can be drawn progressively)?
+  Player.prototype.animatable = function (i) {
+    var ev = this.log[i]; if (!ev.u || ev.nc || ev.r || ev.t || ev.o || ev.l || ev.n) return false;
+    if (ev._a === undefined) { try { var a = JSON.parse(ev.u); ev._a = (a.length >= 1 && a.length <= 8 && a.every(function (s) { return !s.fillColor && !s.regions && s.points && s.points.length > 2 && s.layerId === a[0].layerId; })); } catch (e) { ev._a = false; } }
+    return ev._a;
+  };
+  // Make the picture show the state at timeline time t (seconds into the drawing part).
+  Player.prototype.renderAt = function (t, times) {
+    var n = this.log.length, i = -1;
+    if (n) { var lo = 0, hi = n - 1; while (lo <= hi) { var mid = (lo + hi) >> 1; if (times.start[mid] <= t) { i = mid; lo = mid + 1; } else hi = mid - 1; } }
+    if (this.pos > i + 1) this.reset();                                    // going backwards: start again
+    if (this.anim && this.anim.i < i) this.finishAnimData(this.anim.i);    // moved past the stroke being drawn
+    for (var k = this.pos; k < i; k++) this.applyEvent(k);
+    if (this.pos < i) this.pos = i;
+    if (i < 0) return;
+    var frac = Math.max(0, Math.min(1, (t - times.start[i]) / Math.max(1e-6, times.dur[i])));
+    if (this.pos > i) {                                                    // event i already started
+      if (this.anim && this.anim.i === i) { if (frac < 1) this.drawPartial(frac); else this.finishAnimData(i); }
+      return;
+    }
+    if (this.animatable(i) && frac < 1 && times.dur[i] > 0.04) { this.beginAnim(i); this.drawPartial(frac); }
+    else { this.applyEvent(i); this.pos = i + 1; }
+  };
+  Player.prototype.beginAnim = function (i) {
+    var ev = this.log[i], arr = JSON.parse(ev.u), lid = arr[0].layerId;
+    var c = this.canvasFor(lid); if (!this.pre) this.pre = mkCanvas(W, H);
+    var pg = this.pre.getContext('2d'); pg.clearRect(0, 0, W, H); pg.drawImage(c, 0, 0);
+    // the data is applied now (so later events see it); the drawing is progressive
+    var info = applyData(this.st, ev);
+    this.anim = { i: i, layerId: lid, arr: arr, info: info }; this.pos = i + 1;
+  };
+  Player.prototype.drawPartial = function (frac) {
+    var a = this.anim; if (!a) return;
+    var c = this.canvasFor(a.layerId), g = c.getContext('2d');
+    g.save(); g.clearRect(0, 0, W, H); g.drawImage(this.pre, 0, 0); g.restore();
+    var part = a.arr.map(function (s) { var cnt = Math.max(2, Math.ceil(s.points.length * frac)); return Object.assign({}, s, { points: s.points.slice(0, cnt), nodes: null, regions: null, shape: null, closed: false }); });
+    var me = this, svS = strokes, svC = ctx; strokes = this.st.strokes; ctx = g;
+    try { part.forEach(function (s) { if (s.layerId !== a.layerId) return; try { renderStrokeClipped(g, s, BrushEngine.getBrush(s.brushId), s.settings || BrushEngine.getSettings(s.brushId)); } catch (e) { } }); } finally { strokes = svS; ctx = svC; }
+    this.dirty = true;
+  };
+  Player.prototype.finishAnimData = function (k) {
+    var a = this.anim; if (!a || a.i !== k) return;
+    this.anim = null; var c = this.canvasFor(a.layerId), g = c.getContext('2d');
+    g.save(); g.clearRect(0, 0, W, H); g.drawImage(this.pre, 0, 0); g.restore();
+    var me = this; a.info.layers.forEach(function (e, id) { me.rebuildLayer(id, e.rect); });
+    this.pos = Math.max(this.pos, k + 1); this.dirty = true;
+  };
+  // Fully draw everything (used by scrubbing and to show the finished picture).
+  Player.prototype.showAll = function () {
+    this.reset(); for (var k = 0; k < this.log.length; k++) applyData(this.st, this.log[k]);
+    this.pos = this.log.length; this.anim = null; this.rebuildAll(); this.dirty = true;
+  };
+  Player.prototype.flatten = function () {
+    var g = this.comp.getContext('2d'), me = this; g.clearRect(0, 0, W, H);
+    this.st.layers.forEach(function (l) {
+      if (!l.visible) return; var c = me.cv.get(l.id); if (!c) return;
+      g.save(); g.globalAlpha = (l.opacity == null ? 100 : l.opacity) / 100; g.globalCompositeOperation = l.blend || 'source-over'; g.drawImage(c, 0, 0); g.restore();
+    });
+  };
+  // The finished square tile, exactly like the app's own "Export image (PNG tile)": white, background, the artwork with
+  // the neighbouring repeats wrapping over the edges, then placed motif pictures.
+  Player.prototype.buildTile = function () {
+    this.flatten();
+    var o = this.tile.getContext('2d'); o.clearRect(0, 0, TILE, TILE); o.fillStyle = '#fff'; o.fillRect(0, 0, TILE, TILE);
+    var bg = this.st.bg; try { if (bg && bg.has && bg.shown && bgImg) { o.save(); o.globalAlpha = bg.opacity; o.drawImage(bgImg, 0, 0, TILE, TILE); o.restore(); } } catch (e) { }
+    var offs = [[0, 0]]; for (var ix = -1; ix <= 1; ix++) for (var iy = -1; iy <= 1; iy++) { if (ix || iy) offs.push(tilePos(ix, iy)); }
+    var comp = this.comp;
+    offs.forEach(function (of) {
+      var dx = of[0] - C, dy = of[1] - C, x0 = Math.max(0, dx), x1 = Math.min(TILE, dx + W), y0 = Math.max(0, dy), y1 = Math.min(TILE, dy + H);
+      if (x1 <= x0 || y1 <= y0) return; o.drawImage(comp, x0 - dx, y0 - dy, x1 - x0, y1 - y0, x0, y0, x1 - x0, y1 - y0);
+    });
+    this.st.placed.forEach(function (p) {
+      var m = null; try { m = motifs.find(function (x) { return x.id === p.motifId; }); } catch (e) { } var im = m && m.img; if (!im) return;
+      offs.forEach(function (of) { o.save(); if (p.alpha != null) o.globalAlpha = p.alpha; o.translate(p.x - C + of[0], p.y - C + of[1]); o.rotate((p.r || 0) * Math.PI / 180); o.scale(p.s * (p.fx == null ? 1 : p.fx), p.s * (p.fy == null ? 1 : p.fy)); o.drawImage(im, -p.w / 2, -p.h / 2, p.w, p.h); o.restore(); });
+    });
+    this.dirty = false;
+  };
+  Player.prototype.drawTileTo = function (g, size) { g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.drawImage(this.tile, 0, 0, TILE, TILE, 0, 0, size, size); };
+  // zoom 1 = tile fills the frame; smaller shows the repeat around it (uses the project's repeat layout)
+  Player.prototype.drawRepeat = function (g, size, zoom) {
+    var k = zoom * size / TILE; g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+    g.fillStyle = '#fff'; g.fillRect(0, 0, size, size);
+    var span = Math.ceil(1 / Math.max(0.05, zoom)) + 3;
+    for (var iy = -span; iy <= span; iy++) for (var ix = -span; ix <= span; ix++) {
+      var p = tilePos(ix, iy), x = size / 2 + (p[0] - TILE / 2) * k, y = size / 2 + (p[1] - TILE / 2) * k, w = TILE * k;
+      if (x > size || y > size || x + w < 0 || y + w < 0) continue;
+      g.drawImage(this.tile, 0, 0, TILE, TILE, x - 0.4, y - 0.4, w + 0.8, w + 0.8);
+    }
+  };
+
+  // ---- timeline: action weights -> seconds
+  function makeTimes(log, seconds) {
+    var n = log.length, w = new Array(n), sum = 0, i;
+    for (i = 0; i < n; i++) { w[i] = Math.max(160, log[i].d || 0); sum += w[i]; }
+    var k = seconds / Math.max(1, sum), start = new Array(n), dur = new Array(n), t = 0;
+    for (i = 0; i < n; i++) { start[i] = t; dur[i] = w[i] * k; t += dur[i]; }
+    return { start: start, dur: dur, total: t, activeMs: sum };
+  }
+  var ENDING = { hold: 1.0, reveal: 2.8, hold2: 1.6, plain: 1.5 };
+  function endingLen(reveal) { return reveal ? ENDING.hold + ENDING.reveal + ENDING.hold2 : ENDING.plain; }
+  function ease(x) { return x * x * (3 - 2 * x); }
+  // Draw the frame for global time t (drawing part, then the optional ending) into g at size px.
+  function drawFrame(P, g, size, t, times, reveal) {
+    if (t <= times.total) { P.renderAt(t, times); if (P.dirty) P.buildTile(); P.drawTileTo(g, size); return; }
+    if (P.pos < P.log.length || P.anim) { P.showAll(); }
+    if (P.dirty) P.buildTile();
+    var e = t - times.total;
+    if (!reveal) { P.drawTileTo(g, size); return; }
+    if (e <= ENDING.hold) { P.drawTileTo(g, size); return; }
+    var q = Math.min(1, (e - ENDING.hold) / ENDING.reveal), zEnd = 1 / 2.6;
+    P.drawRepeat(g, size, Math.exp(Math.log(zEnd) * ease(q)));
+  }
+
+  // ------------------------------------------------------------------ encoding support
+  var enc = { checked: false, webcodecs: null, recorder: null };
+  async function detectEncoders() {
+    if (enc.checked) return enc;
+    enc.checked = true;
+    try {
+      if (typeof VideoEncoder === 'function') {
+        var tries = ['avc1.42E028', 'avc1.4D4028', 'avc1.640028', 'avc1.42E01F'];
+        for (var i = 0; i < tries.length; i++) {
+          var r = await VideoEncoder.isConfigSupported({ codec: tries[i], width: 1080, height: 1080, bitrate: 4e6, framerate: 30, avc: { format: 'avc' } });
+          if (r && r.supported) { enc.webcodecs = { codec: tries[i] }; break; }
+        }
+      }
+    } catch (e) { }
+    try {
+      if (typeof MediaRecorder === 'function' && HTMLCanvasElement.prototype.captureStream) {
+        var types = ['video/mp4;codecs=avc1.42E01E', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+        for (var j = 0; j < types.length; j++) { if (MediaRecorder.isTypeSupported(types[j])) { enc.recorder = { mime: types[j] }; break; } }
+      }
+    } catch (e) { }
+    return enc;
+  }
+
+  // ---- minimal MP4 (ISO-BMFF) muxer for one H.264 video track; samples are length-prefixed (AVCC) as WebCodecs gives them
+  function Mp4(width, height, fps, avcC) { this.w = width; this.h = height; this.fps = fps; this.avcC = avcC; this.samples = []; this.ts = 90000; }
+  Mp4.prototype.add = function (data, key, durTicks) { this.samples.push({ d: data, k: key, t: durTicks }); };
+  function u32(n) { return [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255]; }
+  function u16(n) { return [(n >>> 8) & 255, n & 255]; }
+  function str(s) { return [].map.call(s, function (c) { return c.charCodeAt(0); }); }
+  function box(type, parts) { var body = [].concat.apply([], parts.map(function (p) { return p instanceof Uint8Array ? Array.prototype.slice.call(p) : p; })); return u32(8 + body.length).concat(str(type), body); }
+  function fbox(type, ver, flags, parts) { return box(type, [[ver, (flags >> 16) & 255, (flags >> 8) & 255, flags & 255]].concat(parts)); }
+  Mp4.prototype.finish = function () {
+    var sm = this.samples, n = sm.length, ts = this.ts, w = this.w, h = this.h, i;
+    var dur = 0; sm.forEach(function (s) { dur += s.t; });
+    var ftyp = box('ftyp', [str('isom'), u32(512), str('isom'), str('iso2'), str('avc1'), str('mp41')]);
+    var mdatSize = 8; sm.forEach(function (s) { mdatSize += s.d.length; });
+    var matrix = [].concat(u32(0x10000), u32(0), u32(0), u32(0), u32(0x10000), u32(0), u32(0), u32(0), u32(0x40000000));
+    var mvhd = fbox('mvhd', 0, 0, [u32(0), u32(0), u32(ts), u32(dur), u32(0x10000), u16(0x100), u16(0), u32(0), u32(0), matrix, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], u32(2)]);
+    var tkhd = fbox('tkhd', 0, 3, [u32(0), u32(0), u32(1), u32(0), u32(dur), u32(0), u32(0), u16(0), u16(0), u16(0), u16(0), matrix, u32(w << 16), u32(h << 16)]);
+    var mdhd = fbox('mdhd', 0, 0, [u32(0), u32(0), u32(ts), u32(dur), u16(0x55c4), u16(0)]);
+    var hdlr = fbox('hdlr', 0, 0, [u32(0), str('vide'), u32(0), u32(0), u32(0), str('VideoHandler'), [0]]);
+    var vmhd = fbox('vmhd', 0, 1, [u16(0), u16(0), u16(0), u16(0)]);
+    var dinf = box('dinf', [fbox('dref', 0, 0, [u32(1), fbox('url ', 0, 1, [])])]);
+    var avc1 = box('avc1', [[0, 0, 0, 0, 0, 0], u16(1), u16(0), u16(0), u32(0), u32(0), u32(0), u16(w), u16(h), u32(0x480000), u32(0x480000), u32(0), u16(1), new Array(32).fill(0), u16(0x18), u16(0xffff), box('avcC', [this.avcC])]);
+    var stsd = fbox('stsd', 0, 0, [u32(1), avc1]);
+    // stts: run-length of durations
+    var runs = [], r;
+    sm.forEach(function (s) { if (runs.length && runs[runs.length - 1][1] === s.t) runs[runs.length - 1][0]++; else runs.push([1, s.t]); });
+    var stts = fbox('stts', 0, 0, [u32(runs.length)].concat(runs.map(function (x) { return [].concat(u32(x[0]), u32(x[1])); })));
+    var keys = []; sm.forEach(function (s, ix) { if (s.k) keys.push(ix + 1); });
+    var stss = fbox('stss', 0, 0, [u32(keys.length)].concat(keys.map(u32)));
+    var stsc = fbox('stsc', 0, 0, [u32(1), u32(1), u32(n), u32(1)]);
+    var stsz = fbox('stsz', 0, 0, [u32(0), u32(n)].concat(sm.map(function (s) { return u32(s.d.length); })));
+    var mdatOff = ftyp.length + 0; // computed after moov size known
+    var stcoPlaceholder = fbox('stco', 0, 0, [u32(1), u32(0)]);
+    var stbl = box('stbl', [stsd, stts, stss, stsc, stsz, stcoPlaceholder]);
+    var minf = box('minf', [vmhd, dinf, stbl]), mdia = box('mdia', [mdhd, hdlr, minf]), trak = box('trak', [tkhd, mdia]), moov = box('moov', [mvhd, trak]);
+    var offset = ftyp.length + moov.length + 8;
+    // patch stco offset: find the 'stco' box inside moov (last 4 bytes of that box)
+    var stcoEnd = moov.length - 0; // stco is the last box inside stbl -> inside minf -> mdia -> trak -> moov, so it is the final 4 bytes
+    var m = moov.slice(); var o = u32(offset); m[m.length - 4] = o[0]; m[m.length - 3] = o[1]; m[m.length - 2] = o[2]; m[m.length - 1] = o[3];
+    var head = new Uint8Array(ftyp.length + m.length + 8); head.set(ftyp, 0); head.set(m, ftyp.length);
+    var mh = u32(mdatSize).concat(str('mdat')); head.set(mh, ftyp.length + m.length);
+    var parts = [head]; sm.forEach(function (s) { parts.push(s.d); });
+    return new Blob(parts, { type: 'video/mp4' });
+  };
+
+  async function encodeWebCodecs(P, times, reveal, size, fps, onProgress, cancel, codec) {
+    var out = mkCanvas(size, size), g = out.getContext('2d');
+    var totalSec = times.total + endingLen(reveal), frames = Math.max(2, Math.ceil(totalSec * fps));
+    var mux = null, err = null, tick = Math.round(90000 / fps);
+    var enc = new VideoEncoder({
+      output: function (chunk, meta) {
+        if (meta && meta.decoderConfig && meta.decoderConfig.description && !mux) { var d = meta.decoderConfig.description; mux = new Mp4(size, size, fps, (d instanceof ArrayBuffer) ? new Uint8Array(d.slice(0)) : new Uint8Array(d.buffer.slice(d.byteOffset, d.byteOffset + d.byteLength))); }
+        var buf = new Uint8Array(chunk.byteLength); chunk.copyTo(buf);
+        if (!mux) { err = new Error('Encoder gave no codec configuration'); return; }
+        mux.add(buf, chunk.type === 'key', tick);
+      },
+      error: function (e) { err = e; }
+    });
+    enc.configure({ codec: codec, width: size, height: size, bitrate: size >= 1080 ? 5e6 : 3e6, framerate: fps, avc: { format: 'avc' }, latencyMode: 'quality' });
+    for (var f = 0; f < frames; f++) {
+      if (cancel.v) { try { enc.close(); } catch (e) { } return null; }
+      if (err) throw err;
+      drawFrame(P, g, size, f / fps, times, reveal);
+      var vf = new VideoFrame(out, { timestamp: Math.round(f * 1e6 / fps), duration: Math.round(1e6 / fps) });
+      enc.encode(vf, { keyFrame: f % 60 === 0 }); vf.close();
+      while (enc.encodeQueueSize > 6) await new Promise(function (r) { setTimeout(r, 4); });
+      if (f % 4 === 0) { onProgress(f / frames); await new Promise(function (r) { setTimeout(r, 0); }); }
+    }
+    await enc.flush(); enc.close();
+    if (err) throw err; if (!mux) throw new Error('No video produced');
+    return mux.finish();
+  }
+  async function encodeRecorder(P, times, reveal, size, fps, onProgress, cancel, mime) {
+    var out = mkCanvas(size, size), g = out.getContext('2d');
+    var totalSec = times.total + endingLen(reveal);
+    var stream = out.captureStream(fps), rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: size >= 1080 ? 5e6 : 3e6 }), chunks = [];
+    rec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
+    var done = new Promise(function (res) { rec.onstop = res; });
+    drawFrame(P, g, size, 0, times, reveal); rec.start(500);
+    var t0 = performance.now();
+    await new Promise(function (resolve) {
+      function step() {
+        if (cancel.v) return resolve();
+        var t = (performance.now() - t0) / 1000;
+        if (t >= totalSec) { drawFrame(P, g, size, totalSec, times, reveal); return resolve(); }
+        drawFrame(P, g, size, t, times, reveal); onProgress(t / totalSec); requestAnimationFrame(step);
+      }
+      step();
+    });
+    await new Promise(function (r) { setTimeout(r, 250); });
+    rec.stop(); await done; stream.getTracks().forEach(function (t) { t.stop(); });
+    if (cancel.v) return null;
+    return new Blob(chunks, { type: mime.split(';')[0] });
+  }
+
+  // ------------------------------------------------------------------ UI
+  var ui = null, P = null, times = null, playing = false, playT = 0, raf = 0, lastTick = 0, exporting = null;
+  var prefs = {
+    get dur() { try { return localStorage.getItem('sp-tlDur') || 'auto'; } catch (e) { return 'auto'; } },
+    set dur(v) { try { localStorage.setItem('sp-tlDur', v); } catch (e) { } },
+    get reveal() { try { return localStorage.getItem('sp-tlReveal') !== '0'; } catch (e) { return true; } },
+    set reveal(v) { try { localStorage.setItem('sp-tlReveal', v ? '1' : '0'); } catch (e) { } },
+    get size() { try { return +localStorage.getItem('sp-tlSize') || 1080; } catch (e) { return 1080; } },
+    set size(v) { try { localStorage.setItem('sp-tlSize', v); } catch (e) { } }
+  };
+  function css() {
+    if ($('tlCss')) return;
+    var s = document.createElement('style'); s.id = 'tlCss';
+    s.textContent = '#tlOv{position:fixed;inset:0;z-index:260;display:none;align-items:center;justify-content:center;background:rgba(10,6,16,.72);padding:10px}' +
+      '#tlBox{background:var(--panel,#241b31);color:var(--text,#fff8fb);border:1px solid var(--line,rgba(255,235,250,.16));border-radius:18px;max-width:640px;width:100%;max-height:96vh;overflow:auto;padding:14px;box-shadow:0 20px 60px rgba(0,0,0,.5)}' +
+      '#tlBox h3{margin:0;font-size:17px}#tlBox .tlrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}' +
+      '#tlBox .tlcv{position:static;left:auto;top:auto;transform:none;display:block;margin:6px auto;width:min(100%,56vh);aspect-ratio:1/1;border-radius:10px;background:#fff;border:1px solid var(--line,rgba(0,0,0,.15))}' +
+      '#tlBox .tlsm{font-size:12px;opacity:.8;line-height:1.35}#tlBox input[type=range]{flex:1;min-width:120px}' +
+      '#tlBox select,#tlBox .btn{font:inherit;font-size:14px;padding:8px 12px;border-radius:10px;border:1px solid var(--btnBorder,rgba(255,255,255,.2));background:var(--btnBg,rgba(255,255,255,.08));color:inherit;min-height:40px}' +
+      '#tlBox .btn.primary{background:linear-gradient(90deg,#9b6bff,#ff8ed6);color:#fff;border-color:transparent}#tlBox .btn.danger{color:#ff7a95}' +
+      '#tlBar{height:8px;border-radius:6px;background:rgba(128,128,128,.25);overflow:hidden;display:none}#tlBar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#9b6bff,#ff8ed6)}';
+    document.head.appendChild(s);
+  }
+  function build() {
+    if (ui) return ui; css();
+    var ov = document.createElement('div'); ov.id = 'tlOv';
+    ov.innerHTML = '<div id="tlBox" role="dialog" aria-label="Timelapse">' +
+      '<div class="tlrow" style="justify-content:space-between;margin-top:0"><h3>🎥 Timelapse</h3><button class="btn" id="tlClose">✕ Close</button></div>' +
+      '<div id="tlStatus" class="tlsm"></div>' +
+      '<div class="tlrow"><button class="btn" id="tlRecToggle"></button><label class="tlsm"><input type="checkbox" id="tlDefChk"> Record every new project automatically</label></div>' +
+      '<div id="tlPlayer"><canvas id="tlCv" class="tlcv" width="540" height="540"></canvas>' +
+      '<div class="tlrow"><button class="btn primary" id="tlPlay">▶ Play</button><button class="btn" id="tlRestart">⏮</button><input type="range" id="tlSeek" min="0" max="1000" value="0"><span id="tlTime" class="tlsm">0:00</span></div>' +
+      '<div class="tlrow"><label class="tlsm">Length <select id="tlDur"><option value="auto">Auto</option><option value="10">10 s</option><option value="20">20 s</option><option value="30">30 s</option><option value="45">45 s</option><option value="60">60 s</option><option value="90">90 s</option></select></label>' +
+      '<label class="tlsm">Size <select id="tlSize"><option value="720">720 × 720</option><option value="1080">1080 × 1080</option></select></label></div>' +
+      '<label class="tlsm" style="display:block;margin:4px 0"><input type="checkbox" id="tlReveal"> Finish with the seamless repeat reveal (holds on the finished art, then zooms out to show the pattern repeating)</label>' +
+      '<div class="tlrow"><button class="btn primary" id="tlExport">🎞️ Export video</button><button class="btn danger" id="tlDelete">🗑️ Delete timelapse data</button></div>' +
+      '<div id="tlBar"><i></i></div><div id="tlMsg" class="tlsm"></div></div></div>';
+    document.body.appendChild(ov);
+    ui = { ov: ov, cv: $('tlCv'), status: $('tlStatus'), play: $('tlPlay'), seek: $('tlSeek'), time: $('tlTime'), msg: $('tlMsg'), bar: $('tlBar') };
+    $('tlClose').onclick = close;
+    ov.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+    $('tlRecToggle').onclick = function () {
+      if (!activeProject) return;
+      if (S.on) { stopRecording(); } else if (S.pid === activeProject.id && S.base) { S.on = true; try { reconcile(); } catch (e) { S.L = snapLast(); console.warn('[timelapse] resume', e); } S.marks = history.map(function () { return mkMark(); }); S.dirtyMeta = true; flush(); refreshPanel(); } else startRecording();
+    };
+    $('tlDefChk').onchange = function (e) { try { localStorage.setItem('sp-tlDefault', e.target.checked ? '1' : '0'); } catch (x) { } };
+    $('tlDur').value = prefs.dur; $('tlDur').onchange = function (e) { prefs.dur = e.target.value; rebuildTimes(); };
+    $('tlSize').value = String(prefs.size); $('tlSize').onchange = function (e) { prefs.size = +e.target.value; };
+    $('tlReveal').checked = prefs.reveal; $('tlReveal').onchange = function (e) { prefs.reveal = e.target.checked; rebuildTimes(); };
+    ui.play.onclick = function () { if (playing) pause(); else play(); };
+    $('tlRestart').onclick = function () { pause(); seekTo(0, true); };
+    ui.seek.onchange = function () { pause(); seekTo(+ui.seek.value / 1000 * fullLen(), true); };
+    ui.seek.oninput = function () { ui.time.textContent = fmt(+ui.seek.value / 1000 * fullLen()); };
+    $('tlExport').onclick = doExport;
+    $('tlDelete').onclick = doDelete;
+    return ui;
+  }
+  function fmt(t) { t = Math.max(0, Math.round(t)); return Math.floor(t / 60) + ':' + (t % 60 < 10 ? '0' : '') + (t % 60); }
+  function fullLen() { return times ? times.total + endingLen(prefs.reveal) : 0; }
+  function autoSeconds(activeMs) { var a = activeMs / 1000; return Math.max(8, Math.min(45, Math.round(a / 10 / 5) * 5 || 8)); }
+  function rebuildTimes() {
+    if (!S.base) { times = null; return; }
+    var act = 0; S.log.forEach(function (e) { act += Math.max(160, e.d || 0); });
+    var secs = prefs.dur === 'auto' ? autoSeconds(act) : +prefs.dur;
+    times = makeTimes(S.log, secs);
+    if (ui && ui.time) ui.time.textContent = fmt(playT) + ' / ' + fmt(fullLen());
+  }
+  function refreshPanel() {
+    if (!ui || ui.ov.style.display === 'none') return;
+    var has = !!S.base, n = S.log.length;
+    var mb = (S.bytes / 1e6).toFixed(1);
+    ui.status.textContent = !activeProject ? 'Open or create a project first.' : S.on ? '🔴 Recording this project · ' + n + ' actions kept (' + mb + ' MB)' + (S.folded ? ' · the earliest ' + S.folded + ' actions were merged into the starting picture to save space' : '') : has ? 'Recording is off for this project · ' + n + ' actions kept (' + mb + ' MB)' : 'Not recording this project yet. Existing artwork is not replayed — recording starts from how it looks now.';
+    $('tlRecToggle').textContent = S.on ? '⏸ Turn recording off' : (has ? '🔴 Resume recording' : '🔴 Start recording from now');
+    $('tlRecToggle').disabled = !activeProject;
+    $('tlDefChk').checked = defaultOn();
+    var showPlayer = has && n > 0;
+    $('tlPlayer').style.display = has ? '' : 'none';
+    $('tlExport').disabled = !showPlayer; ui.play.disabled = !showPlayer; $('tlDelete').disabled = !has;
+    if (has && !n) ui.msg.textContent = 'Nothing recorded yet — draw something and it will appear here.';
+  }
+  async function open() {
+    build(); ui.ov.style.display = 'flex'; try { if (typeof tbClose === 'function') tbClose(); } catch (e) { }
+    try { if (S.on) flush(); } catch (e) { }
+    refreshPanel(); ui.msg.textContent = '';
+    if (S.base && S.log.length) {
+      ui.msg.textContent = 'Preparing…'; await new Promise(function (r) { setTimeout(r, 30); });
+      try { if (P) P.free(); P = new Player(S.base, S.log.slice()); rebuildTimes(); playT = 0; seekTo(fullLen(), true); ui.msg.textContent = ''; } catch (e) { console.warn(e); ui.msg.textContent = 'Could not prepare the replay: ' + (e && e.message || e); }
+      var enc2 = await detectEncoders();
+      ui.msg.textContent = enc2.webcodecs ? 'Video format: MP4 (H.264).' : enc2.recorder ? 'Video format: ' + (enc2.recorder.mime.indexOf('mp4') >= 0 ? 'MP4' : 'WebM') + ' — exports in real time (it takes as long as the video).' : 'This browser cannot make videos. Try Safari / the iPad app.';
+    }
+  }
+  function close() { pause(); if (P) { P.free(); P = null; } times = null; if (ui) ui.ov.style.display = 'none'; }
+  function paint(t) { if (!P || !times) return; var g = ui.cv.getContext('2d'); drawFrame(P, g, ui.cv.width, t, times, prefs.reveal); ui.time.textContent = fmt(t) + ' / ' + fmt(fullLen()); ui.seek.value = Math.round(t / Math.max(0.001, fullLen()) * 1000); }
+  function seekTo(t, force) {
+    if (!P || !times) return; t = Math.max(0, Math.min(fullLen(), t));
+    playT = t; paint(t);
+  }
+  function play() {
+    if (!P || !times) return; if (playT >= fullLen() - 0.05) { P.reset(); playT = 0; }
+    playing = true; ui.play.textContent = '⏸ Pause'; lastTick = performance.now();
+    (function loop() { if (!playing) return; var now = performance.now(); playT += (now - lastTick) / 1000; lastTick = now; if (playT >= fullLen()) { playT = fullLen(); paint(playT); pause(); return; } paint(playT); raf = requestAnimationFrame(loop); })();
+  }
+  function pause() { playing = false; cancelAnimationFrame(raf); if (ui) ui.play.textContent = '▶ Play'; }
+  async function doDelete() {
+    var go = true;
+    try { if (typeof projAsk === 'function') go = await projAsk({ title: 'Delete the timelapse?', message: 'This removes only the recorded drawing history for “' + (activeProject ? activeProject.name : 'this project') + '”. Your artwork is not touched.', ok: 'Delete timelapse', danger: true }); } catch (e) { }
+    if (!go) return;
+    pause(); if (P) { P.free(); P = null; } times = null;
+    var was = S.on, pid = S.pid; await deleteFor(pid);
+    S.base = null; S.log = []; S.folded = 0; S.bytes = 0; S.savedChunks = 0; S.marks = []; S.on = false;
+    if (was) startRecording(); else refreshPanel();
+    ui.msg.textContent = 'Timelapse data deleted. Your artwork is unchanged.' + (was ? ' Recording continues from how it looks now.' : '');
+  }
+  async function doExport() {
+    if (exporting || !P || !times) return;
+    pause(); var e = await detectEncoders(), cancel = { v: false };
+    var size = prefs.size, fps = 30, reveal = prefs.reveal;
+    exporting = cancel; $('tlExport').textContent = '✕ Cancel export'; $('tlExport').onclick = function () { cancel.v = true; };
+    ui.bar.style.display = 'block'; var barI = ui.bar.firstChild;
+    var prog = function (f) { barI.style.width = Math.round(f * 100) + '%'; ui.msg.textContent = 'Making your video… ' + Math.round(f * 100) + '%'; };
+    var blob = null, kind = '';
+    try {
+      P.reset(); await new Promise(function (r) { setTimeout(r, 20); });
+      if (e.webcodecs) {
+        try { blob = await encodeWebCodecs(P, times, reveal, size, fps, prog, cancel, e.webcodecs.codec); kind = 'mp4'; }
+        catch (err) { console.warn('[timelapse] WebCodecs path failed', err); if (cancel.v) throw err; P.reset(); blob = null; }
+      }
+      if (!blob && !cancel.v && e.recorder) {
+        ui.msg.textContent = 'Recording in real time — keep this screen open…';
+        P.reset(); blob = await encodeRecorder(P, times, reveal, size, fps, prog, cancel, e.recorder.mime); kind = e.recorder.mime.indexOf('mp4') >= 0 ? 'mp4' : 'webm';
+      }
+      if (cancel.v) { ui.msg.textContent = 'Export cancelled.'; }
+      else if (!blob || !blob.size) { ui.msg.textContent = 'Sorry — this device could not encode a video. Nothing was saved.'; }
+      else {
+        var nm = ((activeProject && activeProject.name) || 'pattern').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-') || 'pattern';
+        var res = await SketchpadNative.saveBlob(blob, nm + '-timelapse.' + kind);
+        ui.msg.textContent = res === 'cancelled' ? 'Not saved.' : (kind === 'mp4' ? 'MP4 ready' : 'WebM ready (this browser cannot make MP4)') + ' — ' + (blob.size / 1e6).toFixed(1) + ' MB.';
+      }
+    } catch (err) { console.warn(err); ui.msg.textContent = 'Export stopped: ' + (err && err.message || err); }
+    exporting = null; ui.bar.style.display = 'none'; $('tlExport').textContent = '🎞️ Export video'; $('tlExport').onclick = doExport;
+    try { P.reset(); playT = 0; seekTo(fullLen(), true); } catch (x) { }
+  }
+  window.SPTimelapse.open = open;
+  window.SPTimelapse.close = close;
+  window.SPTimelapse._test = { Player: Player, makeTimes: makeTimes, drawFrame: drawFrame, Mp4: Mp4, detect: detectEncoders, encodeWebCodecs: encodeWebCodecs, encodeRecorder: encodeRecorder, mkP: function (secs) { var p = new Player(S.base, S.log.slice()); return { P: p, times: makeTimes(S.log, secs || 10) }; } };
+
+  // If a project was already open before this script ran, pick it up.
+  try { if (typeof activeProject !== 'undefined' && activeProject && !S.pid) onProjectLoaded(activeProject, null); } catch (e) { }
+})();
+
 })();
 </script>
 </body>

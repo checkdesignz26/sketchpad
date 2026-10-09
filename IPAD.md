@@ -355,3 +355,16 @@ The symmetry axis can only be dragged while the Symmetry panel is open. Tap Done
 
 ## v119 — Short or whole-canvas axis line
 Symmetry panel: "Line: whole canvas" or "Line: short" with a Length slider. The short line is sized in canvas units, so it grows and shrinks with zoom and stays the size of the element. Only the drawn guide changes; mirroring itself is the same. Choice is remembered.
+
+## v120 — 🎥 Timelapse (capture → replay → export)
+**Where:** ⋯ More → 🎥 Timelapse. It opens a small panel with the replay, length (Auto / 10–90 s), size (720 / 1080), the seamless-repeat ending option, ▶ replay, 🎞️ Export video, recording on/off and 🗑️ Delete timelapse data.
+
+**How it records (action log, not video):** every artwork change is stored as a small delta when the app records an undo step (strokes with their own brush/settings, erases, fills, group move/resize/turn, layer changes, placed motifs). Because all artwork (vector and pixel brushes) is rebuilt from stroke data, replay is exact; the replay re-draws into its own hidden canvases, so no UI, handles, grids, zoom, pan or rotation can appear. Only the time the pen was down is kept per action, so thinking pauses vanish. Undo trims the log (an undone edit never shows in the video), redo puts it back. Edit Motif sessions are not recorded; the result shows when the motif is finished.
+
+**Storage/memory bounds:** one IndexedDB store `timelapse` (DB version 3), chunked, written only when changed (about 4 s after drawing). The log is capped at about 8 MB / 6000 actions; beyond that the oldest actions are folded into the starting picture. Nothing is saved per frame and no images are stored.
+
+**Projects:** new (empty) projects record automatically (setting "Record every new project automatically"). Existing projects start with recording off — use "Start recording from now" (no earlier history is invented). Turning recording off and on again adds anything drawn meanwhile as one quick jump. The data is kept with the project, survives reopening, and is deleted with the project (or on its own with 🗑️).
+
+**Export:** 30 fps square video of the finished tile (the same artwork as "Export image (PNG tile)"). Path 1: WebCodecs H.264 encoder -> built-in MP4 writer (works offline, fast, plays in Photos). Path 2 (if the device has no WebCodecs/H.264): MediaRecorder in real time (MP4 on Safari, WebM on Chrome/Firefox). Saved with the same save/share sheet as other exports. Optional ending: hold on the finished art, then zoom out to show the pattern repeating in the project's repeat layout.
+
+**Limits:** placed motif pictures and the background image in the replay use their current versions; edits to older strokes made before recording started cannot be replayed; the replay renders at 1:1 tile size (1080 export is upscaled); the real-time fallback can drop frames on heavy brushes; H.264 export has been verified here with real H.264 data and the MP4 writer, but not yet on a physical iPad.
