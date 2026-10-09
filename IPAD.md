@@ -328,3 +328,6 @@ The toolbar could end up one button too wide so the More button was pushed off t
 
 ## v110 — Vector / Pixel filter for the left panel
 A switch at the top of the left panel: All, Vector or Pixel. Vector-only sections (Trace Reference, Shapes, Vector Area Fill, Selected Stroke) carry a teal VECTOR tag; pixel-only sections (Pattern Brush, Motif Brush Set) carry a coral PIXEL tag. Vector hides the pixel ones and Pixel hides the vector ones; shared sections (Colour, Draw, Layers, etc.) always show. Remembered between sessions.
+
+## v111 — Pixel tag colour
+The Pixel filter button and PIXEL tags are now a soft blue instead of orange.
