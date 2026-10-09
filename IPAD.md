@@ -337,3 +337,6 @@ Main drawing bar now: Select, Pencil (brush list), Stroke tools (🖊️, next t
 
 ## v113 — Quick and Duplicate back on the bar
 Quick actions (⚡) and Duplicate (⧉) are back on the main bar; Pen and Eraser are now icon-only to make room. Everything still tucks into More on narrow screens.
+
+## v114 — Rotate the symmetry axis
+The Symmetry panel has an Angle slider (-90 to 90) plus 0° and 45° buttons. The mirror line(s) turn around the axis point, and the on-canvas crosshair now shows the real direction (and is longer).
