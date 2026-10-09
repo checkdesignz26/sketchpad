@@ -371,3 +371,6 @@ Symmetry panel: "Line: whole canvas" or "Line: short" with a Length slider. The 
 
 ## v121 — Timelapse button on the toolbar, recording on for every project
 A 🎥 button sits on the toolbar next to 🦋 (🎥🔴 while recording; it moves into ⋯ More only if the bar is full). Every project, new or existing, now starts recording automatically from how it looks when opened (nothing earlier is invented); the "Record every new project automatically" tickbox now defaults to on again (stored under a new key, so an earlier accidental untick no longer applies). Per-project off stays off.
+
+## v122 — Faster timelapse
+Auto length is about 15x faster than real drawing (min 5 s, max 40 s) and the Length list now has 4 s, 6 s, 10 s, 15 s and 20 s options.
