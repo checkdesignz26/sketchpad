@@ -346,3 +346,6 @@ Strokes drawn together with Symmetry on now share a link (symId + their own mirr
 
 ## v116 — Eraser mirrors too
 With Symmetry on, the eraser also erases at the mirrored spot(s), like drawing does.
+
+## v117 — Long, draggable symmetry axis
+The mirror line(s) now run across the whole canvas (only the lines that matter for the chosen mode), and the pink circle can be dragged with the pen to move the axis anywhere. The sliders still work.
