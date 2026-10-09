@@ -325,3 +325,6 @@ The Symmetry panel is now a floating panel: drag it by its title bar, it stays w
 
 ## v109 — More button always on screen
 The toolbar could end up one button too wide so the More button was pushed off the right edge. Duplicate, Quick actions, Pen and Eraser now tuck into More when space is short, and the Symmetry button is compact (just the butterfly, with the mode name when on). More now always fits on screen.
+
+## v110 — Vector / Pixel filter for the left panel
+A switch at the top of the left panel: All, Vector or Pixel. Vector-only sections (Trace Reference, Shapes, Vector Area Fill, Selected Stroke) carry a teal VECTOR tag; pixel-only sections (Pattern Brush, Motif Brush Set) carry a coral PIXEL tag. Vector hides the pixel ones and Pixel hides the vector ones; shared sections (Colour, Draw, Layers, etc.) always show. Remembered between sessions.
