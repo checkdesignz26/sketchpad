@@ -322,3 +322,6 @@ A 🦋 Symmetry button now sits in the main toolbar next to Eraser (it was hidde
 
 ## v108 — Floating Symmetry panel
 The Symmetry panel is now a floating panel: drag it by its title bar, it stays where you leave it while you draw, and Done closes it.
+
+## v109 — More button always on screen
+The toolbar could end up one button too wide so the More button was pushed off the right edge. Duplicate, Quick actions, Pen and Eraser now tuck into More when space is short, and the Symmetry button is compact (just the butterfly, with the mode name when on). More now always fits on screen.
