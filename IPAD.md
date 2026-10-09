@@ -377,3 +377,6 @@ Auto length is about 15x faster than real drawing (min 5 s, max 40 s) and the Le
 
 ## v123 — Timelapse drawing part twice as fast
 Auto length is now about 30x real drawing speed (min 3 s, max 30 s); short strokes get a smaller minimum time. The ending (1 s hold on the finished tile, 2.8 s zoom-out to the repeat, 1.6 s hold) is unchanged. Fixed Length choices still set the drawing part exactly; a 3 s option was added.
+
+## v124 — Timelapse speed in between
+Auto length is now about 21x real drawing speed (min 4 s, max 35 s): between v122 (15x) and v123 (30x). The Length list overrides it.
