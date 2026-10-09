@@ -319,3 +319,6 @@ If a script error happens a red note appears at the bottom of the screen with th
 
 ## v107 — Symmetry button in the toolbar
 A 🦋 Symmetry button now sits in the main toolbar next to Eraser (it was hidden inside View, which can end up under the More menu). It shows the active mode.
+
+## v108 — Floating Symmetry panel
+The Symmetry panel is now a floating panel: drag it by its title bar, it stays where you leave it while you draw, and Done closes it.
