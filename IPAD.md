@@ -380,3 +380,6 @@ Auto length is now about 30x real drawing speed (min 3 s, max 30 s); short strok
 
 ## v124 — Timelapse speed in between
 Auto length is now about 21x real drawing speed (min 4 s, max 35 s): between v122 (15x) and v123 (30x). The Length list overrides it.
+
+## v125 — Timelapse a touch slower
+Auto length is about 18x real drawing speed (min 5 s, max 40 s).
