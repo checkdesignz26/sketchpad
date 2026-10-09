@@ -331,3 +331,6 @@ A switch at the top of the left panel: All, Vector or Pixel. Vector-only section
 
 ## v111 — Pixel tag colour
 The Pixel filter button and PIXEL tags are now a soft blue instead of orange.
+
+## v112 — Tidier top toolbar
+Main drawing bar now: Select, Pencil (brush list), Stroke tools (🖊️, next to Pencil), size, Pen, Eraser, Symmetry. View, Zoom, Warp, Duplicate and Quick actions live in the ⋯ More menu. If the window is narrow, Symmetry then Eraser then Pen move into More first.
