@@ -334,3 +334,6 @@ The Pixel filter button and PIXEL tags are now a soft blue instead of orange.
 
 ## v112 — Tidier top toolbar
 Main drawing bar now: Select, Pencil (brush list), Stroke tools (🖊️, next to Pencil), size, Pen, Eraser, Symmetry. View, Zoom, Warp, Duplicate and Quick actions live in the ⋯ More menu. If the window is narrow, Symmetry then Eraser then Pen move into More first.
+
+## v113 — Quick and Duplicate back on the bar
+Quick actions (⚡) and Duplicate (⧉) are back on the main bar; Pen and Eraser are now icon-only to make room. Everything still tucks into More on narrow screens.
