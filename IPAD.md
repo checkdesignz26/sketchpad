@@ -316,3 +316,6 @@ Editing a motif now starts in Edit (select) mode so tapping a stroke brings up i
 
 ## v106 — Error toast
 If a script error happens a red note appears at the bottom of the screen with the message, so a screenshot shows exactly what failed. The More menu also reports its own errors there.
+
+## v107 — Symmetry button in the toolbar
+A 🦋 Symmetry button now sits in the main toolbar next to Eraser (it was hidden inside View, which can end up under the More menu). It shows the active mode.
