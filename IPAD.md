@@ -352,3 +352,6 @@ The mirror line(s) now run across the whole canvas (only the lines that matter f
 
 ## v118 — Axis locks on Done
 The symmetry axis can only be dragged while the Symmetry panel is open. Tap Done and it is fixed (the pink circle ignores touches). Reopen the panel to move it again.
+
+## v119 — Short or whole-canvas axis line
+Symmetry panel: "Line: whole canvas" or "Line: short" with a Length slider. The short line is sized in canvas units, so it grows and shrinks with zoom and stays the size of the element. Only the drawn guide changes; mirroring itself is the same. Choice is remembered.
