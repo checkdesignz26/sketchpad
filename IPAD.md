@@ -454,3 +454,6 @@ If the app throws an error while opening (blank canvas, empty size box), a red b
 
 ## v140 – Eraser hits the visible paint
 - The eraser used to test only against the thin centre line of a stroke, so a small eraser (e.g. size 5) could miss a brush mark even when it covered part of the paint. It now counts the brush width too, so touching any visible part of a stroke erases there.
+
+## v141 – Eraser says why it erased nothing
+- If an erase drag removes nothing, the status bar now says why: the paint is on another layer (names it), the layer is locked, it is a placed picture/motif, or it is the background image.
