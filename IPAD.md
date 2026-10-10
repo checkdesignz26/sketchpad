@@ -473,3 +473,7 @@ If the app throws an error while opening (blank canvas, empty size box), a red b
 ## v146 – Eraser: no more blur, gentler again
 - While erasing, the sharp zoomed-in picture is no longer thrown away on every move (that made the whole screen blurry). The eraser circle is cut out of it live and it is fully re-sharpened a moment after you lift.
 - Brush width counts only 20 % towards erasing (was 40 %), so thick strokes are cut much less.
+
+## v147 – Import SVG as vector
+- **🖋️ Import SVG (vector)** (under Add Motifs). Brings an .svg in as real editable vector pieces (fills, outlines, holes in compound shapes) on a new layer called "SVG: filename", fitted inside the tile. Move, resize, recolour and erase them like anything you drew.
+- Imported: path, rect, circle, ellipse, line, polyline, polygon, with fill / stroke colours, stroke widths, opacity and transforms. Not imported: text (convert to outlines first), pictures, "use" copies, clipping / masks. Gradients become one flat colour. Scripts and links in the file are stripped for safety.
