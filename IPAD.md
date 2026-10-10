@@ -439,3 +439,6 @@ If the app throws an error while opening (blank canvas, empty size box), a red b
 ## v135 – Stay in Draw lock + guide path stays hidden
 - **More → 🔓 Stay in Draw** (saved on the device). When on, the app never jumps into Edit by itself, and the toolbar Edit button needs two taps within 1.5 s. Select menu / Select Area still switch to Edit when you choose them.
 - "Hide the guide path" (text on a path) is now a lasting setting. The guide only shows while you are editing it (Edit guide path) and hides again once you deselect it.
+
+## v136 – Move text on a path
+- Select text that sits on a path, then drag it: its guide path moves with it (even when the guide is hidden) and the text follows live. Use "Edit guide path" to reshape the path instead.
