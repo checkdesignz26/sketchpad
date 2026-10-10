@@ -448,3 +448,6 @@ If the app throws an error while opening (blank canvas, empty size box), a red b
 
 ## v138 – Motif opacity
 - Selected Motif section now has an **Opacity** slider (5–100 %). Saved with the project and used in the PNG / hi-res exports.
+
+## v139 – Text on its own layer
+- New text is created on a layer called **Text** (made automatically, kept on top). In the text panel, **📚 Move to Text layer** moves existing text there.
