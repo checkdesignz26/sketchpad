@@ -445,3 +445,6 @@ If the app throws an error while opening (blank canvas, empty size box), a red b
 
 ## v137 – Smooth dragging of path text
 - Dragging text on a path now moves a light picture of the text while you drag (like moving a stroke), and the guide path and text are re-laid out once when you let go. No more rebuilding every layer on every move.
+
+## v138 – Motif opacity
+- Selected Motif section now has an **Opacity** slider (5–100 %). Saved with the project and used in the PNG / hi-res exports.
