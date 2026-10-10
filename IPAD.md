@@ -420,3 +420,9 @@ Recordings merge their oldest actions into the starting picture once they pass a
 ## v131 — save, download and import colour palettes
 - 🎨 palette section: name box + "💾 Save this palette" stores the swatches currently shown (kept with the project in `savedPalettes`, alongside the image-extracted ones).
 - Saved palettes: ⬇ per palette, "Download all", file type chooser (.json, Adobe .ase, GIMP/Krita .gpl, hex list .txt). "⬆ Import palette…" reads those same types plus any text/CSS/SVG with hex codes; duplicate names get "(2)"; unreadable files give a message.
+
+## v132 — rectangular tiles (cards), stroke size box fix
+- Tile shape: 📐 Repeat Layouts → "Tile shape" (Square, 5×7, 7×5, 4×6, 6×4, A-size, 3:4, 4:3, 9:16, custom ratio) and in the New Project dialog. The tile's long side stays 780 units (`TILE`); `TW`×`TH` is the real tile, centred on the 1800 canvas (`CX,CY`). Grid / half drop / half brick / diamond all use `tilePos()` with TW/TH. Saved in the project (`doc.tileW/tileH`, meta `canvas.tw/th`); older projects open as square. Changing the shape later does not move artwork.
+- Updated for TW×TH: fabric repeat, background, guides, templates (`applyBricks`), align bounds, PNG tile export, SVG export (width/height/viewBox), thumbnails, trace fit, vector-trace fit, timelapse replay (letterboxed in the square video).
+- Stroke size boxes: when a different stroke is selected the number box now drops focus and shows that stroke's real size, so typing the same number as before works (the box used to keep the old number while it still had the keyboard).
+- Note: PNG tile export is still the tile at 780 px on its long side; use SVG for large sizes.
