@@ -413,3 +413,6 @@ Auto length is about 18x real drawing speed (min 5 s, max 40 s).
 - Live: moving the path or either source regenerates the copies (`objSig` includes the guide). Expand makes ordinary groups (undoable). Deleting the path turns it back into a straight blend. A blend made the older way (two plain strokes, already applied) cannot take a path; new ones convert automatically when a path is chosen.
 **Offline/PWA/Capacitor**: `sw.js` caches `fonts.js`, `fonts/*`; `scripts/build-web.js` copies them into `www/` for Capacitor. Google downloads need a connection once per family.
 **Not tested on a real iPad.** Google download was tested only against a mocked endpoint (no network in the build sandbox).
+
+## v130 — timelapse keeps more before merging early actions
+Recordings merge their oldest actions into the starting picture once they pass a size limit (they then appear instantly instead of being drawn). Limits raised from 6000 actions / 8 MB to 20000 / 24 MB. The 🎥 panel status line says when this has happened ("the earliest N actions were merged…"). Already-merged recordings cannot be un-merged.
