@@ -393,3 +393,6 @@ Auto length is about 18x real drawing speed (min 5 s, max 40 s).
 ## v127 — timelapse: duplicate keeps recording, style changes recorded correctly
 - Duplicate Project copies the timelapse (`SPTimelapse.copyFor`).
 - A colour/brush/fill change on an existing stroke was mistaken for a pure move/resize (`detectTransform`) and dropped; settings edited in place (width slider) were not noticed. Now: transforms require identical style fields, settings are compared by value (`setJ` taken when the record is made).
+
+## v128 — copy a recording from another project
+- 🎥 panel: "Copy recording from another project…" lists projects that have a recording and copies it into the open project (`copyFor` + reload). Drawing continues from there; a correction event covers any difference between the copied recording and the current artwork.
