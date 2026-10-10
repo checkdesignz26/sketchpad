@@ -463,3 +463,6 @@ If the app throws an error while opening (blank canvas, empty size box), a red b
 
 ## v143 – Timelapse keeps much more (160 MB)
 - The recording was already saved in the device database (IndexedDB), but it was also held in memory with a 24 MB limit, and past that the oldest actions were merged into the starting picture. The limit is now 160 MB / 60 000 actions, and the Timelapse panel shows "x MB of 160 MB room". A project already merged cannot get its old actions back.
+
+## v144 – Hi-res export in inches
+- Hi-res card export now takes the card's long side in **inches** (presets 5.5 / 7 / 10 in) plus a dpi choice (150 / 200 / 300 / 600), and shows the result in inches and pixels. Pixels can still be typed. The PNG is tagged with the chosen dpi. A 5 × 7 in card at 300 dpi is 1500 × 2100 px.
