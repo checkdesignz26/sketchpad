@@ -389,3 +389,7 @@ Auto length is about 18x real drawing speed (min 5 s, max 40 s).
 - ↔️ Edit button in the top bar (always visible) and in the ⚡ Quick panel; both follow `#editModeBtn`'s `active` class.
 - Edit Path panel has 〰️ Smooth Path + amount slider (`smoothCurrentPath`, works on the live nodes; Done keeps it, Cancel/undo discards).
 - Top bar: 🎥 no longer changes width (recording shows a red dot via `.rec`); `tbFitRow` has 28px hysteresis so items don't hop in/out of ⋯ More; Duplicate moves to More before 🎥.
+
+## v127 — timelapse: duplicate keeps recording, style changes recorded correctly
+- Duplicate Project copies the timelapse (`SPTimelapse.copyFor`).
+- A colour/brush/fill change on an existing stroke was mistaken for a pure move/resize (`detectTransform`) and dropped; settings edited in place (width slider) were not noticed. Now: transforms require identical style fields, settings are compared by value (`setJ` taken when the record is made).
