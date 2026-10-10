@@ -481,3 +481,6 @@ If the app throws an error while opening (blank canvas, empty size box), a red b
 ## v148 – SVG Tray + faster import
 - **🖋️ SVG Tray** (under Import SVG): every SVG you import is kept on this device with a thumbnail. Tap a thumbnail to place it again on a new layer; ✕ removes it from the tray. You can pick several SVG files at once.
 - Importing shows "Reading the SVG…" first, samples curves less densely (every ~2.5 px instead of 1.5), and reports how long it took.
+
+## v149 – Stroke tools open while editing a motif
+While "Editing motif: …" is active, selecting a stroke now shows the Stroke panel automatically (even if the 🖊️ Stroke button is off) and scrolls it into view.
