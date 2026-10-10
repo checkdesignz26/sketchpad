@@ -457,3 +457,6 @@ If the app throws an error while opening (blank canvas, empty size box), a red b
 
 ## v141 – Eraser says why it erased nothing
 - If an erase drag removes nothing, the status bar now says why: the paint is on another layer (names it), the layer is locked, it is a placed picture/motif, or it is the background image.
+
+## v142 – Erase through the repeat clones
+- With Tiling on, erasing a mark you see in an edge clone now erases the original too (the eraser works at every repeat position).
