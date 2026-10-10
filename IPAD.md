@@ -383,3 +383,9 @@ Auto length is now about 21x real drawing speed (min 4 s, max 35 s): between v12
 
 ## v125 — Timelapse a touch slower
 Auto length is about 18x real drawing speed (min 5 s, max 40 s).
+
+## v126 — tidier left panel, Edit button, steady top bar
+- Left panel: tap any section title to fold it; "Collapse all / Expand all" under the Vector/Pixel filter. State in localStorage `sp-secFold`.
+- ↔️ Edit button in the top bar (always visible) and in the ⚡ Quick panel; both follow `#editModeBtn`'s `active` class.
+- Edit Path panel has 〰️ Smooth Path + amount slider (`smoothCurrentPath`, works on the live nodes; Done keeps it, Cancel/undo discards).
+- Top bar: 🎥 no longer changes width (recording shows a red dot via `.rec`); `tbFitRow` has 28px hysteresis so items don't hop in/out of ⋯ More; Duplicate moves to More before 🎥.
