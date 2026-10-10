@@ -426,3 +426,6 @@ Recordings merge their oldest actions into the starting picture once they pass a
 - Updated for TW×TH: fabric repeat, background, guides, templates (`applyBricks`), align bounds, PNG tile export, SVG export (width/height/viewBox), thumbnails, trace fit, vector-trace fit, timelapse replay (letterboxed in the square video).
 - Stroke size boxes: when a different stroke is selected the number box now drops focus and shows that stroke's real size, so typing the same number as before works (the box used to keep the old number while it still had the keyboard).
 - Note: PNG tile export is still the tile at 780 px on its long side; use SVG for large sizes.
+
+## v133 — startup safety net
+If the app throws an error while opening (blank canvas, empty size box), a red banner at the bottom now says what failed; the last error is also kept in localStorage `sp-lastErr`.
