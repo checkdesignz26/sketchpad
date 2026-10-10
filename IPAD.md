@@ -429,3 +429,9 @@ Recordings merge their oldest actions into the starting picture once they pass a
 
 ## v133 — startup safety net
 If the app throws an error while opening (blank canvas, empty size box), a red banner at the bottom now says what failed; the last error is also kept in localStorage `sp-lastErr`.
+
+## v134 – High-resolution card export
+- Export menu → **🖼️ Export card (hi-res PNG)…**. Redraws all strokes (every brush), placed pictures and the background image at the chosen size, from the original stroke data, so it is sharp rather than a stretched small image. Just the card: no wrapped neighbour edges.
+- You pick the **long side** in px (presets 2100 / 3000 / 4000, or type your own). It shows the pixel size and print size at 300 dpi. A transparent-background option is included. The file is tagged 300 dpi.
+- Limited to about 14 million pixels in total so the iPad can make it (a 5×7-shaped card goes up to roughly 2850 × 4000).
+- Saved as `pattern-sketch-card-WxH.png`.
