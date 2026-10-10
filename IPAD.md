@@ -442,3 +442,6 @@ If the app throws an error while opening (blank canvas, empty size box), a red b
 
 ## v136 – Move text on a path
 - Select text that sits on a path, then drag it: its guide path moves with it (even when the guide is hidden) and the text follows live. Use "Edit guide path" to reshape the path instead.
+
+## v137 – Smooth dragging of path text
+- Dragging text on a path now moves a light picture of the text while you drag (like moving a stroke), and the guide path and text are re-laid out once when you let go. No more rebuilding every layer on every move.
