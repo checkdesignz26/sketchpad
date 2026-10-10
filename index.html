@@ -77,6 +77,42 @@ button,input,select{font:inherit}
 .float-panel-handle>span:first-child{white-space:nowrap}
 .float-panel-grip{opacity:.55;font-size:17px;letter-spacing:-1px;cursor:move}
 .kf-hide{display:none!important}
+/* ---- text & fonts (v129) ---- */
+body.tx-armed #canvas{cursor:text}
+#textPanel .tx-row{display:flex;align-items:center;gap:8px;margin:7px 0}
+#textPanel .tx-row label{font-size:12.5px;opacity:.8;flex:none}
+#textPanel .tx-row input[type=range]{flex:1;min-width:60px}
+#textPanel .tx-row input[type=number]{width:62px;padding:5px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:14px}
+#textPanel .tx-row select{flex:1;min-width:0;padding:7px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:14px}
+#textPanel .tx-row input[type=color]{width:40px;height:34px;padding:0;border:none;background:none;flex:none}
+#textPanel .tx-font{flex:1.3;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px}
+#textPanel .tx-val{min-width:34px;text-align:right;font-size:12.5px}
+#textPanel .tx-chk{display:flex;align-items:center;gap:6px;opacity:1;font-size:13px}
+#textPanel .tx-det{margin:8px 0;border-top:1px solid var(--line);padding-top:6px}
+#textPanel .tx-det summary{cursor:pointer;font-weight:800;font-size:13px;padding:4px 0;min-height:28px}
+#textPanel .tx-warn{background:#fdecea;color:#7a1f2b;border-radius:10px;padding:8px;font-size:12.5px;margin:6px 0}
+#txMissBar{position:fixed;left:50%;transform:translateX(-50%);top:92px;z-index:9400;max-width:min(92vw,720px);background:#7a1f2b;color:#fff;border-radius:14px;padding:8px 12px;font:600 13px/1.35 system-ui,sans-serif;display:none;align-items:center;gap:8px;box-shadow:0 8px 28px rgba(0,0,0,.35)}
+.fp-back{position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.45);align-items:center;justify-content:center}
+.fp-box{width:min(94vw,540px);max-height:86vh;display:flex;flex-direction:column;gap:8px;background:var(--sideBg);border:1px solid var(--line);border-radius:20px;padding:14px;box-shadow:0 24px 70px rgba(0,0,0,.45)}
+.fp-head{display:flex;align-items:center;justify-content:space-between;font-size:16px}
+#fpSearch{padding:10px;border-radius:10px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px}
+.fp-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.fp-tabs button{padding:6px 10px;border-radius:999px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:13px;font-weight:700;cursor:pointer;min-height:34px}
+.fp-tabs button.on{background:var(--pink);color:#fff;border-color:transparent}
+.fp-list{flex:1;min-height:180px;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:4px;-webkit-overflow-scrolling:touch}
+.fp-sec{font-size:11.5px;text-transform:uppercase;letter-spacing:1.2px;font-weight:800;opacity:.65;padding:10px 8px 4px}
+.fp-note{font-size:12.5px;opacity:.75;padding:8px}
+.fp-row{display:flex;align-items:center;gap:2px;border-radius:10px}
+.fp-row.cur{background:rgba(143,107,216,.18)}
+.fp-row.miss{font-size:12.5px;padding:6px 8px;color:#c0392b}
+.fp-pick{flex:1;min-width:0;text-align:left;background:none;border:none;color:var(--text);padding:8px 10px;cursor:pointer;display:flex;flex-direction:column;gap:2px;min-height:48px}
+.fp-name{font-size:22px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fp-sub{font-size:11.5px;opacity:.6}
+.fp-ico{background:none;border:none;color:var(--text);font-size:19px;min-width:44px;min-height:44px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.fp-ico:disabled{opacity:.35}
+.fp-msg{font-size:12.5px;min-height:16px}
+.fp-foot{display:flex;gap:8px;flex-wrap:wrap}.fp-foot .btn{flex:1}
+
 .section>.sec-head{cursor:pointer;user-select:none;-webkit-user-select:none;display:flex;align-items:center;gap:6px;min-height:28px}
 .section>.sec-head:after{content:"▾";margin-left:auto;font-size:14px;opacity:.7;transition:transform .15s}
 .section.sec-collapsed>.sec-head{margin-bottom:0}
@@ -483,6 +519,11 @@ html.in-suite .suite-only{display:block!important}
       <button id="shapeConstrainBtn" class="btn mini" style="width:100%;margin-top:8px;">🔒 Constrain (Square/Circle)</button>
       <div id="shapeToolHint" class="hint">Tap a shape, then draw it on the canvas with Apple Pencil — drag to size it, lift to place. Tap the shape button again to cancel.</div>
     </section>
+    <section class="section" id="textSection">
+      <div class="section-title">🔤 Text</div>
+      <div class="row"><button id="txAddBtn" class="btn primary" style="flex:1">＋ Add text</button><button id="txFontsBtn" class="btn" style="flex:1">Fonts…</button></div>
+      <div class="hint">Tap “Add text”, then tap the canvas. To change text later, switch to Edit mode and tap it. Put it on a curved path from its panel.</div>
+    </section>
     <section class="section" id="areaFillSection">
       <div class="section-title">🪣 Vector Area Fill</div>
       <button id="areaFillToggleBtn" class="btn mini" style="width:100%;">🪣 Area Fill: Off</button>
@@ -606,6 +647,7 @@ html.in-suite .suite-only{display:block!important}
       <span class="float-panel-handle-actions"><button id="qaCloseBtn" class="btn mini float-panel-done" title="Close">✕</button><span class="float-panel-grip" title="Drag to move">⠿</span></span>
     </div>
     <div id="qaGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;">
+      <button id="qaText" class="btn" style="grid-column:1/-1" title="Add text">🔤 Add text</button>
       <button id="qaMode" class="btn" style="grid-column:1/-1" title="Switch between drawing and editing">↔️ Edit mode</button>
       <button id="qaSelect" class="btn" title="Edit mode: tap a shape, stroke or picture to select it">☝️ Select</button>
       <button id="qaMove" class="btn" title="Drag any shape, stroke or picture to move it — no need to select first">✥ Move</button>
@@ -647,12 +689,40 @@ html.in-suite .suite-only{display:block!important}
     <div class="hint">The gold node is the endpoint you're joining from. Tap any pulsing green endpoint to connect it there.</div>
     <button id="joinCancelBtn" class="btn mini" style="width:100%;margin-top:10px;">✕ Cancel</button>
   </div>
+  <div class="float-panel" id="textPanel" style="display:none;width:300px;padding:12px;">
+    <div class="float-panel-handle" id="textPanelHandle"><span>🔤 Text</span><span class="float-panel-handle-actions"><button id="txDoneBtn" class="btn mini primary float-panel-done">✓ Done</button><span class="float-panel-grip" title="Drag to move">⠿</span></span></div>
+    <textarea id="txStr" rows="2" placeholder="Type your text" spellcheck="false" style="width:100%;box-sizing:border-box;font-size:16px;padding:8px;border-radius:10px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);resize:vertical;"></textarea>
+    <div id="txWarn" class="tx-warn" style="display:none"></div>
+    <div class="tx-row"><button id="txFontBtn" type="button" class="btn tx-font" title="Choose a font">Font</button><select id="txStyle" title="Weight and style"></select></div>
+    <div class="tx-row"><label>Size</label><input id="txSize" type="range" min="8" max="600" step="1"><input id="txSizeNum" type="number" min="2" max="2000" step="1"></div>
+    <div class="tx-row"><input id="txColour" type="color" title="Text colour"><label>Opacity</label><input id="txOpacity" type="range" min="5" max="100" step="1"><span id="txOpacityVal" class="tx-val">100%</span></div>
+    <div class="tx-row"><button id="txAlL" type="button" class="btn mini" title="Align left">⇤</button><button id="txAlC" type="button" class="btn mini" title="Centre">↔</button><button id="txAlR" type="button" class="btn mini" title="Align right">⇥</button></div>
+    <details class="tx-det"><summary>Spacing</summary>
+      <div class="tx-row"><label>Letters</label><input id="txLs" type="range" min="-10" max="80" step="0.5"><span id="txLsVal" class="tx-val">0</span></div>
+      <div class="tx-row"><label>Lines</label><input id="txLh" type="range" min="0.7" max="2.5" step="0.05"><span id="txLhVal" class="tx-val">1.2</span></div>
+    </details>
+    <details class="tx-det" id="txPathBox"><summary>Text on a path</summary>
+      <button id="txPathPick" type="button" class="btn mini" style="width:100%">〰️ Put on a path…</button>
+      <div id="txPathCtl" style="display:none">
+        <div class="tx-row"><label>Start</label><input id="txPathOff" type="range" min="0" max="100" step="0.1"><span id="txPathOffVal" class="tx-val">0%</span></div>
+        <div class="tx-row"><button id="txPaS" type="button" class="btn mini" title="Text begins at the start point">Start</button><button id="txPaC" type="button" class="btn mini" title="Text is centred on the start point">Centre</button><button id="txPaE" type="button" class="btn mini" title="Text ends at the start point">End</button></div>
+        <div class="tx-row"><label>Distance</label><input id="txDist" type="range" min="-150" max="300" step="1"><span id="txDistVal" class="tx-val">0</span></div>
+        <div class="tx-row"><label class="tx-chk"><input id="txRev" type="checkbox"> Reverse direction</label><label class="tx-chk"><input id="txFlip" type="checkbox"> Flip side</label></div>
+        <div class="tx-row"><label class="tx-chk"><input id="txHide" type="checkbox"> Hide the guide path</label></div>
+        <div class="tx-row"><button id="txSelGuide" type="button" class="btn mini" style="flex:1">Edit guide path</button><button id="txStraight" type="button" class="btn mini" style="flex:1">Straight again</button></div>
+        <div class="hint">To move this text, move or edit its guide path.</div>
+      </div>
+      <div id="txPathNote" class="hint" style="color:#c0392b"></div>
+    </details>
+    <div class="tx-row"><button id="txOutlineBtn" type="button" class="btn mini" style="flex:1" title="Turns the letters into a plain shape that looks identical everywhere. The wording can no longer be edited (Undo brings it back).">🔳 Convert to outlines</button></div>
+    <div class="tx-row"><button id="txDupBtn" type="button" class="btn mini" style="flex:1">⧉ Duplicate</button><button id="txDelBtn" type="button" class="btn mini danger" style="flex:1">✕ Delete</button></div>
+  </div>
   <div class="float-panel" id="blendPanel" style="display:none;width:300px;">
     <div class="float-panel-handle" id="blendPanelHandle">
       <span>&#127744; Blend</span>
       <span class="float-panel-handle-actions"><button id="blendApplyBtn" class="btn mini primary float-panel-done">&#10003; Apply</button><button id="blendCancelBtn" class="btn mini danger float-panel-done">&#10005; Cancel</button><span class="float-panel-grip" title="Drag to move">&#10303;</span></span>
     </div>
-    <div id="blendPickRow" style="display:none;margin-top:8px;"><div class="hint" id="blendPickText">Tap the <b>second shape</b> on the canvas. The first one is the one you had selected.</div><button id="blendCancelPickBtn" class="btn mini" style="width:100%;margin-top:6px;">Cancel</button></div>
+    <div id="blendPickRow" style="display:none;margin-top:8px;"><div class="hint" id="blendPickText">Tap the <b>second shape</b> on the canvas. The first one is the one you had selected.</div><button id="blendRepeatBtn" class="btn mini" style="width:100%;margin-top:6px;" title="No second shape: repeat this one along a path">&#128257; Or repeat just this one along a path</button><button id="blendCancelPickBtn" class="btn mini" style="width:100%;margin-top:6px;">Cancel</button></div>
     <div id="blendMsg" class="hint" style="display:none;margin-top:8px;"></div>
     <div id="blendBody" style="margin-top:8px;">
       <div id="blendStepsLabel" style="font-size:12.5px;opacity:.85;margin-bottom:4px;">Steps between the two shapes</div>
@@ -667,6 +737,28 @@ html.in-suite .suite-only{display:block!important}
         <label style="display:flex;gap:6px;align-items:center;"><input id="blendSize" type="checkbox" checked> Size</label>
         <label style="display:flex;gap:6px;align-items:center;"><input id="blendRot" type="checkbox" checked> Rotation</label>
       </div>
+      <details id="blendPathBox" style="margin-top:10px;">
+        <summary style="cursor:pointer;font-size:13px;font-weight:600;">&#12336;&#65039; Along a path</summary>
+        <div class="hint" style="margin:4px 0 6px;">Lay the copies out along a line, curve or shape outline instead of straight between the two. Your originals stay where they are.</div>
+        <div class="row" style="gap:6px;"><button id="blendPathPick" class="btn mini" style="flex:1">&#12336;&#65039; Choose a path&hellip;</button></div>
+        <div id="blendPathCtl" style="display:none;margin-top:6px;font-size:13px;">
+          <div class="row" style="align-items:center;gap:6px;"><span style="flex:none;opacity:.8">Placed by</span><select id="blendPCount" style="flex:1;min-width:0;padding:5px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"><option value="steps">Number of copies</option><option value="space">Spacing</option></select><input id="blendPSpace" type="number" min="1" step="1" value="60" title="Gap between copies along the path, in canvas px" style="width:58px;flex:none;padding:5px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></div>
+          <label style="display:flex;gap:6px;align-items:center;margin-top:6px;"><input id="blendPEnds" type="checkbox" checked> <span id="blendPEndsTxt">Put the two shapes on the ends</span></label>
+          <div class="row" style="align-items:center;gap:6px;margin-top:6px;"><span style="flex:none;opacity:.8">Start gap</span><input id="blendPS0" type="number" min="0" step="1" value="0" style="width:58px;padding:5px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"><span id="blendPE0Lbl" style="flex:none;opacity:.8">End gap</span><input id="blendPE0" type="number" min="0" step="1" value="0" style="width:58px;padding:5px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></div>
+          <label style="display:flex;gap:6px;align-items:center;margin-top:6px;"><input id="blendPTan" type="checkbox" checked> Turn with the path</label>
+          <div class="row" style="align-items:center;gap:6px;margin-top:6px;"><span style="flex:none;opacity:.8">Extra turn &deg;</span><input id="blendPRot" type="number" step="1" value="0" style="width:64px;padding:5px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></div>
+          <label style="display:flex;gap:6px;align-items:center;margin-top:6px;"><input id="blendPRev" type="checkbox"> Reverse along the path</label>
+          <label style="display:flex;gap:6px;align-items:center;margin-top:6px;"><input id="blendPHide" type="checkbox"> Hide the path</label>
+          <div id="blendRepBox" style="display:none;margin-top:8px;padding:6px 8px;border-radius:8px;background:rgba(155,107,255,.14);">
+            <div style="font-weight:600;margin-bottom:4px;">Repeating one shape</div>
+            <div class="row" style="align-items:center;gap:6px;"><span style="flex:1;opacity:.8">Last copy size %</span><input id="blendRepSize" type="number" min="1" max="1000" step="1" value="100" style="width:64px;padding:5px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></div>
+            <div class="row" style="align-items:center;gap:6px;margin-top:4px;"><span style="flex:1;opacity:.8">Last copy opacity %</span><input id="blendRepOp" type="number" min="0" max="100" step="1" value="100" style="width:64px;padding:5px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></div>
+            <div class="row" style="align-items:center;gap:6px;margin-top:4px;"><span style="flex:1;opacity:.8">Spin over the path &deg;</span><input id="blendRepSpin" type="number" step="5" value="0" style="width:64px;padding:5px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></div>
+            <div class="hint" style="margin-top:4px;">Uses the Size, Rotation and Opacity ticks above.</div>
+          </div>
+          <div class="row" style="gap:6px;margin-top:8px;"><button id="blendPEdit" class="btn mini" style="flex:1">&#9998;&#65039; Edit the path</button><button id="blendPOff" class="btn mini" style="flex:1">&#10005; No path</button></div>
+        </div>
+      </details>
       <button id="blendReverseBtn" class="btn mini" style="width:100%;margin-top:10px;">&#8644; Reverse direction</button>
       <button id="blendExpandBtn" class="btn mini" style="width:100%;margin-top:6px;display:none;" title="Turn the blend into separate shapes you can edit one by one">&#128165; Expand Blend</button>
     </div>
@@ -774,6 +866,7 @@ html.in-suite .suite-only{display:block!important}
         <button id="tbSymBtn" class="tool-btn" data-ovp="9" data-ovl="🦋 Symmetry" title="Symmetry: mirror what you draw (vertical, horizontal, quad, diamond)">🦋<span id="tbSymLbl"></span></button>
         
         <button id="tbTimelapseBtn" class="tool-btn" data-ovp="9.5" data-ovl="🎥 Timelapse" title="Timelapse: replay and export a video of your design coming to life">🎥</button>
+        <button id="tbTextBtn" class="tool-btn" data-more="1" data-ovp="2" data-ovl="🔤 Text" title="Add text: tap the canvas to place it">🔤 Text</button>
         <button id="tbWarpBtn" class="tool-btn" data-more="1" data-ovp="2" data-ovl="🌀 Warp" title="Warp: drag to push and bend strokes">🌀 Warp</button>
         <div class="toolbar-spacer"></div>
         <button id="paintModePill" class="pill" style="display:none;cursor:pointer;">🎨 Paint Inside — tap for Free Paint</button>
@@ -852,12 +945,13 @@ html.in-suite .suite-only{display:block!important}
     </div>
     <div id="backupsPanel" style="display:none;position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:90;background:var(--sideBg);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:0 18px 50px rgba(0,0,0,.35);font-size:13.5px;max-width:min(560px,calc(100vw - 24px));max-height:70vh;overflow:auto;"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:800;margin-bottom:6px;">🕘 Earlier saves<button id="backupsClose" class="btn mini">Close</button></div><div id="backupsList"></div><div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);"><button id="newBlankBtn" class="btn mini" style="width:100%;">➕ New Project</button><div class="hint">Your current project is saved first, then a fresh one opens. Find every project under 📁 Projects.</div></div></div>
     <div id="restoreBanner" style="display:none;"><span id="restoreBannerText">📂 Autosaved session found from </span><span id="restoreBannerTime"></span> <button id="restoreAcceptBtn" class="btn mini primary">Restore</button><button id="restoreDeclineBtn" class="btn mini">Start Fresh</button><button id="restoreOkBtn" class="btn mini primary" style="display:none;">OK</button></div>
-    <div id="canvasViewportOuter" class="canvas-viewport-outer"><div id="canvasWrap" class="canvas-wrap"><div id="viewPopover" class="sym-pop"><div class="section-title">🧭 Canvas / View</div><div class="row" style="margin-bottom:10px;align-items:center;gap:8px;"><div id="viewRotVal" class="pill" style="flex:1;text-align:center;">Rotation 0°</div><button id="viewRotResetBtn" class="tool-btn" style="flex:1" title="Turn the canvas back upright">Reset to 0°</button></div><button id="viewGuidesBtn" class="tool-btn" style="width:100%;margin-bottom:10px;">📐 Guides: Off</button><button id="viewResetBtn" class="tool-btn" style="width:100%;margin-bottom:10px;" title="0°, centred and fitted">🔍 Reset view (0°, fit)</button><button id="symToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">🦋 Symmetry Off</button><div class="row" style="margin-bottom:10px;"><button id="tilingBtn" class="tool-btn active" style="flex:1">Tiling On</button><div id="layoutPill" class="pill">📍 Grid Mode</div></div><button id="themeToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">☀️ Light Mode</button><button id="clearDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear Drawing &amp; Motifs</button><button id="clearAllDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear All Layers &amp; Motifs</button><label class="row" style="gap:8px;align-items:center;margin:6px 0;font-size:13px;"><input type="checkbox" id="dblDupChk" checked> Double-tap a selected item to duplicate it (a motif opens for editing instead)</label><button id="viewCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="zoomPopover" class="sym-pop"><div class="section-title">🔍 View <span id="zoomPopPct" class="small"></span></div><div class="zoom-row"><button id="zoomOutBtn" class="tool-btn" aria-label="Zoom out">−</button><button id="zoomInBtn" class="tool-btn" aria-label="Zoom in">+</button></div><button id="zoom100Btn" class="tool-btn" style="width:100%;margin-bottom:8px;">100% — actual size</button><button id="zoomFitBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">Fit to View</button><button id="zoomRotResetBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">↺ Reset rotation to 0°</button><button id="zoomResetBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;">Reset View (0°, centre, fit)</button><button id="updateAppBtn" class="tool-btn" style="width:100%;margin-bottom:8px;" title="Fetch the newest version of the app">⟳ Get latest version <span style="opacity:.6;font-weight:600">(you have v128)</span></button><div class="hint" style="margin-bottom:8px;">These always work, even if the canvas has scrolled out of sight.</div><button id="zoomCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="svgPopover" class="sym-pop"><div class="section-title">🖋️ Export SVG</div><div class="hint" style="margin-bottom:8px;">Vector strokes and fills only. Pictures (placed motifs, background image) are not vector, so they are left out.</div><div class="row" style="margin-bottom:8px;"><button class="tool-btn svg-preset" data-size="780">780</button><button class="tool-btn svg-preset" data-size="1800">1800</button><button class="tool-btn svg-preset" data-size="3600">3600</button></div><div class="slider-row" style="grid-template-columns:64px 1fr 30px;"><label>Size</label><input id="svgSizeInput" type="number" min="64" max="20000" step="1" value="3600" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><span>px</span></div><div class="hint" style="margin-bottom:8px;">Width and height of the square file. 3600 × 3600 is the usual pattern size. The artwork scales exactly.</div><button id="svgSaveBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;min-height:44px;">⬇️ Save SVG</button><button id="svgCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="recolourPopover" class="sym-pop"><div class="section-title">🎨 Recolour Parts</div><div class="hint" style="margin-bottom:8px;">Motif: <b id="recolourName"></b>. Each row is one colour used in the motif. Pick a new colour for any of them.</div><div id="recolourRows"></div><button id="recolourApplyBtn" class="tool-btn primary" style="width:100%;margin:8px 0;min-height:44px;">Apply to this motif</button><button id="recolourNewBtn" class="tool-btn" style="width:100%;margin-bottom:8px;min-height:44px;">Save as new colourway</button><div class="row"><button id="recolourResetBtn" class="btn mini" style="flex:1">Reset</button><button id="recolourCloseBtn" class="btn mini" style="flex:1">✕ Close</button></div></div><div id="symPopover" class="sym-pop"><div class="section-title">🦋 Symmetry</div><div class="grid"><button class="sym-btn btn active" data-sym="off">Off</button><button class="sym-btn btn" data-sym="vertical">Vertical</button><button class="sym-btn btn" data-sym="horizontal">Horizontal</button><button class="sym-btn btn" data-sym="quad">Quad</button><button class="sym-btn btn" data-sym="diamond">Diamond</button></div><div class="slider-row"><label>Axis X</label><input id="symX" type="range" min="0" max="1800" value="900"><span id="symXVal">50%</span></div><div class="slider-row"><label>Axis Y</label><input id="symY" type="range" min="0" max="1800" value="900"><span id="symYVal">50%</span></div><div class="slider-row"><label>Angle</label><input id="symAng" type="range" min="-90" max="90" step="1" value="0"><span id="symAngVal">0°</span></div><div class="row"><button id="symAngReset" class="btn mini">0° Straight</button><button id="symAng45" class="btn mini">45°</button></div><div class="row" style="margin-top:6px;"><button id="symLenWhole" class="btn mini active" style="flex:1">Line: whole canvas</button><button id="symLenShort" class="btn mini" style="flex:1">Line: short</button></div><div class="slider-row" id="symLenRow" style="display:none"><label>Length</label><input id="symLen" type="range" min="100" max="1800" step="10" value="500"><span id="symLenVal">500</span></div><div class="row" style="margin-top:6px;"><button id="symCentre" class="btn mini">Centre Axis</button><button id="symClose" class="btn mini">Done</button></div><div class="hint">Move the mirror point to make flowers, leaves and playful asymmetric symmetry.</div></div><canvas id="fabricCanvas" aria-hidden="true"></canvas><canvas id="canvas" width="1800" height="1800"></canvas><div id="tileOutline" aria-hidden="true"></div><div id="selectionBox" class="selection-box"><button id="motifEditChip" class="btn mini primary" style="display:none">✏️ Edit Motif</button><div id="resizeHandle" class="handle"></div><div id="rotateHandle" class="rotHandle"></div></div><div id="pivotMarker" style="display:none;position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;border:2px solid var(--pink);border-radius:50%;background:rgba(255,255,255,.85);pointer-events:none;z-index:5;"><div style="position:absolute;left:50%;top:-6px;bottom:-6px;width:2px;margin-left:-1px;background:var(--pink)"></div><div style="position:absolute;top:50%;left:-6px;right:-6px;height:2px;margin-top:-1px;background:var(--pink)"></div></div><div id="paintBBoxOverlay" class="selection-box" style="display:none;"><div id="paintResizeHandle" class="handle" title="Drag to resize. Tap to make 25% bigger."></div><div id="paintRotateHandle" class="rotHandle" title="Drag to rotate. Tap to turn 45 degrees."></div><input id="strokeColourHandle" class="sel-colour strokeColourHandle" type="color" value="#000000" title="Tap to change colour"></div><div id="groupBox" class="selection-box" style="display:none;"><div class="gh" data-h="nw" style="left:0%;top:0%;cursor:nwse-resize"></div><div class="gh" data-h="n" style="left:50%;top:0%;cursor:ns-resize"></div><div class="gh" data-h="ne" style="left:100%;top:0%;cursor:nesw-resize"></div><div class="gh" data-h="e" style="left:100%;top:50%;cursor:ew-resize"></div><div class="gh" data-h="se" style="left:100%;top:100%;cursor:nwse-resize"></div><div class="gh" data-h="s" style="left:50%;top:100%;cursor:ns-resize"></div><div class="gh" data-h="sw" style="left:0%;top:100%;cursor:nesw-resize"></div><div class="gh" data-h="w" style="left:0%;top:50%;cursor:ew-resize"></div><div id="grpRotHandle" class="rotHandle" title="Drag to turn. Tap to turn 45 degrees."></div></div><div id="symAxis" class="sym-axis locked"></div><div id="rotateChip" class="rotate-chip">Canvas 0°</div><div id="pathNodeOverlay"></div></div></div>
+    <div id="canvasViewportOuter" class="canvas-viewport-outer"><div id="canvasWrap" class="canvas-wrap"><div id="viewPopover" class="sym-pop"><div class="section-title">🧭 Canvas / View</div><div class="row" style="margin-bottom:10px;align-items:center;gap:8px;"><div id="viewRotVal" class="pill" style="flex:1;text-align:center;">Rotation 0°</div><button id="viewRotResetBtn" class="tool-btn" style="flex:1" title="Turn the canvas back upright">Reset to 0°</button></div><button id="viewGuidesBtn" class="tool-btn" style="width:100%;margin-bottom:10px;">📐 Guides: Off</button><button id="viewResetBtn" class="tool-btn" style="width:100%;margin-bottom:10px;" title="0°, centred and fitted">🔍 Reset view (0°, fit)</button><button id="symToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">🦋 Symmetry Off</button><div class="row" style="margin-bottom:10px;"><button id="tilingBtn" class="tool-btn active" style="flex:1">Tiling On</button><div id="layoutPill" class="pill">📍 Grid Mode</div></div><button id="themeToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">☀️ Light Mode</button><button id="clearDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear Drawing &amp; Motifs</button><button id="clearAllDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear All Layers &amp; Motifs</button><label class="row" style="gap:8px;align-items:center;margin:6px 0;font-size:13px;"><input type="checkbox" id="dblDupChk" checked> Double-tap a selected item to duplicate it (a motif opens for editing instead)</label><button id="viewCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="zoomPopover" class="sym-pop"><div class="section-title">🔍 View <span id="zoomPopPct" class="small"></span></div><div class="zoom-row"><button id="zoomOutBtn" class="tool-btn" aria-label="Zoom out">−</button><button id="zoomInBtn" class="tool-btn" aria-label="Zoom in">+</button></div><button id="zoom100Btn" class="tool-btn" style="width:100%;margin-bottom:8px;">100% — actual size</button><button id="zoomFitBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">Fit to View</button><button id="zoomRotResetBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">↺ Reset rotation to 0°</button><button id="zoomResetBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;">Reset View (0°, centre, fit)</button><button id="updateAppBtn" class="tool-btn" style="width:100%;margin-bottom:8px;" title="Fetch the newest version of the app">⟳ Get latest version <span style="opacity:.6;font-weight:600">(you have v129)</span></button><div class="hint" style="margin-bottom:8px;">These always work, even if the canvas has scrolled out of sight.</div><button id="zoomCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="svgPopover" class="sym-pop"><div class="section-title">🖋️ Export SVG</div><div class="hint" style="margin-bottom:8px;">Vector strokes and fills only. Pictures (placed motifs, background image) are not vector, so they are left out.</div><div class="row" style="margin-bottom:8px;"><button class="tool-btn svg-preset" data-size="780">780</button><button class="tool-btn svg-preset" data-size="1800">1800</button><button class="tool-btn svg-preset" data-size="3600">3600</button></div><div class="slider-row" style="grid-template-columns:64px 1fr 30px;"><label>Size</label><input id="svgSizeInput" type="number" min="64" max="20000" step="1" value="3600" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><span>px</span></div><div class="hint" style="margin-bottom:8px;">Width and height of the square file. 3600 × 3600 is the usual pattern size. The artwork scales exactly.</div><button id="svgSaveBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;min-height:44px;">⬇️ Save SVG</button><button id="svgCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="recolourPopover" class="sym-pop"><div class="section-title">🎨 Recolour Parts</div><div class="hint" style="margin-bottom:8px;">Motif: <b id="recolourName"></b>. Each row is one colour used in the motif. Pick a new colour for any of them.</div><div id="recolourRows"></div><button id="recolourApplyBtn" class="tool-btn primary" style="width:100%;margin:8px 0;min-height:44px;">Apply to this motif</button><button id="recolourNewBtn" class="tool-btn" style="width:100%;margin-bottom:8px;min-height:44px;">Save as new colourway</button><div class="row"><button id="recolourResetBtn" class="btn mini" style="flex:1">Reset</button><button id="recolourCloseBtn" class="btn mini" style="flex:1">✕ Close</button></div></div><div id="symPopover" class="sym-pop"><div class="section-title">🦋 Symmetry</div><div class="grid"><button class="sym-btn btn active" data-sym="off">Off</button><button class="sym-btn btn" data-sym="vertical">Vertical</button><button class="sym-btn btn" data-sym="horizontal">Horizontal</button><button class="sym-btn btn" data-sym="quad">Quad</button><button class="sym-btn btn" data-sym="diamond">Diamond</button></div><div class="slider-row"><label>Axis X</label><input id="symX" type="range" min="0" max="1800" value="900"><span id="symXVal">50%</span></div><div class="slider-row"><label>Axis Y</label><input id="symY" type="range" min="0" max="1800" value="900"><span id="symYVal">50%</span></div><div class="slider-row"><label>Angle</label><input id="symAng" type="range" min="-90" max="90" step="1" value="0"><span id="symAngVal">0°</span></div><div class="row"><button id="symAngReset" class="btn mini">0° Straight</button><button id="symAng45" class="btn mini">45°</button></div><div class="row" style="margin-top:6px;"><button id="symLenWhole" class="btn mini active" style="flex:1">Line: whole canvas</button><button id="symLenShort" class="btn mini" style="flex:1">Line: short</button></div><div class="slider-row" id="symLenRow" style="display:none"><label>Length</label><input id="symLen" type="range" min="100" max="1800" step="10" value="500"><span id="symLenVal">500</span></div><div class="row" style="margin-top:6px;"><button id="symCentre" class="btn mini">Centre Axis</button><button id="symClose" class="btn mini">Done</button></div><div class="hint">Move the mirror point to make flowers, leaves and playful asymmetric symmetry.</div></div><canvas id="fabricCanvas" aria-hidden="true"></canvas><canvas id="canvas" width="1800" height="1800"></canvas><div id="tileOutline" aria-hidden="true"></div><div id="selectionBox" class="selection-box"><button id="motifEditChip" class="btn mini primary" style="display:none">✏️ Edit Motif</button><div id="resizeHandle" class="handle"></div><div id="rotateHandle" class="rotHandle"></div></div><div id="pivotMarker" style="display:none;position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;border:2px solid var(--pink);border-radius:50%;background:rgba(255,255,255,.85);pointer-events:none;z-index:5;"><div style="position:absolute;left:50%;top:-6px;bottom:-6px;width:2px;margin-left:-1px;background:var(--pink)"></div><div style="position:absolute;top:50%;left:-6px;right:-6px;height:2px;margin-top:-1px;background:var(--pink)"></div></div><div id="paintBBoxOverlay" class="selection-box" style="display:none;"><div id="paintResizeHandle" class="handle" title="Drag to resize. Tap to make 25% bigger."></div><div id="paintRotateHandle" class="rotHandle" title="Drag to rotate. Tap to turn 45 degrees."></div><input id="strokeColourHandle" class="sel-colour strokeColourHandle" type="color" value="#000000" title="Tap to change colour"></div><div id="groupBox" class="selection-box" style="display:none;"><div class="gh" data-h="nw" style="left:0%;top:0%;cursor:nwse-resize"></div><div class="gh" data-h="n" style="left:50%;top:0%;cursor:ns-resize"></div><div class="gh" data-h="ne" style="left:100%;top:0%;cursor:nesw-resize"></div><div class="gh" data-h="e" style="left:100%;top:50%;cursor:ew-resize"></div><div class="gh" data-h="se" style="left:100%;top:100%;cursor:nwse-resize"></div><div class="gh" data-h="s" style="left:50%;top:100%;cursor:ns-resize"></div><div class="gh" data-h="sw" style="left:0%;top:100%;cursor:nesw-resize"></div><div class="gh" data-h="w" style="left:0%;top:50%;cursor:ew-resize"></div><div id="grpRotHandle" class="rotHandle" title="Drag to turn. Tap to turn 45 degrees."></div></div><div id="symAxis" class="sym-axis locked"></div><div id="rotateChip" class="rotate-chip">Canvas 0°</div><div id="pathNodeOverlay"></div></div></div>
     <div id="status" class="status">✨ Apple Pencil draws | one finger protected | two fingers pan/pinch/rotate | two-finger tap Undo | three-finger tap Redo | Capture Motif saves drawing ✨</div>
   </main>
 </div>
 <script src="native-bridge.js"></script>
 <script src="brush-engine.js"></script>
+<script src="fonts.js"></script>
 <!-- Vendored unmodified: PolyBool v1.2.2 (MIT, Sean Connelly / voidqk, https://github.com/velipso/polybooljs)
      — the polygon union/intersect/difference engine behind Shape Tools (Merge/Subtract/Intersect).
      No existing geometry here does real polygon boolean ops (holes, multi-piece results), and
@@ -1400,6 +1494,8 @@ function renderStrokeAtop(ctx,stroke,brush,settings,alphaMul){
   ctx.save();ctx.globalCompositeOperation='source-atop';ctx.drawImage(t,0,0,t.width,t.height,bx,by,bw,bh);ctx.restore();
 }
 function renderStrokeClipped(ctx,stroke,brush,settings,alphaMul){
+  if(stroke.text)return txRender(ctx,stroke,alphaMul);
+  if(stroke.outlined&&stroke.regions&&stroke.fillColor)return txFillRegions(ctx,stroke,alphaMul);
   if(stroke.atop)return renderStrokeAtop(ctx,stroke,brush,settings,alphaMul);
   // Shape Tools multi-region result (a hole, or several separate pieces from Subtract/Merge) —
   // each region is just stroked independently with the SAME brush/settings, which is exactly
@@ -1447,7 +1543,7 @@ function rebuildLayer(layerId){
   const layer=layers.find(l=>l.id===layerId);if(!layer)return;
   layer.ctx.clearRect(0,0,W,H);
   layer.dctx.clearRect(0,0,W,H);
-  strokes.filter(s=>s.layerId===layerId&&!hiddenStrokeIds.has(s.id)).forEach(s=>{
+  strokes.filter(s=>s.layerId===layerId&&!hiddenStrokeIds.has(s.id)&&!s.guideHidden).forEach(s=>{
     const brush=BrushEngine.getBrush(s.brushId),settings=s.settings||BrushEngine.getSettings(s.brushId);
     renderStrokeClipped(layer.ctx,s,brush,settings);
     renderStrokeClipped(layer.dctx,s,brush,settings);
@@ -1464,7 +1560,7 @@ function rebuildLayerDimmed(layerId,dimStrokeId,alpha){
   const layer=layers.find(l=>l.id===layerId);if(!layer)return;
   layer.ctx.clearRect(0,0,W,H);
   layer.dctx.clearRect(0,0,W,H);
-  strokes.filter(s=>s.layerId===layerId&&!hiddenStrokeIds.has(s.id)).forEach(s=>{
+  strokes.filter(s=>s.layerId===layerId&&!hiddenStrokeIds.has(s.id)&&!s.guideHidden).forEach(s=>{
     const brush=BrushEngine.getBrush(s.brushId),settings=s.settings||BrushEngine.getSettings(s.brushId);
     // alpha is passed straight into renderStroke's per-dab opacity now — stampDab sets its own
     // ctx.globalAlpha for every dab it stamps, so an outer ctx.globalAlpha set here would have
@@ -1502,7 +1598,7 @@ function snapshot(){
     groupsJSON:JSON.stringify(groups),
   };
 }
-function pushHist(){try{pruneGroups();}catch(e){}try{symSync();}catch(e){console.warn('[sketchpad] symmetry sync failed',e);}try{if(window.SPTimelapse)SPTimelapse.onPush();}catch(e){}try{if(typeof refreshBlends==='function')refreshBlends();if(typeof refreshObjBlends==='function')refreshObjBlends();}catch(e){console.warn('[sketchpad] blend refresh failed',e);}history=history.slice(0,hIndex+1);history.push(snapshot());if(history.length>40)history.shift();hIndex=history.length-1;try{if(window.SPTimelapse)SPTimelapse.afterPush();}catch(e){}scheduleAutosave();}
+function pushHist(){try{pruneGroups();}catch(e){}try{symSync();}catch(e){console.warn('[sketchpad] symmetry sync failed',e);}try{txRefresh();}catch(e){}try{if(window.SPTimelapse)SPTimelapse.onPush();}catch(e){}try{if(typeof refreshBlends==='function')refreshBlends();if(typeof refreshObjBlends==='function')refreshObjBlends();}catch(e){console.warn('[sketchpad] blend refresh failed',e);}history=history.slice(0,hIndex+1);history.push(snapshot());if(history.length>40)history.shift();hIndex=history.length-1;try{if(window.SPTimelapse)SPTimelapse.afterPush();}catch(e){}scheduleAutosave();}
 // Synchronous now (no more toDataURL()/Image round-trip for the drawing layer) — cheaper AND
 // simpler: JSON-serialised stroke points are far smaller than a full 1800x1800 PNG snapshot per
 // undo step, and replaying them is deterministic so this never has to wait on an image decode.
@@ -1534,8 +1630,8 @@ function applyLayerMeta(layerMeta,wantActiveId){
   strokes.forEach(s=>{if(!s.layerId||!layers.find(l=>l.id===s.layerId))s.layerId=fallback.id;});
   activeLayerId=(wantActiveId&&layers.find(l=>l.id===wantActiveId))?wantActiveId:fallback.id;
 }
-function undo(){if(hIndex>0){hIndex--;restore(history[hIndex]);try{if(window.SPTimelapse)SPTimelapse.afterRestore('undo');}catch(e){}setStatus('↩️ Undo');}}
-function redo(){if(hIndex<history.length-1){hIndex++;restore(history[hIndex]);try{if(window.SPTimelapse)SPTimelapse.afterRestore('redo');}catch(e){}setStatus('↪️ Redo');}}
+function undo(){if(hIndex>0){hIndex--;restore(history[hIndex]);try{if(window.SPTimelapse)SPTimelapse.afterRestore('undo');}catch(e){}setStatus('↩️ Undo');scheduleAutosave();}}
+function redo(){if(hIndex<history.length-1){hIndex++;restore(history[hIndex]);try{if(window.SPTimelapse)SPTimelapse.afterRestore('redo');}catch(e){}setStatus('↪️ Redo');scheduleAutosave();}}
 // Resizes every render target's BACKING STORE (physical pixels) to the current renderScale,
 // without touching its on-screen CSS size — canvas.style.width/height keep it at logical W x H
 // so nothing about layout, pan or the existing zoom/rotate CSS transform math changes; only the
@@ -2537,7 +2633,7 @@ function selectAtBase(x,y){
     const lockedIds=new Set(layers.filter(l=>l.locked).map(l=>l.id));
     let best=null,bestDist=Infinity;
     for(let i=strokes.length-1;i>=0;i--){
-      const s=strokes[i];if(lockedIds.has(s.layerId))continue;
+      const s=strokes[i];if(lockedIds.has(s.layerId)||s.guideHidden)continue;
       const settings=s.settings||BrushEngine.getSettings(s.brushId);
       const tolerance=Math.max(18,(settings.size||6)/2+12);
       const d=s.regions?distanceToMultiPolyline(p.x,p.y,s.regions):distanceToPolyline(p.x,p.y,s.points);
@@ -2597,6 +2693,7 @@ function setStrokePanelOpen(on){
   syncStrokeSelectionUI();
 }
 function syncStrokeSelectionUI(){
+  try{txSyncPanel();}catch(e){}
   { // nudge: a stroke is selected in Edit mode but its tools (Edit Path, resize, colour...) are closed
     const sb=$('strokePanelBtn');if(sb)sb.classList.remove('attention');
   }
@@ -2639,7 +2736,7 @@ function syncStrokeSelectionUI(){
   if(editPathBtnEl){
     const isPaint=!!(stroke&&stroke.clipStrokeId);
     const isMultiRegion=!!(stroke&&stroke.regions&&stroke.regions.length>1);
-    editPathBtnEl.disabled=!stroke||isPaint||isMultiRegion;try{const cb=$('actionsEditCurveBtn');if(cb)cb.style.display=penBezValid(stroke)?'':'none';}catch(e){}{const a=$('actionsEditPathBtn');if(a)a.disabled=editPathBtnEl.disabled;}
+    editPathBtnEl.disabled=!stroke||isPaint||isMultiRegion||!!stroke.text||!!stroke.outlined;try{const cb=$('actionsEditCurveBtn');if(cb)cb.style.display=penBezValid(stroke)?'':'none';}catch(e){}{const a=$('actionsEditPathBtn');if(a)a.disabled=editPathBtnEl.disabled;}
     editPathBtnEl.title=isPaint?'Painted content is edited by dragging its bounding-box handles on the canvas, not as individual nodes.'
       :isMultiRegion?'This shape has a hole or several separate pieces — node editing a multi-piece Shape Tools result isn\'t supported yet. It\'s still a real, movable, recolourable vector shape.'
       :'';
@@ -2657,7 +2754,8 @@ function syncStrokeSelectionUI(){
   // the whole-stroke Move/Transform panel has nothing useful to add until it ends.
   const actionsBar=$('strokeActionsBar');
   if(actionsBar){
-    if(selectedStrokeId&&!pathEditStrokeId&&!joinPendingStrokeId&&!blendDraft){
+    const isTxt=!!(strokes.find(x=>x.id===selectedStrokeId)||{}).text;
+    if(selectedStrokeId&&!isTxt&&!pathEditStrokeId&&!joinPendingStrokeId&&!blendDraft){
       const wasHidden=actionsBar.style.display==='none';
       actionsBar.style.display='block';
       if(wasHidden){const vr=viewportOuter.getBoundingClientRect();positionFloatPanel('strokeActionsBar',vr.right-294,vr.top+16);}
@@ -2987,14 +3085,45 @@ function blendFindEndpointGroup(strokeId){
 function blendReadControls(){
   if(!blendDraft)return;
   const d=blendDraft;
-  d.steps=Math.max(1,Math.min(BLEND_MAX_STEPS,Math.round(+$('blendSteps').value)||1));
+  d.steps=Math.max(1,Math.min(d.path?OBJ_PATH_MAX:BLEND_MAX_STEPS,Math.round(+$('blendSteps').value)||1));
   d.colour=$('blendColour').checked;d.shape=$('blendShape').checked;d.pos=$('blendPos').checked;d.size=$('blendSize').checked;d.rot=$('blendRot').checked;
   if(d.obj)d.opacity=$('blendOpacity').checked;
+  blendReadPath();
+}
+function blendReadPath(){
+  const d=blendDraft;if(!d||!d.obj)return;
+  if(d.path){
+    const pa=d.path,num=(id,def)=>{const v=parseFloat($(id).value);return isFinite(v)?v:def;};
+    pa.count=$('blendPCount').value;pa.space=Math.max(1,num('blendPSpace',60));pa.ends=$('blendPEnds').checked;
+    pa.s0=Math.max(0,num('blendPS0',0));pa.e0=Math.max(0,num('blendPE0',0));pa.tan=$('blendPTan').checked;pa.rotOff=num('blendPRot',0);
+    pa.rev=$('blendPRev').checked;pa.hide=$('blendPHide').checked;
+  }
+  if(d.rep){d.rep.size=Math.max(1,parseFloat($('blendRepSize').value)||100);const o=parseFloat($('blendRepOp').value);d.rep.op=isFinite(o)?Math.max(0,Math.min(100,o)):100;d.rep.spin=parseFloat($('blendRepSpin').value)||0;}
+}
+function blendSyncPathUI(){
+  const d=blendDraft,box=$('blendPathBox');if(!box)return;
+  const ctl=$('blendPathCtl'),on=!!(d&&d.obj&&d.path);
+  ctl.style.display=on?'block':'none';
+  $('blendPathPick').textContent=on?'\u21bb Choose another path\u2026':'\u3030\ufe0f Choose a path\u2026';
+  const mx=on?OBJ_PATH_MAX:BLEND_MAX_STEPS;$('blendSteps').max=mx;$('blendStepsNum').max=mx;
+  if(on){
+    const pa=d.path,G=objGuide(d),closed=G?G.P.closed:false;
+    $('blendPCount').value=pa.count==='space'?'space':'steps';$('blendPSpace').value=pa.space==null?60:pa.space;$('blendPSpace').style.display=pa.count==='space'?'':'none';
+    $('blendPEnds').checked=pa.ends!==false;$('blendPEndsTxt').textContent=d.rep?'First copy on the start, last on the end':'Put the two shapes on the ends';
+    $('blendPS0').value=pa.s0||0;$('blendPE0').value=pa.e0||0;
+    $('blendPE0').style.display=closed?'none':'';$('blendPE0Lbl').style.display=closed?'none':'';
+    $('blendPTan').checked=pa.tan!==false;$('blendPRot').value=pa.rotOff||0;$('blendPRev').checked=!!pa.rev;$('blendPHide').checked=!!pa.hide;
+    $('blendRepBox').style.display=d.rep?'block':'none';$('blendPEnds').parentNode.style.display=d.rep?'none':'flex';
+    if(d.rep){$('blendRepSize').value=d.rep.size==null?100:d.rep.size;$('blendRepOp').value=d.rep.op==null?100:d.rep.op;$('blendRepSpin').value=d.rep.spin||0;}
+    $('blendSteps').style.opacity=pa.count==='space'?'.4':'1';$('blendStepsNum').style.opacity=pa.count==='space'?'.4':'1';
+    box.open=true;
+  }else{$('blendRepBox').style.display='none';$('blendSteps').style.opacity='1';$('blendStepsNum').style.opacity='1';}
 }
 function blendWriteControls(){
   const d=blendDraft;$('blendSteps').value=d.steps;$('blendStepsNum').value=d.steps;
   $('blendColour').checked=d.colour;$('blendShape').checked=d.shape;$('blendPos').checked=d.pos;$('blendSize').checked=d.size;$('blendRot').checked=d.rot;
   if(d.obj)$('blendOpacity').checked=d.opacity!==false;
+  blendSyncPathUI();
   blendUpdateNote();
 }
 function blendUpdateNote(){
@@ -3049,7 +3178,7 @@ function openBlend(){
   blendPickArmed=true;blendWriteControls();blendMsg('');blendShowPanel();syncStrokeSelectionUI();
   setStatus('🌀 Now tap the second shape on the canvas.');
 }
-function closeBlendPanel(){try{objShowControls(false);}catch(e){}blendDraft=null;blendPickArmed=false;$('blendPanel').style.display='none';syncStrokeSelectionUI();}
+function closeBlendPanel(){try{objShowControls(false);}catch(e){}blendDraft=null;try{blendPathArm(false);}catch(e){}blendPickArmed=false;$('blendPanel').style.display='none';syncStrokeSelectionUI();}
 function blendApply(){
   if(!blendDraft||!blendDraft.bId)return;
   if(blendDraft.obj)return objApply();
@@ -3120,7 +3249,7 @@ wrap.addEventListener('pointerdown',e=>{
   setStatus('🌀 Adjust the blend, then tap Apply.');
 },true);
 $('blendSteps').addEventListener('input',()=>{$('blendStepsNum').value=$('blendSteps').value;blendReadControls();blendUpdateNote();blendPreview();});
-$('blendStepsNum').addEventListener('input',()=>{const v=Math.max(1,Math.min(BLEND_MAX_STEPS,Math.round(+$('blendStepsNum').value)||0));if(!v)return;$('blendSteps').value=v;blendReadControls();blendUpdateNote();blendPreview();});
+$('blendStepsNum').addEventListener('input',()=>{const v=Math.max(1,Math.min(blendDraft&&blendDraft.path?OBJ_PATH_MAX:BLEND_MAX_STEPS,Math.round(+$('blendStepsNum').value)||0));if(!v)return;$('blendSteps').value=v;blendReadControls();blendUpdateNote();blendPreview();});
 $('blendStepsNum').addEventListener('change',()=>{$('blendStepsNum').value=$('blendSteps').value;});
 ['blendColour','blendShape','blendPos','blendSize','blendRot'].forEach(id=>$(id).addEventListener('change',()=>{blendReadControls();blendPreview();}));
 $('blendApplyBtn').onclick=blendApply;$('blendCancelBtn').onclick=blendCancel;$('blendCancelPickBtn').onclick=blendCancel;
@@ -3182,17 +3311,66 @@ function objMorphPlan(A,B){
   return {pairs};
 }
 function objDominantColour(ep){const s=ep.st.find(x=>x.color);return s?s.color:null;}
+// ---- blend along a path: the guide stroke, evenly spaced poses on it ----
+const OBJ_PATH_MAX=200;
+function objGuide(spec){
+  const pa=spec.path;if(!pa)return null;
+  const g=strokes.find(x=>x.id===pa.gid);
+  if(!g||g.regions||g.text||g.outlined||!g.points||g.points.length<2)return null;
+  const P=blendPath(g);return P?{g,P}:null;
+}
+// Distances along the guide (arc length, not point index) where the copies go.
+//  closed: n copies at s0 + k*L/n, so the seam is never doubled.  open: from s0 to L-e0, either with copies exactly on both
+//  ends (n-1 equal gaps) or only in between (n+1 equal gaps).  "space" mode derives n from the gap instead.
+function objPathSpots(P,pa,steps){
+  const L=P.tot,ends=pa.ends!==false,sp=Math.max(1,+pa.space||50),byGap=pa.count==='space',ds=[];let n;
+  if(P.closed){
+    const s0=(((+pa.s0||0)%L)+L)%L;
+    n=byGap?Math.max(1,Math.floor(L/sp+1e-9)):Math.max(1,Math.round(steps)||1);
+    for(let k=0;k<n;k++)ds.push(s0+k*L/n);
+  }else{
+    const s0=Math.min(L,Math.max(0,+pa.s0||0)),e0=Math.min(L-s0,Math.max(0,+pa.e0||0)),Lu=Math.max(0,L-s0-e0);
+    if(ends){
+      n=byGap?Math.floor(Lu/sp+1e-9)+1:Math.max(1,Math.round(steps)||1);
+      for(let k=0;k<n;k++)ds.push(n===1?s0:(byGap?s0+k*sp:s0+k*Lu/(n-1)));
+    }else{
+      n=byGap?Math.max(1,Math.round(Lu/sp)-1):Math.max(1,Math.round(steps)||1);
+      for(let k=0;k<n;k++)ds.push(s0+(k+1)*Lu/(n+1));
+    }
+  }
+  return ds;
+}
+function objPathPose(P,d,rev){
+  const L=P.tot,at=x=>blendAt(P,(rev?L-x:x)/L),dl=Math.min(10,Math.max(2,L/100));
+  const c=at(d),a=at(d-dl),b=at(d+dl);
+  return {x:c.x,y:c.y,ang:Math.atan2(b.y-a.y,b.x-a.x)};
+}
 function objGenerate(A,B,spec){
   const FA=objFrame(A),FB=objFrame(B);if(!FA||!FB)return {error:'One of the two no longer has anything to blend.'};
-  const n=Math.max(1,Math.min(BLEND_MAX_STEPS,Math.round(spec.steps)||1));
+  const rep=!!spec.rep,rp=spec.rep||{};
+  let guide=null,spots=null,capped=null,n,tl=[];
+  if(spec.path){
+    guide=objGuide(spec);if(!guide)return {error:'The path this blend follows no longer exists.'};
+    const per=Math.max(1,(objPoints(A)+objPoints(B))/2),cap=Math.max(1,Math.min(OBJ_PATH_MAX,Math.floor(OBJ_POINT_BUDGET/per)));
+    let ds=objPathSpots(guide.P,spec.path,spec.steps);
+    if(ds.length>cap){capped=cap;ds=objPathSpots(guide.P,{...spec.path,count:'steps'},cap);}
+    spots=ds.map(d=>objPathPose(guide.P,d,!!spec.path.rev));n=spots.length;
+    const inc=rep||spec.path.ends!==false;
+    for(let k=0;k<n;k++)tl.push(inc?(n>1?k/(n-1):0):(k+1)/(n+1));
+  }else{
+    n=Math.max(1,Math.min(BLEND_MAX_STEPS,Math.round(spec.steps)||1));
+    for(let k=0;k<n;k++)tl.push((k+1)/(n+1));
+  }
+  const posUse=spec.path?true:spec.pos;
   let mode='transform',reason=null,pairs=null;
-  if(spec.shape){const plan=objMorphPlan(A,B);if(plan.pairs){mode='morph';pairs=plan.pairs;}else reason=plan.reason;}
+  if(rep)reason='Repeating one shape: every copy is the same shape, changing only size, turn and opacity.';
+  else if(spec.shape){const plan=objMorphPlan(A,B);if(plan.pairs){mode='morph';pairs=plan.pairs;}else reason=plan.reason;}
   else reason='Shape morph is switched off.';
   const steps=[];for(let k=0;k<n;k++)steps.push({st:[],pl:[]});
   if(mode==='morph'){
     let failed=null;
     for(const [a,b] of pairs){
-      const r=generateBlend(a,b,{steps:n,colour:spec.colour,shape:true,pos:spec.pos,size:spec.size,rot:spec.rot});
+      const r=generateBlend(a,b,{steps:n,colour:spec.colour,shape:true,pos:posUse,size:spec.size,rot:spec.rot,ts:tl});
       if(r.error){failed=r.error;break;}
       const oa=strokeSettings(a).opacity;
       r.strokes.forEach((s,k)=>{
@@ -3206,12 +3384,17 @@ function objGenerate(A,B,spec){
   if(mode==='transform'){
     const oA=objOpacity(A),oB=objOpacity(B),cA=objDominantColour(A),cB=objDominantColour(B);
     const bothSingle=FA.single&&FB.single;let dr=0;if(bothSingle){dr=((FB.rot-FA.rot)%360+540)%360-180;}
+    const lerp=(x,y,t)=>x+(y-x)*t;
     for(let k=0;k<n;k++){
-      const t=(k+1)/(n+1),useA=t<0.5,E=useA?A:B,FE=useA?FA:FB,oE=useA?oA:oB;
-      const Ft={cx:spec.pos?FA.cx+(FB.cx-FA.cx)*t:FA.cx,cy:spec.pos?FA.cy+(FB.cy-FA.cy)*t:FA.cy,M:spec.size?FA.M*Math.pow(FB.M/FA.M,t):FA.M,rot:(spec.rot&&bothSingle)?FA.rot+dr*t:FA.rot};
-      const kk=Ft.M/FE.M,dth=(spec.rot&&bothSingle)?Ft.rot-FE.rot:0,c=Math.cos(dth*Math.PI/180),sn=Math.sin(dth*Math.PI/180);
+      const t=tl[k],useA=rep||t<0.5,E=useA?A:B,FE=useA?FA:FB,oE=useA?oA:oB;
+      let Mt=spec.size?FA.M*Math.pow(FB.M/FA.M,t):FA.M;
+      if(rep&&spec.size)Mt=FA.M*Math.max(0.01,lerp(1,(+rp.size||100)/100,t));
+      const Ft={cx:posUse?FA.cx+(FB.cx-FA.cx)*t:FA.cx,cy:posUse?FA.cy+(FB.cy-FA.cy)*t:FA.cy,M:Mt,rot:(spec.rot&&bothSingle)?FA.rot+dr*t:FA.rot};
+      const spin=(rep&&spec.rot)?(+rp.spin||0)*t:0;
+      const kk=Ft.M/FE.M,dth=((spec.rot&&bothSingle)?Ft.rot-FE.rot:0)+spin,c=Math.cos(dth*Math.PI/180),sn=Math.sin(dth*Math.PI/180);
       const map=(x,y)=>{const dx=(x-FE.cx)*kk,dy=(y-FE.cy)*kk;return {x:Ft.cx+dx*c-dy*sn,y:Ft.cy+dx*sn+dy*c};};
-      const f=spec.opacity&&oE>0?Math.max(0,(oA+(oB-oA)*t)/oE):1;
+      let f=spec.opacity&&oE>0?Math.max(0,(oA+(oB-oA)*t)/oE):1;
+      if(rep)f=spec.opacity?Math.max(0,lerp(1,(rp.op==null?100:+rp.op)/100,t)):1;
       const other=useA?cB:cA,shiftT=useA?t:1-t;
       E.st.forEach(src=>{
         const s=blendClone(src);delete s.groupId;delete s.shape;delete s.blendId;delete s.blendSpec;
@@ -3220,7 +3403,7 @@ function objGenerate(A,B,spec){
         s.settings=blendClone(strokeSettings(src));
         if(typeof s.settings.size==='number')s.settings.size=Math.max(0.1,s.settings.size*kk);
         if(typeof s.settings.opacity==='number')s.settings.opacity=Math.max(0,Math.min(100,s.settings.opacity*f));
-        if(spec.colour&&other){s.color=blendMixColour(s.color,other,shiftT);if(s.fillColor)s.fillColor=blendMixColour(s.fillColor,other,shiftT);}
+        if(spec.colour&&other&&!rep){s.color=blendMixColour(s.color,other,shiftT);if(s.fillColor)s.fillColor=blendMixColour(s.fillColor,other,shiftT);}
         steps[k].st.push(s);
       });
       E.pl.forEach(src=>{
@@ -3231,11 +3414,24 @@ function objGenerate(A,B,spec){
       });
     }
   }
-  return {mode,reason,steps,identical:false};
+  if(spots){ // move every step onto its place on the path (and turn it with the path)
+    const off=(+spec.path.rotOff||0)*Math.PI/180,tanOn=spec.path.tan!==false;
+    for(let k=0;k<n;k++){
+      const F=objFrame(steps[k]);if(!F)continue;
+      const pose=spots[k],phi=(tanOn?pose.ang:0)+off,c=Math.cos(phi),sn=Math.sin(phi);
+      const map=(x,y)=>{const dx=x-F.cx,dy=y-F.cy;return {x:pose.x+dx*c-dy*sn,y:pose.y+dx*sn+dy*c};};
+      steps[k].st.forEach(st=>transformStrokePoints(st,map));
+      steps[k].pl.forEach(p=>{const q=map(p.x,p.y);p.x=q.x;p.y=q.y;p.r=(p.r||0)+phi*180/Math.PI;});
+    }
+  }
+  let gap=null;if(spots&&spots.length>1){let t=0;for(let i=1;i<spots.length;i++)t+=Math.hypot(spots[i].x-spots[i-1].x,spots[i].y-spots[i-1].y);gap=t/(spots.length-1);}
+  return {mode,reason,steps,identical:false,n,capped,gap,len:guide?guide.P.tot:null,closed:guide?guide.P.closed:null};
 }
 function objSig(A,B,spec){
   const f=ep=>JSON.stringify([ep.st.map(s=>[s.id,s.color,s.fillColor,s.brushId,s.closed,s.settings&&s.settings.size,s.settings&&s.settings.opacity,s.points.length,s.points[0]&&Math.round(s.points[0].x*10),s.points[0]&&Math.round(s.points[0].y*10),s.points.length>1&&Math.round(s.points[s.points.length>>1].x*10),Math.round((s.points[s.points.length-1]||{x:0}).x*10),Math.round((s.points[s.points.length-1]||{y:0}).y*10)]),ep.pl.map(p=>[p.id,p.motifId,Math.round(p.x*10),Math.round(p.y*10),Math.round(p.s*1000),Math.round((p.r||0)*10),p.fx,p.fy,p.alpha])]);
-  let h=5381;const str=f(A)+'|'+f(B)+'|'+[spec.steps,spec.colour,spec.shape,spec.pos,spec.size,spec.rot,spec.opacity].join(',');
+  let h=5381;let gs='';
+  if(spec.path){const G=objGuide(spec);gs=G?JSON.stringify([G.g.closed,G.P.n,G.g.points.map(p=>Math.round(p.x*10)+','+Math.round(p.y*10)).join(';')]):'noguide';}
+  const str=f(A)+'|'+f(B)+'|'+[spec.steps,spec.colour,spec.shape,spec.pos,spec.size,spec.rot,spec.opacity].join(',')+'|'+JSON.stringify([spec.path||null,spec.rep||null])+'|'+gs;
   for(let i=0;i<str.length;i++)h=((h<<5)+h+str.charCodeAt(i))|0;return h+':'+str.length;
 }
 function objGenerated(id){return {st:strokes.filter(s=>s.oblendId===id),pl:placed.filter(p=>p.oblendId===id)};}
@@ -3245,7 +3441,7 @@ function objInstall(spec){
   if((!A.st.length&&!A.pl.length)||(!B.st.length&&!B.pl.length))return {error:'One of the two objects no longer exists.'};
   const old=objGenerated(spec.id),touched=new Set(old.st.map(s=>s.layerId));
   let clamped=false;const per=Math.max(1,(objPoints(A)+objPoints(B))/2);
-  if(per*spec.steps>OBJ_POINT_BUDGET){const cap=Math.max(1,Math.floor(OBJ_POINT_BUDGET/per));if(cap<spec.steps){spec={...spec,steps:cap};clamped=cap;}}
+  if(!spec.path&&per*spec.steps>OBJ_POINT_BUDGET){const cap=Math.max(1,Math.floor(OBJ_POINT_BUDGET/per));if(cap<spec.steps){spec={...spec,steps:cap};clamped=cap;}}
   const res=objGenerate(A,B,spec);if(res.error)return res;
   const sig=objSig(A,B,spec),full={...blendClone(spec),sig,mode:res.mode};
   strokes=strokes.filter(s=>s.oblendId!==spec.id);placed=placed.filter(p=>p.oblendId!==spec.id);
@@ -3259,7 +3455,7 @@ function objInstall(spec){
   if(gp.length)placed.splice(pIdx.length?Math.min(...pIdx)+1:placed.length,0,...gp);
   touched.forEach(id=>{if(layers.some(l=>l.id===id))rebuildLayer(id);});
   try{scheduleMotifHi();}catch(e){}
-  return {ok:true,mode:res.mode,reason:res.reason,count:gs.length+gp.length,steps:spec.steps,clamped,sig};
+  return {ok:true,mode:res.mode,reason:res.reason,count:gs.length+gp.length,steps:spec.steps,clamped:res.capped||clamped,sig,n:res.n,gap:res.gap,len:res.len,closed:res.closed,path:!!spec.path};
 }
 function objRemove(id){
   const g=objGenerated(id),touched=new Set(g.st.map(s=>s.layerId));
@@ -3276,6 +3472,10 @@ function refreshObjBlends(){
     const A=objResolve(spec.A),B=objResolve(spec.B);
     const strip=()=>{g.st.concat(g.pl).forEach(x=>{delete x.oblendId;delete x.oblendSpec;delete x.oblendStep;});changed=true;};
     if((!A.st.length&&!A.pl.length)||(!B.st.length&&!B.pl.length)){strip();return;}
+    if(spec.path&&!objGuide(spec)){ // the guide was deleted: the blend goes back to a straight blend between its two ends
+      const sp=blendClone(spec);delete sp.path;if(sp.rep){sp.B=sp.A;}delete sp.sig;
+      objInstall(sp);changed=true;setStatus('🌀 The path was deleted, so the blend is a straight blend again.');return;
+    }
     if(objSig(A,B,spec)===spec.sig)return;
     const r=objInstall(spec);
     if(r.error){setStatus('🌀 The blend could not update: '+r.error);return;}
@@ -3320,26 +3520,36 @@ function objCheckEndpoint(part){
   if(all.strokeIds.some(id=>{const s=strokes.find(x=>x.id===id);return s&&(s.blendId||s.oblendId);})||all.placedIds.some(id=>{const p=placed.find(x=>x.id===id);return p&&p.oblendId;}))return 'That already contains a blend (use Expand Blend first).';
   return null;
 }
-function objSpecOf(d){return {id:d.id,obj:true,A:d.A,B:d.B,steps:d.steps,colour:d.colour,shape:d.shape,pos:d.pos,size:d.size,rot:d.rot,opacity:d.opacity!==false,mode:'straight'};}
+function objSpecOf(d){return {id:d.id,obj:true,A:d.A,B:d.B,steps:d.steps,colour:d.colour,shape:d.shape,pos:d.pos,size:d.size,rot:d.rot,opacity:d.opacity!==false,path:d.path?blendClone(d.path):undefined,rep:d.rep?blendClone(d.rep):undefined,mode:'straight'};}
 function objModeNote(r){
   const n=$('blendModeNote');if(!n)return;
   if(!r||r.error){n.style.display='none';return;}
   n.style.display='block';
-  n.innerHTML=r.mode==='morph'
+  const pre=r.path?'📍 <b>Following the path.</b> ':'';
+  n.innerHTML=pre+(r.mode==='morph'
     ?'✅ <b>Shape morph</b> — the paths pair up, so each shape changes into the other point by point.'
-    :'↔️ <b>Transform blend</b> — position, size, turn, opacity and colour change gradually, but the shape does not morph'+(r.reason?': '+escapeHtml(r.reason):'.')+' Each step is a copy of the nearer original.';
+    :(r.reason&&r.reason.indexOf('Repeating')===0?'🔁 <b>Repeat</b> — every copy is the same shape; only size, turn and opacity change along the path.':'↔️ <b>Transform blend</b> — position, size, turn, opacity and colour change gradually, but the shape does not morph'+(r.reason?': '+escapeHtml(r.reason):'.')+' Each step is a copy of the nearer original.'));
 }
+let objLastInfo=null;
 function objUpdateNote(){
   const d=blendDraft;if(!d||!d.obj)return;
+  if(d.path){
+    const i=objLastInfo,p=d.path;
+    $('blendStepsLabel').textContent=p.count==='space'?'Copies (set by the spacing below)':(p.ends===false?'Copies between the ends of the path':'Copies along the path');
+    $('blendStepsNote').textContent=i&&i.n?(i.n+' cop'+(i.n===1?'y':'ies')+(i.gap?', about '+Math.round(i.gap)+' px apart along the path':'')+(i.closed?' (closed path: no copy is doubled at the join).':'.')):'';
+    return;
+  }
+  $('blendStepsLabel').textContent='Steps between the two (motifs / groups)';
   $('blendStepsNote').textContent=d.steps+' new cop'+(d.steps===1?'y':'ies')+' between the two ('+(d.steps+2)+' in total with the originals).';
 }
 function objPreview(){
   cancelAnimationFrame(blendRaf);
   blendRaf=requestAnimationFrame(()=>{
-    const d=blendDraft;if(!d||!d.obj||!d.B)return;
+    const d=blendDraft;if(!d||!d.obj||!d.B||(d.rep&&!d.path))return;
     const r=objInstall(objSpecOf(d));
     if(r.error){blendMsg(r.error+' Your originals are untouched.',true);objModeNote(null);return;}
-    blendMsg(r.clamped?'Steps limited to '+r.clamped+' to keep this artwork fast.':'');
+    objLastInfo=r;objUpdateNote();objSyncGuideHide(d);
+    blendMsg(r.clamped?'Limited to '+r.clamped+' copies to keep this artwork fast.':'');
     objModeNote(r);redraw();
   });
 }
@@ -3396,16 +3606,17 @@ function objPickHandle(e){
 }
 function objApply(){
   const d=blendDraft;if(!d||!d.B)return;
+  if(d.rep&&!d.path){blendMsg('Choose the path to repeat along first.',true);return;}
   blendReadControls();cancelAnimationFrame(blendRaf);
   const r=objInstall(objSpecOf(d));
   if(r.error){blendMsg(r.error,true);return;}
   closeBlendPanel();pushHist();redraw();
-  setStatus('🌀 '+(r.mode==='morph'?'Shape morph':'Transform blend')+' applied: '+r.count+' item'+(r.count===1?'':'s')+' added. Edit either original and the blend follows. Undo removes it in one step.');
+  setStatus('🌀 '+(r.path?'Path blend applied: '+r.count+' item'+(r.count===1?'':'s')+' placed along the path. Edit the path or either original and it follows. Undo removes it in one step. ':'')+(r.mode==='morph'?'Shape morph':'Transform blend')+' applied: '+r.count+' item'+(r.count===1?'':'s')+' added. Edit either original and the blend follows. Undo removes it in one step.');
 }
 function objCancel(){
   const d=blendDraft;cancelAnimationFrame(blendRaf);
-  if(d.existing){const r=objInstall(blendClone(d.backup));closeBlendPanel();redraw();setStatus(r&&r.error?'🌀 Cancelled.':'🌀 Cancelled. The blend is back as it was.');}
-  else{objRemove(d.id);closeBlendPanel();redraw();setStatus('🌀 Blend cancelled. Your originals are untouched.');}
+  if(d.existing){const r=objInstall(blendClone(d.backup));closeBlendPanel();try{objFixGuideVis();}catch(e){}redraw();setStatus(r&&r.error?'🌀 Cancelled.':'🌀 Cancelled. The blend is back as it was.');}
+  else{objRemove(d.id);closeBlendPanel();try{objFixGuideVis();}catch(e){}redraw();setStatus('🌀 Blend cancelled. Your originals are untouched.');}
 }
 function objExpand(){
   const d=blendDraft;if(!d||!d.existing)return;
@@ -3423,6 +3634,93 @@ function objSwap(){
   const d=blendDraft;if(!d||!d.B)return;
   const t=d.A;d.A=d.B;d.B=t;blendReadControls();objPreview();setStatus('🌀 Direction reversed.');
 }
+
+// ---- Blend along a path: controller ----
+let blendPathArmed=false;
+function objHiddenGuides(){
+  const ids=new Set();
+  strokes.forEach(s=>{if(s.oblendSpec&&s.oblendSpec.path&&s.oblendSpec.path.hide)ids.add(s.oblendSpec.path.gid);});
+  placed.forEach(p=>{if(p.oblendSpec&&p.oblendSpec.path&&p.oblendSpec.path.hide)ids.add(p.oblendSpec.path.gid);});
+  return ids;
+}
+function objFixGuideVis(){try{txRefresh();}catch(e){}}
+function objSyncGuideHide(){objFixGuideVis();}
+// A plain two-shape blend turns into an object blend the moment a path is wanted (same morph, plus the path controls).
+function blendToObj(withB){
+  const d=blendDraft;if(!d||d.obj||d.existing)return false;
+  cancelAnimationFrame(blendRaf);
+  const A=strokes.find(s=>s.id===d.aId);
+  strokes=strokes.filter(s=>s.blendId!==d.id);
+  layers.forEach(l=>rebuildLayer(l.id));
+  blendDraft={id:d.id,obj:true,A:{gid:null,s:[d.aId],p:[]},B:(withB&&d.bId)?{gid:null,s:[d.bId],p:[]}:null,aId:'obj-a',bId:(withB&&d.bId)?'obj-b':null,
+    steps:d.steps,colour:d.colour,shape:d.shape,pos:d.pos,size:d.size,rot:d.rot,opacity:true,mode:'straight',existing:false};
+  objShowControls(true);
+  return true;
+}
+function blendPathArm(on){
+  blendPathArmed=!!on;
+  $('blendPathPick').classList.toggle('active',!!on);
+  if(on)setStatus('〰️ Tap the line, curve or shape the blend should follow.');
+}
+function blendPathPickAt(x,y){
+  const p=screenToCanvas(x,y),locked=new Set(layers.filter(l=>l.locked).map(l=>l.id));
+  const mine=new Set([...objIds(objResolve(blendDraft.A)),...(blendDraft.B?objIds(objResolve(blendDraft.B)):[])]);
+  let best=null,bd=Infinity;
+  for(let i=strokes.length-1;i>=0;i--){
+    const s=strokes[i];
+    if(s.text||s.regions||s.outlined||s.guideHidden&&s.id!==(blendDraft.path&&blendDraft.path.gid)||s.fillColor&&!s.closed&&!s.points.length||locked.has(s.layerId)||s.blendId||s.oblendId||!s.points||s.points.length<2||mine.has(s.id))continue;
+    const d=distanceToPolyline(p.x,p.y,s.points);if(d<Math.max(18,((strokeSettings(s).size)||6)/2+14)&&d<bd){bd=d;best=s;}
+  }
+  return best;
+}
+function blendSetPath(g){
+  const d=blendDraft,old=d.path;
+  d.path=old?{...old,gid:g.id}:{gid:g.id,count:'steps',space:60,ends:true,s0:0,e0:0,tan:true,rotOff:0,rev:false,hide:false};
+  if(!old&&d.steps<=8)d.steps=d.rep?12:10;
+  blendPathArm(false);blendWriteControls();blendShowPanel();objPreview();
+  setStatus('〰️ The blend follows the path. Change the number of copies, spacing, start gap or direction below, then tap Apply.');
+}
+$('blendPathPick').addEventListener('click',()=>{
+  const d=blendDraft;if(!d)return;
+  if(d.existing&&!d.obj){blendMsg('This blend was made the older way, so it cannot follow a path. Tap Expand Blend, or Cancel and start a new blend from the two shapes.',true);return;}
+  if(!d.obj){if(!d.bId){blendMsg('Pick the second shape first, or use “repeat just this one”.',true);return;}blendToObj(true);blendWriteControls();blendShowPanel();objPreview();}
+  blendPathArm(!blendPathArmed);
+});
+$('blendRepeatBtn').addEventListener('click',()=>{
+  if(!blendDraft)return;
+  if(!blendDraft.obj)blendToObj(false);
+  const d=blendDraft;blendPickArmed=false;
+  d.B0=d.B;d.B=d.A;d.bId='obj-b';d.rep={size:100,op:100,spin:0};d.shape=false;
+  blendWriteControls();blendMsg('');blendShowPanel();blendPathArm(true);
+});
+$('blendPOff').addEventListener('click',()=>{
+  const d=blendDraft;if(!d||!d.obj||!d.path)return;
+  cancelAnimationFrame(blendRaf);d.path=null;
+  if(d.rep){ // nothing left to repeat along: back to choosing a second shape
+    d.rep=null;d.B=d.B0||null;d.bId=d.B?'obj-b':null;d.shape=true;objRemove(d.id);blendPickArmed=!d.B;
+    blendWriteControls();blendShowPanel();objFixGuideVis();redraw();objModeNote(null);setStatus('🌀 Back to a blend between two shapes. Tap the second one.');
+  }else{blendWriteControls();objPreview();objFixGuideVis();setStatus('🌀 The blend goes straight between the two again.');}
+});
+$('blendPEdit').addEventListener('click',()=>{
+  const d=blendDraft;if(!d||!d.obj||!d.path)return;
+  const gid=d.path.gid;d.path.hide=false;
+  objApply();
+  const g=strokes.find(s=>s.id===gid);if(!g)return;
+  if(mode!=='edit')$('editModeBtn').click();
+  selectedStrokeId=g.id;syncStrokeSelectionUI();redraw();
+  setStatus('〰️ Path selected. Reshape it and the blend follows. Tap the blend’s copies and Blend to change settings.');
+});
+['blendPCount','blendPSpace','blendPEnds','blendPS0','blendPE0','blendPTan','blendPRot','blendPRev','blendPHide','blendRepSize','blendRepOp','blendRepSpin'].forEach(id=>{
+  const ev=(id==='blendPCount'||id==='blendPEnds'||id==='blendPTan'||id==='blendPRev'||id==='blendPHide')?'change':'input';
+  $(id).addEventListener(ev,()=>{blendReadControls();if(id==='blendPCount')blendSyncPathUI();blendPreview();});
+});
+wrap.addEventListener('pointerdown',e=>{
+  if(!blendDraft||!blendPathArmed||(e.target!==canvas&&e.target!==wrap&&e.target.id!=='detailCanvas'&&e.target.id!=='pathOverlay'))return;
+  e.preventDefault();e.stopPropagation();
+  const g=blendPathPickAt(e.clientX,e.clientY);
+  if(!g){blendMsg('No line there. Tap directly on a path, curve or shape outline (not one of the shapes being blended).',true);return;}
+  blendMsg('');blendSetPath(g);
+},true);
 
 $('drawModeBtn').addEventListener('click',()=>{if(blendDraft)blendCancel();});
 
@@ -7131,6 +7429,9 @@ function svgStrokeOutline(stroke,settings,brush){
   return {d,opacity};
 }
 function svgStrokeMarkup(stroke,clipIds){
+  if(stroke.guideHidden)return '';
+  if(stroke.text)return txSvgText(stroke);
+  if(stroke.outlined&&stroke.regions&&stroke.fillColor)return txSvgOutlined(stroke);
   if(stroke.brushId==='eraser')return '';
   const brush=BrushEngine.getBrush(stroke.brushId),settings=stroke.settings||BrushEngine.getSettings(stroke.brushId);
   let clip='';
@@ -7169,7 +7470,7 @@ function buildSvgExport(size){
     li++;const id='art-'+li;
     out.push('<g id="layer-'+li+'" data-name="'+svgEsc(layer.name)+'" inkscape:groupmode="layer" inkscape:label="'+svgEsc(layer.name)+'"'+(layer.opacity<100?' opacity="'+svgNum(layer.opacity/100)+'"':'')+'><g id="'+id+'">'+body+'</g>'+useCopies(id)+'</g>');
   });
-  return '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="'+size+'" height="'+size+'" viewBox="0 0 '+TILE+' '+TILE+'">\n<defs>'+defs.join('')+'<clipPath id="tile"><rect x="0" y="0" width="'+TILE+'" height="'+TILE+'"/></clipPath></defs>\n<g clip-path="url(#tile)"><g transform="translate('+(-C)+' '+(-C)+')">\n'+out.join('\n')+'\n</g></g>\n</svg>\n';
+  return '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="'+size+'" height="'+size+'" viewBox="0 0 '+TILE+' '+TILE+'">\n<defs>'+(txSvgCss?'<style>'+txSvgCss+'</style>':'')+defs.join('')+'<clipPath id="tile"><rect x="0" y="0" width="'+TILE+'" height="'+TILE+'"/></clipPath></defs>\n<g clip-path="url(#tile)"><g transform="translate('+(-C)+' '+(-C)+')">\n'+out.join('\n')+'\n</g></g>\n</svg>\n';
 }
 let svgSize=3600;try{const v=+localStorage.getItem('sp-svgSize');if(v>=64&&v<=20000)svgSize=Math.round(v);}catch(e){}
 function saveFileBlob(blob,name){
@@ -7181,7 +7482,8 @@ $('exportSvgBtn').onclick=e=>{e.stopPropagation();syncSvgSizeUI();$('svgPopover'
 $('svgCloseBtn').onclick=()=>$('svgPopover').classList.remove('open');
 document.querySelectorAll('#svgPopover .svg-preset').forEach(b=>b.onclick=()=>{svgSize=+b.dataset.size;syncSvgSizeUI();});
 $('svgSizeInput').oninput=e=>{const v=Math.round(+e.target.value);if(v>=64&&v<=20000){svgSize=v;document.querySelectorAll('#svgPopover .svg-preset').forEach(b=>b.classList.toggle('active',+b.dataset.size===svgSize));}};
-$('svgSaveBtn').onclick=()=>{
+$('svgSaveBtn').onclick=async()=>{
+  try{await txPrepareSvg();}catch(e){console.warn(e);}
   const v=Math.round(+$('svgSizeInput').value);
   if(!(v>=64&&v<=20000)){setStatus('⚠️ SVG size must be between 64 and 20000 px.');return;}
   svgSize=v;try{localStorage.setItem('sp-svgSize',String(v));}catch(e){}
@@ -7436,7 +7738,7 @@ async function runBrushSetExport(kind){
 $('brushSetBtn').onclick=()=>runBrushSetExport('brushset');
 $('brushFilesBtn').onclick=()=>runBrushSetExport('brushes');
 $('brushPngPackBtn').onclick=()=>runBrushSetExport('png');
-$('exportBtn').onclick=()=>{updateComposite();const out=document.createElement('canvas');out.width=TILE;out.height=TILE;const o=out.getContext('2d');o.fillStyle='#fff';o.fillRect(0,0,TILE,TILE);if(bgImg&&bgShown){o.save();o.globalAlpha=bgOpacity;o.drawImage(bgImg,0,0,TILE,TILE);o.restore();}// Seamless export: the tile also receives the parts of its eight neighbouring repeats that spill
+$('exportBtn').onclick=async()=>{try{await txReady();}catch(e){}updateComposite();const out=document.createElement('canvas');out.width=TILE;out.height=TILE;const o=out.getContext('2d');o.fillStyle='#fff';o.fillRect(0,0,TILE,TILE);if(bgImg&&bgShown){o.save();o.globalAlpha=bgOpacity;o.drawImage(bgImg,0,0,TILE,TILE);o.restore();}// Seamless export: the tile also receives the parts of its eight neighbouring repeats that spill
   // over its edges (same lattice as the on-screen repeat), so anything crossing an edge wraps round.
   const wrapOffs=[[0,0]];for(let ix=-1;ix<=1;ix++)for(let iy=-1;iy<=1;iy++){if(ix||iy)wrapOffs.push(tilePos(ix,iy));}
   wrapOffs.forEach(([ox,oy])=>o.drawImage(compositeCanvas,0,0,W,H,ox-C,oy-C,W,H));
@@ -7570,6 +7872,7 @@ function buildDocObject(){
     traceLocked,
     traceSource:traceSource?{name:traceSource.name,src:traceSource.src,settings:traceSource.settings||null}:null,
     customBrushes:serialCustomDefs(),
+    fonts:(()=>{try{return txEmbeds||[];}catch(e){return [];}})(),
     layout,activeTemplate,
     savedPalettes:savedPalettes.map(p=>({id:p.id,name:p.name,hexes:p.hexes.slice()})),
     format:'sketchpad-project',version:2,projectName:(typeof activeProject!=='undefined'&&activeProject)?activeProject.name:null,
@@ -8106,6 +8409,7 @@ async function applyDocObject(doc){
     renderTray();
     // Strokes must be parsed BEFORE applyLayerMeta, since migrating strokes with no valid
     // layerId onto the fallback layer (old, pre-layers documents) happens inside it.
+    try{await txPreLoad(doc);}catch(e){}
     strokes=JSON.parse(doc.strokesJSON||'[]');
     applyLayerMeta(doc.layersJSON?JSON.parse(doc.layersJSON):[],doc.activeLayerId);
     rebuildAllLayers();
@@ -9675,6 +9979,624 @@ window.__sketchpadLayerAlphaNear=(layerId,x,y,radius)=>{
   for(let i=3;i<data.length;i+=4)if(data[i]>max)max=data[i];
   return max;
 };
+// ============================ Text & fonts (see IPAD.md, v129) ============================
+// A text object is an ordinary stroke that carries `text`: its four corner points are the text box, so selection, move / resize / rotate,
+// layers, groups, duplicate, undo/redo and project saving all work through the existing stroke code. `text` holds wording and style.
+// Fonts come from SPFonts (fonts.js). Text is drawn as real vector text into the layers' hi-res canvases, so it stays crisp when zooming.
+// Convert to outlines traces the drawn letters into one compound fill shape (works for every font, including ones with alternates).
+const txMc=document.createElement('canvas').getContext('2d');
+const TX_LS=('letterSpacing' in txMc);
+let txStamp=0,txToolOn=false,txCommitT=0,txPanelId=null,txPickGuide=false,txPicker=null,txEmbeds=[],txEmbedSig='',txSvgCss='';
+const txMeasureCache=new Map(),txSigs=new Map(),txGeoCache=new WeakMap();
+function txFontOf(t){return {src:t.font.src,family:t.font.family,weight:t.weight||400,italic:!!t.italic};}
+function txCss(t,size){return SPFonts.cssFont(txFontOf(t),size);}
+function txLines(t){return String(t.str==null?'':t.str).split('\n');}
+function txMeasure(t){
+  const key=[t.str,t.font.src,t.font.family,t.weight,t.italic,t.size,t.ls||0,t.lh||1.2,txStamp].join('\u0001');
+  let r=txMeasureCache.get(key);if(r)return r;
+  const c=txMc;c.font=txCss(t,t.size);if(TX_LS)c.letterSpacing='0px';
+  const ls=t.ls||0,lines=txLines(t);
+  const ws=lines.map(s=>{if(!s)return 0;const n=Array.from(s).length;return c.measureText(s).width+ls*(n-1);});
+  const fm=c.measureText('Hg');
+  const asc=fm.fontBoundingBoxAscent||t.size*.8,desc=fm.fontBoundingBoxDescent||t.size*.2,lh=t.size*(t.lh||1.2);
+  r={lines,ws,bw:Math.max(1,Math.max.apply(null,ws)),bh:Math.max(1,lh*lines.length),lh,asc,desc};
+  if(txMeasureCache.size>300)txMeasureCache.clear();
+  txMeasureCache.set(key,r);return r;
+}
+function txDrawLines(ctx,t,m){
+  ctx.font=txCss(t,t.size);ctx.textBaseline='alphabetic';ctx.textAlign='left';
+  const ls=t.ls||0;if(TX_LS)ctx.letterSpacing=ls+'px';
+  m.lines.forEach((s,i)=>{
+    if(!s)return;
+    const y=i*m.lh+m.lh/2+(m.asc-m.desc)/2;
+    const x=t.align==='center'?(m.bw-m.ws[i])/2:t.align==='right'?(m.bw-m.ws[i]):0;
+    if(TX_LS||!ls)ctx.fillText(s,x,y);
+    else{let cx=x;for(const ch of Array.from(s)){ctx.fillText(ch,cx,y);cx+=ctx.measureText(ch).width+ls;}}
+  });
+}
+// ---- the box <-> transform ----
+function txFrame(st){const p=st.points,t=st.text,bw=t.bw||1,bh=t.bh||1;return [(p[1].x-p[0].x)/bw,(p[1].y-p[0].y)/bw,(p[3].x-p[0].x)/bh,(p[3].y-p[0].y)/bh,p[0].x,p[0].y];}
+function txSetFrame(st,M,bw,bh){
+  const ap=(x,y)=>({x:M[0]*x+M[2]*y+M[4],y:M[1]*x+M[3]*y+M[5],pressure:1});
+  const q=[ap(0,0),ap(bw,0),ap(bw,bh),ap(0,bh)];st.points=q.concat([{...q[0]}]);
+}
+// Re-measure and rebuild the box. Any resize done with the handles is folded into the font size, so the Size slider always tells the truth.
+function txRelayout(st,anchor){
+  const t=st.text;
+  if(t.path){txSyncHull(st);return;}
+  const old=txFrame(st),obw=t.bw||1;
+  let ux=old[0],uy=old[1],vx=old[2],vy=old[3];
+  const s=Math.hypot(ux,uy)||1;
+  if(Math.abs(s-1)>1e-4){t.size=Math.max(1,t.size*s);t.ls=(t.ls||0)*s;ux/=s;uy/=s;vx/=s;vy/=s;}
+  const m=txMeasure(t),ax=anchor!=null?anchor:(t.align==='center'?.5:t.align==='right'?1:0);
+  const px=old[0]*ax*obw+old[4],py=old[1]*ax*obw+old[5];
+  t.bw=m.bw;t.bh=m.bh;
+  txSetFrame(st,[ux,uy,vx,vy,px-ux*ax*m.bw,py-uy*ax*m.bw],m.bw,m.bh);
+}
+// ---- guide path geometry (text on a path) ----
+function txGeom(g){
+  const key=g.nodes||g.points,sig=key.length+'|'+g.closed+'|'+(g.points[0]?g.points[0].x+','+g.points[0].y:'')+'|'+(g.points.length?g.points[g.points.length-1].x+','+g.points[g.points.length-1].y:'');
+  let c=txGeoCache.get(key);if(c&&c.sig===sig)return c;
+  const pts=(g.nodes&&g.nodes.length>1)?nodesToPoints(g.nodes,!!g.closed,40):g.points,P=[];
+  pts.forEach(p=>{const q=P[P.length-1];if(!q||Math.hypot(p.x-q.x,p.y-q.y)>0.05)P.push({x:p.x,y:p.y});});
+  const closed=!!g.closed;
+  if(closed&&P.length>2&&Math.hypot(P[0].x-P[P.length-1].x,P[0].y-P[P.length-1].y)<0.5)P.pop();
+  c=txMakeGeom(P,closed);c.sig=sig;txGeoCache.set(key,c);return c;
+}
+function txMakeGeom(P,closed){
+  const m=closed?P.length:P.length-1,cum=[0];
+  for(let i=0;i<m;i++){const a=P[i],b=P[(i+1)%P.length];cum.push(cum[i]+Math.hypot(b.x-a.x,b.y-a.y));}
+  return {P,closed,cum,len:cum[cum.length-1]};
+}
+function txRevGeom(G){return txMakeGeom(G.P.slice().reverse(),G.closed);}
+function txPosAt(G,s){
+  if(G.closed)s=((s%G.len)+G.len)%G.len;else s=Math.max(0,Math.min(G.len,s));
+  let lo=0,hi=G.cum.length-1;while(hi-lo>1){const mid=(lo+hi)>>1;if(G.cum[mid]<=s)lo=mid;else hi=mid;}
+  const a=G.P[lo],b=G.P[(lo+1)%G.P.length],sg=(G.cum[hi]-G.cum[lo])||1e-9,f=(s-G.cum[lo])/sg;
+  return {x:a.x+(b.x-a.x)*f,y:a.y+(b.y-a.y)*f};
+}
+// Glyph positions for text on a path. Reverse = run the other way along the path; Flip = hang the text on the other side of it.
+function txPathGlyphs(st){
+  const t=st.text,pa=t.path,g=pa&&strokes.find(s=>s.id===pa.gid);if(!g||!g.points||g.points.length<2||g.regions)return null;
+  let G=txGeom(g);if(!(G.len>1))return null;if(pa.rev)G=txRevGeom(G);
+  const m=txMeasure(t),c=txMc;c.font=txCss(t,t.size);if(TX_LS)c.letterSpacing='0px';
+  const ls=t.ls||0,out=[],capH=t.size*0.72;let over=0;
+  m.lines.forEach((line,li)=>{
+    const chars=Array.from(line);if(!chars.length)return;
+    let s0=(pa.off||0)*G.len;if(pa.align==='center')s0-=m.ws[li]/2;else if(pa.align==='end')s0-=m.ws[li];
+    let prefix='';
+    chars.forEach((ch,k)=>{
+      const w=c.measureText(ch).width;prefix+=ch;
+      const x=c.measureText(prefix).width-w+ls*k,sc=s0+x+w/2;
+      if(!G.closed&&(sc<0||sc>G.len)){over++;return;}
+      const half=Math.max(w/2,0.5),p1=txPosAt(G,sc-half),p2=txPosAt(G,sc+half),pc=txPosAt(G,sc);
+      const ang=Math.atan2(p2.y-p1.y,p2.x-p1.x),ux=Math.sin(ang),uy=-Math.cos(ang);
+      const off=pa.flip?-(capH+(pa.dist||0)+li*m.lh):((pa.dist||0)-li*m.lh);
+      out.push({ch,w,x:pc.x+ux*off,y:pc.y+uy*off,ang});
+    });
+  });
+  return {glyphs:out,m,over,len:G.len};
+}
+function txSyncHull(st){
+  const r=txPathGlyphs(st);if(!r){return false;}
+  let x0=1e12,y0=1e12,x1=-1e12,y1=-1e12;
+  r.glyphs.forEach(g=>{const c=Math.cos(g.ang),s=Math.sin(g.ang);[[-g.w/2,-r.m.asc],[g.w/2,-r.m.asc],[g.w/2,r.m.desc],[-g.w/2,r.m.desc]].forEach(q=>{const X=g.x+q[0]*c-q[1]*s,Y=g.y+q[0]*s+q[1]*c;if(X<x0)x0=X;if(X>x1)x1=X;if(Y<y0)y0=Y;if(Y>y1)y1=Y;});});
+  if(x0>x1){const p=txPosAt(txGeom(strokes.find(s=>s.id===st.text.path.gid)),0);x0=p.x-10;x1=p.x+10;y0=p.y-10;y1=p.y+10;}
+  st.points=[{x:x0,y:y0},{x:x1,y:y0},{x:x1,y:y1},{x:x0,y:y1},{x:x0,y:y0}].map(p=>({x:p.x,y:p.y,pressure:1}));
+  st.text.bw=Math.max(1,x1-x0);st.text.bh=Math.max(1,y1-y0);
+  return r;
+}
+// ---- drawing ----
+function txRender(ctx,st,alphaMul){
+  const t=st.text;if(!t||!t.font)return;
+  ctx.save();
+  ctx.globalAlpha=(alphaMul==null?1:alphaMul)*(t.opacity==null?1:t.opacity);
+  ctx.fillStyle=st.color||'#000000';
+  try{
+    if(t.path){
+      const r=txPathGlyphs(st);
+      if(r){ctx.font=txCss(t,t.size);ctx.textBaseline='alphabetic';ctx.textAlign='left';r.glyphs.forEach(g=>{ctx.save();ctx.translate(g.x,g.y);ctx.rotate(g.ang);ctx.fillText(g.ch,-g.w/2,0);ctx.restore();});}
+    }else{
+      const M=txFrame(st);ctx.transform(M[0],M[1],M[2],M[3],M[4],M[5]);txDrawLines(ctx,t,txMeasure(t));
+    }
+  }finally{ctx.restore();}
+}
+function txFillRegions(ctx,stroke,alphaMul){
+  ctx.save();ctx.globalAlpha=(alphaMul==null?1:alphaMul)*(stroke.fillOpacity!=null?stroke.fillOpacity:1);ctx.fillStyle=stroke.fillColor;
+  ctx.beginPath();
+  stroke.regions.forEach(r=>{if(!r||r.length<3)return;ctx.moveTo(r[0].x,r[0].y);for(let i=1;i<r.length;i++)ctx.lineTo(r[i].x,r[i].y);ctx.closePath();});
+  ctx.fill('evenodd');ctx.restore();
+}
+// ---- fonts in use / readiness ----
+function txTexts(){return strokes.filter(s=>s.text&&s.text.font);}
+function txFontsInStrokes(list){const seen={},out=[];list.forEach(s=>{if(!s.text||!s.text.font)return;const f=txFontOf(s.text),k=f.src+'|'+f.family+'|'+f.weight+'|'+(f.italic?1:0);if(!seen[k]){seen[k]=1;out.push(f);}});return out;}
+function txUsedFonts(){return txFontsInStrokes(strokes);}
+function txMissing(){const seen={},out=[];txUsedFonts().forEach(f=>{if(!SPFonts.has(f)){const k=f.src+'|'+f.family;if(!seen[k]){seen[k]=1;out.push(f);}}});return out;}
+let txReadyBusy=null;const txLoaded=new Set();
+function txKey(f){return f.src+'|'+f.family+'|'+(f.weight||400)+'|'+(f.italic?1:0);}
+// Loads every font the artwork uses, then re-measures and redraws (measuring before a font has loaded gives the wrong size).
+function txReady(){
+  if(txReadyBusy)return txReadyBusy;
+  txReadyBusy=(async()=>{
+    try{
+      await SPFonts.init();
+      const fonts=txUsedFonts().filter(f=>SPFonts.has(f)),fresh=fonts.filter(f=>!txLoaded.has(txKey(f)));
+      if(fresh.length){
+        await SPFonts.ensureAll(fresh);fresh.forEach(f=>txLoaded.add(txKey(f)));txStamp++;
+        const touched=new Set();
+        txTexts().forEach(s=>{try{txRelayout(s);}catch(e){}touched.add(s.layerId);});
+        touched.forEach(id=>rebuildLayer(id));redraw();
+      }
+    }catch(e){console.warn('[text] fonts not ready',e);}
+    txReadyBusy=null;txRefreshMissing();
+  })();
+  return txReadyBusy;
+}
+function txRefreshEmbeds(){
+  const used=txUsedFonts().filter(f=>f.src!=='bundled'),sig=JSON.stringify(used);
+  if(sig===txEmbedSig)return;
+  SPFonts.embedFor(used).then(r=>{txEmbeds=r;txEmbedSig=sig;}).catch(()=>{});
+}
+async function txPreLoad(doc){
+  try{
+    await SPFonts.init();
+    if(doc.fonts&&doc.fonts.length)await SPFonts.restoreEmbedded(doc.fonts);
+    const list=txFontsInStrokes(JSON.parse(doc.strokesJSON||'[]')).filter(f=>SPFonts.has(f));
+    if(list.length){await SPFonts.ensureAll(list);list.forEach(f=>txLoaded.add(txKey(f)));txStamp++;}
+  }catch(e){console.warn('[text] preload',e);}
+  setTimeout(()=>{txRefreshMissing();txRefreshEmbeds();},60);
+}
+function txRefreshMissing(){
+  let bar=$('txMissBar');
+  const miss=txMissing();
+  if(!miss.length){if(bar)bar.style.display='none';return;}
+  if(!bar){
+    bar=document.createElement('div');bar.id='txMissBar';
+    bar.innerHTML='<span id="txMissTxt"></span> <button type="button" class="btn mini" id="txMissFix">Fix…</button> <button type="button" class="btn mini" id="txMissHide">✕</button>';
+    document.body.appendChild(bar);
+    $('txMissFix').onclick=()=>txOpenPicker({replaceMissing:true});
+    $('txMissHide').onclick=()=>{bar.style.display='none';};
+  }
+  $('txMissTxt').textContent='⚠️ Missing font'+(miss.length>1?'s':'')+': '+miss.map(f=>f.family+(f.src==='import'?' (imported)':f.src==='google'?' (Google)':'')).join(', ')+'. Your text keeps its font name and is shown in a stand-in until you import or download it.';
+  bar.style.display='flex';
+}
+// ---- creating and editing ----
+function txDefaults(){
+  let d={};try{d=JSON.parse(localStorage.getItem('sp-textDef')||'{}')||{};}catch(e){}
+  return Object.assign({font:{src:'bundled',family:'Lora'},weight:400,italic:false,size:96,align:'left',ls:0,lh:1.2,opacity:1},d);
+}
+function txSaveDefaults(t){try{localStorage.setItem('sp-textDef',JSON.stringify({font:t.font,weight:t.weight,italic:t.italic,size:Math.round(t.size),align:t.align,ls:t.ls,lh:t.lh,opacity:t.opacity}));}catch(e){}}
+function txSelected(){const s=strokes.find(x=>x.id===selectedStrokeId);return s&&s.text?s:null;}
+function txStartTool(){
+  const l=layers.find(x=>x.id===activeLayerId);
+  if(!l||l.locked){setStatus('🔒 The active layer is locked. Unlock it or pick another layer to add text.');return;}
+  txToolOn=true;document.body.classList.add('tx-armed');
+  setStatus('🔤 Tap the canvas where the text should go. (Tap the Text button again to cancel.)');
+}
+function txStopTool(){txToolOn=false;document.body.classList.remove('tx-armed');}
+async function txCreateAt(x,y){
+  txStopTool();
+  const d=txDefaults();
+  if(!SPFonts.has({src:d.font.src,family:d.font.family}))d.font={src:'bundled',family:'Lora'};
+  const t={str:'Your text',font:d.font,weight:d.weight,italic:d.italic,size:d.size,align:d.align,ls:d.ls,lh:d.lh,opacity:d.opacity,bw:1,bh:1,path:null};
+  await SPFonts.ensure(txFontOf(t));txStamp++;
+  const m=txMeasure(t);t.bw=m.bw;t.bh=m.bh;
+  const st={id:crypto.randomUUID(),brushId:activeBrushId,layerId:activeLayerId,atop:false,color:currentColor,settings:Object.assign({},currentSettings()),points:[],nodes:null,closed:true,clipStrokeId:null,shape:null,text:t};
+  txSetFrame(st,[1,0,0,1,x-m.bw/2,y-m.bh/2],m.bw,m.bh);
+  strokes.push(st);rebuildLayer(st.layerId);
+  if(mode!=='edit')$('editModeBtn').click();
+  selectedStrokeId=st.id;txPanelId=null;
+  syncStrokeSelectionUI();redraw();pushHist();txRefreshEmbeds();
+  txOpenPanel(true);
+}
+function txApply(st,opts){
+  opts=opts||{};
+  if(opts.relayout!==false)txRelayout(st,opts.anchor);
+  rebuildLayer(st.layerId);redraw();try{updatePaintBBoxOverlay();}catch(e){}
+  txSaveDefaults(st.text);
+  clearTimeout(txCommitT);txCommitT=setTimeout(txCommit,600);
+}
+function txCommit(){
+  if(!txCommitT)return;clearTimeout(txCommitT);txCommitT=0;
+  pushHist();txRefreshEmbeds();
+}
+function txDelete(st){
+  strokes=strokes.filter(s=>s.id!==st.id);rebuildLayer(st.layerId);selectedStrokeId=null;
+  $('textPanel').style.display='none';txPanelId=null;syncStrokeSelectionUI();redraw();pushHist();
+}
+// Called by pushHist: keeps path text glued to its guide and folds handle-resizes into the font size.
+function txRefresh(){
+  const texts=txTexts();let changed=false;
+  const hidden=new Set();
+  texts.forEach(st=>{
+    const t=st.text,pa=t.path;
+    if(pa){
+      const g=strokes.find(s=>s.id===pa.gid);
+      if(!g||g.regions||!g.points||g.points.length<2){ // guide deleted: the text goes back to a straight line where it was
+        t.path=null;if(t.frame0){const f=t.frame0;st.points=f.points.map(p=>({...p}));t.bw=f.bw;t.bh=f.bh;}
+        delete t.frame0;txSigs.delete(st.id);rebuildLayer(st.layerId);changed=true;setStatus('🔤 The guide path was deleted, so the text is a straight line again.');return;
+      }
+      if(pa.hide)hidden.add(g.id);
+      const r=txSyncHull(st);
+      const sig=r?r.glyphs.map(q=>Math.round(q.x*10)+','+Math.round(q.y*10)+','+Math.round(q.ang*1000)).join(';')+'|'+t.str+t.size+st.color+t.opacity+t.font.family+t.weight:'none';
+      if(txSigs.get(st.id)!==sig){txSigs.set(st.id,sig);rebuildLayer(st.layerId);changed=true;}
+    }else{
+      const old=txFrame(st);
+      if(Math.abs(Math.hypot(old[0],old[1])-1)>1e-3){txRelayout(st);rebuildLayer(st.layerId);changed=true;}
+    }
+  });
+  try{objHiddenGuides().forEach(id=>hidden.add(id));}catch(e){}
+  strokes.forEach(g=>{ // a guide stays hidden only while its text (or blend) still asks for it
+    if(!g.guideHidden)return;
+    if(!hidden.has(g.id)||g.guideHidden!==true&&!texts.some(x=>x.id===g.guideHidden)&&!objHiddenGuides().has(g.id)){delete g.guideHidden;rebuildLayer(g.layerId);changed=true;}
+  });
+  hidden.forEach(id=>{const g=strokes.find(s=>s.id===id);if(g&&!g.guideHidden){g.guideHidden=true;rebuildLayer(g.layerId);changed=true;}});
+  if(changed)redraw();
+  return changed;
+}
+// ---- tracing: Convert to outlines ----
+function txTraceLoops(drawFn,bx,by,w,h,k){
+  const cw=Math.ceil(w*k)+6,ch=Math.ceil(h*k)+6,cv=document.createElement('canvas');cv.width=cw;cv.height=ch;
+  const c=cv.getContext('2d',{willReadFrequently:true});c.setTransform(k,0,0,k,-bx*k+3,-by*k+3);drawFn(c);
+  const d=c.getImageData(0,0,cw,ch).data,A=new Float32Array(cw*ch);for(let i=0;i<A.length;i++)A[i]=d[i*4+3]/255;
+  const segs=[],adj=new Map();
+  const hId=(x,y)=>(y*cw+x)*2,vId=(x,y)=>(y*cw+x)*2+1;
+  const add=(a,b)=>{const i=segs.length;segs.push([a,b]);(adj.get(a)||adj.set(a,[]).get(a)).push(i);(adj.get(b)||adj.set(b,[]).get(b)).push(i);};
+  for(let y=0;y<ch-1;y++)for(let x=0;x<cw-1;x++){
+    const tl=A[y*cw+x]>=.5,tr=A[y*cw+x+1]>=.5,br=A[(y+1)*cw+x+1]>=.5,bl=A[(y+1)*cw+x]>=.5;
+    const cs=(tl?1:0)|(tr?2:0)|(br?4:0)|(bl?8:0);if(cs===0||cs===15)continue;
+    const T=hId(x,y),B=hId(x,y+1),L=vId(x,y),R=vId(x+1,y);
+    switch(cs){
+      case 1:add(L,T);break;case 2:add(T,R);break;case 3:add(L,R);break;case 4:add(R,B);break;
+      case 5:{const m=(A[y*cw+x]+A[y*cw+x+1]+A[(y+1)*cw+x+1]+A[(y+1)*cw+x])/4>=.5;if(m){add(T,R);add(B,L);}else{add(L,T);add(R,B);}break;}
+      case 6:add(T,B);break;case 7:add(L,B);break;case 8:add(B,L);break;case 9:add(T,B);break;
+      case 10:{const m=(A[y*cw+x]+A[y*cw+x+1]+A[(y+1)*cw+x+1]+A[(y+1)*cw+x])/4>=.5;if(m){add(L,T);add(R,B);}else{add(T,R);add(B,L);}break;}
+      case 11:add(R,B);break;case 12:add(L,R);break;case 13:add(T,R);break;case 14:add(L,T);break;
+    }
+  }
+  const pt=id=>{const v=id&1,i=id>>1,y=Math.floor(i/cw),x=i-y*cw;
+    if(!v){const a=A[y*cw+x],b=A[y*cw+x+1],t=(.5-a)/((b-a)||1e-9);return {x:x+t,y};}
+    const a=A[y*cw+x],b=A[(y+1)*cw+x],t=(.5-a)/((b-a)||1e-9);return {x,y:y+t};};
+  const used=new Uint8Array(segs.length),loops=[];
+  for(let s0=0;s0<segs.length;s0++){
+    if(used[s0])continue;used[s0]=1;
+    const ids=[segs[s0][0],segs[s0][1]];let cur=segs[s0][1],guard=0;
+    while(cur!==ids[0]&&guard++<4e6){
+      const list=adj.get(cur)||[],nx=list.find(i=>!used[i]);if(nx==null)break;
+      used[nx]=1;const sg=segs[nx];cur=sg[0]===cur?sg[1]:sg[0];ids.push(cur);
+    }
+    if(ids.length>3)loops.push(ids.slice(0,ids[ids.length-1]===ids[0]?-1:undefined).map(id=>{const p=pt(id);return {x:(p.x-3)/k+bx,y:(p.y-3)/k+by};}));
+  }
+  return loops;
+}
+function txRdpClosed(P,tol){
+  if(P.length<=4)return P;
+  let far=0,fd=-1;for(let i=1;i<P.length;i++){const d=Math.hypot(P[i].x-P[0].x,P[i].y-P[0].y);if(d>fd){fd=d;far=i;}}
+  const rdp=(pts)=>{
+    if(pts.length<3)return pts;const a=pts[0],b=pts[pts.length-1];let md=-1,mi=0;
+    const dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1e-9;
+    for(let i=1;i<pts.length-1;i++){const d=Math.abs((pts[i].x-a.x)*dy-(pts[i].y-a.y)*dx)/L;if(d>md){md=d;mi=i;}}
+    if(md<=tol)return [a,b];
+    const l=rdp(pts.slice(0,mi+1)),r=rdp(pts.slice(mi));return l.slice(0,-1).concat(r);
+  };
+  const h1=rdp(P.slice(0,far+1)),h2=rdp(P.slice(far).concat([P[0]]));
+  return h1.slice(0,-1).concat(h2.slice(0,-1));
+}
+function txLoopArea(L){let a=0;for(let i=0;i<L.length;i++){const p=L[i],q=L[(i+1)%L.length];a+=p.x*q.y-q.x*p.y;}return a/2;}
+async function txOutline(st){
+  const t=st.text;if(!t)return {error:'This is not text.'};
+  if(!SPFonts.has(t.font)){return {error:'The font “'+t.font.family+'” is missing, so the letters cannot be outlined faithfully. Import or download it first.'};}
+  await SPFonts.ensure(txFontOf(t));txStamp++;
+  if(!t.path)txRelayout(st);else txSyncHull(st);
+  const xs=st.points.map(p=>p.x),ys=st.points.map(p=>p.y),pad=Math.max(10,t.size*0.35);
+  const bx=Math.min.apply(null,xs)-pad,by=Math.min.apply(null,ys)-pad,w=Math.max.apply(null,xs)-bx+pad,h=Math.max.apply(null,ys)-by+pad;
+  const k=Math.max(1,Math.min(6,3200/Math.max(w,h)));
+  const clone={...st,color:'#000000',text:{...t,opacity:1}};
+  const loops=txTraceLoops(c=>txRender(c,clone,1),bx,by,w,h,k);
+  const tol=0.2/k,regions=[];
+  loops.forEach(L=>{const S=txRdpClosed(L,tol);if(S.length>=3&&Math.abs(txLoopArea(S))>0.4/(k*k)*4)regions.push(S.map(p=>({x:Math.round(p.x*100)/100,y:Math.round(p.y*100)/100,pressure:1})));});
+  if(!regions.length)return {error:'Nothing visible to convert (the text is empty).'};
+  return {regions,count:regions.reduce((n,r)=>n+r.length,0)};
+}
+async function txConvertOutlines(st){
+  const r=await txOutline(st);if(r.error){setStatus('🔤 '+r.error);return;}
+  const t=st.text;
+  st.regions=r.regions;st.points=r.regions.flat().map(p=>({...p}));st.nodes=null;st.shape=null;st.closed=true;
+  st.fillColor=st.color;st.fillOpacity=t.opacity==null?1:t.opacity;st.evenOdd=true;st.outlined=true;st.outlinedFrom=t.font.family;st.settings=null;
+  delete st.text;txSigs.delete(st.id);
+  $('textPanel').style.display='none';txPanelId=null;
+  rebuildLayer(st.layerId);syncStrokeSelectionUI();redraw();pushHist();
+  setStatus('🔤 Converted to outlines ('+r.regions.length+' shapes, '+r.count+' points). It is now a plain shape: the wording can no longer be edited, but it looks the same everywhere. Undo brings the editable text back.');
+}
+// ---- SVG ----
+function txSvgNum(n){return String(Math.round(n*100)/100);}
+async function txPrepareSvg(){
+  await txReady();
+  const used=txUsedFonts(),css=[];
+  for(const f of used){
+    const r=await SPFonts.fileFor(f);if(!r)continue;
+    const fmt=r.fmt==='woff2'?'woff2':r.fmt==='woff'?'woff':r.fmt==='otf'?'opentype':'truetype',mime=r.fmt==='woff2'?'font/woff2':r.fmt==='woff'?'font/woff':'font/'+(r.fmt==='otf'?'otf':'ttf');
+    const fam=SPFonts.getFamily(f.src,f.family);
+    css.push('@font-face{font-family:"'+SPFonts.cssFamily(f)+'";font-weight:'+(r.style.w2?r.style.w+' '+r.style.w2:r.style.w)+';font-style:'+(r.style.i?'italic':'normal')+';src:url(data:'+mime+';base64,'+SPFonts.b64(r.buf)+') format("'+fmt+'");'+(r.style.ur?'unicode-range:'+r.style.ur+';':'')+'}');
+  }
+  txSvgCss=css.join('\n');
+}
+function txSvgText(st){
+  const t=st.text;if(!t||!t.font)return '';
+  const c=svgColor(st.color),op=(t.opacity==null?1:t.opacity)*c.alpha,fam=SPFonts.cssFamily(t.font);
+  const attrs=' font-family="'+svgEsc(fam)+', sans-serif" font-size="'+txSvgNum(t.size)+'" font-weight="'+(t.weight||400)+'" font-style="'+(t.italic?'italic':'normal')+'" fill="'+svgEsc(c.fill)+'"'+(op<.995?' fill-opacity="'+svgNum(op)+'"':'')+' xml:space="preserve" data-text="1"';
+  if(t.path){
+    const r=txPathGlyphs(st);if(!r)return '';
+    return '<g'+attrs+'>'+r.glyphs.map(g=>'<text transform="translate('+txSvgNum(g.x)+' '+txSvgNum(g.y)+') rotate('+txSvgNum(g.ang*180/Math.PI)+')" x="'+txSvgNum(-g.w/2)+'" y="0">'+svgEsc(g.ch)+'</text>').join('')+'</g>';
+  }
+  const M=txFrame(st),m=txMeasure(t);
+  const ls=t.ls?' letter-spacing="'+txSvgNum(t.ls)+'"':'';
+  return '<g transform="matrix('+M.map(v=>Math.round(v*1e5)/1e5).join(' ')+')"'+attrs+ls+'>'+m.lines.map((s,i)=>{
+    if(!s)return '';
+    const y=i*m.lh+m.lh/2+(m.asc-m.desc)/2,x=t.align==='center'?(m.bw-m.ws[i])/2:t.align==='right'?(m.bw-m.ws[i]):0;
+    return '<text x="'+txSvgNum(x)+'" y="'+txSvgNum(y)+'">'+svgEsc(s)+'</text>';
+  }).join('')+'</g>';
+}
+function txSvgOutlined(st){
+  const c=svgColor(st.fillColor),op=(st.fillOpacity!=null?st.fillOpacity:1)*c.alpha;
+  return '<path d="'+st.regions.map(r=>svgPoly(r)).join('')+'" fill="'+svgEsc(c.fill)+'" fill-rule="evenodd"'+(op<.995?' fill-opacity="'+svgNum(op)+'"':'')+' data-outlined-text="1"/>';
+}
+// ---- the text panel ----
+function txOpenPanel(focus){
+  const st=txSelected();if(!st)return;
+  const p=$('textPanel'),was=p.style.display==='none';p.style.display='block';
+  if(was){const vr=viewportOuter.getBoundingClientRect();positionFloatPanel('textPanel',Math.max(8,vr.right-310),vr.top+12);}
+  txFillPanel(true);
+  if(focus){const ta=$('txStr');ta.focus();ta.select();}
+}
+function txStyleOptions(fam){
+  const out=[];if(!fam)return out;
+  fam.styles.forEach(s=>{
+    if(s.w2){for(let w=Math.ceil(s.w/100)*100;w<=s.w2;w+=100)out.push({w,i:s.i});}
+    else out.push({w:s.w,i:s.i});
+  });
+  const seen={};return out.filter(o=>{const k=o.w+'|'+o.i;if(seen[k])return false;seen[k]=1;return true;}).sort((a,b)=>(a.i-b.i)||(a.w-b.w));
+}
+function txFillPanel(force){
+  const st=txSelected();if(!st)return;
+  const t=st.text,same=txPanelId===st.id&&!force;txPanelId=st.id;
+  const ta=$('txStr');if(!same||document.activeElement!==ta)ta.value=t.str;
+  const fam=SPFonts.getFamily(t.font.src,t.font.family),miss=!fam;
+  $('txFontBtn').textContent=t.font.family+(miss?' ⚠️':'');
+  $('txFontBtn').style.fontFamily=miss?'':'"'+SPFonts.cssFamily(t.font)+'", sans-serif';
+  const sel=$('txStyle');sel.innerHTML='';
+  const opts=txStyleOptions(fam);if(!opts.length)opts.push({w:t.weight||400,i:!!t.italic});
+  opts.forEach(o=>{const e=document.createElement('option');e.value=o.w+'|'+(o.i?1:0);e.textContent=SPFonts.styleLabel(o);sel.appendChild(e);});
+  const pick=SPFonts.pickStyle(fam,t.weight||400,!!t.italic);
+  sel.value=(pick?pick.w:(t.weight||400))+'|'+((pick?pick.i:t.italic)?1:0);if(sel.value===''&&sel.options.length)sel.selectedIndex=0;
+  $('txSize').value=Math.min(600,Math.round(t.size));$('txSizeNum').value=Math.round(t.size*10)/10;
+  $('txColour').value=/^#[0-9a-f]{6}$/i.test(st.color)?st.color:'#000000';
+  $('txOpacity').value=Math.round((t.opacity==null?1:t.opacity)*100);$('txOpacityVal').textContent=$('txOpacity').value+'%';
+  [['txAlL','left'],['txAlC','center'],['txAlR','right']].forEach(a=>$(a[0]).classList.toggle('active',t.align===a[1]));
+  $('txLs').value=t.ls||0;$('txLsVal').textContent=(Math.round((t.ls||0)*10)/10);
+  $('txLh').value=t.lh||1.2;$('txLhVal').textContent=(Math.round((t.lh||1.2)*100)/100);
+  $('txWarn').style.display=miss?'block':'none';
+  if(miss)$('txWarn').innerHTML='⚠️ The font “'+escapeHtml(t.font.family)+'” is not on this device. Your design keeps its name; the text is shown in a stand-in. <button type="button" class="btn mini" id="txWarnFix">Choose font…</button>';
+  if(miss)$('txWarnFix').onclick=()=>txOpenPicker({target:st});
+  txFillPathUI(st);
+}
+function txFillPathUI(st){
+  const t=st.text,pa=t.path;
+  $('txPathPick').textContent=pa?'↻ Choose another path':'〰️ Put on a path…';
+  $('txPathCtl').style.display=pa?'block':'none';
+  if(!pa){$('txPathNote').textContent='';return;}
+  $('txPathOff').value=Math.round((pa.off||0)*1000)/10;$('txPathOffVal').textContent=(Math.round((pa.off||0)*1000)/10)+'%';
+  [['txPaS','start'],['txPaC','center'],['txPaE','end']].forEach(a=>$(a[0]).classList.toggle('active',pa.align===a[1]));
+  $('txRev').checked=!!pa.rev;$('txFlip').checked=!!pa.flip;$('txHide').checked=!!pa.hide;
+  $('txDist').value=pa.dist||0;$('txDistVal').textContent=Math.round(pa.dist||0);
+  const r=txPathGlyphs(st);
+  $('txPathNote').textContent=r&&r.over?'⚠️ '+r.over+' letter'+(r.over===1?'':'s')+' do not fit on this open path. Shorten the text, make the size smaller or the path longer.':'';
+}
+function txSyncPanel(){
+  const p=$('textPanel');if(!p)return;
+  const st=txSelected();
+  if(!st||mode!=='edit'){if(p.style.display!=='none'){txCommit();p.style.display='none';}txPanelId=null;return;}
+  if(txPanelId===st.id){if(p.style.display!=='none')txFillPanel(false);return;} // same text: refresh (e.g. after Undo); stays closed if the user closed it
+  txCommit();txPanelId=null;txOpenPanel(false);
+}
+function txWire(){
+  const edit=fn=>()=>{const st=txSelected();if(!st)return;fn(st);};
+  $('txStr').addEventListener('input',edit(st=>{st.text.str=$('txStr').value;txApply(st);txFillPathUI(st);}));
+  $('txStyle').addEventListener('change',edit(st=>{const [w,i]=$('txStyle').value.split('|');st.text.weight=+w;st.text.italic=i==='1';SPFonts.ensure(txFontOf(st.text)).then(()=>{txStamp++;txApply(st);});txApply(st);}));
+  const setSize=v=>edit(st=>{v=Math.max(2,Math.min(2000,+v||st.text.size));st.text.size=v;txApply(st);$('txSize').value=Math.min(600,Math.round(v));$('txSizeNum').value=Math.round(v*10)/10;})();
+  $('txSize').addEventListener('input',()=>setSize($('txSize').value));
+  $('txSizeNum').addEventListener('change',()=>setSize($('txSizeNum').value));
+  $('txColour').addEventListener('input',edit(st=>{st.color=$('txColour').value;txApply(st,{relayout:false});}));
+  $('txOpacity').addEventListener('input',edit(st=>{st.text.opacity=$('txOpacity').value/100;$('txOpacityVal').textContent=$('txOpacity').value+'%';txApply(st,{relayout:false});}));
+  [['txAlL','left'],['txAlC','center'],['txAlR','right']].forEach(a=>$(a[0]).addEventListener('click',edit(st=>{st.text.align=a[1];txApply(st,{anchor:0});txFillPanel(true);})));
+  $('txLs').addEventListener('input',edit(st=>{st.text.ls=+$('txLs').value;$('txLsVal').textContent=Math.round(st.text.ls*10)/10;txApply(st);}));
+  $('txLh').addEventListener('input',edit(st=>{st.text.lh=+$('txLh').value;$('txLhVal').textContent=Math.round(st.text.lh*100)/100;txApply(st);}));
+  $('txFontBtn').addEventListener('click',edit(st=>txOpenPicker({target:st})));
+  $('txOutlineBtn').addEventListener('click',edit(st=>{txCommit();txConvertOutlines(st);}));
+  $('txDupBtn').addEventListener('click',edit(st=>{txCommit();duplicateSelectedStroke();setStatus('🔤 Text duplicated. The copy is on top, a little to the side.');}));
+  $('txDelBtn').addEventListener('click',edit(st=>txDelete(st)));
+  $('txDoneBtn').addEventListener('click',()=>{txCommit();const st=txSelected();if(st&&!String(st.text.str).trim()){txDelete(st);return;}$('textPanel').style.display='none';});
+  // text on a path
+  $('txPathPick').addEventListener('click',edit(st=>{txPickGuide=true;setStatus('〰️ Tap the line, curve or shape the text should follow.');}));
+  const P=fn=>edit(st=>{if(!st.text.path)return;fn(st,st.text.path);txApply(st);txFillPathUI(st);});
+  $('txPathOff').addEventListener('input',P((st,pa)=>{pa.off=$('txPathOff').value/100;}));
+  [['txPaS','start'],['txPaC','center'],['txPaE','end']].forEach(a=>$(a[0]).addEventListener('click',P((st,pa)=>{pa.align=a[1];})));
+  $('txRev').addEventListener('change',P((st,pa)=>{pa.rev=$('txRev').checked;}));
+  $('txFlip').addEventListener('change',P((st,pa)=>{pa.flip=$('txFlip').checked;}));
+  $('txDist').addEventListener('input',P((st,pa)=>{pa.dist=+$('txDist').value;}));
+  $('txHide').addEventListener('change',edit(st=>{const pa=st.text.path;if(!pa)return;pa.hide=$('txHide').checked;txApply(st);txCommit();txRefresh();}));
+  $('txStraight').addEventListener('click',edit(st=>{txDetach(st);}));
+  $('txSelGuide').addEventListener('click',edit(st=>{const pa=st.text.path;const g=pa&&strokes.find(s=>s.id===pa.gid);if(!g)return;txCommit();pa.hide=false;txApply(st);txRefresh();selectedStrokeId=g.id;syncStrokeSelectionUI();redraw();setStatus('〰️ Guide path selected: edit it and the text follows. Select the text again when you are done.');}));
+}
+function txDetach(st){
+  const t=st.text;if(!t.path)return;const g=strokes.find(s=>s.id===t.path.gid);
+  t.path=null;if(t.frame0){st.points=t.frame0.points.map(p=>({...p}));t.bw=t.frame0.bw;t.bh=t.frame0.bh;}delete t.frame0;
+  if(g&&g.guideHidden){delete g.guideHidden;rebuildLayer(g.layerId);}
+  txSigs.delete(st.id);txRelayout(st);txApply(st);txCommit();txFillPanel(true);setStatus('🔤 The text is a straight line again.');
+}
+function txAttach(st,g){
+  const t=st.text;
+  if(!t.path)t.frame0={points:st.points.map(p=>({...p})),bw:t.bw,bh:t.bh};
+  t.path={gid:g.id,off:0,align:'start',rev:false,flip:false,dist:0,hide:false};
+  txSigs.delete(st.id);txApply(st);txCommit();txFillPanel(true);
+  setStatus('〰️ The text now follows the path. Drag the Start slider to slide it along; the path stays editable.');
+}
+function txPickGuideAt(x,y){
+  const p=screenToCanvas(x,y),locked=new Set(layers.filter(l=>l.locked).map(l=>l.id));let best=null,bd=Infinity;
+  for(let i=strokes.length-1;i>=0;i--){
+    const s=strokes[i];if(s.text||s.regions||s.fillColor&&!s.closed||locked.has(s.layerId)||s.blendId||s.oblendId||!s.points||s.points.length<2)continue;
+    const d=distanceToPolyline(p.x,p.y,s.points);if(d<Math.max(18,((strokeSettings(s).size)||6)/2+14)&&d<bd){bd=d;best=s;}
+  }
+  return best;
+}
+wrap.addEventListener('pointerdown',e=>{
+  if(!txToolOn&&!txPickGuide)return;
+  if(e.target!==canvas&&e.target!==wrap&&e.target.id!=='detailCanvas'&&e.target.id!=='pathOverlay')return;
+  e.preventDefault();e.stopPropagation();
+  if(txToolOn){const p=screenToCanvas(e.clientX,e.clientY);txCreateAt(p.x,p.y);return;}
+  const st=txSelected();txPickGuide=false;if(!st)return;
+  const g=txPickGuideAt(e.clientX,e.clientY);
+  if(!g){setStatus('〰️ No line there. Tap directly on a path, curve or shape outline. (Tap “Put on a path…” to try again.)');return;}
+  txAttach(st,g);
+},true);
+// ---- the font picker ----
+function txBuildPicker(){
+  const el=document.createElement('div');el.id='fontPicker';el.className='fp-back';el.style.display='none';
+  el.innerHTML='<div class="fp-box"><div class="fp-head"><b id="fpTitle">Fonts</b><button type="button" class="btn mini" id="fpClose">✕ Close</button></div>'
+   +'<input id="fpSearch" type="search" placeholder="Search fonts…" autocomplete="off" autocapitalize="off" spellcheck="false">'
+   +'<div class="fp-tabs"><button type="button" data-t="all" class="on">All</button><button type="button" data-t="fav">★ Favourites</button><button type="button" data-t="recent">Recent</button><button type="button" data-t="bundled">Built-in</button><button type="button" data-t="google">Google</button><button type="button" data-t="import">Imported</button></div>'
+   +'<div id="fpList" class="fp-list"></div>'
+   +'<div id="fpMsg" class="fp-msg"></div>'
+   +'<div class="fp-foot"><button type="button" class="btn" id="fpImport">＋ Import font file (.ttf / .otf)…</button><button type="button" class="btn" id="fpGoogle">⬇ Google Fonts…</button></div>'
+   +'<input type="file" id="fpFile" accept=".ttf,.otf,.TTF,.OTF,font/ttf,font/otf,application/x-font-ttf,application/x-font-otf" multiple style="display:none"></div>';
+  document.body.appendChild(el);
+  el.addEventListener('pointerdown',e=>{if(e.target===el)txClosePicker();});
+  $('fpClose').onclick=txClosePicker;
+  $('fpSearch').addEventListener('input',()=>txPickerRender());
+  el.querySelector('.fp-tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;txPicker.tab=b.dataset.t;txPicker.google=false;txPickerRender();});
+  $('fpImport').onclick=()=>$('fpFile').click();
+  $('fpFile').onchange=async()=>{
+    const files=[...$('fpFile').files];$('fpFile').value='';if(!files.length)return;
+    $('fpMsg').textContent='Importing…';
+    const res=await SPFonts.importFiles(files);
+    $('fpMsg').innerHTML=res.map(r=>(r.ok?'✅ ':'⚠️ ')+escapeHtml(r.msg)).join('<br>');
+    txPicker.tab='import';txPicker.google=false;txPickerRender();txRefreshMissing();txRefreshEmbeds();
+    const okFam=res.filter(r=>r.ok).map(r=>r.family)[0];
+    if(okFam&&txPicker.target&&!txPicker.replaceMissing)txChooseFont({src:'import',family:okFam});
+  };
+  $('fpGoogle').onclick=()=>{txPicker.google=!txPicker.google;txPickerRender();};
+  SPFonts.onChange(()=>{if(txPicker&&el.style.display!=='none')txPickerRender();txRefreshMissing();});
+  return el;
+}
+function txOpenPicker(opts){
+  if(!$('fontPicker'))txBuildPicker();
+  txPicker=Object.assign({tab:'all',google:false,target:null,replaceMissing:false},opts||{});
+  $('fpTitle').textContent=txPicker.replaceMissing?'Replace missing font':txPicker.target?'Choose a font':'Fonts';
+  $('fpSearch').value='';$('fpMsg').textContent='';
+  $('fontPicker').style.display='flex';
+  SPFonts.init().then(txPickerRender);
+}
+function txClosePicker(){const el=$('fontPicker');if(el)el.style.display='none';if(txPicker&&txPicker.io)txPicker.io.disconnect();}
+function txChooseFont(font){
+  const pk=txPicker||{};
+  if(pk.replaceMissing){
+    const miss=txMissing();if(!miss.length){txClosePicker();return;}
+    const names=miss.map(f=>f.family).join(', ');
+    if(!confirm('Switch every text that uses “'+names+'” to “'+font.family+'”? This changes how those texts look. (Undo brings them back.)'))return;
+    strokes.forEach(s=>{if(s.text&&!SPFonts.has(s.text.font)){s.text.font={src:font.src,family:font.family};}});
+    SPFonts.ensure({src:font.src,family:font.family,weight:400}).then(()=>{txStamp++;txTexts().forEach(s=>{txRelayout(s);});layers.forEach(l=>rebuildLayer(l.id));redraw();pushHist();txRefreshMissing();txRefreshEmbeds();const st=txSelected();if(st)txFillPanel(true);});
+    txClosePicker();return;
+  }
+  SPFonts.touchRecent(font);
+  const st=pk.target&&strokes.find(s=>s.id===pk.target.id);
+  if(!st||!st.text){txClosePicker();return;}
+  const fam=SPFonts.getFamily(font.src,font.family),pick=SPFonts.pickStyle(fam,st.text.weight||400,!!st.text.italic);
+  st.text.font={src:font.src,family:font.family};
+  if(pick){st.text.weight=pick.w;st.text.italic=!!pick.i;}
+  txClosePicker();txApply(st);txFillPanel(true);
+  SPFonts.ensure(txFontOf(st.text)).then(()=>{txStamp++;txApply(st);txFillPanel(true);txRefreshMissing();txRefreshEmbeds();});
+}
+async function txPickerRender(){
+  const pk=txPicker;if(!pk)return;
+  const list=$('fpList'),q=$('fpSearch').value.trim().toLowerCase();
+  list.innerHTML='';
+  $('fontPicker').querySelectorAll('.fp-tabs button').forEach(b=>b.classList.toggle('on',!pk.google&&b.dataset.t===pk.tab));
+  $('fpGoogle').classList.toggle('primary',pk.google);
+  if(pk.io)pk.io.disconnect();
+  pk.io=('IntersectionObserver' in window)?new IntersectionObserver(es=>{es.forEach(en=>{if(!en.isIntersecting)return;const r=en.target;pk.io.unobserve(r);const f={src:r.dataset.src,family:r.dataset.fam,weight:400};SPFonts.ensure(f).then(ok=>{if(ok)r.classList.add('ready');});});},{root:list,rootMargin:'120px'}):null;
+  const mkRow=(f,extra)=>{
+    const row=document.createElement('div');row.className='fp-row';row.dataset.src=f.src;row.dataset.fam=f.family;
+    const cur=pk.target&&pk.target.text&&pk.target.text.font.src===f.src&&pk.target.text.font.family===f.family;
+    if(cur)row.classList.add('cur');
+    const b=document.createElement('button');b.type='button';b.className='fp-pick';
+    b.innerHTML='<span class="fp-name"></span><span class="fp-sub"></span>';
+    const nm=b.querySelector('.fp-name');nm.textContent=f.family;nm.style.fontFamily='"'+SPFonts.cssFamily(f)+'", sans-serif';
+    b.querySelector('.fp-sub').textContent=(f.src==='bundled'?'Built-in':f.src==='google'?'Google Fonts':'Imported')+' · '+(f.styles?f.styles.length+' style'+(f.styles.length===1?'':'s'):'')+(extra?' · '+extra:'');
+    b.onclick=()=>{if(!pk.target&&!pk.replaceMissing){const st=txSelected();if(st){pk.target=st;}else{$('fpMsg').textContent='Select a text first, then choose its font here. You can still import or download fonts now.';return;}}txChooseFont({src:f.src,family:f.family});};
+    row.appendChild(b);
+    const fav=document.createElement('button');fav.type='button';fav.className='fp-ico';fav.textContent=SPFonts.isFav(f)?'★':'☆';fav.title='Favourite';
+    fav.onclick=()=>{fav.textContent=SPFonts.toggleFav(f)?'★':'☆';if(pk.tab==='fav')txPickerRender();};row.appendChild(fav);
+    if(f.src==='bundled'&&f.license){const a=document.createElement('a');a.className='fp-ico';a.textContent='ⓘ';a.href=f.license;a.target='_blank';a.rel='noopener';a.title='Licence (SIL Open Font License)';row.appendChild(a);}
+    if(f.src!=='bundled'){const del=document.createElement('button');del.type='button';del.className='fp-ico';del.textContent='🗑';del.title='Remove from this device';
+      del.onclick=async()=>{const used=txUsedFonts().some(u=>u.src===f.src&&u.family===f.family);if(!confirm('Remove “'+f.family+'” from this device?'+(used?' Your design uses it, so the text will show as missing until you add it again (the project file keeps a copy).':'')))return;await SPFonts.removeFamily(f.src,f.family);txPickerRender();};row.appendChild(del);}
+    list.appendChild(row);if(pk.io)pk.io.observe(row);else SPFonts.ensure({src:f.src,family:f.family,weight:400}).then(ok=>{if(ok)row.classList.add('ready');});
+  };
+  const head=t=>{const h=document.createElement('div');h.className='fp-sec';h.textContent=t;list.appendChild(h);};
+  if(pk.google){
+    const idx=await SPFonts.googleIndex(),have=new Set(SPFonts.families('google').map(f=>f.family));
+    const hits=idx.filter(g=>!q||g.f.toLowerCase().indexOf(q)>=0).slice(0,60);
+    const online=navigator.onLine;
+    const note=document.createElement('div');note.className='fp-note';
+    note.textContent=online?'Pick a family to download it. Downloaded fonts are kept on this device and work offline.':'You are offline: downloads need a connection. Fonts you already downloaded still work.';
+    list.appendChild(note);
+    hits.forEach(g=>{
+      const row=document.createElement('div');row.className='fp-row';
+      const b=document.createElement('button');b.type='button';b.className='fp-pick';b.innerHTML='<span class="fp-name"></span><span class="fp-sub"></span>';
+      b.querySelector('.fp-name').textContent=g.f;b.querySelector('.fp-sub').textContent=g.c+(have.has(g.f)?' · ✓ downloaded':'');
+      b.onclick=()=>txDownload(g.f);row.appendChild(b);
+      const btn=document.createElement('button');btn.type='button';btn.className='fp-ico';btn.textContent=have.has(g.f)?'✓':'⬇';btn.disabled=have.has(g.f)||!online;btn.onclick=()=>txDownload(g.f);row.appendChild(btn);list.appendChild(row);
+    });
+    if(q&&!hits.some(g=>g.f.toLowerCase()===q)){
+      const row=document.createElement('div');row.className='fp-row';
+      const b=document.createElement('button');b.type='button';b.className='fp-pick';b.innerHTML='<span class="fp-name"></span><span class="fp-sub">Any family on Google Fonts, typed exactly as on the website</span>';
+      b.querySelector('.fp-name').textContent='Download “'+$('fpSearch').value.trim()+'”';b.disabled=!online;b.onclick=()=>txDownload($('fpSearch').value.trim());row.appendChild(b);list.appendChild(row);
+    }
+    return;
+  }
+  const all=SPFonts.families().filter(f=>!q||f.family.toLowerCase().indexOf(q)>=0);
+  const byKey=new Map();all.forEach(f=>byKey.set(f.key,f));
+  const tab=pk.tab,keyFont=k=>byKey.get(k);
+  const miss=txMissing().filter(m=>!q||m.family.toLowerCase().indexOf(q)>=0);
+  if(miss.length&&(tab==='all'||pk.replaceMissing)){head('Missing from this device (used by your design)');miss.forEach(m=>{const row=document.createElement('div');row.className='fp-row miss';row.textContent='⚠️ '+m.family+' ('+(m.src==='import'?'imported':m.src==='google'?'Google':'built-in')+') — import or download it, or choose a replacement below.';list.appendChild(row);});}
+  if(tab==='fav'||tab==='all'){const fs=SPFonts.favKeys().map(keyFont).filter(Boolean);if(fs.length){head('★ Favourites');fs.forEach(f=>mkRow(f));}else if(tab==='fav'){const n=document.createElement('div');n.className='fp-note';n.textContent='No favourites yet. Tap ☆ beside a font.';list.appendChild(n);}}
+  if(tab==='recent'||tab==='all'){const rs=SPFonts.recentKeys().map(keyFont).filter(Boolean);if(rs.length){head('Recent');rs.forEach(f=>mkRow(f));}else if(tab==='recent'){const n=document.createElement('div');n.className='fp-note';n.textContent='Fonts you use will appear here.';list.appendChild(n);}}
+  if(tab==='fav'||tab==='recent')return;
+  [['bundled','Built-in fonts'],['google','Google Fonts (downloaded)'],['import','Imported fonts']].forEach(sec=>{
+    if(tab!=='all'&&tab!==sec[0])return;
+    const fs=all.filter(f=>f.src===sec[0]);
+    head(sec[1]);
+    if(!fs.length){const n=document.createElement('div');n.className='fp-note';n.textContent=sec[0]==='google'?'None yet. Tap “Google Fonts…” below to browse and download.':sec[0]==='import'?'None yet. Tap “Import font file…” below, for example your Seamlessly Script .otf/.ttf.':'No match.';list.appendChild(n);return;}
+    fs.forEach(f=>mkRow(f));
+  });
+}
+async function txDownload(family){
+  if(!family)return;
+  const msg=t=>{$('fpMsg').textContent=t;};
+  msg('Starting…');
+  const r=await SPFonts.googleDownload(family,msg);
+  msg((r.ok?'✅ ':'⚠️ ')+r.msg);
+  if(r.ok){txPicker.google=false;txPicker.tab='google';txPickerRender();txRefreshMissing();txRefreshEmbeds();if(txPicker.target&&!txPicker.replaceMissing)txChooseFont({src:'google',family:r.family});}
+}
+// ---- entry points ----
+function txToggleTool(){if(txToolOn){txStopTool();setStatus('Text tool off.');}else txStartTool();}
+txWire();makeFloatPanelDraggable('textPanel','textPanelHandle');
+$('txAddBtn').onclick=txToggleTool;
+$('txFontsBtn').onclick=()=>txOpenPicker({});
+$('tbTextBtn').onclick=()=>{tbClose();txToggleTool();};
+$('qaText').onclick=()=>{txToggleTool();};
+SPFonts.onChange(()=>{txRefreshMissing();});
+SPFonts.init().then(()=>{txRefreshMissing();});
+
 // ============================ Timelapse (see IPAD.md, v120) ============================
 /* Pattern Sketch — Timelapse
  *
@@ -9723,12 +10645,13 @@ window.__sketchpadLayerAlphaNear=(layerId,x,y,radius)=>{
   function mkRec(s) {
     return { s: s, brushId: s.brushId, layerId: s.layerId, color: s.color, fillColor: s.fillColor, fillOpacity: s.fillOpacity, closed: !!s.closed, atop: !!s.atop,
       clipStrokeId: s.clipStrokeId || null, groupId: s.groupId || null, n: s.points ? s.points.length : 0, pts: s.points, nodes: s.nodes, regions: s.regions, shape: s.shape,
-      settings: s.settings, setJ: JSON.stringify(s.settings || null), hash: null, oldPts: s.points };
+      settings: s.settings, setJ: JSON.stringify(s.settings || null), tx: (s.text || s.outlined || s.guideHidden) ? JSON.stringify([s.text || null, !!s.outlined, s.guideHidden || null, s.fillColor || null, s.fillOpacity == null ? null : s.fillOpacity]) : null, hash: null, oldPts: s.points };
   }
   function setJ(rec) { if (rec.setJ == null) rec.setJ = JSON.stringify(rec.settings || null); return rec.setJ; }
   function changed(rec, s) {
     if (rec.brushId !== s.brushId || rec.layerId !== s.layerId || rec.color !== s.color || rec.fillColor !== s.fillColor || rec.fillOpacity !== s.fillOpacity ||
       rec.closed !== !!s.closed || rec.atop !== !!s.atop || (rec.clipStrokeId || null) !== (s.clipStrokeId || null) || (rec.groupId || null) !== (s.groupId || null)) return true;
+    if ((rec.tx || null) !== ((s.text || s.outlined || s.guideHidden) ? JSON.stringify([s.text || null, !!s.outlined, s.guideHidden || null, s.fillColor || null, s.fillOpacity == null ? null : s.fillOpacity]) : null)) return true;
     if (setJ(rec) !== JSON.stringify(s.settings || null)) return true;  // compared by value: settings are sometimes edited in place
     if (rec.shape !== s.shape && JSON.stringify(rec.shape || null) !== JSON.stringify(s.shape || null)) return true;
     if (rec.pts !== s.points || rec.nodes !== s.nodes || rec.regions !== s.regions) {
@@ -9786,6 +10709,7 @@ window.__sketchpadLayerAlphaNear=(layerId,x,y,radius)=>{
     for (j = 0; j < list.length; j++) {
       var r = list[j].rec, s = list[j].s;
       if (r.nodes || s.nodes || r.regions || s.regions || r.shape || s.shape) return null;
+      if (r.tx || s.text || s.outlined) return null;  // text edits are never a plain move
       if (r.brushId !== s.brushId || r.layerId !== s.layerId || r.color !== s.color || r.fillColor !== s.fillColor || r.fillOpacity !== s.fillOpacity || r.closed !== !!s.closed || r.atop !== !!s.atop || (r.clipStrokeId || null) !== (s.clipStrokeId || null) || (r.groupId || null) !== (s.groupId || null)) return null;  // a style change is not a transform
       if (!r.pts || !s.points || r.pts.length !== s.points.length) return null;
       if (!m) { var mm = solveAffine(r.oldPts || r.pts, s.points) || solveSimilarity(r.oldPts || r.pts, s.points); if (mm) m = mm; }
