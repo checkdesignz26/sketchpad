@@ -10,7 +10,7 @@ const out = path.join(root, 'www');
 
 // Files the app needs at runtime. Add new scripts/assets here.
 const files = [
-  'index.html', 'brush-engine.js', 'polybool.min.js', 'native-bridge.js',
+  'index.html', 'brush-engine.js', 'fonts.js', 'polybool.min.js', 'native-bridge.js',
   'manifest.webmanifest', 'sw.js',
   'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png'
 ];
@@ -27,6 +27,9 @@ for (const f of files) {
   fs.mkdirSync(path.dirname(path.join(out, f)), { recursive: true });
   fs.copyFileSync(src, path.join(out, f));
 }
+
+// Bundled fonts (fonts/*.woff, licences, lists)
+fs.cpSync(path.join(root, 'fonts'), path.join(out, 'fonts'), { recursive: true });
 
 // Offline check: every local <script src> in index.html must be bundled, and nothing may
 // load from the network.

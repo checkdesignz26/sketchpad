@@ -396,3 +396,20 @@ Auto length is about 18x real drawing speed (min 5 s, max 40 s).
 
 ## v128 — copy a recording from another project
 - 🎥 panel: "Copy recording from another project…" lists projects that have a recording and copies it into the open project (`copyFor` + reload). Drawing continues from there; a correction event covers any difference between the copied recording and the current artwork.
+
+## v129 — text & fonts, text on a path, blend along a path
+**Text**
+- A text object is a stroke with a `text` block (`str, font{src,family}, weight, italic, size, align, ls, lh, opacity, path`); fill = `stroke.color`; `points` hold the box corners so move/scale/rotate/duplicate/layers/undo/save all reuse the stroke machinery. Drawn as live vector text (crisp at any zoom).
+- Add via 🔤 Text section in the left panel, ⋯ More → Text, or ⚡ Quick → Text. Tap the canvas to place, edit wording in the panel; tap the text again to reopen.
+- `fonts.js` (`window.SPFonts`) owns fonts: separate IndexedDB `sp-fonts`; sources Built-in (`fonts/*.woff`, 17 OFL families, licences in `fonts/licenses/`), Google (downloaded on demand from the public css2 endpoint — no API key — and kept offline), Imported (.ttf/.otf, validated, de-duplicated by SHA-256). The Google *name list* is `fonts/google-index.json` (names only). Nothing is loaded at startup except what the open project uses.
+- Projects embed the font files they use (`doc.fonts`), so a project opens correctly on another device; a font that cannot be found is named in a banner and is never silently replaced.
+- Convert to outlines is an undoable step (traced curves, dense polylines). SVG export: live `<text>` with embedded `@font-face`, or outlined paths (no font needed).
+- Undo/Redo now trigger an autosave (previously an undo followed by closing the app could be lost).
+**Text on a path**: text panel → "Text on a path" → tap any line/curve/shape. Start slider, align, distance, reverse, flip side, hide the guide, edit guide, straight again. Deleting the guide returns the text to a straight line. Hidden guides use `stroke.guideHidden` (not drawn, not exported, not hit-tested).
+**Blend along a path** (extends the object blend; `spec.path`, `spec.rep`):
+- Blend panel → "Along a path" → Choose a path. Copies are placed by arc length: closed paths use n copies at k/n (no doubled seam), open paths put copies on both ends or only between them; spacing mode derives the count from a gap (max 200 copies, and the existing point budget). Start/end gaps, reverse, turn with path + extra turn, hide the path.
+- Morph (when the two shapes pair up) or transform blend runs first as before, then every copy is moved onto the path. Not-morphable pairs say why in the panel.
+- "Repeat just this one along a path": one source, copies change size / opacity / spin along the path.
+- Live: moving the path or either source regenerates the copies (`objSig` includes the guide). Expand makes ordinary groups (undoable). Deleting the path turns it back into a straight blend. A blend made the older way (two plain strokes, already applied) cannot take a path; new ones convert automatically when a path is chosen.
+**Offline/PWA/Capacitor**: `sw.js` caches `fonts.js`, `fonts/*`; `scripts/build-web.js` copies them into `www/` for Capacitor. Google downloads need a connection once per family.
+**Not tested on a real iPad.** Google download was tested only against a mocked endpoint (no network in the build sandbox).
