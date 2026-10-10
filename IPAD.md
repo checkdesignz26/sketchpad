@@ -416,3 +416,7 @@ Auto length is about 18x real drawing speed (min 5 s, max 40 s).
 
 ## v130 — timelapse keeps more before merging early actions
 Recordings merge their oldest actions into the starting picture once they pass a size limit (they then appear instantly instead of being drawn). Limits raised from 6000 actions / 8 MB to 20000 / 24 MB. The 🎥 panel status line says when this has happened ("the earliest N actions were merged…"). Already-merged recordings cannot be un-merged.
+
+## v131 — save, download and import colour palettes
+- 🎨 palette section: name box + "💾 Save this palette" stores the swatches currently shown (kept with the project in `savedPalettes`, alongside the image-extracted ones).
+- Saved palettes: ⬇ per palette, "Download all", file type chooser (.json, Adobe .ase, GIMP/Krita .gpl, hex list .txt). "⬆ Import palette…" reads those same types plus any text/CSS/SVG with hex codes; duplicate names get "(2)"; unreadable files give a message.
