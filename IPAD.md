@@ -460,3 +460,6 @@ If the app throws an error while opening (blank canvas, empty size box), a red b
 
 ## v142 – Erase through the repeat clones
 - With Tiling on, erasing a mark you see in an edge clone now erases the original too (the eraser works at every repeat position).
+
+## v143 – Timelapse keeps much more (160 MB)
+- The recording was already saved in the device database (IndexedDB), but it was also held in memory with a 24 MB limit, and past that the oldest actions were merged into the starting picture. The limit is now 160 MB / 60 000 actions, and the Timelapse panel shows "x MB of 160 MB room". A project already merged cannot get its old actions back.
