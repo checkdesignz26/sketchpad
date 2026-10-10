@@ -451,3 +451,6 @@ If the app throws an error while opening (blank canvas, empty size box), a red b
 
 ## v139 – Text on its own layer
 - New text is created on a layer called **Text** (made automatically, kept on top). In the text panel, **📚 Move to Text layer** moves existing text there.
+
+## v140 – Eraser hits the visible paint
+- The eraser used to test only against the thin centre line of a stroke, so a small eraser (e.g. size 5) could miss a brush mark even when it covered part of the paint. It now counts the brush width too, so touching any visible part of a stroke erases there.
