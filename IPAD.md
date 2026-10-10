@@ -435,3 +435,7 @@ If the app throws an error while opening (blank canvas, empty size box), a red b
 - You pick the **long side** in px (presets 2100 / 3000 / 4000, or type your own). It shows the pixel size and print size at 300 dpi. A transparent-background option is included. The file is tagged 300 dpi.
 - Limited to about 14 million pixels in total so the iPad can make it (a 5×7-shaped card goes up to roughly 2850 × 4000).
 - Saved as `pattern-sketch-card-WxH.png`.
+
+## v135 – Stay in Draw lock + guide path stays hidden
+- **More → 🔓 Stay in Draw** (saved on the device). When on, the app never jumps into Edit by itself, and the toolbar Edit button needs two taps within 1.5 s. Select menu / Select Area still switch to Edit when you choose them.
+- "Hide the guide path" (text on a path) is now a lasting setting. The guide only shows while you are editing it (Edit guide path) and hides again once you deselect it.
