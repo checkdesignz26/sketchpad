@@ -469,3 +469,7 @@ If the app throws an error while opening (blank canvas, empty size box), a red b
 
 ## v145 – Gentler eraser
 - The eraser counts only 40 % of the brush width (was 100 % in v140), so it no longer slices straight across thick strokes. Thick strokes need a larger eraser to cut through.
+
+## v146 – Eraser: no more blur, gentler again
+- While erasing, the sharp zoomed-in picture is no longer thrown away on every move (that made the whole screen blurry). The eraser circle is cut out of it live and it is fully re-sharpened a moment after you lift.
+- Brush width counts only 20 % towards erasing (was 40 %), so thick strokes are cut much less.
