@@ -569,7 +569,7 @@ html.in-suite .suite-only{display:block!important}
       </div>
       <div class="hint">New strokes go onto the active (highlighted) layer. Tap a row to make it active, tap its name (or ✎ Rename) to rename it. Every layer works the same way: the names are just labels.</div>
     </section>
-    <section class="section"><div class="section-title">📐 Repeat Layouts</div><div class="grid"><button class="layout-btn active" data-layout="grid">Grid</button><button class="layout-btn" data-layout="halfDrop">Half Drop</button><button class="layout-btn" data-layout="halfBrick">Half Brick</button><button class="layout-btn" data-layout="diamond">Diamond</button><button class="layout-btn" data-layout="ogee">Ogee</button><button class="layout-btn" data-layout="tossed">Tossed</button></div></section>
+    <section class="section"><div class="section-title">📐 Repeat Layouts</div><div class="row" style="align-items:center;gap:6px;margin-bottom:8px;"><span style="flex:none;font-size:12.5px;opacity:.8;">Tile shape</span><select id="tileShapeSel" style="flex:1;min-width:0;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></select></div><div id="tileShapeCustom" class="row" style="display:none;align-items:center;gap:6px;margin-bottom:8px;"><input id="tileCW" type="number" min="1" step="1" style="width:70px;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"><span>×</span><input id="tileCH" type="number" min="1" step="1" style="width:70px;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"><span class="hint" style="margin:0">ratio</span></div><div id="tileShapeNote" class="hint" style="margin:-2px 0 8px;"></div><div class="grid"><button class="layout-btn active" data-layout="grid">Grid</button><button class="layout-btn" data-layout="halfDrop">Half Drop</button><button class="layout-btn" data-layout="halfBrick">Half Brick</button><button class="layout-btn" data-layout="diamond">Diamond</button><button class="layout-btn" data-layout="ogee">Ogee</button><button class="layout-btn" data-layout="tossed">Tossed</button></div></section>
     <section class="section"><div class="section-title">🔧 Selected Motif</div><div class="slider-row"><label>Size</label><input id="motifScale" type="range" min="10" max="600" value="100"><span id="motifScaleVal">100%</span></div><div class="row"><button id="rotL" class="btn mini">↺</button><button id="rotR" class="btn mini">↻</button><button id="flipH" class="btn mini">Flip H</button><button id="flipV" class="btn mini">Flip V</button><button id="deleteSel" class="btn mini danger">Delete</button></div><div class="row" style="margin-top:6px;"><button id="editMotifBtn" class="btn mini primary" style="flex:1 1 100%;display:none;">✏️ Edit Motif</button><button id="recolourBtn" class="btn mini" style="flex:1 1 100%;display:none;">🎨 Recolour Parts</button></div><div class="row" style="margin-top:6px;"><button id="blendMotifBtn" class="btn mini" style="flex:1 1 100%;" title="Blend this motif into another motif or group">🌀 Blend with another…</button></div><div class="row" style="margin-top:6px;"><button id="duplicateMotifBtn" class="btn mini" style="flex:1 1 45%;display:none;">⧉ Duplicate</button><button id="makeIndependentBtn" class="btn mini" style="flex:1 1 45%;display:none;">🔓 Make Independent</button></div><div class="row" style="margin-top:6px;"><button id="releaseMotifBtn" class="btn mini" style="flex:1 1 100%;display:none;" title="Turn this motif back into its original vector strokes as a group, which you can resize at any size without blur">⤴ Release to Vectors (group)</button></div></section>
     <section class="section" id="alignSection">
       <div class="section-title">📐 Align Motifs</div>
@@ -949,7 +949,7 @@ html.in-suite .suite-only{display:block!important}
     </div>
     <div id="backupsPanel" style="display:none;position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:90;background:var(--sideBg);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:0 18px 50px rgba(0,0,0,.35);font-size:13.5px;max-width:min(560px,calc(100vw - 24px));max-height:70vh;overflow:auto;"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:800;margin-bottom:6px;">🕘 Earlier saves<button id="backupsClose" class="btn mini">Close</button></div><div id="backupsList"></div><div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);"><button id="newBlankBtn" class="btn mini" style="width:100%;">➕ New Project</button><div class="hint">Your current project is saved first, then a fresh one opens. Find every project under 📁 Projects.</div></div></div>
     <div id="restoreBanner" style="display:none;"><span id="restoreBannerText">📂 Autosaved session found from </span><span id="restoreBannerTime"></span> <button id="restoreAcceptBtn" class="btn mini primary">Restore</button><button id="restoreDeclineBtn" class="btn mini">Start Fresh</button><button id="restoreOkBtn" class="btn mini primary" style="display:none;">OK</button></div>
-    <div id="canvasViewportOuter" class="canvas-viewport-outer"><div id="canvasWrap" class="canvas-wrap"><div id="viewPopover" class="sym-pop"><div class="section-title">🧭 Canvas / View</div><div class="row" style="margin-bottom:10px;align-items:center;gap:8px;"><div id="viewRotVal" class="pill" style="flex:1;text-align:center;">Rotation 0°</div><button id="viewRotResetBtn" class="tool-btn" style="flex:1" title="Turn the canvas back upright">Reset to 0°</button></div><button id="viewGuidesBtn" class="tool-btn" style="width:100%;margin-bottom:10px;">📐 Guides: Off</button><button id="viewResetBtn" class="tool-btn" style="width:100%;margin-bottom:10px;" title="0°, centred and fitted">🔍 Reset view (0°, fit)</button><button id="symToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">🦋 Symmetry Off</button><div class="row" style="margin-bottom:10px;"><button id="tilingBtn" class="tool-btn active" style="flex:1">Tiling On</button><div id="layoutPill" class="pill">📍 Grid Mode</div></div><button id="themeToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">☀️ Light Mode</button><button id="clearDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear Drawing &amp; Motifs</button><button id="clearAllDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear All Layers &amp; Motifs</button><label class="row" style="gap:8px;align-items:center;margin:6px 0;font-size:13px;"><input type="checkbox" id="dblDupChk" checked> Double-tap a selected item to duplicate it (a motif opens for editing instead)</label><button id="viewCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="zoomPopover" class="sym-pop"><div class="section-title">🔍 View <span id="zoomPopPct" class="small"></span></div><div class="zoom-row"><button id="zoomOutBtn" class="tool-btn" aria-label="Zoom out">−</button><button id="zoomInBtn" class="tool-btn" aria-label="Zoom in">+</button></div><button id="zoom100Btn" class="tool-btn" style="width:100%;margin-bottom:8px;">100% — actual size</button><button id="zoomFitBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">Fit to View</button><button id="zoomRotResetBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">↺ Reset rotation to 0°</button><button id="zoomResetBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;">Reset View (0°, centre, fit)</button><button id="updateAppBtn" class="tool-btn" style="width:100%;margin-bottom:8px;" title="Fetch the newest version of the app">⟳ Get latest version <span style="opacity:.6;font-weight:600">(you have v131)</span></button><div class="hint" style="margin-bottom:8px;">These always work, even if the canvas has scrolled out of sight.</div><button id="zoomCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="svgPopover" class="sym-pop"><div class="section-title">🖋️ Export SVG</div><div class="hint" style="margin-bottom:8px;">Vector strokes and fills only. Pictures (placed motifs, background image) are not vector, so they are left out.</div><div class="row" style="margin-bottom:8px;"><button class="tool-btn svg-preset" data-size="780">780</button><button class="tool-btn svg-preset" data-size="1800">1800</button><button class="tool-btn svg-preset" data-size="3600">3600</button></div><div class="slider-row" style="grid-template-columns:64px 1fr 30px;"><label>Size</label><input id="svgSizeInput" type="number" min="64" max="20000" step="1" value="3600" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><span>px</span></div><div class="hint" style="margin-bottom:8px;">Width and height of the square file. 3600 × 3600 is the usual pattern size. The artwork scales exactly.</div><button id="svgSaveBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;min-height:44px;">⬇️ Save SVG</button><button id="svgCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="recolourPopover" class="sym-pop"><div class="section-title">🎨 Recolour Parts</div><div class="hint" style="margin-bottom:8px;">Motif: <b id="recolourName"></b>. Each row is one colour used in the motif. Pick a new colour for any of them.</div><div id="recolourRows"></div><button id="recolourApplyBtn" class="tool-btn primary" style="width:100%;margin:8px 0;min-height:44px;">Apply to this motif</button><button id="recolourNewBtn" class="tool-btn" style="width:100%;margin-bottom:8px;min-height:44px;">Save as new colourway</button><div class="row"><button id="recolourResetBtn" class="btn mini" style="flex:1">Reset</button><button id="recolourCloseBtn" class="btn mini" style="flex:1">✕ Close</button></div></div><div id="symPopover" class="sym-pop"><div class="section-title">🦋 Symmetry</div><div class="grid"><button class="sym-btn btn active" data-sym="off">Off</button><button class="sym-btn btn" data-sym="vertical">Vertical</button><button class="sym-btn btn" data-sym="horizontal">Horizontal</button><button class="sym-btn btn" data-sym="quad">Quad</button><button class="sym-btn btn" data-sym="diamond">Diamond</button></div><div class="slider-row"><label>Axis X</label><input id="symX" type="range" min="0" max="1800" value="900"><span id="symXVal">50%</span></div><div class="slider-row"><label>Axis Y</label><input id="symY" type="range" min="0" max="1800" value="900"><span id="symYVal">50%</span></div><div class="slider-row"><label>Angle</label><input id="symAng" type="range" min="-90" max="90" step="1" value="0"><span id="symAngVal">0°</span></div><div class="row"><button id="symAngReset" class="btn mini">0° Straight</button><button id="symAng45" class="btn mini">45°</button></div><div class="row" style="margin-top:6px;"><button id="symLenWhole" class="btn mini active" style="flex:1">Line: whole canvas</button><button id="symLenShort" class="btn mini" style="flex:1">Line: short</button></div><div class="slider-row" id="symLenRow" style="display:none"><label>Length</label><input id="symLen" type="range" min="100" max="1800" step="10" value="500"><span id="symLenVal">500</span></div><div class="row" style="margin-top:6px;"><button id="symCentre" class="btn mini">Centre Axis</button><button id="symClose" class="btn mini">Done</button></div><div class="hint">Move the mirror point to make flowers, leaves and playful asymmetric symmetry.</div></div><canvas id="fabricCanvas" aria-hidden="true"></canvas><canvas id="canvas" width="1800" height="1800"></canvas><div id="tileOutline" aria-hidden="true"></div><div id="selectionBox" class="selection-box"><button id="motifEditChip" class="btn mini primary" style="display:none">✏️ Edit Motif</button><div id="resizeHandle" class="handle"></div><div id="rotateHandle" class="rotHandle"></div></div><div id="pivotMarker" style="display:none;position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;border:2px solid var(--pink);border-radius:50%;background:rgba(255,255,255,.85);pointer-events:none;z-index:5;"><div style="position:absolute;left:50%;top:-6px;bottom:-6px;width:2px;margin-left:-1px;background:var(--pink)"></div><div style="position:absolute;top:50%;left:-6px;right:-6px;height:2px;margin-top:-1px;background:var(--pink)"></div></div><div id="paintBBoxOverlay" class="selection-box" style="display:none;"><div id="paintResizeHandle" class="handle" title="Drag to resize. Tap to make 25% bigger."></div><div id="paintRotateHandle" class="rotHandle" title="Drag to rotate. Tap to turn 45 degrees."></div><input id="strokeColourHandle" class="sel-colour strokeColourHandle" type="color" value="#000000" title="Tap to change colour"></div><div id="groupBox" class="selection-box" style="display:none;"><div class="gh" data-h="nw" style="left:0%;top:0%;cursor:nwse-resize"></div><div class="gh" data-h="n" style="left:50%;top:0%;cursor:ns-resize"></div><div class="gh" data-h="ne" style="left:100%;top:0%;cursor:nesw-resize"></div><div class="gh" data-h="e" style="left:100%;top:50%;cursor:ew-resize"></div><div class="gh" data-h="se" style="left:100%;top:100%;cursor:nwse-resize"></div><div class="gh" data-h="s" style="left:50%;top:100%;cursor:ns-resize"></div><div class="gh" data-h="sw" style="left:0%;top:100%;cursor:nesw-resize"></div><div class="gh" data-h="w" style="left:0%;top:50%;cursor:ew-resize"></div><div id="grpRotHandle" class="rotHandle" title="Drag to turn. Tap to turn 45 degrees."></div></div><div id="symAxis" class="sym-axis locked"></div><div id="rotateChip" class="rotate-chip">Canvas 0°</div><div id="pathNodeOverlay"></div></div></div>
+    <div id="canvasViewportOuter" class="canvas-viewport-outer"><div id="canvasWrap" class="canvas-wrap"><div id="viewPopover" class="sym-pop"><div class="section-title">🧭 Canvas / View</div><div class="row" style="margin-bottom:10px;align-items:center;gap:8px;"><div id="viewRotVal" class="pill" style="flex:1;text-align:center;">Rotation 0°</div><button id="viewRotResetBtn" class="tool-btn" style="flex:1" title="Turn the canvas back upright">Reset to 0°</button></div><button id="viewGuidesBtn" class="tool-btn" style="width:100%;margin-bottom:10px;">📐 Guides: Off</button><button id="viewResetBtn" class="tool-btn" style="width:100%;margin-bottom:10px;" title="0°, centred and fitted">🔍 Reset view (0°, fit)</button><button id="symToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">🦋 Symmetry Off</button><div class="row" style="margin-bottom:10px;"><button id="tilingBtn" class="tool-btn active" style="flex:1">Tiling On</button><div id="layoutPill" class="pill">📍 Grid Mode</div></div><button id="themeToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">☀️ Light Mode</button><button id="clearDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear Drawing &amp; Motifs</button><button id="clearAllDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear All Layers &amp; Motifs</button><label class="row" style="gap:8px;align-items:center;margin:6px 0;font-size:13px;"><input type="checkbox" id="dblDupChk" checked> Double-tap a selected item to duplicate it (a motif opens for editing instead)</label><button id="viewCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="zoomPopover" class="sym-pop"><div class="section-title">🔍 View <span id="zoomPopPct" class="small"></span></div><div class="zoom-row"><button id="zoomOutBtn" class="tool-btn" aria-label="Zoom out">−</button><button id="zoomInBtn" class="tool-btn" aria-label="Zoom in">+</button></div><button id="zoom100Btn" class="tool-btn" style="width:100%;margin-bottom:8px;">100% — actual size</button><button id="zoomFitBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">Fit to View</button><button id="zoomRotResetBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">↺ Reset rotation to 0°</button><button id="zoomResetBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;">Reset View (0°, centre, fit)</button><button id="updateAppBtn" class="tool-btn" style="width:100%;margin-bottom:8px;" title="Fetch the newest version of the app">⟳ Get latest version <span style="opacity:.6;font-weight:600">(you have v132)</span></button><div class="hint" style="margin-bottom:8px;">These always work, even if the canvas has scrolled out of sight.</div><button id="zoomCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="svgPopover" class="sym-pop"><div class="section-title">🖋️ Export SVG</div><div class="hint" style="margin-bottom:8px;">Vector strokes and fills only. Pictures (placed motifs, background image) are not vector, so they are left out.</div><div class="row" style="margin-bottom:8px;"><button class="tool-btn svg-preset" data-size="780">780</button><button class="tool-btn svg-preset" data-size="1800">1800</button><button class="tool-btn svg-preset" data-size="3600">3600</button></div><div class="slider-row" style="grid-template-columns:64px 1fr 30px;"><label>Size</label><input id="svgSizeInput" type="number" min="64" max="20000" step="1" value="3600" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><span>px</span></div><div class="hint" style="margin-bottom:8px;">Width and height of the square file. 3600 × 3600 is the usual pattern size. The artwork scales exactly.</div><button id="svgSaveBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;min-height:44px;">⬇️ Save SVG</button><button id="svgCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="recolourPopover" class="sym-pop"><div class="section-title">🎨 Recolour Parts</div><div class="hint" style="margin-bottom:8px;">Motif: <b id="recolourName"></b>. Each row is one colour used in the motif. Pick a new colour for any of them.</div><div id="recolourRows"></div><button id="recolourApplyBtn" class="tool-btn primary" style="width:100%;margin:8px 0;min-height:44px;">Apply to this motif</button><button id="recolourNewBtn" class="tool-btn" style="width:100%;margin-bottom:8px;min-height:44px;">Save as new colourway</button><div class="row"><button id="recolourResetBtn" class="btn mini" style="flex:1">Reset</button><button id="recolourCloseBtn" class="btn mini" style="flex:1">✕ Close</button></div></div><div id="symPopover" class="sym-pop"><div class="section-title">🦋 Symmetry</div><div class="grid"><button class="sym-btn btn active" data-sym="off">Off</button><button class="sym-btn btn" data-sym="vertical">Vertical</button><button class="sym-btn btn" data-sym="horizontal">Horizontal</button><button class="sym-btn btn" data-sym="quad">Quad</button><button class="sym-btn btn" data-sym="diamond">Diamond</button></div><div class="slider-row"><label>Axis X</label><input id="symX" type="range" min="0" max="1800" value="900"><span id="symXVal">50%</span></div><div class="slider-row"><label>Axis Y</label><input id="symY" type="range" min="0" max="1800" value="900"><span id="symYVal">50%</span></div><div class="slider-row"><label>Angle</label><input id="symAng" type="range" min="-90" max="90" step="1" value="0"><span id="symAngVal">0°</span></div><div class="row"><button id="symAngReset" class="btn mini">0° Straight</button><button id="symAng45" class="btn mini">45°</button></div><div class="row" style="margin-top:6px;"><button id="symLenWhole" class="btn mini active" style="flex:1">Line: whole canvas</button><button id="symLenShort" class="btn mini" style="flex:1">Line: short</button></div><div class="slider-row" id="symLenRow" style="display:none"><label>Length</label><input id="symLen" type="range" min="100" max="1800" step="10" value="500"><span id="symLenVal">500</span></div><div class="row" style="margin-top:6px;"><button id="symCentre" class="btn mini">Centre Axis</button><button id="symClose" class="btn mini">Done</button></div><div class="hint">Move the mirror point to make flowers, leaves and playful asymmetric symmetry.</div></div><canvas id="fabricCanvas" aria-hidden="true"></canvas><canvas id="canvas" width="1800" height="1800"></canvas><div id="tileOutline" aria-hidden="true"></div><div id="selectionBox" class="selection-box"><button id="motifEditChip" class="btn mini primary" style="display:none">✏️ Edit Motif</button><div id="resizeHandle" class="handle"></div><div id="rotateHandle" class="rotHandle"></div></div><div id="pivotMarker" style="display:none;position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;border:2px solid var(--pink);border-radius:50%;background:rgba(255,255,255,.85);pointer-events:none;z-index:5;"><div style="position:absolute;left:50%;top:-6px;bottom:-6px;width:2px;margin-left:-1px;background:var(--pink)"></div><div style="position:absolute;top:50%;left:-6px;right:-6px;height:2px;margin-top:-1px;background:var(--pink)"></div></div><div id="paintBBoxOverlay" class="selection-box" style="display:none;"><div id="paintResizeHandle" class="handle" title="Drag to resize. Tap to make 25% bigger."></div><div id="paintRotateHandle" class="rotHandle" title="Drag to rotate. Tap to turn 45 degrees."></div><input id="strokeColourHandle" class="sel-colour strokeColourHandle" type="color" value="#000000" title="Tap to change colour"></div><div id="groupBox" class="selection-box" style="display:none;"><div class="gh" data-h="nw" style="left:0%;top:0%;cursor:nwse-resize"></div><div class="gh" data-h="n" style="left:50%;top:0%;cursor:ns-resize"></div><div class="gh" data-h="ne" style="left:100%;top:0%;cursor:nesw-resize"></div><div class="gh" data-h="e" style="left:100%;top:50%;cursor:ew-resize"></div><div class="gh" data-h="se" style="left:100%;top:100%;cursor:nwse-resize"></div><div class="gh" data-h="s" style="left:50%;top:100%;cursor:ns-resize"></div><div class="gh" data-h="sw" style="left:0%;top:100%;cursor:nesw-resize"></div><div class="gh" data-h="w" style="left:0%;top:50%;cursor:ew-resize"></div><div id="grpRotHandle" class="rotHandle" title="Drag to turn. Tap to turn 45 degrees."></div></div><div id="symAxis" class="sym-axis locked"></div><div id="rotateChip" class="rotate-chip">Canvas 0°</div><div id="pathNodeOverlay"></div></div></div>
     <div id="status" class="status">✨ Apple Pencil draws | one finger protected | two fingers pan/pinch/rotate | two-finger tap Undo | three-finger tap Redo | Capture Motif saves drawing ✨</div>
   </main>
 </div>
@@ -969,7 +969,8 @@ html.in-suite .suite-only{display:block!important}
 const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),wrap=document.getElementById('canvasWrap'),viewportOuter=document.getElementById('canvasViewportOuter');let ctx=mainCtx; // ctx is briefly pointed at the fabric tile's context while it is rendered (see rebuildFabricTile)
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
-const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
+const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
+let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
 // Perf: updateComposite/updateDisplayComposite flatten EVERY visible layer's full-resolution
 // canvas every time they run. redraw() used to call both unconditionally on every single
 // pointermove while drawing (debounced to one rAF per frame, but still up to ~60/sec) even
@@ -1746,14 +1747,15 @@ const fabricTile=document.createElement('canvas'),ftctx=fabricTile.getContext('2
 let fabricTilePx=0,fabricTileDirty=true,fabricShown=false,fabricLast=0,fabricTimer=0;
 function fabricSnapPx(n){return Math.max(96,Math.min(1024,Math.pow(2,Math.ceil(Math.log2(Math.max(1,n))))));}
 function rebuildFabricTile(px){
-  if(fabricTile.width!==px||fabricTile.height!==px){fabricTile.width=px;fabricTile.height=px;}
+  const pxW=Math.max(1,Math.round(px*TW/TILE)),pxH=Math.max(1,Math.round(px*TH/TILE));
+  if(fabricTile.width!==pxW||fabricTile.height!==pxH){fabricTile.width=pxW;fabricTile.height=pxH;}
   const k=px/TILE,saved=ctx;
   ctx=ftctx;
   try{
-    ftctx.setTransform(1,0,0,1,0,0);ftctx.clearRect(0,0,px,px);
-    ftctx.setTransform(k,0,0,k,-C*k,-C*k);
-    ftctx.save();ftctx.beginPath();ftctx.rect(C,C,TILE,TILE);ftctx.clip();
-    ftctx.fillStyle='#fff';ftctx.fillRect(C,C,TILE,TILE);
+    ftctx.setTransform(1,0,0,1,0,0);ftctx.clearRect(0,0,pxW,pxH);
+    ftctx.setTransform(k,0,0,k,-CX*k,-CY*k);
+    ftctx.save();ftctx.beginPath();ftctx.rect(CX,CY,TW,TH);ftctx.clip();
+    ftctx.fillStyle='#fff';ftctx.fillRect(CX,CY,TW,TH);
     drawBackground();
     drawTiles();
     drawPlaced();
@@ -1786,15 +1788,15 @@ function paintFabric(){
   fctx.setTransform(dpr*s*cos,dpr*s*sin,-dpr*s*sin,dpr*s*cos,dpr*(vw/2+panX-s*(cos*W/2-sin*H/2)),dpr*(vh/2+panY-s*(sin*W/2+cos*H/2)));
   fctx.imageSmoothingEnabled=true;
   const eps=.5/(s*dpr); // overlap neighbouring tiles by half a device pixel so no hairline seams show
-  const iyLo=Math.floor((minY-C)/TILE)-2,iyHi=Math.ceil((maxY-C)/TILE)+2;
+  const iyLo=Math.floor((minY-CY)/TH)-2,iyHi=Math.ceil((maxY-CY)/TH)+2;
   let drawn=0;
   for(let iy=iyLo;iy<=iyHi&&drawn<900;iy++){
-    const rowShift=layout==='diamond'?iy*TILE/2:(layout==='halfBrick'&&iy%2)?TILE/2:0;
-    const ixLo=Math.floor((minX-C-rowShift)/TILE)-1,ixHi=Math.ceil((maxX-C-rowShift)/TILE)+1;
+    const rowShift=layout==='diamond'?iy*TW/2:(layout==='halfBrick'&&iy%2)?TW/2:0;
+    const ixLo=Math.floor((minX-CX-rowShift)/TW)-1,ixHi=Math.ceil((maxX-CX-rowShift)/TW)+1;
     for(let ix=ixLo;ix<=ixHi&&drawn<900;ix++){
-      const [ox,oy]=tilePos(ix,iy),x=C+ox,y=C+oy;
-      if(x>maxX||x+TILE<minX||y>maxY||y+TILE<minY)continue;
-      fctx.drawImage(fabricTile,x-eps,y-eps,TILE+2*eps,TILE+2*eps);drawn++;
+      const [ox,oy]=tilePos(ix,iy),x=CX+ox,y=CY+oy;
+      if(x>maxX||x+TW<minX||y>maxY||y+TH<minY)continue;
+      fctx.drawImage(fabricTile,x-eps,y-eps,TW+2*eps,TH+2*eps);drawn++;
     }
   }
   fabricLast=performance.now();
@@ -1804,17 +1806,37 @@ function redraw(){if(redraw._q)return;redraw._q=requestAnimationFrame(()=>{redra
 // Reference (a non-exported, freely-scaled/positioned tracing guide), this is sized to exactly
 // fill the guide-square tile, tiles using the same repeat offsets as the hand-drawn layer/motifs
 // so it stays aligned with everything drawn on top, and IS included in the final export.
-function drawBackground(){if(!bgImg||!bgShown)return;ctx.save();ctx.globalAlpha=bgOpacity;offsets().forEach(([ox,oy])=>ctx.drawImage(bgImg,C+ox,C+oy,TILE,TILE));ctx.restore();}
+function drawBackground(){if(!bgImg||!bgShown)return;ctx.save();ctx.globalAlpha=bgOpacity;offsets().forEach(([ox,oy])=>ctx.drawImage(bgImg,CX+ox,CY+oy,TW,TH));ctx.restore();}
 // The tile boundary itself is always visible — it's how the camera-window view reads as "this is
 // the editable tile, everything outside it is a repeat edge-clone", independent of the optional
 // grid/guides overlay (which is off by default and purely a drawing aid).
 function drawTileBoundary(){/* now the #tileOutline DOM overlay (constant thickness at any zoom) */}
-function drawGuides(){ctx.save();ctx.strokeStyle='rgba(54,60,110,.18)';ctx.lineWidth=3;for(let x=C;x<=C+TILE;x+=TILE/4){ctx.beginPath();ctx.moveTo(x,C);ctx.lineTo(x,C+TILE);ctx.stroke()}for(let y=C;y<=C+TILE;y+=TILE/4){ctx.beginPath();ctx.moveTo(C,y);ctx.lineTo(C+TILE,y);ctx.stroke()}if(symMode!=='off'){ctx.strokeStyle='rgba(223,111,165,.75)';ctx.lineWidth=3;ctx.setLineDash([14,10]);if(symMode==='vertical'||symMode==='quad'||symMode==='diamond'){ctx.beginPath();ctx.moveTo(symX,C);ctx.lineTo(symX,C+TILE);ctx.stroke()}if(symMode==='horizontal'||symMode==='quad'||symMode==='diamond'){ctx.beginPath();ctx.moveTo(C,symY);ctx.lineTo(C+TILE,symY);ctx.stroke()}if(symMode==='diamond'){ctx.beginPath();ctx.moveTo(C,symY-(symX-C));ctx.lineTo(C+TILE,symY+(C+TILE-symX));ctx.stroke();ctx.beginPath();ctx.moveTo(C,symY+(symX-C));ctx.lineTo(C+TILE,symY-(C+TILE-symX));ctx.stroke();}}ctx.restore();}
+function drawGuides(){ctx.save();ctx.strokeStyle='rgba(54,60,110,.18)';ctx.lineWidth=3;for(let x=CX;x<=CX+TW+.5;x+=TW/4){ctx.beginPath();ctx.moveTo(x,CY);ctx.lineTo(x,CY+TH);ctx.stroke()}for(let y=CY;y<=CY+TH+.5;y+=TH/4){ctx.beginPath();ctx.moveTo(CX,y);ctx.lineTo(CX+TW,y);ctx.stroke()}if(symMode!=='off'){ctx.strokeStyle='rgba(223,111,165,.75)';ctx.lineWidth=3;ctx.setLineDash([14,10]);if(symMode==='vertical'||symMode==='quad'||symMode==='diamond'){ctx.beginPath();ctx.moveTo(symX,CY);ctx.lineTo(symX,CY+TH);ctx.stroke()}if(symMode==='horizontal'||symMode==='quad'||symMode==='diamond'){ctx.beginPath();ctx.moveTo(CX,symY);ctx.lineTo(CX+TW,symY);ctx.stroke()}if(symMode==='diamond'){ctx.beginPath();ctx.moveTo(CX,symY-(symX-CX));ctx.lineTo(CX+TW,symY+(CX+TW-symX));ctx.stroke();ctx.beginPath();ctx.moveTo(CX,symY+(symX-CX));ctx.lineTo(CX+TW,symY-(CX+TW-symX));ctx.stroke();}}ctx.restore();}
 function drawTraces(){traces.forEach(t=>{ctx.save();ctx.globalAlpha=t.opacity;t.w=t.img.width*t.scale;t.h=t.img.height*t.scale;ctx.drawImage(t.img,t.x-t.w/2,t.y-t.h/2,t.w,t.h);ctx.restore();});}
 // One lattice definition shared by the on-canvas repeats (offsets) and the fabric preview, so
 // "Half-drop / Half-brick / Diamond" mean exactly the same thing in both. ogee/tossed currently
 // fall through to a plain grid, exactly as before.
-function tilePos(ix,iy){let ox=ix*TILE,oy=iy*TILE;if(layout==='halfDrop'&&ix%2)oy+=TILE/2;if(layout==='halfBrick'&&iy%2)ox+=TILE/2;if(layout==='diamond'){ox+=iy*TILE/2}return [ox,oy];}
+function tilePos(ix,iy){let ox=ix*TW,oy=iy*TH;if(layout==='halfDrop'&&ix%2)oy+=TH/2;if(layout==='halfBrick'&&iy%2)ox+=TW/2;if(layout==='diamond'){ox+=iy*TW/2}return [ox,oy];}
+const TILE_SHAPES=[['1:1','Square'],['5:7','Card 5×7 (portrait)'],['7:5','Card 7×5 (landscape)'],['4:6','Card 4×6 (portrait)'],['6:4','Card 4×6 (landscape)'],['210:297','A-size (portrait)'],['297:210','A-size (landscape)'],['3:4','3:4 (portrait)'],['4:3','4:3 (landscape)'],['9:16','Story 9:16'],['custom','Custom ratio…']];
+function tileFromRatio(a,b){a=+a;b=+b;if(!(a>0&&b>0))return [TILE,TILE];const r=Math.max(.2,Math.min(5,a/b));return r>=1?[TILE,Math.max(40,Math.round(TILE/r))]:[Math.max(40,Math.round(TILE*r)),TILE];}
+function tileShapeKey(){return TW===TH?'1:1':TW+':'+TH;}
+// The tile is always centred on the canvas, with its LONG side fixed at 780, so the view, motif sizing and every repeat calculation keep working.
+function setTileShape(w,h,quiet){
+  w=Math.round(Math.max(40,Math.min(TILE,+w||TILE)));h=Math.round(Math.max(40,Math.min(TILE,+h||TILE)));
+  TW=w;TH=h;CX=(W-TW)/2;CY=(H-TH)/2;
+  try{const to=$('tileOutline');if(to){to.style.width=TW+'px';to.style.height=TH+'px';}}catch(e){}
+  try{fabricTileDirty=true;}catch(e){}
+  try{syncTileShapeUI();}catch(e){}
+  if(!quiet){try{rebuildAllLayers();}catch(e){}try{redraw();}catch(e){}try{scheduleAutosave();}catch(e){}}
+}
+function syncTileShapeUI(){
+  const sel=$('tileShapeSel');if(!sel)return;
+  const hit=TILE_SHAPES.find(x=>{if(x[0]==='custom')return false;const [a,b]=x[0].split(':');const t=tileFromRatio(a,b);return t[0]===TW&&t[1]===TH;});
+  sel.value=hit?hit[0]:'custom';
+  $('tileShapeCustom').style.display=sel.value==='custom'?'flex':'none';
+  if(!hit){$('tileCW').value=TW;$('tileCH').value=TH;}
+  $('tileShapeNote').textContent=TW===TH?'':'Tile '+TW+' × '+TH+' — half drop shifts down by half the tile height, half brick across by half the width.';
+}
 function offsets(){let arr=[[0,0]];if(!showTiling)return arr;for(let ix=-1;ix<=1;ix++)for(let iy=-1;iy<=1;iy++){if(ix===0&&iy===0)continue;arr.push(tilePos(ix,iy));}return arr;}
 function drawTiles(){offsets().forEach(([ox,oy])=>{ctx.drawImage(displayCanvas,ox,oy,W,H);if(liveActive)ctx.drawImage(liveLayer,ox,oy);});}
 // Point-to-polyline distance, used for both stroke picking (selectAt) and eraser hit-testing
@@ -1920,9 +1942,9 @@ let activeTemplate=null;
 // x/y/w/h/role (0-100 percentages) plus optional rot/shape. Built-in TEMPLATES use `type` for
 // the outline shape; an imported Magic Builder export uses `shape` - both are read here.
 function applyBricks(bricksArr,name,key){
- placed=(bricksArr||[]).map(b=>{const w=(b.w/100)*TILE,h=(b.h/100)*TILE;
+ placed=(bricksArr||[]).map(b=>{const w=(b.w/100)*TW,h=(b.h/100)*TH;
   return {id:crypto.randomUUID(),motifId:null,img:null,slotShape:b.shape||b.type||'oval',role:b.role||'filler',
-   x:C+(b.x/100)*TILE,y:C+(b.y/100)*TILE,w,h,boxW:w,boxH:h,s:1,r:b.rot||0,fx:1,fy:1};});
+   x:CX+(b.x/100)*TW,y:CY+(b.y/100)*TH,w,h,boxW:w,boxH:h,s:1,r:b.rot||0,fx:1,fy:1};});
  selected=placed[0]?.id||null;activeTemplate=key||null;mode='edit';syncMode();syncTemplateUI();pushHist();redraw();
  setStatus('📐 '+(name||'Template')+' loaded - tap a motif to fill the next slot.');
 }
@@ -4627,7 +4649,7 @@ function unionAABB(ids){
   if(!boxes.length)return null;
   return {x0:Math.min(...boxes.map(b=>b.x0)),x1:Math.max(...boxes.map(b=>b.x1)),y0:Math.min(...boxes.map(b=>b.y0)),y1:Math.max(...boxes.map(b=>b.y1))};
 }
-function canvasAlignBounds(){return {x0:C,y0:C,x1:C+TILE,y1:C+TILE};}
+function canvasAlignBounds(){return {x0:CX,y0:CY,x1:CX+TW,y1:CY+TH};}
 function applyAlign(kind){
   const ids=getAlignTargetIds();
   if(!ids.length){setStatus('📐 Select a motif first (or turn on Multi-Select for several).');return;}
@@ -5054,14 +5076,16 @@ function refreshSelStrokeView(stroke){
   else rebuildLayer(stroke.layerId);
   redraw();
 }
+let lastSelSizeSyncId=null;
 function syncSelStrokeControls(){
   const stroke=strokes.find(s=>s.id===selectedStrokeId);if(!stroke)return;
+  const newSel=lastSelSizeSyncId!==stroke.id;lastSelSizeSyncId=stroke.id;
   const st=strokeSettings(stroke),br=BrushEngine.getBrush(stroke.brushId),mx=br.stamp?300:120;
   fillSelBrushOptions();document.querySelectorAll('.sel-brush').forEach(e=>{e.value=stroke.brushId;});
   document.querySelectorAll('.sel-colour').forEach(e=>{e.value=/^#[0-9a-f]{6}$/i.test(stroke.color||'')?stroke.color:'#000000';});
   document.querySelectorAll('.sel-width').forEach(e=>{e.max=mx;e.value=st.size;});
   document.querySelectorAll('.sel-width-val').forEach(e=>{e.textContent=fmtSize(st.size);});
-  syncSizeNums();
+  syncSizeNums(newSel);
 }
 // Brush of the selected stroke (changing it keeps colour and, where it makes sense, size).
 let selBrushSig='';
@@ -5104,10 +5128,13 @@ document.querySelectorAll('.sel-width').forEach(el=>{
 // ---- Size: fractional sizes + number box + preset dropdown ----
 const SIZE_PRESETS=[0.1,0.25,0.5,0.75,1,1.5,2,3,4,5,6,8,10,12,16,20,24,32,48,64,100,150,200,300,400];
 function fmtSize(v){v=+v;if(!isFinite(v))return'';return v>=10?String(Math.round(v)):String(Math.round(v*100)/100);}
-function syncSizeNums(){
+function syncSizeNums(force){
   document.querySelectorAll('.size-combo').forEach(c=>{
     const r=c._range,n=c.querySelector(".size-num");if(!r||!n)return;
-    if(document.activeElement!==n)n.value=fmtSize(r.value);
+    // force (a different stroke was selected): drop focus and show the real size, otherwise a box that still has the
+    // keyboard open keeps the previous number, and typing that same number again fires no change at all.
+    if(force&&document.activeElement===n)n.blur();
+    if(force||document.activeElement!==n)n.value=fmtSize(r.value);
     n.max=r.max;
   });
 }
@@ -7214,7 +7241,11 @@ registerCustomDefs(customDefs,true).then(()=>{renderBrushFamilies();syncRecents(
 try{if(!localStorage.getItem('sp-minsize1-v1')){const st=JSON.parse(localStorage.getItem('pkmBrushSettingsV1')||'{}');Object.keys(st).forEach(id=>{if(st[id]&&typeof st[id].size==='number'&&st[id].size<1)BrushEngine.setSettings(id,{size:1});});localStorage.setItem('sp-minsize1-v1','1');}}catch(e){}
 try{if(!localStorage.getItem('sp-smoothpen-fine-v1')){BrushEngine.setSettings('smoothPen',{size:3});localStorage.setItem('sp-smoothpen-fine-v1','1');}}catch(e){}
 renderBrushFamilies();syncRecents();syncFavorites();syncControlsFromSettings();
-document.querySelectorAll('.layout-btn').forEach(b=>b.onclick=()=>{document.querySelectorAll('.layout-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');layout=b.dataset.layout;$('layoutPill').textContent='📍 '+b.textContent+' Mode';redraw();});$('tilingBtn').onclick=()=>{showTiling=!showTiling;$('tilingBtn').classList.toggle('active',showTiling);$('tilingBtn').textContent=showTiling?'Tiling On':'Tiling Off';redraw();};$('guidesBtn').onclick=()=>{showGuides=!showGuides;$('guidesBtn').classList.toggle('active',showGuides);sessionStorage.setItem('sp-showGuides',showGuides?'1':'0');redraw();};
+document.querySelectorAll('.layout-btn').forEach(b=>b.onclick=()=>{document.querySelectorAll('.layout-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');layout=b.dataset.layout;$('layoutPill').textContent='📍 '+b.textContent+' Mode';redraw();});(function(){const sel=$('tileShapeSel');sel.innerHTML=TILE_SHAPES.map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join('');syncTileShapeUI();
+  const applyCustom=()=>{const t=tileFromRatio($('tileCW').value,$('tileCH').value);setTileShape(t[0],t[1]);};
+  sel.onchange=()=>{if(sel.value==='custom'){$('tileShapeCustom').style.display='flex';$('tileCW').value=TW;$('tileCH').value=TH;return;}const [a,b]=sel.value.split(':');const t=tileFromRatio(a,b);setTileShape(t[0],t[1]);setStatus('📐 Tile shape set. Your artwork has not moved; only the repeat frame changed.');};
+  $('tileCW').onchange=applyCustom;$('tileCH').onchange=applyCustom;})();
+$('tilingBtn').onclick=()=>{showTiling=!showTiling;$('tilingBtn').classList.toggle('active',showTiling);$('tilingBtn').textContent=showTiling?'Tiling On':'Tiling Off';redraw();};$('guidesBtn').onclick=()=>{showGuides=!showGuides;$('guidesBtn').classList.toggle('active',showGuides);sessionStorage.setItem('sp-showGuides',showGuides?'1':'0');redraw();};
 $('motifScale').oninput=e=>{const m=getSel();if(!m)return;m.s=+e.target.value/100;$('motifScaleVal').textContent=e.target.value+'%';redraw();};$('motifScale').onchange=pushHist;$('rotL').onclick=()=>{const m=getSel();if(m){m.r-=15;pushHist();redraw();}};$('rotR').onclick=()=>{const m=getSel();if(m){m.r+=15;pushHist();redraw();}};$('flipH').onclick=()=>{const m=getSel();if(m){m.fx*=-1;pushHist();redraw();}};$('flipV').onclick=()=>{const m=getSel();if(m){m.fy*=-1;pushHist();redraw();}};$('deleteSel').onclick=()=>{placed=placed.filter(p=>p.id!==selected);selected=null;pushHist();redraw();updateSelectedControls();};
 
 // --- Non-destructive Motif editing: Motif Source (motifs[] entry, with .source = editable master
@@ -7431,9 +7462,9 @@ $('bgInput').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new Fil
 $('bgOpacitySlider').oninput=e=>{bgOpacity=+e.target.value/100;$('bgOpacityVal').textContent=e.target.value+'%';redraw();scheduleAutosave();};
 $('bgToggle').onclick=()=>{bgShown=!bgShown;$('bgToggle').classList.toggle('active',bgShown);$('bgToggle').textContent=bgShown?'👁️ Shown':'🚫 Hidden';redraw();scheduleAutosave();};
 $('bgClear').onclick=()=>{bgImg=null;$('bgEmpty').style.display='block';$('bgControls').style.display='none';redraw();scheduleAutosave();};
-$('traceInput').onchange=e=>Array.from(e.target.files).forEach(f=>{const r=new FileReader();r.onload=ev=>{const img=new Image();img.onload=()=>{traces.push({img,src:ev.target.result,name:f.name,x:W/2,y:H/2,scale:Math.min(TILE/img.width,TILE/img.height),opacity:.35});renderTraces();redraw();scheduleAutosave();};img.src=ev.target.result;};r.readAsDataURL(f);});
+$('traceInput').onchange=e=>Array.from(e.target.files).forEach(f=>{const r=new FileReader();r.onload=ev=>{const img=new Image();img.onload=()=>{traces.push({img,src:ev.target.result,name:f.name,x:W/2,y:H/2,scale:Math.min(TW/img.width,TH/img.height),opacity:.35});renderTraces();redraw();scheduleAutosave();};img.src=ev.target.result;};r.readAsDataURL(f);});
 function renderTraces(){const list=$('traceList');list.innerHTML='';traces.forEach((t,i)=>{const c=document.createElement('div');c.className='trace-card';c.innerHTML=`<img src="${t.src}"><div><div>${t.name}</div><div class="small">Trace ref · ${Math.round(t.opacity*100)}%</div></div><button class="x" style="position:static">×</button>`;c.querySelector('button').onclick=()=>{traces.splice(i,1);renderTraces();redraw();scheduleAutosave();};list.appendChild(c);});}
-$('traceOpacity').oninput=e=>{traces.forEach(t=>t.opacity=+e.target.value/100);$('traceOpacityVal').textContent=e.target.value+'%';renderTraces();redraw();scheduleAutosave();};$('traceScale').oninput=e=>{traces.forEach(t=>t.scale=+e.target.value/100);$('traceScaleVal').textContent=e.target.value+'%';redraw();scheduleAutosave();};$('traceFit').onclick=()=>{traces.forEach(t=>t.scale=Math.min(TILE/t.img.width,TILE/t.img.height));redraw();scheduleAutosave();};$('traceCentre').onclick=()=>{traces.forEach(t=>{t.x=W/2;t.y=H/2});redraw();scheduleAutosave();};$('traceLock').onclick=()=>{traceLocked=!traceLocked;setStatus(traceLocked?'🔒 Trace locked — drawing works normally.':'🔓 Trace Move: switch to Edit mode and drag the canvas to move the trace image. Drawing is unaffected. Tap again to lock it.');$('traceLock').textContent=traceLocked?'🔒 Locked':'🔓 Move';$('traceLock').classList.toggle('active',traceLocked)};$('traceClear').onclick=()=>{traces=[];renderTraces();redraw();scheduleAutosave();};
+$('traceOpacity').oninput=e=>{traces.forEach(t=>t.opacity=+e.target.value/100);$('traceOpacityVal').textContent=e.target.value+'%';renderTraces();redraw();scheduleAutosave();};$('traceScale').oninput=e=>{traces.forEach(t=>t.scale=+e.target.value/100);$('traceScaleVal').textContent=e.target.value+'%';redraw();scheduleAutosave();};$('traceFit').onclick=()=>{traces.forEach(t=>t.scale=Math.min(TW/t.img.width,TH/t.img.height));redraw();scheduleAutosave();};$('traceCentre').onclick=()=>{traces.forEach(t=>{t.x=W/2;t.y=H/2});redraw();scheduleAutosave();};$('traceLock').onclick=()=>{traceLocked=!traceLocked;setStatus(traceLocked?'🔒 Trace locked — drawing works normally.':'🔓 Trace Move: switch to Edit mode and drag the canvas to move the trace image. Drawing is unaffected. Tap again to lock it.');$('traceLock').textContent=traceLocked?'🔒 Locked':'🔓 Move';$('traceLock').classList.toggle('active',traceLocked)};$('traceClear').onclick=()=>{traces=[];renderTraces();redraw();scheduleAutosave();};
 // Trace Move mode (🔓): dragging the canvas moves the trace image under the pointer instead of drawing.
 let traceDrag=null;
 function traceDragStart(e){
@@ -7553,7 +7584,7 @@ function buildSvgExport(size){
   const lat=[];for(let ix=-1;ix<=1;ix++)for(let iy=-1;iy<=1;iy++){if(ix||iy)lat.push(tilePos(ix,iy));}
   const useCopies=id=>lat.map(([ox,oy])=>'<use href="#'+id+'" transform="translate('+svgNum(ox)+' '+svgNum(oy)+')"/>').join('');
   const out=[];
-  out.push('<rect id="background" x="'+C+'" y="'+C+'" width="'+TILE+'" height="'+TILE+'" fill="#ffffff"/>');
+  out.push('<rect id="background" x="'+CX+'" y="'+CY+'" width="'+TW+'" height="'+TH+'" fill="#ffffff"/>');
   let li=0;
   layers.forEach(layer=>{
     if(!layer.visible)return;
@@ -7562,7 +7593,7 @@ function buildSvgExport(size){
     li++;const id='art-'+li;
     out.push('<g id="layer-'+li+'" data-name="'+svgEsc(layer.name)+'" inkscape:groupmode="layer" inkscape:label="'+svgEsc(layer.name)+'"'+(layer.opacity<100?' opacity="'+svgNum(layer.opacity/100)+'"':'')+'><g id="'+id+'">'+body+'</g>'+useCopies(id)+'</g>');
   });
-  return '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="'+size+'" height="'+size+'" viewBox="0 0 '+TILE+' '+TILE+'">\n<defs>'+(txSvgCss?'<style>'+txSvgCss+'</style>':'')+defs.join('')+'<clipPath id="tile"><rect x="0" y="0" width="'+TILE+'" height="'+TILE+'"/></clipPath></defs>\n<g clip-path="url(#tile)"><g transform="translate('+(-C)+' '+(-C)+')">\n'+out.join('\n')+'\n</g></g>\n</svg>\n';
+  return '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="'+Math.round(size*TW/TILE)+'" height="'+Math.round(size*TH/TILE)+'" viewBox="0 0 '+TW+' '+TH+'">\n<defs>'+(txSvgCss?'<style>'+txSvgCss+'</style>':'')+defs.join('')+'<clipPath id="tile"><rect x="0" y="0" width="'+TW+'" height="'+TH+'"/></clipPath></defs>\n<g clip-path="url(#tile)"><g transform="translate('+(-CX)+' '+(-CY)+')">\n'+out.join('\n')+'\n</g></g>\n</svg>\n';
 }
 let svgSize=3600;try{const v=+localStorage.getItem('sp-svgSize');if(v>=64&&v<=20000)svgSize=Math.round(v);}catch(e){}
 function saveFileBlob(blob,name){
@@ -7584,7 +7615,7 @@ $('svgSaveBtn').onclick=async()=>{
     saveFileBlob(blob,'pattern-sketch-tile-'+svgSize+'.svg');
     $('svgPopover').classList.remove('open');
     const skipped=placed.filter(p=>p.img).length+((bgImg&&bgShown)?1:0);
-    setStatus('🖋️ SVG saved at '+svgSize+' × '+svgSize+' px (vector only)'+(skipped?' — '+skipped+' picture'+(skipped===1?'':'s')+' (motif / background image) left out because they are not vector.':'.'));
+    setStatus('🖋️ SVG saved at '+Math.round(svgSize*TW/TILE)+' × '+Math.round(svgSize*TH/TILE)+' px (vector only)'+(skipped?' — '+skipped+' picture'+(skipped===1?'':'s')+' (motif / background image) left out because they are not vector.':'.'));
   }catch(err){console.error(err);setStatus('⚠️ Could not build the SVG: '+(err&&err.message||err));}
 };
 // ---- Pattern Brush maker --------------------------------------------------------------------------
@@ -7830,11 +7861,11 @@ async function runBrushSetExport(kind){
 $('brushSetBtn').onclick=()=>runBrushSetExport('brushset');
 $('brushFilesBtn').onclick=()=>runBrushSetExport('brushes');
 $('brushPngPackBtn').onclick=()=>runBrushSetExport('png');
-$('exportBtn').onclick=async()=>{try{await txReady();}catch(e){}updateComposite();const out=document.createElement('canvas');out.width=TILE;out.height=TILE;const o=out.getContext('2d');o.fillStyle='#fff';o.fillRect(0,0,TILE,TILE);if(bgImg&&bgShown){o.save();o.globalAlpha=bgOpacity;o.drawImage(bgImg,0,0,TILE,TILE);o.restore();}// Seamless export: the tile also receives the parts of its eight neighbouring repeats that spill
+$('exportBtn').onclick=async()=>{try{await txReady();}catch(e){}updateComposite();const out=document.createElement('canvas');out.width=TW;out.height=TH;const o=out.getContext('2d');o.fillStyle='#fff';o.fillRect(0,0,TW,TH);if(bgImg&&bgShown){o.save();o.globalAlpha=bgOpacity;o.drawImage(bgImg,0,0,TW,TH);o.restore();}// Seamless export: the tile also receives the parts of its eight neighbouring repeats that spill
   // over its edges (same lattice as the on-screen repeat), so anything crossing an edge wraps round.
   const wrapOffs=[[0,0]];for(let ix=-1;ix<=1;ix++)for(let iy=-1;iy<=1;iy++){if(ix||iy)wrapOffs.push(tilePos(ix,iy));}
-  wrapOffs.forEach(([ox,oy])=>o.drawImage(compositeCanvas,0,0,W,H,ox-C,oy-C,W,H));
-  placed.forEach(p=>{if(!p.img)return;wrapOffs.forEach(([ox,oy])=>{o.save();if(p.alpha!=null)o.globalAlpha=p.alpha;o.translate(p.x-C+ox,p.y-C+oy);o.rotate(p.r*Math.PI/180);o.scale(p.s*p.fx,p.s*p.fy);o.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);o.restore();});});out.toBlob(b=>{if(b)SketchpadNative.saveBlob(b,'pattern-sketch-tile.png');},'image/png');};
+  wrapOffs.forEach(([ox,oy])=>o.drawImage(compositeCanvas,0,0,W,H,ox-CX,oy-CY,W,H));
+  placed.forEach(p=>{if(!p.img)return;wrapOffs.forEach(([ox,oy])=>{o.save();if(p.alpha!=null)o.globalAlpha=p.alpha;o.translate(p.x-CX+ox,p.y-CY+oy);o.rotate(p.r*Math.PI/180);o.scale(p.s*p.fx,p.s*p.fy);o.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);o.restore();});});out.toBlob(b=>{if(b)SketchpadNative.saveBlob(b,'pattern-sketch-tile.png');},'image/png');};
 window.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='z'){e.shiftKey?redo():undo();}});
 function syncThemeToggleUI(){const light=document.body.classList.contains('theme-light');$('themeToggle').textContent=light?'🌙 Dark Mode':'☀️ Light Mode';}
 $('themeToggle').onclick=()=>{const light=document.body.classList.toggle('theme-light');try{localStorage.setItem('pkmTheme',light?'light':'dark');}catch(e){}syncThemeToggleUI();};
@@ -7951,6 +7982,7 @@ function setSaveStatus(state,at){
 let traceSource=null; // the picture last used in Trace Image to Vector, kept with the project: {name,src,settings}
 function buildDocObject(){
   return {
+    tileW:TW,tileH:TH,
     strokesJSON:JSON.stringify(strokes),
     layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock}))),
     activeLayerId,
@@ -7998,20 +8030,21 @@ function idbMulti(names,fn){if(window.__spFailWrites)return Promise.reject(new E
   try{fn(o);}catch(e){try{tx.abort();}catch(_){}rej(e);return;}
   tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error||new Error('Transaction aborted'));}));}
 function queueJob(fn){const job=saveChain.then(fn,fn);saveChain=job.then(()=>{},()=>{});return job;}
-function blankDoc(lay){
+function blankDoc(lay,tile){
   const dl=defaultLayers();
-  return {format:'sketchpad-project',version:2,strokesJSON:'[]',layersJSON:JSON.stringify(dl.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock}))),activeLayerId:dl[dl.length-1].id,placedJSON:'[]',groupsJSON:'{}',motifs:[],editingMotifId:null,editingMotifStash:null,bgSrc:null,bgOpacity:1,bgShown:true,tracesJSON:'[]',traceLocked:true,customBrushes:[],layout:lay||'grid',activeTemplate:null,savedPalettes:savedPalettes.map(p=>({id:crypto.randomUUID(),name:p.name,hexes:p.hexes.slice()})),savedAt:Date.now()};
+  const tt=tile?tileFromRatio(tile.split(':')[0],tile.split(':')[1]):[TILE,TILE];
+  return {format:'sketchpad-project',version:2,tileW:tt[0],tileH:tt[1],strokesJSON:'[]',layersJSON:JSON.stringify(dl.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock}))),activeLayerId:dl[dl.length-1].id,placedJSON:'[]',groupsJSON:'{}',motifs:[],editingMotifId:null,editingMotifStash:null,bgSrc:null,bgOpacity:1,bgShown:true,tracesJSON:'[]',traceLocked:true,customBrushes:[],layout:lay||'grid',activeTemplate:null,savedPalettes:savedPalettes.map(p=>({id:crypto.randomUUID(),name:p.name,hexes:p.hexes.slice()})),savedAt:Date.now()};
 }
 function docCounts(d){const n=j=>{try{return JSON.parse(j||'[]').length;}catch(e){return 0;}};return {strokes:n(d.strokesJSON),motifs:(d.motifs||[]).length};}
 function makeThumb(){
   try{
     updateComposite();
-    const S=240,c=document.createElement('canvas');c.width=c.height=S;const o=c.getContext('2d');
-    o.fillStyle='#fff';o.fillRect(0,0,S,S);
-    if(bgImg&&bgShown){o.save();o.globalAlpha=bgOpacity;o.drawImage(bgImg,0,0,S,S);o.restore();}
+    const S=240,SW=Math.round(S*TW/TILE),SH=Math.round(S*TH/TILE),c=document.createElement('canvas');c.width=SW;c.height=SH;const o=c.getContext('2d');
+    o.fillStyle='#fff';o.fillRect(0,0,SW,SH);
+    if(bgImg&&bgShown){o.save();o.globalAlpha=bgOpacity;o.drawImage(bgImg,0,0,SW,SH);o.restore();}
     const k=S/TILE;
-    o.drawImage(compositeCanvas,C,C,TILE,TILE,0,0,S,S);
-    placed.forEach(p=>{if(!p.img)return;o.save();if(p.alpha!=null)o.globalAlpha=p.alpha;o.translate((p.x-C)*k,(p.y-C)*k);o.rotate(p.r*Math.PI/180);o.scale(p.s*p.fx*k,p.s*p.fy*k);o.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);o.restore();});
+    o.drawImage(compositeCanvas,CX,CY,TW,TH,0,0,SW,SH);
+    placed.forEach(p=>{if(!p.img)return;o.save();if(p.alpha!=null)o.globalAlpha=p.alpha;o.translate((p.x-CX)*k,(p.y-CY)*k);o.rotate(p.r*Math.PI/180);o.scale(p.s*p.fx*k,p.s*p.fy*k);o.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);o.restore();});
     return c.toDataURL('image/jpeg',0.82);
   }catch(e){return null;}
 }
@@ -8169,7 +8202,7 @@ async function createProjectRecord({name,folderId,doc}){
   const id=crypto.randomUUID(),now=Date.now();
   doc.savedAt=now;doc.format='sketchpad-project';doc.version=2;doc.projectName=name;
   const c=docCounts(doc);
-  const meta={id,name,folderId:folderId||null,createdAt:now,updatedAt:now,thumb:null,layout:doc.layout||'grid',canvas:{w:W,h:H,tile:TILE},trashed:false,trashedAt:null,strokes:c.strokes,motifs:c.motifs};
+  const meta={id,name,folderId:folderId||null,createdAt:now,updatedAt:now,thumb:null,layout:doc.layout||'grid',canvas:{w:W,h:H,tile:TILE,tw:doc.tileW||TILE,th:doc.tileH||TILE},trashed:false,trashedAt:null,strokes:c.strokes,motifs:c.motifs};
   await queueJob(()=>idbMulti([PROJ_STORE,PDOC_STORE],s=>{s[PROJ_STORE].put(meta,id);s[PDOC_STORE].put(doc,id);}));
   return meta;
 }
@@ -8184,14 +8217,15 @@ function updateMeta(id,patch){
 async function newProjectFlow(presetFolder){
   const [metas,folders]=await Promise.all([dbAll(PROJ_STORE),dbAll(FOLD_STORE)]);
   const fields=[{key:'name',label:'Project name',type:'text',value:uniqueName('Untitled pattern',metas)},
+    {key:'tile',label:'Tile shape',type:'select',value:'1:1',options:TILE_SHAPES.filter(x=>x[0]!=='custom')},
     {key:'layout',label:'Repeat layout',type:'chips',options:LAYOUT_CHOICES,value:'grid'}];
   if(folders.length)fields.push({key:'folderId',label:'Folder',type:'select',value:presetFolder||'',options:[['','No folder']].concat(folders.sort((a,b)=>a.name.localeCompare(b.name)).map(f=>[f.id,f.name]))});
-  const r=await projAsk({title:'➕ New Project',fields,note:'Canvas: seamless square tile — a '+TILE+' × '+TILE+' px repeat on an '+W+' × '+H+' px working canvas. You can change the repeat layout any time under 📐 Repeat Layouts.',ok:'Create & start drawing'});
+  const r=await projAsk({title:'➕ New Project',fields,note:'Pick Square for a normal seamless repeat, or a card shape (for example 5×7) for a rectangular tile. Rectangular tiles repeat as grid, half drop or half brick. You can change the tile shape and layout any time under 📐 Repeat Layouts.',ok:'Create & start drawing'});
   if(!r)return false;
   if(!(await flushBeforeSwitch()))return false;
   const name=cleanName(r.name,'Untitled pattern');
   let meta;
-  try{meta=await createProjectRecord({name,folderId:r.folderId||presetFolder||null,doc:blankDoc(r.layout||'grid')});}
+  try{meta=await createProjectRecord({name,folderId:r.folderId||presetFolder||null,doc:blankDoc(r.layout||'grid',r.tile||'1:1')});}
   catch(e){console.warn(e);await projAsk({title:'⚠️ Couldn’t create the project',message:'Storage refused the new project (it may be full). Your current artwork is still open.',ok:'OK',cancel:null});return false;}
   const doc=await dbGet(PDOC_STORE,meta.id);
   const ok=await loadProject(meta,doc);
@@ -8536,6 +8570,7 @@ async function applyDocObject(doc){
       mode=stash.mode||'edit';
       editingMotifId=null;editingMotifStash=null;editingMotifFrame=null;hiddenPlacedIds.clear();
     }
+    setTileShape(doc.tileW||TILE,doc.tileH||TILE,true);
     layout=doc.layout||'grid';activeTemplate=doc.activeTemplate||null;
     document.querySelectorAll('.layout-btn').forEach(x=>x.classList.toggle('active',x.dataset.layout===layout));
     $('layoutPill').textContent='📍 '+layout+' Mode';
@@ -9654,8 +9689,8 @@ async function vtRun(opts,onProgress){
 }
 // Placement: 'tile' fits the artwork inside one repeat tile (so the pattern doesn't overlap itself); 'canvas' fills the whole canvas.
 function vtPlacement(res,where){
-  const box=where==='canvas'?W:(where==='tilefull'?TILE:TILE*0.9);
-  const sc=Math.min(box/res.w,box/res.h);
+  const bw=where==='canvas'?W:(where==='tilefull'?TW:TW*0.9),bh=where==='canvas'?H:(where==='tilefull'?TH:TH*0.9);
+  const sc=Math.min(bw/res.w,bh/res.h);
   return {sc,ox:W/2-res.w*sc/2,oy:H/2-res.h*sc/2};
 }
 function vtInstall(res,name,where){
@@ -11132,7 +11167,7 @@ SPFonts.init().then(()=>{txRefreshMissing();});
   function mkCanvas(w, h) { var c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
   function Player(baseStr, log, opts) {
     this.base = baseStr; this.log = log; this.opts = opts || {};
-    this.cv = new Map(); this.comp = mkCanvas(W, H); this.pre = null; this.tile = mkCanvas(TILE, TILE);
+    this.cv = new Map(); this.comp = mkCanvas(W, H); this.pre = null; this.tile = mkCanvas(TW, TH);
     this.pos = 0; this.anim = null; this.dirty = true; this.endT = 0;
     this.layoutNow = layout;
     this.reset();
@@ -11236,30 +11271,30 @@ SPFonts.init().then(()=>{txRefreshMissing();});
   // the neighbouring repeats wrapping over the edges, then placed motif pictures.
   Player.prototype.buildTile = function () {
     this.flatten();
-    var o = this.tile.getContext('2d'); o.clearRect(0, 0, TILE, TILE); o.fillStyle = '#fff'; o.fillRect(0, 0, TILE, TILE);
-    var bg = this.st.bg; try { if (bg && bg.has && bg.shown && bgImg) { o.save(); o.globalAlpha = bg.opacity; o.drawImage(bgImg, 0, 0, TILE, TILE); o.restore(); } } catch (e) { }
+    var o = this.tile.getContext('2d'); o.clearRect(0, 0, TW, TH); o.fillStyle = '#fff'; o.fillRect(0, 0, TW, TH);
+    var bg = this.st.bg; try { if (bg && bg.has && bg.shown && bgImg) { o.save(); o.globalAlpha = bg.opacity; o.drawImage(bgImg, 0, 0, TW, TH); o.restore(); } } catch (e) { }
     var offs = [[0, 0]]; for (var ix = -1; ix <= 1; ix++) for (var iy = -1; iy <= 1; iy++) { if (ix || iy) offs.push(tilePos(ix, iy)); }
     var comp = this.comp;
     offs.forEach(function (of) {
-      var dx = of[0] - C, dy = of[1] - C, x0 = Math.max(0, dx), x1 = Math.min(TILE, dx + W), y0 = Math.max(0, dy), y1 = Math.min(TILE, dy + H);
+      var dx = of[0] - CX, dy = of[1] - CY, x0 = Math.max(0, dx), x1 = Math.min(TW, dx + W), y0 = Math.max(0, dy), y1 = Math.min(TH, dy + H);
       if (x1 <= x0 || y1 <= y0) return; o.drawImage(comp, x0 - dx, y0 - dy, x1 - x0, y1 - y0, x0, y0, x1 - x0, y1 - y0);
     });
     this.st.placed.forEach(function (p) {
       var m = null; try { m = motifs.find(function (x) { return x.id === p.motifId; }); } catch (e) { } var im = m && m.img; if (!im) return;
-      offs.forEach(function (of) { o.save(); if (p.alpha != null) o.globalAlpha = p.alpha; o.translate(p.x - C + of[0], p.y - C + of[1]); o.rotate((p.r || 0) * Math.PI / 180); o.scale(p.s * (p.fx == null ? 1 : p.fx), p.s * (p.fy == null ? 1 : p.fy)); o.drawImage(im, -p.w / 2, -p.h / 2, p.w, p.h); o.restore(); });
+      offs.forEach(function (of) { o.save(); if (p.alpha != null) o.globalAlpha = p.alpha; o.translate(p.x - CX + of[0], p.y - CY + of[1]); o.rotate((p.r || 0) * Math.PI / 180); o.scale(p.s * (p.fx == null ? 1 : p.fx), p.s * (p.fy == null ? 1 : p.fy)); o.drawImage(im, -p.w / 2, -p.h / 2, p.w, p.h); o.restore(); });
     });
     this.dirty = false;
   };
-  Player.prototype.drawTileTo = function (g, size) { g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.drawImage(this.tile, 0, 0, TILE, TILE, 0, 0, size, size); };
+  Player.prototype.drawTileTo = function (g, size) { g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; var k = size / TILE, w = TW * k, h = TH * k; g.drawImage(this.tile, 0, 0, TW, TH, (size - w) / 2, (size - h) / 2, w, h); };
   // zoom 1 = tile fills the frame; smaller shows the repeat around it (uses the project's repeat layout)
   Player.prototype.drawRepeat = function (g, size, zoom) {
     var k = zoom * size / TILE; g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
     g.fillStyle = '#fff'; g.fillRect(0, 0, size, size);
     var span = Math.ceil(1 / Math.max(0.05, zoom)) + 3;
     for (var iy = -span; iy <= span; iy++) for (var ix = -span; ix <= span; ix++) {
-      var p = tilePos(ix, iy), x = size / 2 + (p[0] - TILE / 2) * k, y = size / 2 + (p[1] - TILE / 2) * k, w = TILE * k;
-      if (x > size || y > size || x + w < 0 || y + w < 0) continue;
-      g.drawImage(this.tile, 0, 0, TILE, TILE, x - 0.4, y - 0.4, w + 0.8, w + 0.8);
+      var p = tilePos(ix, iy), x = size / 2 + (p[0] - TW / 2) * k, y = size / 2 + (p[1] - TH / 2) * k, w = TW * k, h = TH * k;
+      if (x > size || y > size || x + w < 0 || y + h < 0) continue;
+      g.drawImage(this.tile, 0, 0, TW, TH, x - 0.4, y - 0.4, w + 0.8, h + 0.8);
     }
   };
 
