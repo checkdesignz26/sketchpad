@@ -466,3 +466,6 @@ If the app throws an error while opening (blank canvas, empty size box), a red b
 
 ## v144 – Hi-res export in inches
 - Hi-res card export now takes the card's long side in **inches** (presets 5.5 / 7 / 10 in) plus a dpi choice (150 / 200 / 300 / 600), and shows the result in inches and pixels. Pixels can still be typed. The PNG is tagged with the chosen dpi. A 5 × 7 in card at 300 dpi is 1500 × 2100 px.
+
+## v145 – Gentler eraser
+- The eraser counts only 40 % of the brush width (was 100 % in v140), so it no longer slices straight across thick strokes. Thick strokes need a larger eraser to cut through.
