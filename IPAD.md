@@ -613,3 +613,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v187
 - ⏱ Speed test (More menu, above Memory check): times layer switching, panning frame rate, zoom re-sharpen and the export flatten on the open project, without changing it. Results are shown, can be copied, and the last 6 runs are kept in localStorage 'sp-bench' for comparing versions/devices.
+
+## v188
+- Layer picture cache: while the iPad is idle (2.5 s without touching), sleeping layers with many strokes are redrawn in small slices into one scratch canvas and kept as compressed pictures (in memory only). Tapping such a layer decodes the picture instead of replaying all its strokes. Each picture is checked against a signature of the layer's strokes (and any Paint Inside target) and discarded if anything changed. Falls back to the old redraw otherwise. Speed test step 2 now uses this path and reports how many switches came from pictures.
