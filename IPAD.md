@@ -597,3 +597,6 @@ The crash log showed the app closing at 820% zoom right after switching layers: 
 
 ## v182 — reuse canvases instead of creating new ones
 Switching or adding a layer woke one layer (a new 13 MB canvas) and put another to sleep (thrown away). iPad Safari hands that memory back slowly, so many switches could pile up until the screen went blank. Canvases are now reused from a small pool: 36 layer switches plus adding a layer created only 3 new canvases (it was one or more per switch before). The flattening scratch pictures are also kept instead of being recreated each time.
+
+## v183 — the screen repairs itself if iPad Safari wipes a canvas
+Your Memory check after the blank canvas showed no crash and only about 115 MB in use, so the app was not closing: iPad Safari had quietly wiped a canvas (blank beige or black paper). Every canvas the app draws now carries one almost invisible pixel in its corner. Every 2 seconds (and when you come back to the app) the app checks those pixels; if one is gone, that canvas was wiped, and it is redrawn from the strokes. Tested by wiping the main canvas, the sharp zoomed-in picture, the layer canvases, the flattened pictures and the display picture. All came back.
