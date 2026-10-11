@@ -569,3 +569,6 @@ With the eraser selected, "Eraser style" appears: Hard line (crisp, even edge), 
 
 ## v173 – Eraser reaches the soft edges of wide strokes
 - The eraser only noticed a wide brush stroke when it touched its centre line, so erasing the edge of a big painted area (like the cherry colour) did nothing. All wide strokes (8 px and up) are now rubbed out like paint, and the "is the eraser near this stroke" check uses the stroke's real width. Thin pen lines are still cut cleanly as vectors.
+
+## v174 — crash when zooming out after erasing
+The eraser/colour code reused shared scratch canvases that were shrunk to 1×1 and re-grown over and over while many strokes were redrawn after erasing. iPad Safari frees that memory lazily, so the churn piled up right when zooming out forced a redraw. They now only grow (in 512 px steps) and are released once, 8 seconds after you stop.

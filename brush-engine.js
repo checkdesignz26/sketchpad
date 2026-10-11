@@ -566,7 +566,7 @@
   // already on the layer (wet mix), then the buffer is laid onto the layer at the stroke opacity.
   // The stroke is still retained as points and replayed in order, so undo, saving, the vector
   // eraser and re-brushing all keep working. Deterministic: same stroke + same layer = same pixels.
-  let _buf = null, _grain = null;
+  let _buf = null, _grain = null, _bufIdle = 0;
   const _sampleCache = { id: null, map: new Map() };
   function grainTile() {
     if (_grain) return _grain;
@@ -647,8 +647,8 @@
     const se = Math.min(sc, 2048 / Math.max(bw, bh), Math.sqrt(2500000 / (bw * bh)));
     const pw = Math.max(1, Math.ceil(bw * se)), ph = Math.max(1, Math.ceil(bh * se));
     if (!_buf) _buf = document.createElement('canvas');
-    if (_buf.width * _buf.height > 6500000 && pw * ph < 1500000) { _buf.width = 1; _buf.height = 1; }
-    if (_buf.width < pw || _buf.height < ph) { _buf.width = Math.max(_buf.width, pw); _buf.height = Math.max(_buf.height, ph); }
+    if (_buf.width < pw || _buf.height < ph) { _buf.width = Math.max(_buf.width, Math.ceil(pw / 512) * 512); _buf.height = Math.max(_buf.height, Math.ceil(ph / 512) * 512); }
+    clearTimeout(_bufIdle); _bufIdle = setTimeout(() => { if (_buf) { _buf.width = 1; _buf.height = 1; } }, 8000);
     const b = _buf.getContext('2d');
     b.setTransform(1, 0, 0, 1, 0, 0); b.clearRect(0, 0, Math.min(_buf.width, pw + 2), Math.min(_buf.height, ph + 2));
     b.setTransform(se, 0, 0, se, -bx * se, -by * se);
