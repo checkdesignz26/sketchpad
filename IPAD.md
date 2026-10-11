@@ -557,3 +557,6 @@ With the eraser selected, "Eraser style" appears: Hard line (crisp, even edge), 
 ## v169 – Zoomed-in view no longer relies on a giant canvas
 - When zoomed in (and especially when rotated), the browser had to scale and rotate the whole 1800 px drawing canvas to several thousand pixels, which iPad Safari cannot hold (screen goes blank or black). Once the sharp screen-sized picture exists, only that is shown; the big canvas is hidden (still receives touches).
 - While you pinch, pan or rotate, the sharp picture is moved and scaled with your fingers and redrawn about 0.1 s after you stop.
+
+## v170 – Eraser no longer shows a fake hole
+- While zoomed in, the eraser punched a hole in the sharp picture wherever you dragged, even on a layer it was not allowed to erase from. When you lifted, the paint came back, so it looked like the eraser worked only sometimes. The hole is now only shown where something was really erased (the status line still says when the active layer has nothing there).
