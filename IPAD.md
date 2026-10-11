@@ -588,3 +588,6 @@ While erasing on a zoomed-in view, the eraser's hole was punched right through t
 
 ## v179 — missing layers come back
 If a saved file lists fewer layers than the strokes use, the strokes used to be dumped onto the top layer (which merged several layers into Outline). Now the missing layers are recreated as "Recovered" layers, so the layering is kept. For files already affected, More › Earlier Saves has automatic older versions.
+
+## v180 — no more black paper while drawing zoomed in
+Zoomed in, the app shows a screen-sized sharp picture and hides the huge normal canvas (which iPad Safari draws as black). Every time something changed, the sharp picture was thrown away first, so for a moment the huge canvas was shown and could go black. Now the sharp picture stays on screen until the fresh one is ready.
