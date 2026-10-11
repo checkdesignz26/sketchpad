@@ -626,3 +626,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v191
 - Memory check and Speed test now show the Timelapse recorder: ON/off, steps recorded, MB held in memory, and the time one "save step" costs. (The recorder keeps up to 160 MB of event data in memory, which the old estimate did not count — a suspect for slowness/erratic behaviour on big projects.)
+
+## v192
+- Own file types: a single project exports as `name.psketch`, a full backup as `pattern-sketch-backup-DATE.psketchbackup`. The contents are still JSON, so older `.sketchpad.json` / `.json` files still import. The import pickers no longer filter by type (iPadOS greys out unknown extensions); files are recognised by their content. Tapping a .psketch file in Files to open the app needs the App Store (native) version.
