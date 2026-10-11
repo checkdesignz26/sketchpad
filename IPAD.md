@@ -553,3 +553,7 @@ With the eraser selected, "Eraser style" appears: Hard line (crisp, even edge), 
 ## v168 – Layers share one canvas at standard sharpness
 - At standard sharpness (renderScale 1) each layer's second "sharp" canvas was an exact copy of the first. Layers now use a single canvas there: saves ~13 MB per layer and halves the drawing work for every stroke, undo and eraser rub.
 - The zoomed-in detail canvases are released when not needed.
+
+## v169 – Zoomed-in view no longer relies on a giant canvas
+- When zoomed in (and especially when rotated), the browser had to scale and rotate the whole 1800 px drawing canvas to several thousand pixels, which iPad Safari cannot hold (screen goes blank or black). Once the sharp screen-sized picture exists, only that is shown; the big canvas is hidden (still receives touches).
+- While you pinch, pan or rotate, the sharp picture is moved and scaled with your fingers and redrawn about 0.1 s after you stop.
