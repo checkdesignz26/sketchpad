@@ -538,3 +538,7 @@ With the eraser selected, "Eraser style" appears: Hard line (crisp, even edge), 
 ## v164 – Tighter memory (3-layer projects)
 - Memory budget lowered (~220 MB): a 3-layer project now uses standard sharpness for the stored layers; zoomed-in views are still redrawn sharp by the detail layer.
 - Undo, redo and Edit Motif no longer throw away and re-create every layer canvas; existing layers keep theirs and only removed layers are released.
+
+## v165 – Memory check + smaller undo history
+- New "🧠 Memory check" in the ⋯ More menu: shows what is using memory (layer canvases, screen canvases, motif pictures, undo history, stroke count).
+- Undo history is trimmed by size (about 30 M characters), keeping at least the last 6 steps, so very detailed drawings no longer carry 40 full copies.
