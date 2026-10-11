@@ -502,3 +502,6 @@ The iPad file picker greyed out .brush/.brushset files (unknown type), so the im
 
 ## v155 – Eraser on watercolour / raster brushes
 Erasing a raster-feel stroke (watercolour, gouache, dry brush) no longer slices the line into pieces, which made each piece paint a new full-width wash and edge ("extra colour"). The stroke now keeps its shape and the eraser rubs out soft round spots from it. Undo, move, duplicate and group resize keep the rubbed-out spots with the stroke. Vector brushes are cut as before.
+
+## v156 – Eraser styles
+With the eraser selected, "Eraser style" appears: Hard line (crisp, even edge), Soft (feathered), Rough (ragged, chalky) and Like my brush (copies the softness and texture of the brush you draw with). It shapes how the eraser rubs out watercolour, gouache and other raster strokes; vector strokes are still cut cleanly.
