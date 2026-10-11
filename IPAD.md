@@ -530,3 +530,7 @@ With the eraser selected, "Eraser style" appears: Hard line (crisp, even edge), 
 
 ## v162 – Stroke panel always opens while editing a motif
 - The Selected Stroke panel could stay folded away (or off screen in the side panel) on later Edit Motif sessions. It now unfolds itself and scrolls into view every time you select a stroke while editing a motif.
+
+## v163 – Memory budget for canvases
+- Every layer owns two canvases and the sharp one grows with the square of the view sharpness, so a project with many layers could use far more memory than iPad Safari allows (screen goes black or the app reloads). The sharpness is now lowered automatically as layers are added, to stay inside a ~300 MB budget (3 layers stay sharp-ish, 8+ layers use standard sharpness).
+- Canvases of deleted layers, and of the old layers when a project or motif is opened, are released straight away instead of piling up.
