@@ -566,3 +566,6 @@ With the eraser selected, "Eraser style" appears: Hard line (crisp, even edge), 
 
 ## v172 – Eraser says why when it cannot erase
 - If something on the active layer is under the eraser but cannot be erased (a smudge mark, a filled shape, text or an unexpected stroke), the status line now names it, instead of wrongly blaming another layer.
+
+## v173 – Eraser reaches the soft edges of wide strokes
+- The eraser only noticed a wide brush stroke when it touched its centre line, so erasing the edge of a big painted area (like the cherry colour) did nothing. All wide strokes (8 px and up) are now rubbed out like paint, and the "is the eraser near this stroke" check uses the stroke's real width. Thin pen lines are still cut cleanly as vectors.
