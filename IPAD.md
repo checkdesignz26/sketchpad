@@ -591,3 +591,6 @@ If a saved file lists fewer layers than the strokes use, the strokes used to be 
 
 ## v180 — no more black paper while drawing zoomed in
 Zoomed in, the app shows a screen-sized sharp picture and hides the huge normal canvas (which iPad Safari draws as black). Every time something changed, the sharp picture was thrown away first, so for a moment the huge canvas was shown and could go black. Now the sharp picture stays on screen until the fresh one is ready.
+
+## v181 — less work and memory at very high zoom
+The crash log showed the app closing at 820% zoom right after switching layers: it rebuilt the flattened layer pictures (6 layers' worth of strokes) and then redrew the sharp view straight afterwards. Zoomed in, the normal canvas is hidden behind the sharp picture, so rebuilding it is wasted. The rebuild is now skipped while zoomed in and done when you zoom back out. The crash log also records how long each sharp redraw takes.
