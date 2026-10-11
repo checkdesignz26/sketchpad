@@ -527,3 +527,6 @@ With the eraser selected, "Eraser style" appears: Hard line (crisp, even edge), 
 
 ## v161 – Capture Motif takes the SVG's name
 - Capture Motif now names the new motif after the SVG you last placed (apple, then apple 2, apple 3…), so the Brush Set list shows real names without retyping. With no SVG placed it still says "Motif N".
+
+## v162 – Stroke panel always opens while editing a motif
+- The Selected Stroke panel could stay folded away (or off screen in the side panel) on later Edit Motif sessions. It now unfolds itself and scrolls into view every time you select a stroke while editing a motif.
