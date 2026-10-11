@@ -499,3 +499,6 @@ The iPad file picker greyed out .brush/.brushset files (unknown type), so the im
 - Speed: while drawing, only the new part of the stroke is painted (no re-painting the whole stroke on every move, no colour read-backs), so long strokes and tiled previews stay smooth. About 7x less engine work per move in desktop tests.
 - Older watercolour strokes re-render with the new look.
 - Brush Studio is now two columns with tabs (Basics, Tip & grain, Blend & colour, Dual brush) and has a try-out pad (Draw or Stamp, Clear) on the left that updates as you move sliders.
+
+## v155 – Eraser on watercolour / raster brushes
+Erasing a raster-feel stroke (watercolour, gouache, dry brush) no longer slices the line into pieces, which made each piece paint a new full-width wash and edge ("extra colour"). The stroke now keeps its shape and the eraser rubs out soft round spots from it. Undo, move, duplicate and group resize keep the rubbed-out spots with the stroke. Vector brushes are cut as before.
