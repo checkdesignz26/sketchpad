@@ -542,3 +542,7 @@ With the eraser selected, "Eraser style" appears: Hard line (crisp, even edge), 
 ## v165 – Memory check + smaller undo history
 - New "🧠 Memory check" in the ⋯ More menu: shows what is using memory (layer canvases, screen canvases, motif pictures, undo history, stroke count).
 - Undo history is trimmed by size (about 30 M characters), keeping at least the last 6 steps, so very detailed drawings no longer carry 40 full copies.
+
+## v166 – Smaller saved drawing data
+- Stroke points are saved rounded to 0.01 px (invisible), making undo steps, autosaves and project files roughly 40% smaller.
+- Undo history budget lowered to ~24 M characters (keeps at least the last 4 steps).
