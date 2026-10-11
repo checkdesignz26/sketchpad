@@ -610,3 +610,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 ## v186
 - New Project is now a simple setup: name, width × height, units (px/in/cm), DPI (default 3600 × 3600 px at 300), and Repeat preview (Tiled / Single canvas). All size presets are gone, also from the editor's Repeat Layouts panel (which keeps the layouts and a "Tile size & dpi…" button).
 - Repeat preview is saved per project. Single canvas darkens the workspace and gives the canvas a frame and shadow so the drawing and export edge is obvious.
+
+## v187
+- ⏱ Speed test (More menu, above Memory check): times layer switching, panning frame rate, zoom re-sharpen and the export flatten on the open project, without changing it. Results are shown, can be copied, and the last 6 runs are kept in localStorage 'sp-bench' for comparing versions/devices.
