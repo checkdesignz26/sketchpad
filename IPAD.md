@@ -572,3 +572,6 @@ With the eraser selected, "Eraser style" appears: Hard line (crisp, even edge), 
 
 ## v174 — crash when zooming out after erasing
 The eraser/colour code reused shared scratch canvases that were shrunk to 1×1 and re-grown over and over while many strokes were redrawn after erasing. iPad Safari frees that memory lazily, so the churn piled up right when zooming out forced a redraw. They now only grow (in 512 px steps) and are released once, 8 seconds after you stop.
+
+## v175 — unlimited layers (sleeping layers)
+Each layer used to keep its own full-size canvas, so memory grew with every layer you added. Now only the layer you are painting on (and any layer with a blend mode) keeps real canvases. All other layers live as stroke data and are drawn into one or two shared flattened pictures that sit below and above the layer you are working on. Stacking order, opacity, hide/show and blend modes behave the same. The first time you switch to another layer there can be a short pause while the pictures are rebuilt. Memory check now shows how many layers are awake.
