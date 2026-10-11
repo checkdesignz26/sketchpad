@@ -578,3 +578,6 @@ Each layer used to keep its own full-size canvas, so memory grew with every laye
 
 ## v176 — resize a whole layer
 Each layer row has a new ⤢ button. Tap it to select everything on that layer, then use the corner handles to resize, the round handle to turn it, or drag inside to move it (like a pixel layer in Affinity). Strokes are redrawn sharp at the new size, and Undo returns it.
+
+## v177 — black paper while erasing zoomed in
+While erasing on a zoomed-in view, the eraser's hole was punched right through the sharp picture, including the white paper, so the hole showed black until you lifted the pencil. The hole now shows white paper, and the proper redraw (with the layers underneath) still happens when you lift.
