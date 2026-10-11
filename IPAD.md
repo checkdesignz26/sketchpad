@@ -594,3 +594,6 @@ Zoomed in, the app shows a screen-sized sharp picture and hides the huge normal 
 
 ## v181 — less work and memory at very high zoom
 The crash log showed the app closing at 820% zoom right after switching layers: it rebuilt the flattened layer pictures (6 layers' worth of strokes) and then redrew the sharp view straight afterwards. Zoomed in, the normal canvas is hidden behind the sharp picture, so rebuilding it is wasted. The rebuild is now skipped while zoomed in and done when you zoom back out. The crash log also records how long each sharp redraw takes.
+
+## v182 — reuse canvases instead of creating new ones
+Switching or adding a layer woke one layer (a new 13 MB canvas) and put another to sleep (thrown away). iPad Safari hands that memory back slowly, so many switches could pile up until the screen went blank. Canvases are now reused from a small pool: 36 layer switches plus adding a layer created only 3 new canvases (it was one or more per switch before). The flattening scratch pictures are also kept instead of being recreated each time.
