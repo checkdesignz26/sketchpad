@@ -524,3 +524,6 @@ With the eraser selected, "Eraser style" appears: Hard line (crisp, even edge), 
 ## v160 – Crash guard for projects with smudges
 - If opening a project never finished last time, the app now opens it without replaying smudge strokes (they stay in the file) and shows a button to bring them back.
 - Smudge replay is lighter (fewer steps per stroke), so projects with many smudges open faster.
+
+## v161 – Capture Motif takes the SVG's name
+- Capture Motif now names the new motif after the SVG you last placed (apple, then apple 2, apple 3…), so the Brush Set list shows real names without retyping. With no SVG placed it still says "Motif N".
