@@ -490,3 +490,6 @@ While "Editing motif: …" is active, selecting a stroke now shows the Stroke pa
 
 ## v151 – Import Procreate brushes
 Brush maker panel → "Import Procreate brushes (.brush / .brushset)". Reads the zip and Procreate's settings file, then makes Custom Brushes from the shape and grain images plus size, spacing, jitter/scatter, taper and pressure response. Procreate's "_original" backup copies are skipped. Built-in Procreate shapes and Procreate-only effects (wet mix, tilt shading, dual brush) aren't included, so imports are close matches, not exact copies. Needs iPadOS 16.4+ for unzipping.
+
+## v152 – Procreate import: any file can be picked
+The iPad file picker greyed out .brush/.brushset files (unknown type), so the import button no longer filters by file type.
