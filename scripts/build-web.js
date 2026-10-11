@@ -10,7 +10,7 @@ const out = path.join(root, 'www');
 
 // Files the app needs at runtime. Add new scripts/assets here.
 const files = [
-  'index.html', 'brush-engine.js', 'fonts.js', 'polybool.min.js', 'native-bridge.js',
+  'index.html', 'vendor/pdf.min.mjs', 'vendor/pdf.worker.min.mjs', 'brush-engine.js', 'fonts.js', 'polybool.min.js', 'native-bridge.js',
   'manifest.webmanifest', 'sw.js',
   'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png'
 ];

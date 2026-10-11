@@ -484,3 +484,6 @@ If the app throws an error while opening (blank canvas, empty size box), a red b
 
 ## v149 – Stroke tools open while editing a motif
 While "Editing motif: …" is active, selecting a stroke now shows the Stroke panel automatically (even if the 🖊️ Stroke button is off) and scrolls it into view.
+
+## v150 – Import Illustrator (.ai) and PDF vectors
+"Import SVG / AI / PDF (vector)" now accepts .ai and .pdf. The file's first page is read with pdf.js (bundled in `vendor/`, loaded only when you import one), converted to SVG and placed exactly like an SVG (new layer, SVG Tray). Hidden Illustrator layers stay hidden. Skipped: live text, pictures, gradients, clipping. .ai files saved without "Create PDF Compatible File" can't be read; Affinity files need exporting as SVG or PDF.
