@@ -563,3 +563,6 @@ With the eraser selected, "Eraser style" appears: Hard line (crisp, even edge), 
 
 ## v171 – Eraser no longer re-reads paint from the canvas
 - Gouache / Dry Brush work out their colour pick-up once per stroke and remember it. Before, every eraser rub (and every undo or redraw) re-read the canvas for each such stroke in the area, dozens of times per frame, which is what made the iPad run out of memory when erasing a heavily painted area. Erasing now does no canvas read-backs at all.
+
+## v172 – Eraser says why when it cannot erase
+- If something on the active layer is under the eraser but cannot be erased (a smudge mark, a filled shape, text or an unexpected stroke), the status line now names it, instead of wrongly blaming another layer.
