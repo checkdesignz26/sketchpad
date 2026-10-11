@@ -842,8 +842,52 @@
     ctx.drawImage(st.O, sx0, sy0, sx1 - sx0, sy1 - sy0, bx + sx0 / se, by + sy0 / se, (sx1 - sx0) / se, (sy1 - sy0) / se);
     ctx.restore();
   }
+  // ---- Smudge ---------------------------------------------------------------
+  // Drags the paint that is already on the canvas along a path, like a finger through wet paint. It works
+  // on the pixels of the canvas it is given. A "carry" patch remembers what the finger is holding; at
+  // every step the carry is laid back down (blended with what is underneath) and then refreshed from
+  // the canvas at the new spot. No pixel read-backs, only canvas-to-canvas copies, so it stays fast.
+  function makeSmudger(ctx, radius, strength) {
+    const m = ctx.getTransform ? ctx.getTransform() : { a: 1, d: 1, e: 0, f: 0 };
+    const sc = Math.max(0.05, Math.abs(m.a)), R = Math.max(1, radius * sc), D = Math.max(4, Math.ceil(R * 2) + 2);
+    const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+    const carry = mk(D, D), pick = mk(D, D), laid = mk(D, D), mask = mk(D, D);
+    const cg = carry.getContext('2d'), pg = pick.getContext('2d'), lg = laid.getContext('2d'), mg = mask.getContext('2d');
+    const grad = mg.createRadialGradient(D / 2, D / 2, R * 0.25, D / 2, D / 2, R);
+    grad.addColorStop(0, 'rgba(0,0,0,1)'); grad.addColorStop(1, 'rgba(0,0,0,0)');
+    mg.fillStyle = grad; mg.fillRect(0, 0, D, D);
+    const s01 = Math.max(0.05, Math.min(1, strength));
+    const lay = Math.min(1, 0.3 + 0.45 * s01), keep = 0.45 + 0.5 * s01;
+    let has = false;
+    return {
+      step: Math.max(1.2 / sc, radius * 0.22),
+      to(x, y) {
+        const cx = m.a * x + m.e, cy = m.d * y + m.f, sx = Math.round(cx - D / 2), sy = Math.round(cy - D / 2);
+        pg.setTransform(1, 0, 0, 1, 0, 0); pg.globalCompositeOperation = 'source-over'; pg.globalAlpha = 1; pg.clearRect(0, 0, D, D);
+        try { pg.drawImage(ctx.canvas, sx, sy, D, D, 0, 0, D, D); } catch (e) { return; }
+        if (!has) { cg.setTransform(1, 0, 0, 1, 0, 0); cg.clearRect(0, 0, D, D); cg.drawImage(pick, 0, 0); has = true; return; }
+        lg.setTransform(1, 0, 0, 1, 0, 0); lg.globalCompositeOperation = 'source-over'; lg.globalAlpha = 1; lg.clearRect(0, 0, D, D);
+        lg.drawImage(carry, 0, 0); lg.globalCompositeOperation = 'destination-in'; lg.drawImage(mask, 0, 0);
+        ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.globalCompositeOperation = 'destination-out'; ctx.globalAlpha = lay * 0.18; ctx.drawImage(mask, sx, sy); // only a little is lifted, so starting a smear in an empty spot does not rub the paint away
+        ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = lay; ctx.drawImage(laid, sx, sy);
+        ctx.restore();
+        const t = 1 - keep; // the carry slowly takes on what it passes over
+        cg.globalCompositeOperation = 'destination-out'; cg.globalAlpha = t; cg.fillStyle = '#000'; cg.fillRect(0, 0, D, D);
+        cg.globalCompositeOperation = 'source-over'; cg.drawImage(pick, 0, 0);
+        cg.globalAlpha = 1;
+      },
+    };
+  }
+  function smudgeStroke(ctx, stroke) {
+    const st = stroke.settings || {};
+    const sm = makeSmudger(ctx, Math.max(1, (st.size || 30) / 2), (st.opacity == null ? 70 : st.opacity) / 100);
+    const pts = resample(stroke.points, sm.step);
+    for (let i = 0; i < pts.length; i++) sm.to(pts[i].x, pts[i].y);
+  }
   function renderStroke(ctx, stroke, brush, settings, alphaMul) {
     if (!stroke.points || stroke.points.length === 0) return;
+    if (stroke.brushId === 'smudge') { try { smudgeStroke(ctx, stroke); } catch (e) {} return; }
     if (alphaMul === undefined) alphaMul = 1;
     if (alphaMul <= 0) return; // fully hidden — skip dabs entirely rather than stamp at opacity 0
     if (brush.id === 'watercolour' && settings && settings.engine === 'raster') { try { renderWatercolour(ctx, stroke, brush, settings, alphaMul); } catch (e) { try { renderBase(ctx, stroke, brush, settings, alphaMul); } catch (e2) {} } return; }
@@ -1059,6 +1103,6 @@
     getSettings, setSettings,
     touchRecent, getRecents,
     isFavorite, toggleFavorite, getFavorites,
-    underlay: null, liveEnd, pressureFactor, stampDab, colorWithAlpha, resample, renderStroke, smoothPoints, seededRandom,
+    underlay: null, liveEnd, makeSmudger, pressureFactor, stampDab, colorWithAlpha, resample, renderStroke, smoothPoints, seededRandom,
   };
 })(window);
