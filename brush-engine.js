@@ -847,15 +847,33 @@
   // on the pixels of the canvas it is given. A "carry" patch remembers what the finger is holding; at
   // every step the carry is laid back down (blended with what is underneath) and then refreshed from
   // the canvas at the new spot. No pixel read-backs, only canvas-to-canvas copies, so it stays fast.
-  function makeSmudger(ctx, radius, strength) {
+  function makeSmudger(ctx, radius, strength, brush) {
     const m = ctx.getTransform ? ctx.getTransform() : { a: 1, d: 1, e: 0, f: 0 };
     const sc = Math.max(0.05, Math.abs(m.a)), R = Math.max(1, radius * sc), D = Math.max(4, Math.ceil(R * 2) + 2);
     const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
     const carry = mk(D, D), pick = mk(D, D), laid = mk(D, D), mask = mk(D, D);
     const cg = carry.getContext('2d'), pg = pick.getContext('2d'), lg = laid.getContext('2d'), mg = mask.getContext('2d');
-    const grad = mg.createRadialGradient(D / 2, D / 2, R * 0.25, D / 2, D / 2, R);
-    grad.addColorStop(0, 'rgba(0,0,0,1)'); grad.addColorStop(1, 'rgba(0,0,0,0)');
-    mg.fillStyle = grad; mg.fillRect(0, 0, D, D);
+    // The footprint of the finger comes from the chosen brush: its tip picture (stamp brushes), its edge
+    // softness (a hard brush smudges with a hard edge) and its texture (a dry or grainy brush smears in streaks).
+    const tip = brush && brush.stamp ? (brush.stampCanvas || brush.stampImg) : null;
+    if (tip && (tip.width || tip.naturalWidth)) {
+      const tw = tip.width || tip.naturalWidth, th = tip.height || tip.naturalHeight, k = Math.min((D - 2) / tw, (D - 2) / th);
+      try { mg.drawImage(tip, (D - tw * k) / 2, (D - th * k) / 2, tw * k, th * k); } catch (e) {}
+    } else {
+      const h = brush && brush.hardness != null ? Math.max(0.05, Math.min(1, brush.hardness)) : 0.25;
+      const grad = mg.createRadialGradient(D / 2, D / 2, R * Math.min(0.97, h), D / 2, D / 2, R);
+      grad.addColorStop(0, 'rgba(0,0,0,1)'); grad.addColorStop(1, 'rgba(0,0,0,0)');
+      mg.fillStyle = grad; mg.fillRect(0, 0, D, D);
+    }
+    if (brush) {
+      const gr = brush.fx && brush.fx.grain ? Math.min(1, (brush.fx.grain.depth || 0) / 100) * 0.7 : 0;
+      const tex = Math.min(0.85, Math.max(brush.streaky || 0, gr) * 1.3 + (brush.jitter > 0.25 ? 0.12 : 0));
+      if (tex > 0.05) {
+        mg.save(); mg.globalCompositeOperation = 'destination-out'; mg.globalAlpha = tex;
+        mg.setTransform(Math.max(0.6, sc), 0, 0, Math.max(0.6, sc), 0, 0);
+        mg.fillStyle = mg.createPattern(grainTile(), 'repeat'); mg.fillRect(0, 0, D / Math.max(0.6, sc), D / Math.max(0.6, sc)); mg.restore();
+      }
+    }
     const s01 = Math.max(0.05, Math.min(1, strength));
     const lay = Math.min(1, 0.3 + 0.45 * s01), keep = 0.45 + 0.5 * s01;
     let has = false;
@@ -881,7 +899,8 @@
   }
   function smudgeStroke(ctx, stroke) {
     const st = stroke.settings || {};
-    const sm = makeSmudger(ctx, Math.max(1, (st.size || 30) / 2), (st.opacity == null ? 70 : st.opacity) / 100);
+    const sb = st.sb ? byId.get(st.sb) : null;
+    const sm = makeSmudger(ctx, Math.max(1, (st.size || 30) / 2), (st.opacity == null ? 70 : st.opacity) / 100, sb && sb.id !== 'eraser' ? sb : null);
     const pts = resample(stroke.points, sm.step);
     for (let i = 0; i < pts.length; i++) sm.to(pts[i].x, pts[i].y);
   }

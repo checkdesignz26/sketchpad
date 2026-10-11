@@ -511,3 +511,8 @@ With the eraser selected, "Eraser style" appears: Hard line (crisp, even edge), 
 - The brush button now shows the name of the brush you are using, and a round colour swatch next to the size box shows (and changes) the current colour.
 - With the eraser on, an "Eraser style" button appears beside it in the top bar.
 - The brush you last used is selected again when the app starts, including after an update.
+
+## v158 – Smudge uses the selected brush
+- Smudge now takes the footprint of the brush you have selected: its tip shape, softness and texture (e.g. Chalk and Dry Brush give grainy smears, Technical Pen a crisp one).
+- Pick the brush with the "🖌️ Brush ▾" button in the smudge bar, from the sidebar, or from the toolbar brush menu while smudging.
+- Each smudge stroke remembers its brush so undo/redo replays it identically.
