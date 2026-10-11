@@ -585,3 +585,6 @@ While erasing on a zoomed-in view, the eraser's hole was punched right through t
 ## v178 — copy artwork between projects, and a crash log
 - More › Copy selection stores the selected strokes (or a whole layer, via its ⤢ button) in the browser's storage. In any other project, More › Paste copied artwork puts them on the active layer, selected so you can move them. Undo removes the paste. Strokes only: placed pictures and motifs are not copied yet.
 - The app now keeps a short log of its last steps. If it closes unexpectedly, More › Memory check shows those steps the next time you open it.
+
+## v179 — missing layers come back
+If a saved file lists fewer layers than the strokes use, the strokes used to be dumped onto the top layer (which merged several layers into Outline). Now the missing layers are recreated as "Recovered" layers, so the layering is kept. For files already affected, More › Earlier Saves has automatic older versions.
