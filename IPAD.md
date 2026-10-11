@@ -493,3 +493,9 @@ Brush maker panel → "Import Procreate brushes (.brush / .brushset)". Reads the
 
 ## v152 – Procreate import: any file can be picked
 The iPad file picker greyed out .brush/.brushset files (unknown type), so the import button no longer filters by file type.
+
+## v153/v154 – Watercolour rebuilt, faster; compact Brush Studio with a try-out pad
+- Watercolour is now its own engine: even transparent wash, pooled darker edge, soft feathered rim, slow pigment variation and paper grain. Sliders (Edge pooling, Soft wash, Paper grain) appear when Watercolour is selected in the Raster options.
+- Speed: while drawing, only the new part of the stroke is painted (no re-painting the whole stroke on every move, no colour read-backs), so long strokes and tiled previews stay smooth. About 7x less engine work per move in desktop tests.
+- Older watercolour strokes re-render with the new look.
+- Brush Studio is now two columns with tabs (Basics, Tip & grain, Blend & colour, Dual brush) and has a try-out pad (Draw or Stamp, Clear) on the left that updates as you move sliders.
