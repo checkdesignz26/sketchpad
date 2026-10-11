@@ -487,3 +487,6 @@ While "Editing motif: …" is active, selecting a stroke now shows the Stroke pa
 
 ## v150 – Import Illustrator (.ai) and PDF vectors
 "Import SVG / AI / PDF (vector)" now accepts .ai and .pdf. The file's first page is read with pdf.js (bundled in `vendor/`, loaded only when you import one), converted to SVG and placed exactly like an SVG (new layer, SVG Tray). Hidden Illustrator layers stay hidden. Skipped: live text, pictures, gradients, clipping. .ai files saved without "Create PDF Compatible File" can't be read; Affinity files need exporting as SVG or PDF.
+
+## v151 – Import Procreate brushes
+Brush maker panel → "Import Procreate brushes (.brush / .brushset)". Reads the zip and Procreate's settings file, then makes Custom Brushes from the shape and grain images plus size, spacing, jitter/scatter, taper and pressure response. Procreate's "_original" backup copies are skipped. Built-in Procreate shapes and Procreate-only effects (wet mix, tilt shading, dual brush) aren't included, so imports are close matches, not exact copies. Needs iPadOS 16.4+ for unzipping.
