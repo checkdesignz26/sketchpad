@@ -623,3 +623,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v190
 - Projects screen: 💾 Back up all (one file with every project and folder, via Share/Files on iPad) and 📥 Import / restore (a backup file adds its projects as new ones; nothing existing is replaced). A bar reminds you when you have never backed up or the last backup is over 7 days old (localStorage 'sp-lastBackup').
+
+## v191
+- Memory check and Speed test now show the Timelapse recorder: ON/off, steps recorded, MB held in memory, and the time one "save step" costs. (The recorder keeps up to 160 MB of event data in memory, which the old estimate did not count — a suspect for slowness/erratic behaviour on big projects.)
