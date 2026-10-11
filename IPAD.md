@@ -575,3 +575,6 @@ The eraser/colour code reused shared scratch canvases that were shrunk to 1×1 a
 
 ## v175 — unlimited layers (sleeping layers)
 Each layer used to keep its own full-size canvas, so memory grew with every layer you added. Now only the layer you are painting on (and any layer with a blend mode) keeps real canvases. All other layers live as stroke data and are drawn into one or two shared flattened pictures that sit below and above the layer you are working on. Stacking order, opacity, hide/show and blend modes behave the same. The first time you switch to another layer there can be a short pause while the pictures are rebuilt. Memory check now shows how many layers are awake.
+
+## v176 — resize a whole layer
+Each layer row has a new ⤢ button. Tap it to select everything on that layer, then use the corner handles to resize, the round handle to turn it, or drag inside to move it (like a pixel layer in Affinity). Strokes are redrawn sharp at the new size, and Undo returns it.
