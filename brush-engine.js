@@ -111,7 +111,7 @@
       defaults: { size: 16, opacity: 80, smoothing: 5, pressureWidth: 25, pressureOpacity: 25, spacing: 5 },
       hardness: 0.6, jitter: 0.25, streaky: 0.3, taper: 'none' },
     { id: 'watercolour', name: 'Watercolour', family: 'paint', renderMode: 'vector',
-      defaults: { size: 44, opacity: 55, smoothing: 20, pressureWidth: 30, pressureOpacity: 40, spacing: 8, engine: 'raster', wetMix: 55, dryness: 12 },
+      defaults: { size: 44, opacity: 70, smoothing: 20, pressureWidth: 30, pressureOpacity: 40, spacing: 8, engine: 'raster', wetMix: 0, dryness: 0, wcEdge: 55, wcGrain: 25, wcSoft: 60 },
       hardness: 0.3, jitter: 0.08, streaky: 0, taper: 'none' },
     { id: 'dryInk', name: 'Dry Ink', family: 'inking', renderMode: 'vector',
       defaults: { size: 10, opacity: 100, smoothing: 18, pressureWidth: 55, pressureOpacity: 30, spacing: 6, engine: 'raster', wetMix: 0, dryness: 55 },
@@ -706,10 +706,147 @@
     ctx.drawImage(_buf, 0, 0, pw, ph, bx, by, pw / se, ph / se);
     ctx.restore();
   }
+  // ---- Watercolour engine ---------------------------------------------------
+  // A transparent wash with a pooled, darker edge and a little paper granulation, built from three
+  // small buffers instead of colour read-backs, so it is fast:
+  //   M  hard discs (the shape of the wash)      I  slightly smaller hard discs
+  //   B  soft coloured dabs (the wash itself, builds up inside the stroke)
+  //   edge = M minus I (a thin ring round the outline), body = B; both are laid into O, the result.
+  // While drawing, a live state keeps the buffers between pointer moves and only stamps the NEW
+  // dabs and refreshes the small rectangle around them, so a long stroke costs the same per move as a
+  // short one. A saved stroke is built the same way in one go, so the live look and the final look match.
+  const _wcSets = { live: null, doc: null }, _wcLive = { key: null };
+  function wcSet(which, pw, ph) {
+    let st = _wcSets[which];
+    if (!st) { st = _wcSets[which] = { M: document.createElement('canvas'), I: document.createElement('canvas'), I2: document.createElement('canvas'), B: document.createElement('canvas'), O: document.createElement('canvas'), T: document.createElement('canvas') }; st.M.width = st.M.height = 1; ['I', 'I2', 'B', 'O', 'T'].forEach((k) => { st[k].width = st[k].height = 1; }); }
+    const big = st.M.width * st.M.height > 6500000 && pw * ph < 1500000;
+    ['M', 'I', 'I2', 'B', 'O'].forEach((k) => {
+      const c = st[k];
+      if (big) { c.width = 1; c.height = 1; }
+      if (c.width < pw || c.height < ph) { c.width = Math.max(c.width, pw); c.height = Math.max(c.height, ph); }
+    });
+    return st;
+  }
+  function liveEnd() { _wcLive.key = null; const st = _wcSets.live; if (st) ['M', 'I', 'I2', 'B', 'O', 'T'].forEach((k) => { st[k].width = 1; st[k].height = 1; }); }
+  function renderWatercolour(ctx, stroke, brush, settings, alphaMul) {
+    const m = ctx.getTransform ? ctx.getTransform() : { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 };
+    const sc = Math.max(0.05, Math.hypot(m.a, m.b));
+    const U = global.BrushEngine && global.BrushEngine.underlay;
+    const live = !!(stroke.liveKey && U && U.canvas && brush.taper === 'none');
+    const num = (v, d) => (typeof v === 'number' ? v : d);
+    const size = Math.max(1, settings.size), edge = Math.max(0, Math.min(100, num(settings.wcEdge, 55))) / 100,
+      gran = Math.max(0, Math.min(100, num(settings.wcGrain, 18))) / 100, soft = Math.max(0, Math.min(100, num(settings.wcSoft, 60))) / 100;
+    const spacing = Math.max(1.2, Math.min(7, size * Math.max(0.03, Math.min(0.2, (settings.spacing || 8) / 100)) ));
+    const pts = resample(stroke.points, spacing);
+    if (!pts.length) return;
+    const rand = live ? null : seededRandom(stroke.id || 'wc');
+    // region the buffers cover (user space)
+    let bx, by, bx1, by1;
+    if (live) { bx = 0; by = 0; bx1 = Math.ceil(U.canvas.width / (U.sx || 1)); by1 = Math.ceil(U.canvas.height / (U.sy || 1)); }
+    else {
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      const rmax = size / 2 + 3;
+      pts.forEach((p) => { if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x; if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y; });
+      bx = Math.floor(minX - rmax); by = Math.floor(minY - rmax); bx1 = Math.ceil(maxX + rmax); by1 = Math.ceil(maxY + rmax);
+      try {
+        if (ctx.canvas && typeof DOMMatrix !== 'undefined' && ctx.getTransform) {
+          const inv = m.inverse(), cw = ctx.canvas.width, ch = ctx.canvas.height, xs = [], ys = [];
+          [[0, 0], [cw, 0], [0, ch], [cw, ch]].forEach((c) => { const q = inv.transformPoint(new DOMPoint(c[0], c[1])); xs.push(q.x); ys.push(q.y); });
+          bx = Math.max(bx, Math.floor(Math.min.apply(null, xs)) - 2); by = Math.max(by, Math.floor(Math.min.apply(null, ys)) - 2);
+          bx1 = Math.min(bx1, Math.ceil(Math.max.apply(null, xs)) + 2); by1 = Math.min(by1, Math.ceil(Math.max.apply(null, ys)) + 2);
+        }
+      } catch (e) {}
+    }
+    const bw = bx1 - bx, bh = by1 - by;
+    if (bw < 1 || bh < 1) return;
+    const cap = live ? 1800000 : 2500000;
+    const se = Math.min(sc, 2048 / Math.max(bw, bh), Math.sqrt(cap / (bw * bh)));
+    const pw = Math.max(1, Math.ceil(bw * se)), ph = Math.max(1, Math.ceil(bh * se));
+    const color = stroke.color || '#000000';
+    const sig = [size, color, edge, soft, settings.pressureWidth, settings.pressureOpacity, bx, by, bw, bh, se.toFixed(3), spacing.toFixed(2)].join('|');
+    let S = null, firstDab = 0;
+    const st = wcSet(live ? 'live' : 'doc', pw, ph);
+    if (live) {
+      const L = _wcLive;
+      const same = L.key === stroke.liveKey && L.sig === sig && L.n <= pts.length + 1 && L.p0 && pts[0].x === L.p0.x && pts[0].y === L.p0.y;
+      if (!same) { L.key = stroke.liveKey; L.sig = sig; L.n = 0; L.p0 = { x: pts[0].x, y: pts[0].y }; L.rand = seededRandom(String(stroke.liveKey)); L.bb = null; L.cleared = false; }
+      S = L; firstDab = L.n;
+    }
+    const ctxs = {};
+    ['M', 'I', 'I2', 'B', 'O'].forEach((k) => { ctxs[k] = st[k].getContext('2d'); });
+    if (!live || !S.cleared) {
+      ['M', 'I', 'I2', 'B', 'O'].forEach((k) => { const g = ctxs[k]; g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, Math.min(st[k].width, pw + 2), Math.min(st[k].height, ph + 2)); });
+      if (live) S.cleared = true;
+    }
+    const lastIdx = live ? pts.length - 1 : pts.length; // a live stroke's final point is provisional; the saved stroke includes it
+    const R = live ? S.rand : rand;
+    let dx0 = Infinity, dy0 = Infinity, dx1 = -Infinity, dy1 = -Infinity;
+    const rgb = parseRgb(color), solid = 'rgb(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ')', clear0 = 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',0)';
+    const hard = 1 - soft * 0.25; // only the outer part of the wash feathers; the middle stays an even tone
+    let vv = live ? (S.v == null ? 1 : S.v) : 1; // slow wander in how much pigment the brush carries
+    for (let i = firstDab; i < lastIdx; i++) {
+      const pt = pts[i];
+      const r = (size / 2) * pressureFactor(pt.pressure, settings.pressureWidth) * (1 - 0.04 + R() * 0.08);
+      vv = Math.max(0.78, Math.min(1.12, vv + (R() - 0.5) * 0.07));
+      const op = Math.max(0.05, pressureFactor(pt.pressure, settings.pressureOpacity)) * vv;
+      if (r <= 0.3) continue;
+      const x = pt.x, y = pt.y, ri = Math.max(0, r - Math.max(1.4, r * 0.24)), ri2 = Math.max(0, r - Math.max(0.7, r * 0.08));
+      ctxs.M.setTransform(se, 0, 0, se, -bx * se, -by * se); ctxs.I.setTransform(se, 0, 0, se, -bx * se, -by * se); ctxs.I2.setTransform(se, 0, 0, se, -bx * se, -by * se); ctxs.B.setTransform(se, 0, 0, se, -bx * se, -by * se);
+      ctxs.M.fillStyle = '#fff'; ctxs.M.beginPath(); ctxs.M.arc(x, y, r, 0, 6.2832); ctxs.M.fill();
+      ctxs.I.fillStyle = '#fff'; ctxs.I.beginPath(); ctxs.I.arc(x, y, ri, 0, 6.2832); ctxs.I.fill();
+      ctxs.I2.fillStyle = '#fff'; ctxs.I2.beginPath(); ctxs.I2.arc(x, y, ri2, 0, 6.2832); ctxs.I2.fill();
+      const g = ctxs.B.createRadialGradient(x, y, r * hard * 0.9, x, y, r);
+      g.addColorStop(0, solid); g.addColorStop(1, clear0);
+      ctxs.B.globalAlpha = Math.min(1, op * 0.4); ctxs.B.fillStyle = g; ctxs.B.beginPath(); ctxs.B.arc(x, y, r, 0, 6.2832); ctxs.B.fill(); ctxs.B.globalAlpha = 1;
+      if (x - r < dx0) dx0 = x - r; if (x + r > dx1) dx1 = x + r; if (y - r < dy0) dy0 = y - r; if (y + r > dy1) dy1 = y + r;
+    }
+    if (live) { S.n = Math.max(firstDab, lastIdx); S.v = vv; }
+    // refresh the result O inside the rectangle that changed
+    if (isFinite(dx0)) {
+      let rx0 = Math.max(0, Math.floor((dx0 - bx) * se) - 2), ry0 = Math.max(0, Math.floor((dy0 - by) * se) - 2);
+      let rx1 = Math.min(pw, Math.ceil((dx1 - bx) * se) + 2), ry1 = Math.min(ph, Math.ceil((dy1 - by) * se) + 2);
+      const rw = rx1 - rx0, rh = ry1 - ry0;
+      if (rw > 0 && rh > 0) {
+        if (st.T.width < rw || st.T.height < rh) { st.T.width = Math.max(st.T.width, rw); st.T.height = Math.max(st.T.height, rh); }
+        const T = st.T.getContext('2d'), O = ctxs.O;
+        const ring = (inner) => { // M minus a smaller disc set = a ring round the outline, tinted
+          T.setTransform(1, 0, 0, 1, 0, 0); T.globalCompositeOperation = 'source-over'; T.clearRect(0, 0, rw, rh);
+          T.drawImage(st.M, rx0, ry0, rw, rh, 0, 0, rw, rh);
+          T.globalCompositeOperation = 'destination-out'; T.drawImage(inner, rx0, ry0, rw, rh, 0, 0, rw, rh);
+          T.globalCompositeOperation = 'source-in'; T.fillStyle = solid; T.fillRect(0, 0, rw, rh);
+          T.globalCompositeOperation = 'source-over';
+        };
+        O.setTransform(1, 0, 0, 1, 0, 0); O.globalCompositeOperation = 'source-over'; O.clearRect(rx0, ry0, rw, rh);
+        O.globalAlpha = 0.6; O.drawImage(st.B, rx0, ry0, rw, rh, rx0, ry0, rw, rh);
+        if (edge > 0) {
+          ring(st.I); O.globalAlpha = 0.06 + 0.3 * edge; O.drawImage(st.T, 0, 0, rw, rh, rx0, ry0, rw, rh);
+          ring(st.I2); O.globalAlpha = 0.08 + 0.45 * edge; O.drawImage(st.T, 0, 0, rw, rh, rx0, ry0, rw, rh);
+        }
+        O.globalAlpha = 1;
+        if (gran > 0) {
+          O.save(); O.beginPath(); O.rect(rx0, ry0, rw, rh); O.clip();
+          O.setTransform(se, 0, 0, se, -bx * se, -by * se);
+          O.globalCompositeOperation = 'destination-out'; O.globalAlpha = Math.min(0.6, gran * 0.55);
+          O.fillStyle = O.createPattern(grainTile(), 'repeat'); O.fillRect(bx + rx0 / se - 2, by + ry0 / se - 2, rw / se + 4, rh / se + 4);
+          O.restore();
+        }
+        if (S) { S.bb = S.bb ? { x0: Math.min(S.bb.x0, rx0), y0: Math.min(S.bb.y0, ry0), x1: Math.max(S.bb.x1, rx1), y1: Math.max(S.bb.y1, ry1) } : { x0: rx0, y0: ry0, x1: rx1, y1: ry1 }; }
+      }
+    }
+    // lay the result on the target at the stroke opacity (multiply, like real transparent paint)
+    let sx0 = 0, sy0 = 0, sx1 = pw, sy1 = ph;
+    if (live) { if (!S.bb) return; sx0 = S.bb.x0; sy0 = S.bb.y0; sx1 = S.bb.x1; sy1 = S.bb.y1; }
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, Math.min(1, (settings.opacity / 100) * alphaMul));
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.drawImage(st.O, sx0, sy0, sx1 - sx0, sy1 - sy0, bx + sx0 / se, by + sy0 / se, (sx1 - sx0) / se, (sy1 - sy0) / se);
+    ctx.restore();
+  }
   function renderStroke(ctx, stroke, brush, settings, alphaMul) {
     if (!stroke.points || stroke.points.length === 0) return;
     if (alphaMul === undefined) alphaMul = 1;
     if (alphaMul <= 0) return; // fully hidden — skip dabs entirely rather than stamp at opacity 0
+    if (brush.id === 'watercolour' && settings && settings.engine === 'raster') { try { renderWatercolour(ctx, stroke, brush, settings, alphaMul); } catch (e) { try { renderBase(ctx, stroke, brush, settings, alphaMul); } catch (e2) {} } return; }
     if (settings && settings.engine === 'raster' && !brush.stamp && !brush.nib && !brush.path && !brush.fx && brush.id !== 'eraser') { try { renderRaster(ctx, stroke, brush, settings, alphaMul); } catch (e) { try { renderBase(ctx, stroke, brush, settings, alphaMul); } catch (e2) {} } return; }
     if (brush.fx && fxActive(brush)) { renderWithFx(ctx, stroke, brush, settings, alphaMul); return; }
     renderBase(ctx, stroke, brush, settings, alphaMul);
@@ -922,6 +1059,6 @@
     getSettings, setSettings,
     touchRecent, getRecents,
     isFavorite, toggleFavorite, getFavorites,
-    underlay: null, pressureFactor, stampDab, colorWithAlpha, resample, renderStroke, smoothPoints, seededRandom,
+    underlay: null, liveEnd, pressureFactor, stampDab, colorWithAlpha, resample, renderStroke, smoothPoints, seededRandom,
   };
 })(window);
