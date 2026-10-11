@@ -847,11 +847,19 @@
   // on the pixels of the canvas it is given. A "carry" patch remembers what the finger is holding; at
   // every step the carry is laid back down (blended with what is underneath) and then refreshed from
   // the canvas at the new spot. No pixel read-backs, only canvas-to-canvas copies, so it stays fast.
+  // iPad Safari keeps every canvas it has ever been given until memory runs out (then canvases go black),
+  // so the four small working canvases are reused between strokes instead of created fresh each time.
+  let _smPool = null, _smBusy = false;
   function makeSmudger(ctx, radius, strength, brush) {
     const m = ctx.getTransform ? ctx.getTransform() : { a: 1, d: 1, e: 0, f: 0 };
-    const sc = Math.max(0.05, Math.abs(m.a)), R = Math.max(1, radius * sc), D = Math.max(4, Math.ceil(R * 2) + 2);
-    const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
-    const carry = mk(D, D), pick = mk(D, D), laid = mk(D, D), mask = mk(D, D);
+    const sc = Math.max(0.05, Math.abs(m.a));
+    let R = Math.max(1, radius * sc);
+    const MAXR = 300; // a finger bigger than this just becomes slow and memory hungry
+    const shrink = R > MAXR ? MAXR / R : 1; R *= shrink;
+    const D = Math.max(4, Math.ceil(R * 2) + 2);
+    const pooled = !_smBusy; if (pooled) { _smBusy = true; if (!_smPool) _smPool = [0, 1, 2, 3].map(() => document.createElement('canvas')); }
+    const mk = (w, h, i) => { const c = pooled ? _smPool[i] : document.createElement('canvas'); c.width = w; c.height = h; return c; }; // setting the size also clears it
+    const carry = mk(D, D, 0), pick = mk(D, D, 1), laid = mk(D, D, 2), mask = mk(D, D, 3);
     const cg = carry.getContext('2d'), pg = pick.getContext('2d'), lg = laid.getContext('2d'), mg = mask.getContext('2d');
     // The footprint of the finger comes from the chosen brush: its tip picture (stamp brushes), its edge
     // softness (a hard brush smudges with a hard edge) and its texture (a dry or grainy brush smears in streaks).
@@ -878,6 +886,7 @@
     const lay = Math.min(1, 0.3 + 0.45 * s01), keep = 0.45 + 0.5 * s01;
     let has = false;
     return {
+      done() { if (pooled) { _smBusy = false; _smPool.forEach((c) => { c.width = c.height = 1; }); } },
       step: Math.max(1.2 / sc, radius * 0.22),
       to(x, y) {
         const cx = m.a * x + m.e, cy = m.d * y + m.f, sx = Math.round(cx - D / 2), sy = Math.round(cy - D / 2);
@@ -902,7 +911,7 @@
     const sb = st.sb ? byId.get(st.sb) : null;
     const sm = makeSmudger(ctx, Math.max(1, (st.size || 30) / 2), (st.opacity == null ? 70 : st.opacity) / 100, sb && sb.id !== 'eraser' ? sb : null);
     const pts = resample(stroke.points, sm.step);
-    for (let i = 0; i < pts.length; i++) sm.to(pts[i].x, pts[i].y);
+    try { for (let i = 0; i < pts.length; i++) sm.to(pts[i].x, pts[i].y); } finally { sm.done(); }
   }
   function renderStroke(ctx, stroke, brush, settings, alphaMul) {
     if (!stroke.points || stroke.points.length === 0) return;

@@ -516,3 +516,7 @@ With the eraser selected, "Eraser style" appears: Hard line (crisp, even edge), 
 - Smudge now takes the footprint of the brush you have selected: its tip shape, softness and texture (e.g. Chalk and Dry Brush give grainy smears, Technical Pen a crisp one).
 - Pick the brush with the "🖌️ Brush ▾" button in the smudge bar, from the sidebar, or from the toolbar brush menu while smudging.
 - Each smudge stroke remembers its brush so undo/redo replays it identically.
+
+## v159 – Smudge memory fix
+- Smudge reuses its small working canvases instead of creating four new ones per stroke (iPad Safari hoards canvases until it runs out of memory and turns them black).
+- Very large smudge sizes are capped internally, and a failure while rebuilding after a smudge no longer stops the app.
