@@ -581,3 +581,7 @@ Each layer row has a new ⤢ button. Tap it to select everything on that layer, 
 
 ## v177 — black paper while erasing zoomed in
 While erasing on a zoomed-in view, the eraser's hole was punched right through the sharp picture, including the white paper, so the hole showed black until you lifted the pencil. The hole now shows white paper, and the proper redraw (with the layers underneath) still happens when you lift.
+
+## v178 — copy artwork between projects, and a crash log
+- More › Copy selection stores the selected strokes (or a whole layer, via its ⤢ button) in the browser's storage. In any other project, More › Paste copied artwork puts them on the active layer, selected so you can move them. Undo removes the paste. Strokes only: placed pictures and motifs are not copied yet.
+- The app now keeps a short log of its last steps. If it closes unexpectedly, More › Memory check shows those steps the next time you open it.
