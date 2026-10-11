@@ -546,3 +546,6 @@ With the eraser selected, "Eraser style" appears: Hard line (crisp, even edge), 
 ## v166 – Smaller saved drawing data
 - Stroke points are saved rounded to 0.01 px (invisible), making undo steps, autosaves and project files roughly 40% smaller.
 - Undo history budget lowered to ~24 M characters (keeps at least the last 4 steps).
+
+## v167 – Gouache / Dry Brush colour pick-up no longer hammers memory
+- Colour pick-up (the brush mixing in paint it passes over) used to read many tiny spots straight from the big layer canvas, which makes iPad Safari copy the whole canvas each time. It now shrinks the layer once into a small picture and samples that, so drawing with Gouache and Dry Brush no longer spikes memory.

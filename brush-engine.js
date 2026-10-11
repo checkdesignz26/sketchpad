@@ -587,6 +587,21 @@
     if (m) return [+m[1], +m[2], +m[3]];
     return [0, 0, 0];
   }
+  // Colour pick-up reads the paint under the brush. Reading many tiny spots from the big layer canvas makes iPad Safari copy
+  // the whole canvas to the CPU each time (memory spikes, then the page dies), so instead the canvas is shrunk ONCE on the GPU
+  // into a small picture (<= ~320 px) and sampled from that in plain JS.
+  let _lowCv = null;
+  function makeLow(uctx) {
+    const c = uctx.canvas, k = Math.max(1, Math.ceil(Math.max(c.width, c.height) / 320));
+    const lw = Math.max(1, Math.ceil(c.width / k)), lh = Math.max(1, Math.ceil(c.height / k));
+    if (!_lowCv) { _lowCv = document.createElement('canvas'); }
+    _lowCv.width = lw; _lowCv.height = lh;
+    const g = _lowCv.getContext('2d', { willReadFrequently: true });
+    g.clearRect(0, 0, lw, lh); g.drawImage(c, 0, 0, c.width, c.height, 0, 0, lw, lh);
+    let data = null; try { data = g.getImageData(0, 0, lw, lh).data; } catch (e) { data = null; }
+    _lowCv.width = 1; _lowCv.height = 1;
+    return data ? { data, lw, lh, k } : null;
+  }
   function renderRaster(ctx, stroke, brush, settings, alphaMul) {
     const m = ctx.getTransform ? ctx.getTransform() : { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 };
     const sc = Math.max(0.05, Math.hypot(m.a, m.b));
@@ -646,7 +661,7 @@
       } catch (e) { uctx = null; }
     }
     const live = !!(U && U.canvas);
-    if (live && _sampleCache.id !== stroke.id) { _sampleCache.id = stroke.id; _sampleCache.map.clear(); }
+    if (live && _sampleCache.id !== stroke.id) { _sampleCache.id = stroke.id; _sampleCache.map.clear(); _sampleCache.low = null; }
     // Committed strokes: ONE read of the area under the stroke instead of dozens of tiny reads
     // (readbacks are what make the iPad stall). Live strokes keep a few cached single reads.
     let region = null, rx0 = 0, ry0 = 0, rw = 0, rh = 0;
@@ -658,13 +673,24 @@
         if (rw > 2 && rh > 2 && rw * rh <= 900000) region = uctx.getImageData(rx0, ry0, rw, rh).data;
       } catch (e) { region = null; }
     }
+    let low = null;
+    if (uctx && (live || !region)) { try { low = live ? (_sampleCache.low || (_sampleCache.low = makeLow(uctx))) : makeLow(uctx); } catch (e) { low = null; } }
     const base = parseRgb(stroke.color || '#000000');
     let cur = base.slice();
     const every = Math.max(region ? 3 : 6, Math.ceil(dabs.length / (region ? 40 : 10)));
     dabs.forEach((d, k) => {
       if (uctx && k % every === 0) {
         let sm = live ? _sampleCache.map.get(d.i) : undefined;
-        if (sm === undefined && region) {
+        if (sm === undefined && low) {
+          sm = null;
+          const px = Math.round((d.x * ux + ue) / low.k), py = Math.round((d.y * uy + uf) / low.k);
+          if (px > 0 && py > 0 && px < low.lw - 1 && py < low.lh - 1) {
+            let r = 0, g = 0, bl = 0, a = 0;
+            for (let yy = -1; yy <= 1; yy++) for (let xx = -1; xx <= 1; xx++) { const q = ((py + yy) * low.lw + (px + xx)) * 4, al = low.data[q + 3] / 255; r += low.data[q] * al; g += low.data[q + 1] * al; bl += low.data[q + 2] * al; a += al; }
+            if (a > 0.5) sm = [r / a, g / a, bl / a, Math.min(1, a / 9)];
+          }
+          if (live) _sampleCache.map.set(d.i, sm);
+        } else if (sm === undefined && region) {
           sm = null;
           const px = Math.round(d.x * ux + ue) - rx0, py = Math.round(d.y * uy + uf) - ry0;
           if (px > 1 && py > 1 && px < rw - 2 && py < rh - 2) {
