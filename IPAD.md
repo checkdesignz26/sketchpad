@@ -620,3 +620,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 ## v189
 - Layer picture cache reworked. v188 measured on iPad: only the layer being woken used the picture, but every layer switch still replayed ALL sleeping layers to rebuild the flattened pictures behind/in front of the active layer (that was the 1.8 s). Now each idle-built picture is cropped to its ink box and kept as a small canvas (total capped at 4 full canvases), and both wakeLayer and the flatten step (replayLayerInto) copy it instead of replaying strokes. Used only at normal sharpness (renderScale ≤ 1), and only while the layer's strokes still match (layerSig). Desktop synthetic test (11 layers, 180k points): layer switch 335 ms → 200 ms; diff 0.
 - Test hook window.__sketchpadInternals.
+
+## v190
+- Projects screen: 💾 Back up all (one file with every project and folder, via Share/Files on iPad) and 📥 Import / restore (a backup file adds its projects as new ones; nothing existing is replaced). A bar reminds you when you have never backed up or the last backup is over 7 days old (localStorage 'sp-lastBackup').
