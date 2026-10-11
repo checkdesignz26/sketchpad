@@ -629,3 +629,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v192
 - Own file types: a single project exports as `name.psketch`, a full backup as `pattern-sketch-backup-DATE.psketchbackup`. The contents are still JSON, so older `.sketchpad.json` / `.json` files still import. The import pickers no longer filter by type (iPadOS greys out unknown extensions); files are recognised by their content. Tapping a .psketch file in Files to open the app needs the App Store (native) version.
+
+## v193
+- Back up all made sturdier after an iPad "Transaction aborted" failure: saving the open project first is optional (failure no longer stops the backup), each project is read separately and skipped (and listed) if it fails, the file is built one project at a time through a Blob so the iPad never holds all projects as text at once, and any failure now names the step and shows storage used/quota.
