@@ -534,3 +534,7 @@ With the eraser selected, "Eraser style" appears: Hard line (crisp, even edge), 
 ## v163 – Memory budget for canvases
 - Every layer owns two canvases and the sharp one grows with the square of the view sharpness, so a project with many layers could use far more memory than iPad Safari allows (screen goes black or the app reloads). The sharpness is now lowered automatically as layers are added, to stay inside a ~300 MB budget (3 layers stay sharp-ish, 8+ layers use standard sharpness).
 - Canvases of deleted layers, and of the old layers when a project or motif is opened, are released straight away instead of piling up.
+
+## v164 – Tighter memory (3-layer projects)
+- Memory budget lowered (~220 MB): a 3-layer project now uses standard sharpness for the stored layers; zoomed-in views are still redrawn sharp by the detail layer.
+- Undo, redo and Edit Motif no longer throw away and re-create every layer canvas; existing layers keep theirs and only removed layers are released.
