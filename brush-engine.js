@@ -590,6 +590,9 @@
   // Colour pick-up reads the paint under the brush. Reading many tiny spots from the big layer canvas makes iPad Safari copy
   // the whole canvas to the CPU each time (memory spikes, then the page dies), so instead the canvas is shrunk ONCE on the GPU
   // into a small picture (<= ~320 px) and sampled from that in plain JS.
+  // Colour pick-up is worked out once per stroke and remembered (keyed by the stroke's point list), so redrawing a layer (eraser,
+  // undo, zoom) never has to read paint back from the canvas again for strokes it has already seen.
+  const _pkCache = new WeakMap();
   let _lowCv = null;
   function makeLow(uctx) {
     const c = uctx.canvas, k = Math.max(1, Math.ceil(Math.max(c.width, c.height) / 320));
@@ -661,6 +664,12 @@
       } catch (e) { uctx = null; }
     }
     const live = !!(U && U.canvas);
+    let pk = null, pkNew = null;
+    if (wet > 0 && !live && stroke.points) {
+      const sig = dabs.length + '|' + wet.toFixed(3) + '|' + (stroke.color || '') + '|' + settings.size;
+      const hit = _pkCache.get(stroke.points);
+      if (hit && hit.sig === sig) { pk = hit.cols; uctx = null; } else pkNew = { sig, cols: new Array(dabs.length) };
+    }
     if (live && _sampleCache.id !== stroke.id) { _sampleCache.id = stroke.id; _sampleCache.map.clear(); _sampleCache.low = null; }
     // Committed strokes: ONE read of the area under the stroke instead of dozens of tiny reads
     // (readbacks are what make the iPad stall). Live strokes keep a few cached single reads.
@@ -716,8 +725,11 @@
         }
         cur = [cur[0] * 0.96 + base[0] * 0.04, cur[1] * 0.96 + base[1] * 0.04, cur[2] * 0.96 + base[2] * 0.04];
       }
-      stampDab(b, d.x, d.y, d.r, d.op, 'rgb(' + (cur[0] | 0) + ',' + (cur[1] | 0) + ',' + (cur[2] | 0) + ')', brush.hardness);
+      const colStr = pk ? pk[k] : 'rgb(' + (cur[0] | 0) + ',' + (cur[1] | 0) + ',' + (cur[2] | 0) + ')';
+      if (pkNew) pkNew.cols[k] = colStr;
+      stampDab(b, d.x, d.y, d.r, d.op, colStr, brush.hardness);
     });
+    if (pkNew) _pkCache.set(stroke.points, pkNew);
     const dry = Math.max(0, Math.min(100, settings.dryness || 0)) / 100;
     if (dry > 0) {
       b.save(); b.setTransform(se, 0, 0, se, -bx * se, -by * se);

@@ -560,3 +560,6 @@ With the eraser selected, "Eraser style" appears: Hard line (crisp, even edge), 
 
 ## v170 – Eraser no longer shows a fake hole
 - While zoomed in, the eraser punched a hole in the sharp picture wherever you dragged, even on a layer it was not allowed to erase from. When you lifted, the paint came back, so it looked like the eraser worked only sometimes. The hole is now only shown where something was really erased (the status line still says when the active layer has nothing there).
+
+## v171 – Eraser no longer re-reads paint from the canvas
+- Gouache / Dry Brush work out their colour pick-up once per stroke and remember it. Before, every eraser rub (and every undo or redraw) re-read the canvas for each such stroke in the area, dozens of times per frame, which is what made the iPad run out of memory when erasing a heavily painted area. Erasing now does no canvas read-backs at all.
