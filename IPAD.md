@@ -600,3 +600,9 @@ Switching or adding a layer woke one layer (a new 13 MB canvas) and put another 
 
 ## v183 — the screen repairs itself if iPad Safari wipes a canvas
 Your Memory check after the blank canvas showed no crash and only about 115 MB in use, so the app was not closing: iPad Safari had quietly wiped a canvas (blank beige or black paper). Every canvas the app draws now carries one almost invisible pixel in its corner. Every 2 seconds (and when you come back to the app) the app checks those pixels; if one is gone, that canvas was wiped, and it is redrawn from the strokes. Tested by wiping the main canvas, the sharp zoomed-in picture, the layer canvases, the flattened pictures and the display picture. All came back.
+
+## v184
+- Tiling off now shows just the tile at its real shape, fitted to the screen, with the area outside it hidden.
+- New Project: "Custom size (real dimensions)…" with width, height, unit (in/cm/mm/px) and dpi. Saved with the project (`tilePhys`) and used as the default for the high-resolution export.
+- Tile popover: "Tile size & dpi…" to change it later.
+- Start screen: the app opens on the Projects screen with a "Continue <last project>" card, New project, folders and Import. "Open my last project automatically" is optional (localStorage `sp-autoOpen`).
