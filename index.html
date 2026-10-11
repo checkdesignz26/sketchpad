@@ -1016,7 +1016,7 @@ html.in-suite .suite-only{display:block!important}
 </div>
     <div id="backupsPanel" style="display:none;position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:90;background:var(--sideBg);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:0 18px 50px rgba(0,0,0,.35);font-size:13.5px;max-width:min(560px,calc(100vw - 24px));max-height:70vh;overflow:auto;"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:800;margin-bottom:6px;">🕘 Earlier saves<button id="backupsClose" class="btn mini">Close</button></div><div id="backupsList"></div><div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);"><button id="newBlankBtn" class="btn mini" style="width:100%;">➕ New Project</button><div class="hint">Your current project is saved first, then a fresh one opens. Find every project under 📁 Projects.</div></div></div>
     <div id="restoreBanner" style="display:none;"><span id="restoreBannerText">📂 Autosaved session found from </span><span id="restoreBannerTime"></span> <button id="restoreAcceptBtn" class="btn mini primary">Restore</button><button id="restoreDeclineBtn" class="btn mini">Start Fresh</button><button id="restoreOkBtn" class="btn mini primary" style="display:none;">OK</button></div>
-    <div id="canvasViewportOuter" class="canvas-viewport-outer"><div id="canvasWrap" class="canvas-wrap"><div id="viewPopover" class="sym-pop"><div class="section-title">🧭 Canvas / View</div><div class="row" style="margin-bottom:10px;align-items:center;gap:8px;"><div id="viewRotVal" class="pill" style="flex:1;text-align:center;">Rotation 0°</div><button id="viewRotResetBtn" class="tool-btn" style="flex:1" title="Turn the canvas back upright">Reset to 0°</button></div><button id="viewGuidesBtn" class="tool-btn" style="width:100%;margin-bottom:10px;">📐 Guides: Off</button><button id="viewResetBtn" class="tool-btn" style="width:100%;margin-bottom:10px;" title="0°, centred and fitted">🔍 Reset view (0°, fit)</button><button id="symToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">🦋 Symmetry Off</button><div class="row" style="margin-bottom:10px;"><button id="tilingBtn" class="tool-btn active" style="flex:1">Tiling On</button><div id="layoutPill" class="pill">📍 Grid Mode</div></div><button id="themeToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">☀️ Light Mode</button><button id="clearDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear Drawing &amp; Motifs</button><button id="clearAllDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear All Layers &amp; Motifs</button><label class="row" style="gap:8px;align-items:center;margin:6px 0;font-size:13px;"><input type="checkbox" id="dblDupChk" checked> Double-tap a selected item to duplicate it (a motif opens for editing instead)</label><button id="viewCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="zoomPopover" class="sym-pop"><div class="section-title">🔍 View <span id="zoomPopPct" class="small"></span></div><div class="zoom-row"><button id="zoomOutBtn" class="tool-btn" aria-label="Zoom out">−</button><button id="zoomInBtn" class="tool-btn" aria-label="Zoom in">+</button></div><button id="zoom100Btn" class="tool-btn" style="width:100%;margin-bottom:8px;">100% — actual size</button><button id="zoomFitBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">Fit to View</button><button id="zoomRotResetBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">↺ Reset rotation to 0°</button><button id="zoomResetBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;">Reset View (0°, centre, fit)</button><button id="updateAppBtn" class="tool-btn" style="width:100%;margin-bottom:8px;" title="Fetch the newest version of the app">⟳ Get latest version <span style="opacity:.6;font-weight:600">(you have v174)</span></button><div class="hint" style="margin-bottom:8px;">These always work, even if the canvas has scrolled out of sight.</div><button id="zoomCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="hiPopover" class="sym-pop"><div class="section-title">🖼️ High-resolution card (PNG)</div><div class="hint" style="margin-bottom:8px;">Redraws your whole card sharply at the size you pick, with brushes, pictures and the background. Just the card, no repeat edges. </div><div class="hint" style="margin-bottom:4px;">A normal greeting card is <b>5 × 7 in</b> (a smaller one is 4.25 × 5.5 in). Pick the long side of your card in inches:</div><div class="row" style="margin-bottom:8px;"><button class="tool-btn hi-preset" data-in="5.5">5.5 in</button><button class="tool-btn hi-preset" data-in="7">7 in</button><button class="tool-btn hi-preset" data-in="10">10 in</button></div><div class="slider-row" style="grid-template-columns:78px 1fr 30px;"><label>Long side</label><input id="hiInInput" type="number" min="1" max="30" step="0.1" value="10" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><span>in</span></div><div class="slider-row" style="grid-template-columns:78px 1fr 30px;"><label>Quality</label><select id="hiDpi" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><option value="300">300 dpi (print)</option><option value="600">600 dpi (extra sharp)</option><option value="200">200 dpi (smaller file)</option><option value="150">150 dpi (screen / email)</option></select><span></span></div><div class="slider-row" style="grid-template-columns:78px 1fr 30px;"><label>or pixels</label><input id="hiLongInput" type="number" min="200" max="8000" step="1" value="3000" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><span>px</span></div><div id="hiInfo" class="hint" style="margin-bottom:8px;"></div><label class="hint" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;"><input id="hiTransparent" type="checkbox"> Transparent background (instead of white)</label><button id="hiSaveBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;min-height:44px;">⬇️ Save PNG</button><button id="hiCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="svgPopover" class="sym-pop"><div class="section-title">🖋️ Export SVG</div><div class="hint" style="margin-bottom:8px;">Vector strokes and fills only. Pictures (placed motifs, background image) are not vector, so they are left out.</div><div class="row" style="margin-bottom:8px;"><button class="tool-btn svg-preset" data-size="780">780</button><button class="tool-btn svg-preset" data-size="1800">1800</button><button class="tool-btn svg-preset" data-size="3600">3600</button></div><div class="slider-row" style="grid-template-columns:64px 1fr 30px;"><label>Size</label><input id="svgSizeInput" type="number" min="64" max="20000" step="1" value="3600" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><span>px</span></div><div class="hint" style="margin-bottom:8px;">Width and height of the square file. 3600 × 3600 is the usual pattern size. The artwork scales exactly.</div><button id="svgSaveBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;min-height:44px;">⬇️ Save SVG</button><button id="svgCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="recolourPopover" class="sym-pop"><div class="section-title">🎨 Recolour Parts</div><div class="hint" style="margin-bottom:8px;">Motif: <b id="recolourName"></b>. Each row is one colour used in the motif. Pick a new colour for any of them.</div><div id="recolourRows"></div><button id="recolourApplyBtn" class="tool-btn primary" style="width:100%;margin:8px 0;min-height:44px;">Apply to this motif</button><button id="recolourNewBtn" class="tool-btn" style="width:100%;margin-bottom:8px;min-height:44px;">Save as new colourway</button><div class="row"><button id="recolourResetBtn" class="btn mini" style="flex:1">Reset</button><button id="recolourCloseBtn" class="btn mini" style="flex:1">✕ Close</button></div></div><div id="symPopover" class="sym-pop"><div class="section-title">🦋 Symmetry</div><div class="grid"><button class="sym-btn btn active" data-sym="off">Off</button><button class="sym-btn btn" data-sym="vertical">Vertical</button><button class="sym-btn btn" data-sym="horizontal">Horizontal</button><button class="sym-btn btn" data-sym="quad">Quad</button><button class="sym-btn btn" data-sym="diamond">Diamond</button></div><div class="slider-row"><label>Axis X</label><input id="symX" type="range" min="0" max="1800" value="900"><span id="symXVal">50%</span></div><div class="slider-row"><label>Axis Y</label><input id="symY" type="range" min="0" max="1800" value="900"><span id="symYVal">50%</span></div><div class="slider-row"><label>Angle</label><input id="symAng" type="range" min="-90" max="90" step="1" value="0"><span id="symAngVal">0°</span></div><div class="row"><button id="symAngReset" class="btn mini">0° Straight</button><button id="symAng45" class="btn mini">45°</button></div><div class="row" style="margin-top:6px;"><button id="symLenWhole" class="btn mini active" style="flex:1">Line: whole canvas</button><button id="symLenShort" class="btn mini" style="flex:1">Line: short</button></div><div class="slider-row" id="symLenRow" style="display:none"><label>Length</label><input id="symLen" type="range" min="100" max="1800" step="10" value="500"><span id="symLenVal">500</span></div><div class="row" style="margin-top:6px;"><button id="symCentre" class="btn mini">Centre Axis</button><button id="symClose" class="btn mini">Done</button></div><div class="hint">Move the mirror point to make flowers, leaves and playful asymmetric symmetry.</div></div><canvas id="fabricCanvas" aria-hidden="true"></canvas><canvas id="canvas" width="1800" height="1800"></canvas><div id="tileOutline" aria-hidden="true"></div><div id="selectionBox" class="selection-box"><button id="motifEditChip" class="btn mini primary" style="display:none">✏️ Edit Motif</button><div id="resizeHandle" class="handle"></div><div id="rotateHandle" class="rotHandle"></div></div><div id="pivotMarker" style="display:none;position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;border:2px solid var(--pink);border-radius:50%;background:rgba(255,255,255,.85);pointer-events:none;z-index:5;"><div style="position:absolute;left:50%;top:-6px;bottom:-6px;width:2px;margin-left:-1px;background:var(--pink)"></div><div style="position:absolute;top:50%;left:-6px;right:-6px;height:2px;margin-top:-1px;background:var(--pink)"></div></div><div id="paintBBoxOverlay" class="selection-box" style="display:none;"><div id="paintResizeHandle" class="handle" title="Drag to resize. Tap to make 25% bigger."></div><div id="paintRotateHandle" class="rotHandle" title="Drag to rotate. Tap to turn 45 degrees."></div><input id="strokeColourHandle" class="sel-colour strokeColourHandle" type="color" value="#000000" title="Tap to change colour"></div><div id="groupBox" class="selection-box" style="display:none;"><div class="gh" data-h="nw" style="left:0%;top:0%;cursor:nwse-resize"></div><div class="gh" data-h="n" style="left:50%;top:0%;cursor:ns-resize"></div><div class="gh" data-h="ne" style="left:100%;top:0%;cursor:nesw-resize"></div><div class="gh" data-h="e" style="left:100%;top:50%;cursor:ew-resize"></div><div class="gh" data-h="se" style="left:100%;top:100%;cursor:nwse-resize"></div><div class="gh" data-h="s" style="left:50%;top:100%;cursor:ns-resize"></div><div class="gh" data-h="sw" style="left:0%;top:100%;cursor:nesw-resize"></div><div class="gh" data-h="w" style="left:0%;top:50%;cursor:ew-resize"></div><div id="grpRotHandle" class="rotHandle" title="Drag to turn. Tap to turn 45 degrees."></div></div><div id="symAxis" class="sym-axis locked"></div><div id="rotateChip" class="rotate-chip">Canvas 0°</div><div id="pathNodeOverlay"></div></div></div>
+    <div id="canvasViewportOuter" class="canvas-viewport-outer"><div id="canvasWrap" class="canvas-wrap"><div id="viewPopover" class="sym-pop"><div class="section-title">🧭 Canvas / View</div><div class="row" style="margin-bottom:10px;align-items:center;gap:8px;"><div id="viewRotVal" class="pill" style="flex:1;text-align:center;">Rotation 0°</div><button id="viewRotResetBtn" class="tool-btn" style="flex:1" title="Turn the canvas back upright">Reset to 0°</button></div><button id="viewGuidesBtn" class="tool-btn" style="width:100%;margin-bottom:10px;">📐 Guides: Off</button><button id="viewResetBtn" class="tool-btn" style="width:100%;margin-bottom:10px;" title="0°, centred and fitted">🔍 Reset view (0°, fit)</button><button id="symToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">🦋 Symmetry Off</button><div class="row" style="margin-bottom:10px;"><button id="tilingBtn" class="tool-btn active" style="flex:1">Tiling On</button><div id="layoutPill" class="pill">📍 Grid Mode</div></div><button id="themeToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">☀️ Light Mode</button><button id="clearDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear Drawing &amp; Motifs</button><button id="clearAllDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear All Layers &amp; Motifs</button><label class="row" style="gap:8px;align-items:center;margin:6px 0;font-size:13px;"><input type="checkbox" id="dblDupChk" checked> Double-tap a selected item to duplicate it (a motif opens for editing instead)</label><button id="viewCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="zoomPopover" class="sym-pop"><div class="section-title">🔍 View <span id="zoomPopPct" class="small"></span></div><div class="zoom-row"><button id="zoomOutBtn" class="tool-btn" aria-label="Zoom out">−</button><button id="zoomInBtn" class="tool-btn" aria-label="Zoom in">+</button></div><button id="zoom100Btn" class="tool-btn" style="width:100%;margin-bottom:8px;">100% — actual size</button><button id="zoomFitBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">Fit to View</button><button id="zoomRotResetBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">↺ Reset rotation to 0°</button><button id="zoomResetBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;">Reset View (0°, centre, fit)</button><button id="updateAppBtn" class="tool-btn" style="width:100%;margin-bottom:8px;" title="Fetch the newest version of the app">⟳ Get latest version <span style="opacity:.6;font-weight:600">(you have v176)</span></button><div class="hint" style="margin-bottom:8px;">These always work, even if the canvas has scrolled out of sight.</div><button id="zoomCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="hiPopover" class="sym-pop"><div class="section-title">🖼️ High-resolution card (PNG)</div><div class="hint" style="margin-bottom:8px;">Redraws your whole card sharply at the size you pick, with brushes, pictures and the background. Just the card, no repeat edges. </div><div class="hint" style="margin-bottom:4px;">A normal greeting card is <b>5 × 7 in</b> (a smaller one is 4.25 × 5.5 in). Pick the long side of your card in inches:</div><div class="row" style="margin-bottom:8px;"><button class="tool-btn hi-preset" data-in="5.5">5.5 in</button><button class="tool-btn hi-preset" data-in="7">7 in</button><button class="tool-btn hi-preset" data-in="10">10 in</button></div><div class="slider-row" style="grid-template-columns:78px 1fr 30px;"><label>Long side</label><input id="hiInInput" type="number" min="1" max="30" step="0.1" value="10" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><span>in</span></div><div class="slider-row" style="grid-template-columns:78px 1fr 30px;"><label>Quality</label><select id="hiDpi" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><option value="300">300 dpi (print)</option><option value="600">600 dpi (extra sharp)</option><option value="200">200 dpi (smaller file)</option><option value="150">150 dpi (screen / email)</option></select><span></span></div><div class="slider-row" style="grid-template-columns:78px 1fr 30px;"><label>or pixels</label><input id="hiLongInput" type="number" min="200" max="8000" step="1" value="3000" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><span>px</span></div><div id="hiInfo" class="hint" style="margin-bottom:8px;"></div><label class="hint" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;"><input id="hiTransparent" type="checkbox"> Transparent background (instead of white)</label><button id="hiSaveBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;min-height:44px;">⬇️ Save PNG</button><button id="hiCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="svgPopover" class="sym-pop"><div class="section-title">🖋️ Export SVG</div><div class="hint" style="margin-bottom:8px;">Vector strokes and fills only. Pictures (placed motifs, background image) are not vector, so they are left out.</div><div class="row" style="margin-bottom:8px;"><button class="tool-btn svg-preset" data-size="780">780</button><button class="tool-btn svg-preset" data-size="1800">1800</button><button class="tool-btn svg-preset" data-size="3600">3600</button></div><div class="slider-row" style="grid-template-columns:64px 1fr 30px;"><label>Size</label><input id="svgSizeInput" type="number" min="64" max="20000" step="1" value="3600" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><span>px</span></div><div class="hint" style="margin-bottom:8px;">Width and height of the square file. 3600 × 3600 is the usual pattern size. The artwork scales exactly.</div><button id="svgSaveBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;min-height:44px;">⬇️ Save SVG</button><button id="svgCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="recolourPopover" class="sym-pop"><div class="section-title">🎨 Recolour Parts</div><div class="hint" style="margin-bottom:8px;">Motif: <b id="recolourName"></b>. Each row is one colour used in the motif. Pick a new colour for any of them.</div><div id="recolourRows"></div><button id="recolourApplyBtn" class="tool-btn primary" style="width:100%;margin:8px 0;min-height:44px;">Apply to this motif</button><button id="recolourNewBtn" class="tool-btn" style="width:100%;margin-bottom:8px;min-height:44px;">Save as new colourway</button><div class="row"><button id="recolourResetBtn" class="btn mini" style="flex:1">Reset</button><button id="recolourCloseBtn" class="btn mini" style="flex:1">✕ Close</button></div></div><div id="symPopover" class="sym-pop"><div class="section-title">🦋 Symmetry</div><div class="grid"><button class="sym-btn btn active" data-sym="off">Off</button><button class="sym-btn btn" data-sym="vertical">Vertical</button><button class="sym-btn btn" data-sym="horizontal">Horizontal</button><button class="sym-btn btn" data-sym="quad">Quad</button><button class="sym-btn btn" data-sym="diamond">Diamond</button></div><div class="slider-row"><label>Axis X</label><input id="symX" type="range" min="0" max="1800" value="900"><span id="symXVal">50%</span></div><div class="slider-row"><label>Axis Y</label><input id="symY" type="range" min="0" max="1800" value="900"><span id="symYVal">50%</span></div><div class="slider-row"><label>Angle</label><input id="symAng" type="range" min="-90" max="90" step="1" value="0"><span id="symAngVal">0°</span></div><div class="row"><button id="symAngReset" class="btn mini">0° Straight</button><button id="symAng45" class="btn mini">45°</button></div><div class="row" style="margin-top:6px;"><button id="symLenWhole" class="btn mini active" style="flex:1">Line: whole canvas</button><button id="symLenShort" class="btn mini" style="flex:1">Line: short</button></div><div class="slider-row" id="symLenRow" style="display:none"><label>Length</label><input id="symLen" type="range" min="100" max="1800" step="10" value="500"><span id="symLenVal">500</span></div><div class="row" style="margin-top:6px;"><button id="symCentre" class="btn mini">Centre Axis</button><button id="symClose" class="btn mini">Done</button></div><div class="hint">Move the mirror point to make flowers, leaves and playful asymmetric symmetry.</div></div><canvas id="fabricCanvas" aria-hidden="true"></canvas><canvas id="canvas" width="1800" height="1800"></canvas><div id="tileOutline" aria-hidden="true"></div><div id="selectionBox" class="selection-box"><button id="motifEditChip" class="btn mini primary" style="display:none">✏️ Edit Motif</button><div id="resizeHandle" class="handle"></div><div id="rotateHandle" class="rotHandle"></div></div><div id="pivotMarker" style="display:none;position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;border:2px solid var(--pink);border-radius:50%;background:rgba(255,255,255,.85);pointer-events:none;z-index:5;"><div style="position:absolute;left:50%;top:-6px;bottom:-6px;width:2px;margin-left:-1px;background:var(--pink)"></div><div style="position:absolute;top:50%;left:-6px;right:-6px;height:2px;margin-top:-1px;background:var(--pink)"></div></div><div id="paintBBoxOverlay" class="selection-box" style="display:none;"><div id="paintResizeHandle" class="handle" title="Drag to resize. Tap to make 25% bigger."></div><div id="paintRotateHandle" class="rotHandle" title="Drag to rotate. Tap to turn 45 degrees."></div><input id="strokeColourHandle" class="sel-colour strokeColourHandle" type="color" value="#000000" title="Tap to change colour"></div><div id="groupBox" class="selection-box" style="display:none;"><div class="gh" data-h="nw" style="left:0%;top:0%;cursor:nwse-resize"></div><div class="gh" data-h="n" style="left:50%;top:0%;cursor:ns-resize"></div><div class="gh" data-h="ne" style="left:100%;top:0%;cursor:nesw-resize"></div><div class="gh" data-h="e" style="left:100%;top:50%;cursor:ew-resize"></div><div class="gh" data-h="se" style="left:100%;top:100%;cursor:nwse-resize"></div><div class="gh" data-h="s" style="left:50%;top:100%;cursor:ns-resize"></div><div class="gh" data-h="sw" style="left:0%;top:100%;cursor:nesw-resize"></div><div class="gh" data-h="w" style="left:0%;top:50%;cursor:ew-resize"></div><div id="grpRotHandle" class="rotHandle" title="Drag to turn. Tap to turn 45 degrees."></div></div><div id="symAxis" class="sym-axis locked"></div><div id="rotateChip" class="rotate-chip">Canvas 0°</div><div id="pathNodeOverlay"></div></div></div>
     <div id="status" class="status">✨ Apple Pencil draws | one finger protected | two fingers pan/pinch/rotate | two-finger tap Undo | three-finger tap Redo | Capture Motif saves drawing ✨</div>
   </main>
 </div>
@@ -1075,7 +1075,7 @@ function budgetScale(n){
   for(const b of [2,1.5,1]){const mb=base*(n*(b===1?1:1+b*b)+2*b*b+6);if(mb<=CANVAS_BUDGET_MB)return b;}
   return 1;
 }
-function computeRenderScale(){return Math.min(computeRenderScaleRaw(),budgetScale(Math.max(1,layers.length)));}
+function computeRenderScale(){return Math.min(computeRenderScaleRaw(),budgetScale(awakeCount()+2));}
 function computeRenderScaleRaw(){
   const raw=zoom*baseScale*(window.devicePixelRatio||1);
   // Capped at 2 (was 4): every bucket step squares the memory cost, since EVERY layer's display
@@ -1565,21 +1565,69 @@ function setStatus(t){$('status').textContent=t;}
 function isPen(e){return e.pointerType==='pen'||e.pointerType==='mouse'}
 function currentBrushIdForSettings(){return eraserActive?'eraser':activeBrushId;}
 function currentSettings(){return BrushEngine.getSettings(currentBrushIdForSettings());}
-function getActiveLayer(){return layers.find(l=>l.id===activeLayerId)||null;}
+function getActiveLayer(){const l=layers.find(l=>l.id===activeLayerId)||null;if(l&&l.asleep)wakeLayer(l);return l;}
+// Layers are "asleep" unless they need a bitmap: only the layer being painted on (and any layer with a blend mode) keeps real
+// canvases. Every other layer lives as stroke data and is flattened into a few shared picture caches (see layerPlan), so memory
+// no longer grows with the number of layers.
 function makeLayer(name){
-  const canvasEl=document.createElement('canvas');canvasEl.width=W;canvasEl.height=H;
-  // dcanvas/dctx: a SECOND raster of this same layer, kept at the current display resolution
-  // (renderScale) purely for on-screen painting — see rebuildLayer/updateDisplayComposite. The
-  // low-res canvas/ctx above stays exactly as it always was (hit-testing, export, motif capture,
-  // Paint Inside masks all keep reading it, untouched by any of this).
-  // At the standard sharpness (renderScale 1) the second canvas would be an exact copy of the first, so the layer simply
-  // uses the same canvas for both (saves 13 MB per layer and half the drawing work). See layerBindD / dualDraw.
-  const lctx0=canvasEl.getContext('2d');
-  if(renderScale===1)return {id:crypto.randomUUID(),name,kind:'vector',visible:true,locked:false,opacity:100,canvas:canvasEl,ctx:lctx0,dcanvas:canvasEl,dctx:lctx0};
-  const dcanvasEl=document.createElement('canvas');dcanvasEl.width=Math.round(W*renderScale);dcanvasEl.height=Math.round(H*renderScale);
-  const dctx=dcanvasEl.getContext('2d');dctx.setTransform(renderScale,0,0,renderScale,0,0);
-  return {id:crypto.randomUUID(),name,kind:'vector',visible:true,locked:false,opacity:100,canvas:canvasEl,ctx:lctx0,dcanvas:dcanvasEl,dctx};
+  const canvasEl=document.createElement('canvas');canvasEl.width=1;canvasEl.height=1;
+  const c=canvasEl.getContext('2d');
+  return {id:crypto.randomUUID(),name,kind:'vector',visible:true,locked:false,opacity:100,canvas:canvasEl,ctx:c,dcanvas:canvasEl,dctx:c,asleep:true};
 }
+let segVer=0;
+function layerShouldWake(l){return l.id===activeLayerId||l.pin||l.keepAwake||(l.visible&&l.blend&&l.blend!=='source-over');}
+function wakeLayer(l){
+  if(!l||!l.asleep)return;
+  l.asleep=false;
+  l.canvas.width=W;l.canvas.height=H;l.ctx=l.canvas.getContext('2d');l.ctx.setTransform(1,0,0,1,0,0);
+  l.dcanvas=l.canvas;l.dctx=l.ctx;layerBindD(l);
+  rebuildLayer(l.id);segVer++;
+}
+function sleepLayer(l){
+  if(!l||l.asleep)return;
+  try{if(l.dcanvas!==l.canvas){l.dcanvas.width=l.dcanvas.height=1;}l.canvas.width=l.canvas.height=1;}catch(e){}
+  l.dcanvas=l.canvas;l.dctx=l.ctx=l.canvas.getContext('2d');l.asleep=true;segVer++;
+}
+function syncAwake(){const now=performance.now();layers.forEach(l=>{if(l.keepAwake&&now-(l._rb||0)>3000)l.keepAwake=false;const w=layerShouldWake(l);if(w&&l.asleep)wakeLayer(l);else if(!w&&!l.asleep)sleepLayer(l);});}
+function awakeCount(){let n=0;layers.forEach(l=>{if(layerShouldWake(l))n++;});return Math.max(1,n);}
+// Plan, bottom to top: a live layer (own bitmap) or a run of sleeping layers drawn from one cached picture.
+function layerPlan(){
+  const items=[];let seg=null;
+  layers.forEach(l=>{
+    if(!l.visible)return;
+    if(!l.asleep){seg=null;items.push({live:l});}
+    else{if(!seg){seg={layers:[]};items.push(seg);}seg.layers.push(l);}
+  });
+  return items;
+}
+function replayLayerInto(c,layerId){
+  strokes.forEach(s=>{
+    if(s.layerId!==layerId||hiddenStrokeIds.has(s.id)||s.guideHidden)return;
+    const brush=BrushEngine.getBrush(s.brushId),settings=s.settings||BrushEngine.getSettings(s.brushId);
+    renderStrokeClipped(c,s,brush,settings);
+  });
+}
+const segCache=[];let segScratch=null;
+function segScratchGet(pw,ph,sc){
+  if(!segScratch)segScratch=document.createElement('canvas');
+  if(segScratch.width!==pw||segScratch.height!==ph){segScratch.width=pw;segScratch.height=ph;}
+  const c=segScratch.getContext('2d');c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,pw,ph);c.setTransform(sc,0,0,sc,0,0);return c;
+}
+function segScratchFree(){if(segScratch){segScratch.width=1;segScratch.height=1;}}
+function segFor(idx,item){
+  const key=segVer+'|'+renderScale+'|'+item.layers.map(l=>l.id+':'+l.opacity).join(',');
+  let e=segCache[idx];if(!e)e=segCache[idx]={cv:document.createElement('canvas'),key:''};
+  if(e.key===key)return e.cv;
+  const pw=Math.round(W*renderScale),ph=Math.round(H*renderScale);
+  if(e.cv.width!==pw||e.cv.height!==ph){e.cv.width=pw;e.cv.height=ph;}
+  const c=e.cv.getContext('2d');c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,pw,ph);
+  item.layers.forEach(l=>{
+    const sc=segScratchGet(pw,ph,renderScale);replayLayerInto(sc,l.id);
+    c.save();c.globalAlpha=l.opacity/100;c.drawImage(segScratch,0,0);c.restore();
+  });
+  segScratchFree();e.key=key;return e.cv;
+}
+function segTrim(n){while(segCache.length>n){const e=segCache.pop();try{e.cv.width=e.cv.height=1;}catch(x){}}}
 // The default document: Sketch at the bottom, then Colour, then Outline on top — matches the
 // brief's suggested starting point (Outline above Colour) so paint never has to fight z-order.
 function defaultLayers(){return [makeLayer('Sketch'),makeLayer('Colour'),makeLayer('Outline')];}
@@ -1701,6 +1749,13 @@ function renderStrokeClipped(ctx,stroke,brush,settings,alphaMul){
 }
 function rebuildLayer(layerId){
   const layer=layers.find(l=>l.id===layerId);if(!layer)return;
+  if(layer.asleep){
+    // Rebuilt again and again in a short time (dragging/editing strokes on this layer): give it its own bitmap so each frame is cheap.
+    const now=performance.now(),hot=now-(layer._rb||0)<500;layer._rb=now;
+    if(hot){layer.keepAwake=true;wakeLayer(layer);compositeDirty=true;return;}
+    segVer++;compositeDirty=true;return;
+  }
+  layer.pin=false;
   layer.ctx.clearRect(0,0,W,H);
   layer.dctx.clearRect(0,0,W,H);
   strokes.filter(s=>s.layerId===layerId&&!hiddenStrokeIds.has(s.id)&&!s.guideHidden).forEach(s=>{
@@ -1718,6 +1773,8 @@ function rebuildLayer(layerId){
 // happened when Done failed to register on a real device and the excluded stroke never came back.
 function rebuildLayerDimmed(layerId,dimStrokeId,alpha){
   const layer=layers.find(l=>l.id===layerId);if(!layer)return;
+  if(layer.asleep)wakeLayer(layer);
+  layer.pin=true;
   layer.ctx.clearRect(0,0,W,H);
   layer.dctx.clearRect(0,0,W,H);
   strokes.filter(s=>s.layerId===layerId&&!hiddenStrokeIds.has(s.id)&&!s.guideHidden).forEach(s=>{
@@ -1734,12 +1791,28 @@ function rebuildLayerDimmed(layerId,dimStrokeId,alpha){
 function rebuildAllLayers(){layers.forEach(l=>rebuildLayer(l.id));}
 function appendStrokeToLayer(stroke){
   const layer=layers.find(l=>l.id===stroke.layerId);if(!layer)return;
+  if(layer.asleep){segVer++;compositeDirty=true;return;}
   const brush=BrushEngine.getBrush(stroke.brushId),settings=stroke.settings||BrushEngine.getSettings(stroke.brushId);
   renderStrokeClipped(layer.ctx,stroke,brush,settings);
   if(layer.dctx!==layer.ctx)renderStrokeClipped(layer.dctx,stroke,brush,settings);
   compositeDirty=true;
 }
-function updateComposite(){compositeCtx.clearRect(0,0,W,H);layers.forEach(l=>{if(!l.visible)return;compositeCtx.save();compositeCtx.globalAlpha=l.opacity/100;compositeCtx.globalCompositeOperation=l.blend||'source-over';compositeCtx.drawImage(l.canvas,0,0);compositeCtx.restore();});}
+// Logical-resolution flatten (export, hit tests). Sleeping layers are drawn from their strokes one at a time.
+function updateComposite(){
+  syncAwake();
+  compositeCtx.clearRect(0,0,W,H);
+  let tmp=null;
+  layers.forEach(l=>{
+    if(!l.visible)return;
+    let src=l.canvas;
+    if(l.asleep){
+      if(!tmp){tmp=document.createElement('canvas');tmp.width=W;tmp.height=H;}
+      const t=tmp.getContext('2d');t.setTransform(1,0,0,1,0,0);t.clearRect(0,0,W,H);replayLayerInto(t,l.id);src=tmp;
+    }
+    compositeCtx.save();compositeCtx.globalAlpha=l.opacity/100;compositeCtx.globalCompositeOperation=l.blend||'source-over';compositeCtx.drawImage(src,0,0);compositeCtx.restore();
+  });
+  if(tmp){tmp.width=tmp.height=1;}
+}
 // Same flattening as updateComposite() above, but from each layer's HI-RES dcanvas into
 // displayCanvas — this is what the on-screen canvas actually paints from (see redraw/drawTiles),
 // so what's on screen is a fresh render at the current display resolution, never a stretched
@@ -1747,7 +1820,16 @@ function updateComposite(){compositeCtx.clearRect(0,0,W,H);layers.forEach(l=>{if
 // resizeRenderTargets), so drawImage's dest size must be given explicitly as W,H (the LOGICAL
 // size) rather than left to the image's own (already renderScale-sized) natural pixel size —
 // otherwise the transform would scale an already-scaled bitmap up a second time.
-function updateDisplayComposite(){displayCtx.clearRect(0,0,W,H);layers.forEach(l=>{if(!l.visible)return;displayCtx.save();displayCtx.globalAlpha=l.opacity/100;displayCtx.globalCompositeOperation=l.blend||'source-over';displayCtx.drawImage(l.dcanvas,0,0,W,H);displayCtx.restore();});}
+function updateDisplayComposite(){
+  syncAwake();
+  displayCtx.clearRect(0,0,W,H);
+  let si=0;
+  layerPlan().forEach(it=>{
+    if(it.live){const l=it.live;displayCtx.save();displayCtx.globalAlpha=l.opacity/100;displayCtx.globalCompositeOperation=l.blend||'source-over';displayCtx.drawImage(l.dcanvas,0,0,W,H);displayCtx.restore();}
+    else{displayCtx.drawImage(segFor(si++,it),0,0,W,H);}
+  });
+  segTrim(si);
+}
 // Stroke points carry long decimals (e.g. 412.38571923) that add up: a detailed drawing's undo step was ~9 million characters.
 // Rounding to 0.01 px (invisible) makes every undo step, autosave and project file 3-4x smaller.
 const _rnd=(k,v)=>typeof v==='number'&&!Number.isInteger(v)?(Math.abs(v)>=10?Math.round(v*100)/100:Math.round(v*10000)/10000):v;
@@ -1792,7 +1874,7 @@ function applyLayerMeta(layerMeta,wantActiveId){
   // Layers that already exist (same id) keep their canvases: undo/redo and motif edit used to throw every canvas away and
   // allocate new ones, and iPad Safari does not hand that memory back quickly. Only layers that are gone are released.
   const old=layers;layers=[];
-  {const cap=budgetScale(Math.max(1,(layerMeta&&layerMeta.length)||3));if(cap<renderScale){renderScale=cap;old.length=old.length;layers=old;resizeRenderTargets();layers=[];}}
+  {const cap=budgetScale(3);if(cap<renderScale){renderScale=cap;old.length=old.length;layers=old;resizeRenderTargets();layers=[];}}
   const used=new Set();
   const take=m=>{const o=old.find(l=>l.id===m.id&&!used.has(l));if(o){used.add(o);return o;}return makeLayer(m.name);};
   if(layerMeta&&layerMeta.length){
@@ -1824,6 +1906,7 @@ function resizeRenderTargets(){
 }
 // Gives a layer its own hi-res canvas when renderScale > 1, or lets it share its normal canvas at 1 (contents are rebuilt by the caller).
 function layerBindD(l){
+  if(l.asleep){try{if(l.dcanvas!==l.canvas)l.dcanvas.width=l.dcanvas.height=1;}catch(e){}l.dcanvas=l.canvas;l.dctx=l.ctx;return;}
   const pw=Math.round(W*renderScale),ph=Math.round(H*renderScale);
   if(renderScale===1){
     if(l.dcanvas!==l.canvas){try{l.dcanvas.width=l.dcanvas.height=1;}catch(e){}l.dcanvas=l.canvas;l.dctx=l.ctx;}
@@ -1981,7 +2064,7 @@ function paintFabric(){
   }
   fabricLast=performance.now();
 }
-function redraw(){if(redraw._q)return;redraw._q=requestAnimationFrame(()=>{redraw._q=0;if(pathEditStrokeId&&pathEditNodes&&!liveActive&&!drawing)renderPathLivePreview(); /* Edit Path hides the real stroke, so its live preview must never be lost to a stray clear */if(compositeDirty){updateComposite();updateDisplayComposite();compositeDirty=false;}ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);drawBackground();drawTraces();if(showTiling)drawTiles();else{ctx.drawImage(displayCanvas,0,0,W,H);if(liveActive)ctx.drawImage(liveLayer,0,0);}drawPlaced();drawMultiSelectHighlights();drawShapeToolsHighlights();drawStrokeSelection();drawTileBoundary();if(showGuides)drawGuides();updateSelectionBox();updatePaintBBoxOverlay();updateGroupBox();fabricContentChanged();invalidateDetail();scheduleMotifHi();});}
+function redraw(){if(redraw._q)return;redraw._q=requestAnimationFrame(()=>{redraw._q=0;if(pathEditStrokeId&&pathEditNodes&&!liveActive&&!drawing)renderPathLivePreview(); /* Edit Path hides the real stroke, so its live preview must never be lost to a stray clear */if(compositeDirty){updateDisplayComposite();compositeDirty=false;}ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);drawBackground();drawTraces();if(showTiling)drawTiles();else{ctx.drawImage(displayCanvas,0,0,W,H);if(liveActive)ctx.drawImage(liveLayer,0,0);}drawPlaced();drawMultiSelectHighlights();drawShapeToolsHighlights();drawStrokeSelection();drawTileBoundary();if(showGuides)drawGuides();updateSelectionBox();updatePaintBBoxOverlay();updateGroupBox();fabricContentChanged();invalidateDetail();scheduleMotifHi();});}
 // A pattern (e.g. exported from Magic Builder) loaded as the base of the design - unlike Trace
 // Reference (a non-exported, freely-scaled/positioned tracing guide), this is sized to exactly
 // fill the guide-square tile, tiles using the same repeat offsets as the hand-drawn layer/motifs
@@ -2398,6 +2481,7 @@ function eraserMarkRect(stroke,bb,noPad){
 }
 function rebuildLayerRegion(layerId,R){
   const layer=layers.find(l=>l.id===layerId);if(!layer)return;
+  if(layer.asleep){segVer++;compositeDirty=true;return;}
   const x0=Math.max(0,Math.floor(R.x0)),y0=Math.max(0,Math.floor(R.y0)),x1=Math.min(W,Math.ceil(R.x1)),y1=Math.min(H,Math.ceil(R.y1));
   if(x1<=x0||y1<=y0)return;
   const list=strokes.filter(st=>{
@@ -4124,6 +4208,7 @@ function renderLayersList(){
       +'<button type="button" class="layer-icon-btn layer-alpha'+(layer.alphaLock?' on':'')+'" title="Alpha lock: paint only where this layer already has paint">α</button>'
       +'<select class="layer-blend" title="Blend mode">'+LAYER_BLENDS.map(b=>'<option value="'+b[0]+'"'+((layer.blend||'source-over')===b[0]?' selected':'')+'>'+b[1]+'</option>').join('')+'</select>'
       +'<input type="range" class="layer-opacity" min="0" max="100" value="'+layer.opacity+'" title="Opacity">'
+      +'<button type="button" class="layer-icon-btn layer-xform" title="Select this whole layer to resize, turn or move it">⤢</button>'
       +'<button type="button" class="layer-icon-btn layer-up" title="Move up">↑</button>'
       +'<button type="button" class="layer-icon-btn layer-down" title="Move down">↓</button>'
       +'<button type="button" class="layer-icon-btn layer-del" title="Delete">✕</button>';
@@ -4138,10 +4223,11 @@ function renderLayersList(){
     opacityInput.oninput=e=>{layer.opacity=+e.target.value;compositeDirty=true;redraw();};
     opacityInput.onchange=()=>pushHist();
     opacityInput.addEventListener('click',e=>e.stopPropagation());
+    row.querySelector('.layer-xform').onclick=e=>{e.stopPropagation();selectLayerArtwork(layer.id);};
     row.querySelector('.layer-up').onclick=e=>{e.stopPropagation();moveLayer(layer.id,1);};
     row.querySelector('.layer-down').onclick=e=>{e.stopPropagation();moveLayer(layer.id,-1);};
     row.querySelector('.layer-del').onclick=e=>{e.stopPropagation();deleteLayer(layer.id);};
-    row.onclick=()=>{activeLayerId=layer.id;renderLayersList();};
+    row.onclick=()=>{activeLayerId=layer.id;renderLayersList();compositeDirty=true;redraw();};
     host.appendChild(row);
   });
   syncAreaFillLayerSelect();
@@ -4698,6 +4784,19 @@ function selectAllArtwork(){
   setMulti(sids,pids,gid);selAddArmed=false;groupInsideId=null;
   syncStrokeSelectionUI();updateSelectedControls();redraw();
   setStatus('☑️ Selected all artwork ('+(sids.length+pids.length)+' items). Tap Group to treat it as one piece, or drag the handles to resize. Capture Motif is separate.');
+}
+// Pixel-persona style: grab one whole layer so it can be resized, turned or moved with the corner handles.
+function selectLayerArtwork(layerId){
+  if(pathEditStrokeId)commitEditPath();
+  if(joinPendingStrokeId)endJoinPick();
+  const layer=layers.find(l=>l.id===layerId);if(!layer)return;
+  if(layer.locked){setStatus('🔒 "'+layer.name+'" is locked. Unlock it to resize it.');return;}
+  const sids=strokes.filter(s=>s.layerId===layerId&&s.points&&s.points.length&&s.brushId!=='eraser'&&!hiddenStrokeIds.has(s.id)).map(s=>s.id);
+  if(!sids.length){setStatus('Nothing on "'+layer.name+'" to resize yet.');return;}
+  if(mode!=='edit')$('editModeBtn').click();
+  setMulti(sids,[],null);selAddArmed=false;groupInsideId=null;
+  syncStrokeSelectionUI();updateSelectedControls();redraw();
+  setStatus('⤢ Whole layer "'+layer.name+'" selected ('+sids.length+' strokes). Drag the corner handles to resize, the round handle to turn it, or drag inside to move it.');
 }
 function deleteMultiSel(){
   if(!multiSel)return;
@@ -9602,13 +9701,13 @@ let tbFitRaf=0;function tbFitSoon(){cancelAnimationFrame(tbFitRaf);tbFitRaf=requ
 function memoryReport(){
   const mb=c=>c?(c.width*c.height*4/1048576):0;
   let lay=0;layers.forEach(l=>{lay+=mb(l.canvas)+(l.dcanvas!==l.canvas?mb(l.dcanvas):0);});
-  const other=mb(canvas)+mb(displayCanvas)+mb(compositeCanvas)+mb(liveLayer)+mb(detailCanvas)+mb(detailScratch);
+  const other=segCache.reduce((a,e)=>a+mb(e.cv),0)+mb(canvas)+mb(displayCanvas)+mb(compositeCanvas)+mb(liveLayer)+mb(detailCanvas)+mb(detailScratch);
   let pts=0;strokes.forEach(st=>{pts+=(st.points?st.points.length:0);});
   let mpx=0,msrc=0,msrcStrokes=0;motifs.forEach(m=>{if(m.img)mpx+=(m.img.naturalWidth||m.img.width||0)*(m.img.naturalHeight||m.img.height||0)*4/1048576;msrc+=(m.src||'').length/1e6;if(m.source)msrcStrokes+=((m.source.strokesJSON||'').length)/1e6;});
   let bg=0;try{if(bgImg)bg=(bgImg.naturalWidth||bgImg.width||0)*(bgImg.naturalHeight||bgImg.height||0)*4/1048576;}catch(e){}
   const f=n=>(Math.round(n*10)/10);
   const total=lay+other+mpx+bg+histSize()/1e6;
-  return 'Layer canvases: '+f(lay)+' MB ('+layers.length+' layers, view sharpness '+renderScale+')\nScreen canvases: '+f(other)+' MB\nMotif pictures: '+f(mpx)+' MB ('+motifs.length+' motifs), their drawings '+f(msrcStrokes)+' MB of data\nBackground picture: '+f(bg)+' MB\nUndo history: ~'+f(histSize()/1e6)+' M characters ('+history.length+' steps)\nStrokes: '+strokes.length+' ('+pts+' points)\n\nEstimated total: about '+f(total)+' MB. iPad Safari usually stops around 400 MB of canvases.';
+  return 'Layer canvases: '+f(lay)+' MB ('+layers.length+' layers, '+layers.filter(l=>!l.asleep).length+' awake, view sharpness '+renderScale+')\nScreen canvases: '+f(other)+' MB\nMotif pictures: '+f(mpx)+' MB ('+motifs.length+' motifs), their drawings '+f(msrcStrokes)+' MB of data\nBackground picture: '+f(bg)+' MB\nUndo history: ~'+f(histSize()/1e6)+' M characters ('+history.length+' steps)\nStrokes: '+strokes.length+' ('+pts+' points)\n\nEstimated total: about '+f(total)+' MB. iPad Safari usually stops around 400 MB of canvases.';
 }
 function tbMoreMenu(btn){
   const items=[{head:'More'}];
@@ -10967,6 +11066,12 @@ window.__sketchpadSetRot=(r)=>{rot=+r||0;applyTransform();};
 window.__sketchpadDoc={build:()=>buildDocObject(),apply:d=>applyDocObject(d),svg:n=>buildSvgExport(n),blendAt:(aId,bId,ts)=>{const A=strokes.find(x=>x.id===aId),B=strokes.find(x=>x.id===bId);const r=generateBlend(A,B,{steps:1,colour:true,shape:true,pos:true,size:true,rot:true,ts});return r.error?{error:r.error}:r.strokes.map(x=>({points:x.points,color:x.color,closed:x.closed}));}};
 window.__sketchpadTips=()=>[...motifTipCache.entries()].map(([k,v])=>{const d=v.canvas.getContext('2d').getImageData(0,0,v.canvas.width,v.canvas.height).data;let a=0;for(let i=3;i<d.length;i+=4)a+=d[i];return k+':'+v.canvas.width+'x'+v.canvas.height+':ink'+Math.round(a/255);});
 window.__sketchpadPush=()=>{rebuildAllLayers();pushHist();redraw();};
+window.__sketchpadLayerInfo=()=>{updateDisplayComposite();updateComposite();
+  const cmp=document.createElement('canvas');cmp.width=W/4;cmp.height=H/4;const c=cmp.getContext('2d');
+  c.drawImage(displayCanvas,0,0,cmp.width,cmp.height);const a=c.getImageData(0,0,cmp.width,cmp.height).data;
+  c.clearRect(0,0,cmp.width,cmp.height);c.drawImage(compositeCanvas,0,0,cmp.width,cmp.height);const b=c.getImageData(0,0,cmp.width,cmp.height).data;
+  let diff=0,ink=0;for(let i=0;i<a.length;i+=4){const d=Math.abs(a[i]-b[i])+Math.abs(a[i+1]-b[i+1])+Math.abs(a[i+2]-b[i+2])+Math.abs(a[i+3]-b[i+3]);if(d>24)diff++;if(a[i+3]>0&&(a[i]<250||a[i+1]<250))ink++;}
+  return {diff,ink,awake:layers.filter(l=>!l.asleep).length,n:layers.length,segs:segCache.length};};
 window.__sketchpadRedraw=()=>{rebuildAllLayers();redraw();};
 window.__sketchpadSetPan=(x,y)=>{panX=+x||0;panY=+y||0;applyTransform();};
 window.__sketchpadSetZoom=(z,skipDebounce)=>{
@@ -10990,6 +11095,7 @@ window.__sketchpadLayerAlphaNear=(layerId,x,y,radius)=>{
   const x0=Math.max(0,Math.round(x-radius)),y0=Math.max(0,Math.round(y-radius));
   const w=Math.min(W-x0,radius*2),h=Math.min(H-y0,radius*2);
   if(w<=0||h<=0)return 0;
+  wakeLayer(layer);
   const data=layer.ctx.getImageData(x0,y0,w,h).data;
   let max=0;
   for(let i=3;i<data.length;i+=4)if(data[i]>max)max=data[i];
