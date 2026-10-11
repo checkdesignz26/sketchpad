@@ -505,3 +505,9 @@ Erasing a raster-feel stroke (watercolour, gouache, dry brush) no longer slices 
 
 ## v156 – Eraser styles
 With the eraser selected, "Eraser style" appears: Hard line (crisp, even edge), Soft (feathered), Rough (ragged, chalky) and Like my brush (copies the softness and texture of the brush you draw with). It shapes how the eraser rubs out watercolour, gouache and other raster strokes; vector strokes are still cut cleanly.
+
+## v157 – Smudge tool, brush name + colour in the top bar, eraser style in the top bar, remembers your last brush
+- 👆 Smudge (next to the eraser; under More if the bar is narrow): drag to smear the paint on the active layer. Size and Strength sliders at the bottom. Kept as a stroke, so Undo, saving and hi-res export replay it. Not included in SVG export; the eraser ignores it.
+- The brush button now shows the name of the brush you are using, and a round colour swatch next to the size box shows (and changes) the current colour.
+- With the eraser on, an "Eraser style" button appears beside it in the top bar.
+- The brush you last used is selected again when the app starts, including after an update.
