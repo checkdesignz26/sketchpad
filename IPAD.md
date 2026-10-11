@@ -549,3 +549,7 @@ With the eraser selected, "Eraser style" appears: Hard line (crisp, even edge), 
 
 ## v167 – Gouache / Dry Brush colour pick-up no longer hammers memory
 - Colour pick-up (the brush mixing in paint it passes over) used to read many tiny spots straight from the big layer canvas, which makes iPad Safari copy the whole canvas each time. It now shrinks the layer once into a small picture and samples that, so drawing with Gouache and Dry Brush no longer spikes memory.
+
+## v168 – Layers share one canvas at standard sharpness
+- At standard sharpness (renderScale 1) each layer's second "sharp" canvas was an exact copy of the first. Layers now use a single canvas there: saves ~13 MB per layer and halves the drawing work for every stroke, undo and eraser rub.
+- The zoomed-in detail canvases are released when not needed.
