@@ -606,3 +606,7 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 - New Project: "Custom size (real dimensions)…" with width, height, unit (in/cm/mm/px) and dpi. Saved with the project (`tilePhys`) and used as the default for the high-resolution export.
 - Tile popover: "Tile size & dpi…" to change it later.
 - Start screen: the app opens on the Projects screen with a "Continue <last project>" card, New project, folders and Import. "Open my last project automatically" is optional (localStorage `sp-autoOpen`).
+
+## v186
+- New Project is now a simple setup: name, width × height, units (px/in/cm), DPI (default 3600 × 3600 px at 300), and Repeat preview (Tiled / Single canvas). All size presets are gone, also from the editor's Repeat Layouts panel (which keeps the layouts and a "Tile size & dpi…" button).
+- Repeat preview is saved per project. Single canvas darkens the workspace and gives the canvas a frame and shadow so the drawing and export edge is obvious.
