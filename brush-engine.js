@@ -849,6 +849,7 @@
   // the canvas at the new spot. No pixel read-backs, only canvas-to-canvas copies, so it stays fast.
   // iPad Safari keeps every canvas it has ever been given until memory runs out (then canvases go black),
   // so the four small working canvases are reused between strokes instead of created fresh each time.
+  const BrushEngine_skipSmudge = { on: false };
   let _smPool = null, _smBusy = false;
   function makeSmudger(ctx, radius, strength, brush) {
     const m = ctx.getTransform ? ctx.getTransform() : { a: 1, d: 1, e: 0, f: 0 };
@@ -910,12 +911,13 @@
     const st = stroke.settings || {};
     const sb = st.sb ? byId.get(st.sb) : null;
     const sm = makeSmudger(ctx, Math.max(1, (st.size || 30) / 2), (st.opacity == null ? 70 : st.opacity) / 100, sb && sb.id !== 'eraser' ? sb : null);
-    const pts = resample(stroke.points, sm.step);
+    let pts = resample(stroke.points, sm.step * 1.5);
+    if (pts.length > 500) { const k = pts.length / 500; pts = Array.from({ length: 500 }, (_, i) => pts[Math.min(pts.length - 1, Math.floor(i * k))]); }
     try { for (let i = 0; i < pts.length; i++) sm.to(pts[i].x, pts[i].y); } finally { sm.done(); }
   }
   function renderStroke(ctx, stroke, brush, settings, alphaMul) {
     if (!stroke.points || stroke.points.length === 0) return;
-    if (stroke.brushId === 'smudge') { try { smudgeStroke(ctx, stroke); } catch (e) {} return; }
+    if (stroke.brushId === 'smudge') { if (BrushEngine_skipSmudge.on) return; try { smudgeStroke(ctx, stroke); } catch (e) {} return; }
     if (alphaMul === undefined) alphaMul = 1;
     if (alphaMul <= 0) return; // fully hidden — skip dabs entirely rather than stamp at opacity 0
     if (brush.id === 'watercolour' && settings && settings.engine === 'raster') { try { renderWatercolour(ctx, stroke, brush, settings, alphaMul); } catch (e) { try { renderBase(ctx, stroke, brush, settings, alphaMul); } catch (e2) {} } return; }
@@ -1131,6 +1133,6 @@
     getSettings, setSettings,
     touchRecent, getRecents,
     isFavorite, toggleFavorite, getFavorites,
-    underlay: null, liveEnd, makeSmudger, pressureFactor, stampDab, colorWithAlpha, resample, renderStroke, smoothPoints, seededRandom,
+    underlay: null, skipSmudge: BrushEngine_skipSmudge, liveEnd, makeSmudger, pressureFactor, stampDab, colorWithAlpha, resample, renderStroke, smoothPoints, seededRandom,
   };
 })(window);
