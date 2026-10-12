@@ -658,3 +658,9 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v200
 - Blend panel: the "Shape morph" tick-box is hidden when the two motifs cannot morph (pictures), so only options that do something are shown.
+
+## v201–v202
+- Rail icons reordered by importance: Brush, Pen, Eraser, Colour, Layers, Repeat | Select, Shapes, Fill, Text | Smudge, Warp, Blend | Library, Pattern brush, Symmetry, Timelapse.
+- Edit Path on a filled shape keeps it solid in the live preview (it used to show as a plain outline while editing).
+- Detail (zoomed-in) picture: safety net so a stuck "busy" flag cannot leave the sharp picture stale (new stroke missing until zoom in/out a few times). Not reproduced in the lab; watchdog redraws after ~1 s.
+- Timelapse: new "Zoom in" option (Whole tile / Fit to my drawing / 1.5x / 2x / 3x) for preview and exported video, centred on the finished artwork; the repeat-reveal ending cross-fades back to the whole tile.
