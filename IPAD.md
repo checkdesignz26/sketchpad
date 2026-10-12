@@ -635,3 +635,9 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v194
 - Timelapse panel: Close is now a big sticky button (also closes on a tap outside the panel or Escape, cancels a running export, and cannot be blocked by a clean-up error). Export progress and messages moved to the top of the panel (they were below the fold on iPad, so a long export looked like nothing was happening). The export loop yields to the UI every frame so the panel stays responsive and Cancel works. When the video is finished a big "⬇️ Save video" button appears, and the save happens inside that fresh tap (before, it tried to save automatically minutes later, which iPad Safari can silently refuse). Export size defaults to 720 on touch devices.
+
+## v195 — Compact icon toolbar + floating panels
+- The big sidebar is gone. A 64px icon rail (left) holds Brush, Pen, Eraser, Smudge, Shapes, Area fill, Text, Warp, Select, Colour, Layers, Library (motifs/SVG/background/templates/trace), Brush maker, Repeat layouts, Symmetry, Timelapse. Every old sidebar section is still reachable: the same DOM sections are moved into floating panels (ids/handlers unchanged).
+- Tap a tool = select it + open its panel; tap again = close panel, tool stays selected. Press-and-hold (~0.4 s) shows the tool name.
+- One panel at a time; Colour and Layers can be pinned (📌) and stay open while others change. Panels drag by their header (transform only, no drawing), dock beside the canvas (dock button), remember position/dock/pin in localStorage `sp-panels-v1`, and are clamped to the canvas area on resize/rotation. View ▾ → "Reset panel positions".
+- Row 2 of the top bar keeps brush chip, size, colour, Quick, Dup, Select menu, zoom. Debug hook: `window.__sketchpadPanels`.
