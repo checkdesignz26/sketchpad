@@ -645,3 +645,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 ## v196
 - Zoom and View ▾ are back in the top bar (they only fold into ⋯ More when the bar is too narrow).
 - New top-bar pill "🔁 Grid · Tiling On" (or "Single canvas · Tiling Off"); tap opens the Repeat panel, which also shows the same status line at its top.
+
+## v197
+- Blend icon added to the left rail (after Select). It opens the existing Blend panel for the selected shape/motifs; with nothing selected it says "Select a shape first".
