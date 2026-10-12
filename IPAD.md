@@ -670,3 +670,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v204
 - Timelapse zoom 1.5x/2x/3x is now a follow-the-pen camera: the window (tile/zoom) glides to wherever the latest action happened, and the ending pulls back to the whole finished piece. "Fit to my drawing" stays a fixed window around the finished art.
+
+## v205
+- Adaptive Colour: new Harmony menu (Vibe mix / Analogous / Monochrome / Complementary). It uses the same vibe saturation/brightness curve and Richness, but places the Secondary/Accent/Accent 2/Filler colours (and the Extra swatches) on neighbouring hues, one hue, or the opposite side of the wheel.
