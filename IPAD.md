@@ -652,3 +652,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 ## v198
 - Motif tray ×: asks before removing a motif (warns when copies are placed on the canvas).
 - Opening a project keeps a motif even if the device could not decode its picture, so autosave cannot drop it.
+
+## v199
+- Earlier Saves → Restore no longer switches the timelapse off (it detached the recorder and never re-attached it, so the panel said "Not recording" and nothing was recorded until the project was reopened). The recording stored for the project is picked up again after a restore.
