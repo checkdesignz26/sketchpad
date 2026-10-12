@@ -655,3 +655,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v199
 - Earlier Saves → Restore no longer switches the timelapse off (it detached the recorder and never re-attached it, so the panel said "Not recording" and nothing was recorded until the project was reopened). The recording stored for the project is picked up again after a restore.
+
+## v200
+- Blend panel: the "Shape morph" tick-box is hidden when the two motifs cannot morph (pictures), so only options that do something are shown.
