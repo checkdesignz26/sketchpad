@@ -667,3 +667,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v203
 - Timelapse zoom never crops the drawing: 1.5x/2x/3x are limits, the window always keeps the whole finished artwork (+12% margin); placed-motif bounds use their real rotated size.
+
+## v204
+- Timelapse zoom 1.5x/2x/3x is now a follow-the-pen camera: the window (tile/zoom) glides to wherever the latest action happened, and the ending pulls back to the whole finished piece. "Fit to my drawing" stays a fixed window around the finished art.
