@@ -648,3 +648,7 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v197
 - Blend icon added to the left rail (after Select). It opens the existing Blend panel for the selected shape/motifs; with nothing selected it says "Select a shape first".
+
+## v198
+- Motif tray ×: asks before removing a motif (warns when copies are placed on the canvas).
+- Opening a project keeps a motif even if the device could not decode its picture, so autosave cannot drop it.
