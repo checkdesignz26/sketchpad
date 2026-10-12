@@ -664,3 +664,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 - Edit Path on a filled shape keeps it solid in the live preview (it used to show as a plain outline while editing).
 - Detail (zoomed-in) picture: safety net so a stuck "busy" flag cannot leave the sharp picture stale (new stroke missing until zoom in/out a few times). Not reproduced in the lab; watchdog redraws after ~1 s.
 - Timelapse: new "Zoom in" option (Whole tile / Fit to my drawing / 1.5x / 2x / 3x) for preview and exported video, centred on the finished artwork; the repeat-reveal ending cross-fades back to the whole tile.
+
+## v203
+- Timelapse zoom never crops the drawing: 1.5x/2x/3x are limits, the window always keeps the whole finished artwork (+12% margin); placed-motif bounds use their real rotated size.
