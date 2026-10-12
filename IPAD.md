@@ -641,3 +641,7 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 - Tap a tool = select it + open its panel; tap again = close panel, tool stays selected. Press-and-hold (~0.4 s) shows the tool name.
 - One panel at a time; Colour and Layers can be pinned (📌) and stay open while others change. Panels drag by their header (transform only, no drawing), dock beside the canvas (dock button), remember position/dock/pin in localStorage `sp-panels-v1`, and are clamped to the canvas area on resize/rotation. View ▾ → "Reset panel positions".
 - Row 2 of the top bar keeps brush chip, size, colour, Quick, Dup, Select menu, zoom. Debug hook: `window.__sketchpadPanels`.
+
+## v196
+- Zoom and View ▾ are back in the top bar (they only fold into ⋯ More when the bar is too narrow).
+- New top-bar pill "🔁 Grid · Tiling On" (or "Single canvas · Tiling Off"); tap opens the Repeat panel, which also shows the same status line at its top.
