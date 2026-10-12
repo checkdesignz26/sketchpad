@@ -632,3 +632,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v193
 - Back up all made sturdier after an iPad "Transaction aborted" failure: saving the open project first is optional (failure no longer stops the backup), each project is read separately and skipped (and listed) if it fails, the file is built one project at a time through a Blob so the iPad never holds all projects as text at once, and any failure now names the step and shows storage used/quota.
+
+## v194
+- Timelapse panel: Close is now a big sticky button (also closes on a tap outside the panel or Escape, cancels a running export, and cannot be blocked by a clean-up error). Export progress and messages moved to the top of the panel (they were below the fold on iPad, so a long export looked like nothing was happening). The export loop yields to the UI every frame so the panel stays responsive and Cancel works. When the video is finished a big "⬇️ Save video" button appears, and the save happens inside that fresh tap (before, it tried to save automatically minutes later, which iPad Safari can silently refuse). Export size defaults to 720 on touch devices.
