@@ -701,3 +701,7 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 ## v213 — Trace picture: bounding box (move / resize / rotate, then lock)
 - Trace Reference → "Trace Artwork": adding a picture now unlocks it and shows a pink box (`#traceBox`, DOM overlay in canvas coords, follows pan/zoom/rotate). Drag the body to move, corners to resize (opposite corner stays fixed), round top handle to rotate (snaps to 0/90/180), "🔒 Lock" chip (or the panel button) locks it; locked = box hidden and drawing works normally.
 - Trace pictures now have `rot` (saved in the project, drawn rotated in `drawTraces`). Old "drag the canvas in Edit mode to move" removed. Button reads "🔓 Move & resize".
+
+## v214 — Edit Path: snap to geometry
+- Dragging a node in Edit Path snaps to a nearby node of another visible path (green ring, label "Node"; "Join" for the path's own other node) or, failing that, the nearest point along another path (green diamond, "Path"). Radius 16 screen px. Targets collected once per drag; erasers/hidden layers ignored.
+- New `🧲 Snap on/off` button in the Edit Path bar (`#pathSnapBtn`, pref `sp-snapGeo`, default on).
