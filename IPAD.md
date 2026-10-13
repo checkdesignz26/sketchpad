@@ -676,3 +676,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v206
 - Fix: while editing a motif (and with Stroke tools on in Edit mode), selecting a stroke now opens the Selection panel with the stroke tools (colour, size, Edit Path...). The auto-open added in v195 tested the wrong variable and never fired. Verified: without the fix the panel stayed closed, with it it opens.
+
+## v207
+- Procreate brush export: the preview thumbnail (QuickLook/Thumbnail.png) now shows ONE stamp instead of three, so the brush list matches what a single tap makes. Re-export the brush set to get the new previews.
