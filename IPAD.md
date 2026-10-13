@@ -682,3 +682,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v208
 - Procreate brush export: "Made by" field in the Pattern brush panel (remembered on the device, localStorage sp-author). The name is written into every exported brush (Brush.archive authorName, main + reset), so Procreate shows who made the brush/set. Verified by building the archive in node and finding the name in both.
+
+## v209
+- Procreate brush export: author Logo and Signature pictures (Pattern brush panel > Motif brush set, below Made by). Stored on the device resized to Procreate sizes (AuthorPicture/AuthorPicture.png 384x384, Signature/SignaturePicture.png 800x240) and written into every exported brush, matching the layout of a real Procreate brush (paths taken from a user-supplied Heart matcha .brush). Test hook window.__sketchpadBrushFiles.
