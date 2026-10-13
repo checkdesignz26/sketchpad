@@ -717,3 +717,7 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v218 — "Hard" eraser is now truly hard
 - The rub-out punch used a radial gradient even for Hard (fading over the outer 8%), so Hard looked soft on wide strokes. Cuts with h≥0.92 (Hard, and older saved Hard cuts) are now a solid circle: crisp edge, no grey transition (checked: edge samples are pure on/off). Soft/Rough/Like-my-brush unchanged.
+
+## v219 — Brush / eraser size cursor
+- A ring the size of the brush (size × zoom, min 6 px; dashed for the eraser) follows the mouse or Pencil (hover where supported, and while drawing) when a drawing brush or the eraser is active in Draw mode. Hidden for finger touches and for Select/Edit, Pen, Shapes, Fill, Smudge, Warp, Edit Path. The OS cursor is hidden while it shows.
+- View ▾ → "⭕ Brush cursor: On/Off" (pref `sp-brushCursor`, default on). DOM element `#brushCursor`, never drawn into artwork.
