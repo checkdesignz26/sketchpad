@@ -728,3 +728,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v221 — Tiling on/off from the Repeat panel
 - The first line of the Repeat & tiling panel (and so the 🔁 pill → panel) is now a button that turns tiling on/off in any project ("… — tap to turn off" / "🔲 Single canvas · Tiling Off — tap to turn on"). The underlying `#tilingBtn` was hidden since v195, so there was no in-app switch.
+
+## v222 — Editing a motif: taps reach the strokes every time
+- `selectAtBase` tested placed pictures first, by bounding box. While editing a motif the edited instance (hidden, but still in `placed`) and other pictures still counted, so any tap inside their invisible box selected the motif (box + handles) instead of the stroke, and the stroke panel only opened when a tap happened to land outside it ("works sometimes"). Placed pictures are now skipped while `editingMotifId` is set. Test: 4/4 stroke taps select a stroke inside the motif (before: motif selected instead).
