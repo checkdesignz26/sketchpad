@@ -233,6 +233,10 @@ canvas{position:absolute;left:50%;top:50%;transform-origin:center center;touch-a
    constant hair-line thickness at every zoom level without any redraw. */
 #tileOutline{position:absolute;left:50%;top:50%;width:780px;height:780px;pointer-events:none;box-sizing:content-box;
   border:calc(2px / var(--vs,1)) solid rgba(65,70,130,.55);transform-origin:center center;z-index:1}
+/* Time-lapse "replay frame" guide: an overlay only (never drawn into any canvas); clicks pass straight through. Positioned like #tileOutline so it follows pan / zoom / rotate. */
+#replayGuide{position:absolute;left:50%;top:50%;width:780px;height:780px;pointer-events:none;display:none;transform-origin:center center;z-index:1}
+#replayGuide .rgBox{position:absolute;box-sizing:border-box;pointer-events:none;border:calc(2px / var(--vs,1)) dashed rgba(255,80,150,.75);box-shadow:0 0 0 calc(1px / var(--vs,1)) rgba(255,255,255,.55)}
+#replayGuide .rgBox span{position:absolute;left:calc(6px / var(--vs,1));top:calc(4px / var(--vs,1));font:700 calc(12px / var(--vs,1))/1.2 system-ui,sans-serif;color:#fff;background:rgba(220,40,120,.78);padding:calc(2px / var(--vs,1)) calc(6px / var(--vs,1));border-radius:calc(6px / var(--vs,1));white-space:nowrap;pointer-events:none}
 button.pill{cursor:pointer;font:inherit;font-size:13px;font-weight:900;min-width:78px;text-align:center}
 button.pill:active{transform:scale(.97)}
 #zoomPopover{left:12px;top:12px;width:264px}
@@ -431,7 +435,7 @@ html.in-suite .suite-only{display:block!important}
 .pj-dlg-btns.vt-sticky{position:sticky;bottom:-20px;background:var(--sideBg);padding:10px 0 4px;margin-top:6px}
 </style>
 <style id="railCss">
-/* ===== v210: icon rail + floating panels (the old sidebar stays in the page, hidden, as the parking place for every control) ===== */
+/* ===== v211: icon rail + floating panels (the old sidebar stays in the page, hidden, as the parking place for every control) ===== */
 .sidebar,.sidebar-toggle{display:none!important}
 #toolRail{width:64px;flex:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 5px;background:var(--sideBg);border:1px solid var(--line);border-radius:22px;overflow-y:auto;overflow-x:hidden;touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;scrollbar-width:none}
 #toolRail::-webkit-scrollbar{display:none}
@@ -1067,7 +1071,7 @@ html.in-suite .suite-only{display:block!important}
 </div>
     <div id="backupsPanel" style="display:none;position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:90;background:var(--sideBg);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:0 18px 50px rgba(0,0,0,.35);font-size:13.5px;max-width:min(560px,calc(100vw - 24px));max-height:70vh;overflow:auto;"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:800;margin-bottom:6px;">🕘 Earlier saves<button id="backupsClose" class="btn mini">Close</button></div><div id="backupsList"></div><div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);"><button id="newBlankBtn" class="btn mini" style="width:100%;">➕ New Project</button><div class="hint">Your current project is saved first, then a fresh one opens. Find every project under 📁 Projects.</div></div></div>
     <div id="restoreBanner" style="display:none;"><span id="restoreBannerText">📂 Autosaved session found from </span><span id="restoreBannerTime"></span> <button id="restoreAcceptBtn" class="btn mini primary">Restore</button><button id="restoreDeclineBtn" class="btn mini">Start Fresh</button><button id="restoreOkBtn" class="btn mini primary" style="display:none;">OK</button></div>
-    <div id="canvasViewportOuter" class="canvas-viewport-outer"><div id="canvasWrap" class="canvas-wrap"><div id="viewPopover" class="sym-pop"><div class="section-title">🧭 Canvas / View</div><div class="row" style="margin-bottom:10px;align-items:center;gap:8px;"><div id="viewRotVal" class="pill" style="flex:1;text-align:center;">Rotation 0°</div><button id="viewRotResetBtn" class="tool-btn" style="flex:1" title="Turn the canvas back upright">Reset to 0°</button></div><button id="viewGuidesBtn" class="tool-btn" style="width:100%;margin-bottom:10px;">📐 Guides: Off</button><button id="viewResetBtn" class="tool-btn" style="width:100%;margin-bottom:10px;" title="0°, centred and fitted">🔍 Reset view (0°, fit)</button><button id="symToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">🦋 Symmetry Off</button><div class="row" style="margin-bottom:10px;"><button id="tilingBtn" class="tool-btn active" style="flex:1">Tiling On</button><div id="layoutPill" class="pill">📍 Grid Mode</div></div><button id="themeToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">☀️ Light Mode</button><button id="clearDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear Drawing &amp; Motifs</button><button id="clearAllDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear All Layers &amp; Motifs</button><label class="row" style="gap:8px;align-items:center;margin:6px 0;font-size:13px;"><input type="checkbox" id="dblDupChk" checked> Double-tap a selected item to duplicate it (a motif opens for editing instead)</label><button id="viewCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="zoomPopover" class="sym-pop"><div class="section-title">🔍 View <span id="zoomPopPct" class="small"></span></div><div class="zoom-row"><button id="zoomOutBtn" class="tool-btn" aria-label="Zoom out">−</button><button id="zoomInBtn" class="tool-btn" aria-label="Zoom in">+</button></div><button id="zoom100Btn" class="tool-btn" style="width:100%;margin-bottom:8px;">100% — actual size</button><button id="zoomFitBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">Fit to View</button><button id="zoomRotResetBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">↺ Reset rotation to 0°</button><button id="zoomResetBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;">Reset View (0°, centre, fit)</button><button id="updateAppBtn" class="tool-btn" style="width:100%;margin-bottom:8px;" title="Fetch the newest version of the app">⟳ Get latest version <span style="opacity:.6;font-weight:600">(you have v210)</span></button><div class="hint" style="margin-bottom:8px;">These always work, even if the canvas has scrolled out of sight.</div><button id="zoomCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="hiPopover" class="sym-pop"><div class="section-title">🖼️ High-resolution card (PNG)</div><div class="hint" style="margin-bottom:8px;">Redraws your whole card sharply at the size you pick, with brushes, pictures and the background. Just the card, no repeat edges. </div><div class="hint" style="margin-bottom:4px;">A normal greeting card is <b>5 × 7 in</b> (a smaller one is 4.25 × 5.5 in). Pick the long side of your card in inches:</div><div class="row" style="margin-bottom:8px;"><button class="tool-btn hi-preset" data-in="5.5">5.5 in</button><button class="tool-btn hi-preset" data-in="7">7 in</button><button class="tool-btn hi-preset" data-in="10">10 in</button></div><div class="slider-row" style="grid-template-columns:78px 1fr 30px;"><label>Long side</label><input id="hiInInput" type="number" min="1" max="30" step="0.1" value="10" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><span>in</span></div><div class="slider-row" style="grid-template-columns:78px 1fr 30px;"><label>Quality</label><select id="hiDpi" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><option value="300">300 dpi (print)</option><option value="600">600 dpi (extra sharp)</option><option value="200">200 dpi (smaller file)</option><option value="150">150 dpi (screen / email)</option></select><span></span></div><div class="slider-row" style="grid-template-columns:78px 1fr 30px;"><label>or pixels</label><input id="hiLongInput" type="number" min="200" max="8000" step="1" value="3000" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><span>px</span></div><div id="hiInfo" class="hint" style="margin-bottom:8px;"></div><label class="hint" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;"><input id="hiTransparent" type="checkbox"> Transparent background (instead of white)</label><button id="hiSaveBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;min-height:44px;">⬇️ Save PNG</button><button id="hiCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="svgPopover" class="sym-pop"><div class="section-title">🖋️ Export SVG</div><div class="hint" style="margin-bottom:8px;">Vector strokes and fills only. Pictures (placed motifs, background image) are not vector, so they are left out.</div><div class="row" style="margin-bottom:8px;"><button class="tool-btn svg-preset" data-size="780">780</button><button class="tool-btn svg-preset" data-size="1800">1800</button><button class="tool-btn svg-preset" data-size="3600">3600</button></div><div class="slider-row" style="grid-template-columns:64px 1fr 30px;"><label>Size</label><input id="svgSizeInput" type="number" min="64" max="20000" step="1" value="3600" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><span>px</span></div><div class="hint" style="margin-bottom:8px;">Width and height of the square file. 3600 × 3600 is the usual pattern size. The artwork scales exactly.</div><button id="svgSaveBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;min-height:44px;">⬇️ Save SVG</button><button id="svgCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="recolourPopover" class="sym-pop"><div class="section-title">🎨 Recolour Parts</div><div class="hint" style="margin-bottom:8px;">Motif: <b id="recolourName"></b>. Each row is one colour used in the motif. Pick a new colour for any of them.</div><div id="recolourRows"></div><button id="recolourApplyBtn" class="tool-btn primary" style="width:100%;margin:8px 0;min-height:44px;">Apply to this motif</button><button id="recolourNewBtn" class="tool-btn" style="width:100%;margin-bottom:8px;min-height:44px;">Save as new colourway</button><div class="row"><button id="recolourResetBtn" class="btn mini" style="flex:1">Reset</button><button id="recolourCloseBtn" class="btn mini" style="flex:1">✕ Close</button></div></div><div id="symPopover" class="sym-pop"><div class="section-title">🦋 Symmetry</div><div class="grid"><button class="sym-btn btn active" data-sym="off">Off</button><button class="sym-btn btn" data-sym="vertical">Vertical</button><button class="sym-btn btn" data-sym="horizontal">Horizontal</button><button class="sym-btn btn" data-sym="quad">Quad</button><button class="sym-btn btn" data-sym="diamond">Diamond</button></div><div class="slider-row"><label>Axis X</label><input id="symX" type="range" min="0" max="1800" value="900"><span id="symXVal">50%</span></div><div class="slider-row"><label>Axis Y</label><input id="symY" type="range" min="0" max="1800" value="900"><span id="symYVal">50%</span></div><div class="slider-row"><label>Angle</label><input id="symAng" type="range" min="-90" max="90" step="1" value="0"><span id="symAngVal">0°</span></div><div class="row"><button id="symAngReset" class="btn mini">0° Straight</button><button id="symAng45" class="btn mini">45°</button></div><div class="row" style="margin-top:6px;"><button id="symLenWhole" class="btn mini active" style="flex:1">Line: whole canvas</button><button id="symLenShort" class="btn mini" style="flex:1">Line: short</button></div><div class="slider-row" id="symLenRow" style="display:none"><label>Length</label><input id="symLen" type="range" min="100" max="1800" step="10" value="500"><span id="symLenVal">500</span></div><div class="row" style="margin-top:6px;"><button id="symCentre" class="btn mini">Centre Axis</button><button id="symClose" class="btn mini">Done</button></div><div class="hint">Move the mirror point to make flowers, leaves and playful asymmetric symmetry.</div></div><canvas id="fabricCanvas" aria-hidden="true"></canvas><canvas id="canvas" width="1800" height="1800"></canvas><div id="tileOutline" aria-hidden="true"></div><div id="selectionBox" class="selection-box"><button id="motifEditChip" class="btn mini primary" style="display:none">✏️ Edit Motif</button><div id="resizeHandle" class="handle"></div><div id="rotateHandle" class="rotHandle"></div></div><div id="pivotMarker" style="display:none;position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;border:2px solid var(--pink);border-radius:50%;background:rgba(255,255,255,.85);pointer-events:none;z-index:5;"><div style="position:absolute;left:50%;top:-6px;bottom:-6px;width:2px;margin-left:-1px;background:var(--pink)"></div><div style="position:absolute;top:50%;left:-6px;right:-6px;height:2px;margin-top:-1px;background:var(--pink)"></div></div><div id="paintBBoxOverlay" class="selection-box" style="display:none;"><div id="paintResizeHandle" class="handle" title="Drag to resize. Tap to make 25% bigger."></div><div id="paintRotateHandle" class="rotHandle" title="Drag to rotate. Tap to turn 45 degrees."></div><input id="strokeColourHandle" class="sel-colour strokeColourHandle" type="color" value="#000000" title="Tap to change colour"></div><div id="groupBox" class="selection-box" style="display:none;"><div class="gh" data-h="nw" style="left:0%;top:0%;cursor:nwse-resize"></div><div class="gh" data-h="n" style="left:50%;top:0%;cursor:ns-resize"></div><div class="gh" data-h="ne" style="left:100%;top:0%;cursor:nesw-resize"></div><div class="gh" data-h="e" style="left:100%;top:50%;cursor:ew-resize"></div><div class="gh" data-h="se" style="left:100%;top:100%;cursor:nwse-resize"></div><div class="gh" data-h="s" style="left:50%;top:100%;cursor:ns-resize"></div><div class="gh" data-h="sw" style="left:0%;top:100%;cursor:nesw-resize"></div><div class="gh" data-h="w" style="left:0%;top:50%;cursor:ew-resize"></div><div id="grpRotHandle" class="rotHandle" title="Drag to turn. Tap to turn 45 degrees."></div></div><div id="symAxis" class="sym-axis locked"></div><div id="rotateChip" class="rotate-chip">Canvas 0°</div><div id="pathNodeOverlay"></div></div></div>
+    <div id="canvasViewportOuter" class="canvas-viewport-outer"><div id="canvasWrap" class="canvas-wrap"><div id="viewPopover" class="sym-pop"><div class="section-title">🧭 Canvas / View</div><div class="row" style="margin-bottom:10px;align-items:center;gap:8px;"><div id="viewRotVal" class="pill" style="flex:1;text-align:center;">Rotation 0°</div><button id="viewRotResetBtn" class="tool-btn" style="flex:1" title="Turn the canvas back upright">Reset to 0°</button></div><button id="viewGuidesBtn" class="tool-btn" style="width:100%;margin-bottom:10px;">📐 Guides: Off</button><button id="viewResetBtn" class="tool-btn" style="width:100%;margin-bottom:10px;" title="0°, centred and fitted">🔍 Reset view (0°, fit)</button><button id="symToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">🦋 Symmetry Off</button><div class="row" style="margin-bottom:10px;"><button id="tilingBtn" class="tool-btn active" style="flex:1">Tiling On</button><div id="layoutPill" class="pill">📍 Grid Mode</div></div><button id="themeToggle" class="tool-btn" style="width:100%;margin-bottom:10px;">☀️ Light Mode</button><button id="clearDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear Drawing &amp; Motifs</button><button id="clearAllDrawing" class="btn mini danger" style="width:100%;margin-bottom:10px;">Clear All Layers &amp; Motifs</button><label class="row" style="gap:8px;align-items:center;margin:6px 0;font-size:13px;"><input type="checkbox" id="dblDupChk" checked> Double-tap a selected item to duplicate it (a motif opens for editing instead)</label><button id="viewCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="zoomPopover" class="sym-pop"><div class="section-title">🔍 View <span id="zoomPopPct" class="small"></span></div><div class="zoom-row"><button id="zoomOutBtn" class="tool-btn" aria-label="Zoom out">−</button><button id="zoomInBtn" class="tool-btn" aria-label="Zoom in">+</button></div><button id="zoom100Btn" class="tool-btn" style="width:100%;margin-bottom:8px;">100% — actual size</button><button id="zoomFitBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">Fit to View</button><button id="zoomRotResetBtn" class="tool-btn" style="width:100%;margin-bottom:8px;">↺ Reset rotation to 0°</button><button id="zoomResetBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;">Reset View (0°, centre, fit)</button><button id="updateAppBtn" class="tool-btn" style="width:100%;margin-bottom:8px;" title="Fetch the newest version of the app">⟳ Get latest version <span style="opacity:.6;font-weight:600">(you have v211)</span></button><div class="hint" style="margin-bottom:8px;">These always work, even if the canvas has scrolled out of sight.</div><button id="zoomCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="hiPopover" class="sym-pop"><div class="section-title">🖼️ High-resolution card (PNG)</div><div class="hint" style="margin-bottom:8px;">Redraws your whole card sharply at the size you pick, with brushes, pictures and the background. Just the card, no repeat edges. </div><div class="hint" style="margin-bottom:4px;">A normal greeting card is <b>5 × 7 in</b> (a smaller one is 4.25 × 5.5 in). Pick the long side of your card in inches:</div><div class="row" style="margin-bottom:8px;"><button class="tool-btn hi-preset" data-in="5.5">5.5 in</button><button class="tool-btn hi-preset" data-in="7">7 in</button><button class="tool-btn hi-preset" data-in="10">10 in</button></div><div class="slider-row" style="grid-template-columns:78px 1fr 30px;"><label>Long side</label><input id="hiInInput" type="number" min="1" max="30" step="0.1" value="10" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><span>in</span></div><div class="slider-row" style="grid-template-columns:78px 1fr 30px;"><label>Quality</label><select id="hiDpi" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><option value="300">300 dpi (print)</option><option value="600">600 dpi (extra sharp)</option><option value="200">200 dpi (smaller file)</option><option value="150">150 dpi (screen / email)</option></select><span></span></div><div class="slider-row" style="grid-template-columns:78px 1fr 30px;"><label>or pixels</label><input id="hiLongInput" type="number" min="200" max="8000" step="1" value="3000" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><span>px</span></div><div id="hiInfo" class="hint" style="margin-bottom:8px;"></div><label class="hint" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;"><input id="hiTransparent" type="checkbox"> Transparent background (instead of white)</label><button id="hiSaveBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;min-height:44px;">⬇️ Save PNG</button><button id="hiCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="svgPopover" class="sym-pop"><div class="section-title">🖋️ Export SVG</div><div class="hint" style="margin-bottom:8px;">Vector strokes and fills only. Pictures (placed motifs, background image) are not vector, so they are left out.</div><div class="row" style="margin-bottom:8px;"><button class="tool-btn svg-preset" data-size="780">780</button><button class="tool-btn svg-preset" data-size="1800">1800</button><button class="tool-btn svg-preset" data-size="3600">3600</button></div><div class="slider-row" style="grid-template-columns:64px 1fr 30px;"><label>Size</label><input id="svgSizeInput" type="number" min="64" max="20000" step="1" value="3600" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px;"><span>px</span></div><div class="hint" style="margin-bottom:8px;">Width and height of the square file. 3600 × 3600 is the usual pattern size. The artwork scales exactly.</div><button id="svgSaveBtn" class="tool-btn primary" style="width:100%;margin-bottom:8px;min-height:44px;">⬇️ Save SVG</button><button id="svgCloseBtn" class="btn mini" style="width:100%;">✕ Close</button></div><div id="recolourPopover" class="sym-pop"><div class="section-title">🎨 Recolour Parts</div><div class="hint" style="margin-bottom:8px;">Motif: <b id="recolourName"></b>. Each row is one colour used in the motif. Pick a new colour for any of them.</div><div id="recolourRows"></div><button id="recolourApplyBtn" class="tool-btn primary" style="width:100%;margin:8px 0;min-height:44px;">Apply to this motif</button><button id="recolourNewBtn" class="tool-btn" style="width:100%;margin-bottom:8px;min-height:44px;">Save as new colourway</button><div class="row"><button id="recolourResetBtn" class="btn mini" style="flex:1">Reset</button><button id="recolourCloseBtn" class="btn mini" style="flex:1">✕ Close</button></div></div><div id="symPopover" class="sym-pop"><div class="section-title">🦋 Symmetry</div><div class="grid"><button class="sym-btn btn active" data-sym="off">Off</button><button class="sym-btn btn" data-sym="vertical">Vertical</button><button class="sym-btn btn" data-sym="horizontal">Horizontal</button><button class="sym-btn btn" data-sym="quad">Quad</button><button class="sym-btn btn" data-sym="diamond">Diamond</button></div><div class="slider-row"><label>Axis X</label><input id="symX" type="range" min="0" max="1800" value="900"><span id="symXVal">50%</span></div><div class="slider-row"><label>Axis Y</label><input id="symY" type="range" min="0" max="1800" value="900"><span id="symYVal">50%</span></div><div class="slider-row"><label>Angle</label><input id="symAng" type="range" min="-90" max="90" step="1" value="0"><span id="symAngVal">0°</span></div><div class="row"><button id="symAngReset" class="btn mini">0° Straight</button><button id="symAng45" class="btn mini">45°</button></div><div class="row" style="margin-top:6px;"><button id="symLenWhole" class="btn mini active" style="flex:1">Line: whole canvas</button><button id="symLenShort" class="btn mini" style="flex:1">Line: short</button></div><div class="slider-row" id="symLenRow" style="display:none"><label>Length</label><input id="symLen" type="range" min="100" max="1800" step="10" value="500"><span id="symLenVal">500</span></div><div class="row" style="margin-top:6px;"><button id="symCentre" class="btn mini">Centre Axis</button><button id="symClose" class="btn mini">Done</button></div><div class="hint">Move the mirror point to make flowers, leaves and playful asymmetric symmetry.</div></div><canvas id="fabricCanvas" aria-hidden="true"></canvas><canvas id="canvas" width="1800" height="1800"></canvas><div id="tileOutline" aria-hidden="true"></div><div id="replayGuide" aria-hidden="true"><div class="rgBox"><span></span></div></div><div id="selectionBox" class="selection-box"><button id="motifEditChip" class="btn mini primary" style="display:none">✏️ Edit Motif</button><div id="resizeHandle" class="handle"></div><div id="rotateHandle" class="rotHandle"></div></div><div id="pivotMarker" style="display:none;position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;border:2px solid var(--pink);border-radius:50%;background:rgba(255,255,255,.85);pointer-events:none;z-index:5;"><div style="position:absolute;left:50%;top:-6px;bottom:-6px;width:2px;margin-left:-1px;background:var(--pink)"></div><div style="position:absolute;top:50%;left:-6px;right:-6px;height:2px;margin-top:-1px;background:var(--pink)"></div></div><div id="paintBBoxOverlay" class="selection-box" style="display:none;"><div id="paintResizeHandle" class="handle" title="Drag to resize. Tap to make 25% bigger."></div><div id="paintRotateHandle" class="rotHandle" title="Drag to rotate. Tap to turn 45 degrees."></div><input id="strokeColourHandle" class="sel-colour strokeColourHandle" type="color" value="#000000" title="Tap to change colour"></div><div id="groupBox" class="selection-box" style="display:none;"><div class="gh" data-h="nw" style="left:0%;top:0%;cursor:nwse-resize"></div><div class="gh" data-h="n" style="left:50%;top:0%;cursor:ns-resize"></div><div class="gh" data-h="ne" style="left:100%;top:0%;cursor:nesw-resize"></div><div class="gh" data-h="e" style="left:100%;top:50%;cursor:ew-resize"></div><div class="gh" data-h="se" style="left:100%;top:100%;cursor:nwse-resize"></div><div class="gh" data-h="s" style="left:50%;top:100%;cursor:ns-resize"></div><div class="gh" data-h="sw" style="left:0%;top:100%;cursor:nesw-resize"></div><div class="gh" data-h="w" style="left:0%;top:50%;cursor:ew-resize"></div><div id="grpRotHandle" class="rotHandle" title="Drag to turn. Tap to turn 45 degrees."></div></div><div id="symAxis" class="sym-axis locked"></div><div id="rotateChip" class="rotate-chip">Canvas 0°</div><div id="pathNodeOverlay"></div></div></div>
     <div id="status" class="status">✨ Apple Pencil draws | one finger protected | two fingers pan/pinch/rotate | two-finger tap Undo | three-finger tap Redo | Capture Motif saves drawing ✨</div>
   </main>
   <div id="dockR" class="dock"></div>
@@ -2189,7 +2193,7 @@ function applyTransform(){
       renderScaleTimer=setTimeout(tryCommit,newScale>renderScale?200:700); // going sharper: soon after you stop; going coarser: only once things settle
     }
   }
-  canvas.style.transform=`translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom*baseScale}) rotate(${rot}deg)`;detailViewChanged();overlayViewChanged();try{viewMenuSync();}catch(e){}try{penOverlayRender();}catch(e){}$("zoomPill").textContent=Math.round(zoom*100)+'% ▾';$('zoomPopPct').textContent='— '+Math.round(zoom*100)+'%';{const to=$('tileOutline');to.style.setProperty('--vs',zoom*baseScale);to.style.transform=`translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom*baseScale}) rotate(${rot}deg)`;}$('rotateChip').textContent='Canvas '+Math.round(rot)+'°';updateSelectionBox();updatePaintBBoxOverlay();updateSymAxis();if(pathEditNodes)renderPathNodeOverlay();paintFabric();
+  canvas.style.transform=`translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom*baseScale}) rotate(${rot}deg)`;detailViewChanged();overlayViewChanged();try{viewMenuSync();}catch(e){}try{penOverlayRender();}catch(e){}$("zoomPill").textContent=Math.round(zoom*100)+'% ▾';$('zoomPopPct').textContent='— '+Math.round(zoom*100)+'%';{const to=$('tileOutline');to.style.setProperty('--vs',zoom*baseScale);to.style.transform=`translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom*baseScale}) rotate(${rot}deg)`;}{const rg=$('replayGuide');if(rg){rg.style.setProperty('--vs',zoom*baseScale);rg.style.transform=`translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom*baseScale}) rotate(${rot}deg)`;}}$('rotateChip').textContent='Canvas '+Math.round(rot)+'°';updateSelectionBox();updatePaintBBoxOverlay();updateSymAxis();if(pathEditNodes)renderPathNodeOverlay();paintFabric();
 }
 function screenToCanvas(x,y){const r=canvas.getBoundingClientRect();const cx=x-(r.left+r.width/2),cy=y-(r.top+r.height/2);const a=-rot*Math.PI/180;const s=zoom*baseScale;const ux=(cx*Math.cos(a)-cy*Math.sin(a))/s+W/2;const uy=(cx*Math.sin(a)+cy*Math.cos(a))/s+H/2;return {x:ux,y:uy};}
 function canvasToScreen(x,y){const rect=canvas.getBoundingClientRect(),wrapRect=wrap.getBoundingClientRect();const cx=rect.left+rect.width/2-wrapRect.left,cy=rect.top+rect.height/2-wrapRect.top;const a=rot*Math.PI/180;const s=zoom*baseScale;const px=(x-W/2)*s,py=(y-H/2)*s;return {x:cx+px*Math.cos(a)-py*Math.sin(a),y:cy+px*Math.sin(a)+py*Math.cos(a)};}
@@ -2335,7 +2339,7 @@ function tileShapeKey(){return TW===TH?'1:1':TW+':'+TH;}
 function setTileShape(w,h,quiet){
   w=Math.round(Math.max(40,Math.min(TILE,+w||TILE)));h=Math.round(Math.max(40,Math.min(TILE,+h||TILE)));
   TW=w;TH=h;CX=(W-TW)/2;CY=(H-TH)/2;
-  try{const to=$('tileOutline');if(to){to.style.width=TW+'px';to.style.height=TH+'px';}}catch(e){}
+  try{const to=$('tileOutline');if(to){to.style.width=TW+'px';to.style.height=TH+'px';}const rg=$('replayGuide');if(rg){rg.style.width=TW+'px';rg.style.height=TH+'px';}}catch(e){}
   try{fabricTileDirty=true;}catch(e){}
   try{syncTileShapeUI();}catch(e){}
   if(!quiet){try{rebuildAllLayers();}catch(e){}try{redraw();}catch(e){}try{scheduleAutosave();}catch(e){}}
@@ -10204,7 +10208,7 @@ async function runBenchmark(){
   }catch(e){out.push('Stopped early: '+(e&&e.message||e));}
   finally{zoom=save.zoom;panX=save.panX;panY=save.panY;rot=save.rot;activeLayerId=save.aid;try{getActiveLayer();syncAwake();applyTransform();compositeDirty=true;redraw();renderLayersList();}catch(e){}}
   const text=out.join('\n');
-  try{const h=JSON.parse(localStorage.getItem('sp-bench')||'[]');h.push({t:Date.now(),v:'v210',text});localStorage.setItem('sp-bench',JSON.stringify(h.slice(-6)));}catch(e){}
+  try{const h=JSON.parse(localStorage.getItem('sp-bench')||'[]');h.push({t:Date.now(),v:'v211',text});localStorage.setItem('sp-bench',JSON.stringify(h.slice(-6)));}catch(e){}
   return text;
 }
 window.__sketchpadBench=()=>runBenchmark();
@@ -10212,7 +10216,7 @@ async function showBenchmark(){
   const ok=await projAsk({title:'⏱ Speed test',message:'This times the project you have open, without changing it. Takes about 10 seconds. Please do not touch the screen until it finishes.',ok:'Start',cancel:'Cancel'});
   if(!ok)return;
   const text=await runBenchmark();
-  const r=await projAsk({title:'⏱ Speed test results',message:text+'\n\nApp v210. Send me a screenshot of this.',ok:'OK',cancel:null,extra:[{label:'Copy',value:'copy'}]});
+  const r=await projAsk({title:'⏱ Speed test results',message:text+'\n\nApp v211. Send me a screenshot of this.',ok:'OK',cancel:null,extra:[{label:'Copy',value:'copy'}]});
   if(r&&r.__extra==='copy'){try{await navigator.clipboard.writeText(text);setStatus('Copied.');}catch(e){}}
 }
 function tlLine(){
@@ -12702,9 +12706,10 @@ SPFonts.init().then(()=>{txRefreshMissing();});
       S.paused = editing();
       if (S.paused || !S.L) return;
       try { record(); } catch (e) { console.warn('[timelapse] record failed', e); }
+      try { guideSoon(); } catch (e) { }
     },
     afterPush: function () { try { afterPush(); } catch (e) { console.warn('[timelapse]', e); } },
-    afterRestore: function (k) { try { afterRestore(k); } catch (e) { console.warn('[timelapse]', e); } },
+    afterRestore: function (k) { try { afterRestore(k); } catch (e) { console.warn('[timelapse]', e); } try { guideSoon(); } catch (e) { } },
     detach: detach, onProjectLoaded: onProjectLoaded, flush: flush, deleteFor: deleteFor, copyFor: copyFor,
     status: function () { return { on: S.on, events: S.log.length, bytes: S.bytes, folded: S.folded, pid: S.pid }; },
     probe: function () { var t = performance.now(), r = {}; try { stateHash(); } catch (e) { } r.hash = performance.now() - t; t = performance.now(); try { snapLast(); } catch (e) { } r.snap = performance.now() - t; t = performance.now(); try { r.base = S.base ? S.base.length : 0; } catch (e) { } return r; },
@@ -12836,22 +12841,51 @@ SPFonts.init().then(()=>{txRefreshMissing();});
     });
     this.dirty = false;
   };
+  // ---- Framing maths shared by the exported video, the in-panel preview AND the on-canvas "replay frame" guide, so they can never disagree.
+  // A Framer walks the recorded actions once (it can be advanced one action at a time) and keeps (a) the artwork state, for "Fit to my
+  // drawing", and (b) the follow-the-pen camera position, for 1.5x / 2x / 3x. All coordinates are tile coordinates (canvas minus CX,CY).
+  function Framer(base) { this.base = base; this.st = newState(base); this.n = 0; this.cur = null; this.last = null; this.first = -1; this.lastEv = null; this.folded = 0; }
+  Framer.prototype.step = function (ev) {
+    var info = { layers: new Map(), full: false }, c = null;
+    try { applyData(this.st, ev, info); } catch (e) { }
+    var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    info.layers.forEach(function (l) { if (l.rect) { x0 = Math.min(x0, l.rect.x0); y0 = Math.min(y0, l.rect.y0); x1 = Math.max(x1, l.rect.x1); y1 = Math.max(y1, l.rect.y1); } });
+    if (x1 > x0 && y1 > y0 && (x1 - x0) < 1400 && (y1 - y0) < 1400) c = { x: (x0 + x1) / 2 - CX, y: (y0 + y1) / 2 - CY };
+    if (c) { this.last = c; if (this.first < 0) { this.first = this.n; this.cur = c; } }
+    var t = this.last || this.cur || { x: TW / 2, y: TH / 2 }; if (!this.cur) this.cur = t;
+    this.cur = { x: this.cur.x + (t.x - this.cur.x) * 0.3, y: this.cur.y + (t.y - this.cur.y) * 0.3 };
+    this.n++; this.lastEv = ev; return this.cur;
+  };
+  // "Fit to my drawing" (and the size floor for numeric zoom): the bounds of the artwork as it stands after the actions fed in so far.
+  Framer.prototype.fitRect = function (z) {
+    var st = this.st, x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, any = false;
+    st.strokes.forEach(function (s) { var b = strokeBBox(s); if (!b) return; any = true; x0 = Math.min(x0, b.x0); y0 = Math.min(y0, b.y0); x1 = Math.max(x1, b.x1); y1 = Math.max(y1, b.y1); });
+    st.placed.forEach(function (p) { try { var m = motifs.find(function (q) { return q.id === p.motifId; }), im = m && m.img; if (!im) return; var iw = (im.naturalWidth || im.width) * (p.s || 1) * (p.fx == null ? 1 : Math.abs(p.fx)), ih = (im.naturalHeight || im.height) * (p.s || 1) * (p.fy == null ? 1 : Math.abs(p.fy)), th = (p.r || 0) * Math.PI / 180, c = Math.abs(Math.cos(th)), sn = Math.abs(Math.sin(th)), ex = (iw * c + ih * sn) / 2, ey = (iw * sn + ih * c) / 2; any = true; x0 = Math.min(x0, p.x - ex); y0 = Math.min(y0, p.y - ey); x1 = Math.max(x1, p.x + ex); y1 = Math.max(y1, p.y + ey); } catch (e) { } });
+    var side = Math.min(TW, TH), r = null;
+    if (any) {
+      var cx = (x0 + x1) / 2 - CX, cy = (y0 + y1) / 2 - CY, sd;
+      var fitSd = Math.max(x1 - x0, y1 - y0) * 1.12; // never zoom in so far that part of the drawing is cut off
+      if (z === 'fit') sd = fitSd; else sd = Math.max(side / (+z || 1), fitSd);
+      sd = Math.max(120, Math.min(side, sd));
+      r = { x: Math.max(0, Math.min(TW - sd, cx - sd / 2)), y: Math.max(0, Math.min(TH - sd, cy - sd / 2)), s: sd };
+      if (r.s >= side - 1) r = null;
+    }
+    return r;
+  };
+  // The 1.5x / 2x / 3x window centred on a camera position (null = no zoom possible).
+  function camWindow(z, cx, cy) {
+    var side = Math.min(TW, TH), sd = side / (+z || 1); if (sd >= side - 1) return null;
+    return { x: Math.max(0, Math.min(TW - sd, cx - sd / 2)), y: Math.max(0, Math.min(TH - sd, cy - sd / 2)), s: sd };
+  }
+  // What the video frame shows when it is not zoomed: the whole tile centred in a TILE x TILE square (this square can be bigger than a rectangular tile).
+  function wholeFrame() { return { x: (TW - TILE) / 2, y: (TH - TILE) / 2, s: TILE, whole: true }; }
   // Follow-the-pen camera (zoom 1.5x / 2x / 3x): a window of side/z that glides to wherever the latest action happened, so the art looks bigger on the
   // video without ever cutting off what is being drawn; the ending pulls back to show the whole finished piece.
   Player.prototype.camPath = function () {
     var key = this.log.length; if (this._ck === key && this._cp) return this._cp;
-    var st = newState(this.base), n = this.log.length, f = new Array(n), last = null, i;
-    for (i = 0; i < n; i++) {
-      var info = { layers: new Map(), full: false }, c = null;
-      try { applyData(st, this.log[i], info); } catch (e) { }
-      var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-      info.layers.forEach(function (l) { if (l.rect) { x0 = Math.min(x0, l.rect.x0); y0 = Math.min(y0, l.rect.y0); x1 = Math.max(x1, l.rect.x1); y1 = Math.max(y1, l.rect.y1); } });
-      if (x1 > x0 && y1 > y0 && (x1 - x0) < 1400 && (y1 - y0) < 1400) c = { x: (x0 + x1) / 2 - CX, y: (y0 + y1) / 2 - CY };
-      if (c) last = c; f[i] = last;
-    }
-    var first = null; for (i = 0; i < n; i++) if (f[i]) { first = f[i]; break; }
-    var cam = new Array(n), cur = first;
-    for (i = 0; i < n; i++) { var t = f[i] || cur || { x: TW / 2, y: TH / 2 }; if (!cur) cur = t; cur = { x: cur.x + (t.x - cur.x) * 0.3, y: cur.y + (t.y - cur.y) * 0.3 }; cam[i] = cur; }
+    var fr = new Framer(this.base), n = this.log.length, cam = new Array(n), i;
+    for (i = 0; i < n; i++) cam[i] = fr.step(this.log[i]);
+    for (i = 0; i < fr.first; i++) cam[i] = cam[fr.first]; // before the first drawing action the camera already waits where the first action happens
     this._ck = key; this._cp = cam; return cam;
   };
   Player.prototype.camRect = function (t, times) {
@@ -12861,8 +12895,7 @@ SPFonts.init().then(()=>{txRefreshMissing();});
     var cam = this.camPath(), n = cam.length; if (!n || !times) return this.zoomRect();
     var i = 0, lo = 0, hi = n - 1; while (lo < hi) { var mid = (lo + hi + 1) >> 1; if (times.start[mid] <= t) lo = mid; else hi = mid - 1; } i = lo;
     var frac = times.dur[i] > 0 ? Math.max(0, Math.min(1, (t - times.start[i]) / times.dur[i])) : 1, a = cam[i], b = cam[Math.min(n - 1, i + 1)];
-    var cx = a.x + (b.x - a.x) * frac, cy = a.y + (b.y - a.y) * frac;
-    return { x: Math.max(0, Math.min(TW - sd, cx - sd / 2)), y: Math.max(0, Math.min(TH - sd, cy - sd / 2)), s: sd };
+    return camWindow(z, a.x + (b.x - a.x) * frac, a.y + (b.y - a.y) * frac);
   };
   Player.prototype.drawRect = function (g, size, r) { g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.fillStyle = '#fff'; g.fillRect(0, 0, size, size); g.drawImage(this.tile, r.x, r.y, r.s, r.s, 0, 0, size, size); };
   // Optional zoom-in for the video: a square window of the tile centred on the drawing (the finished artwork's bounds), so the art looks bigger.
@@ -12870,20 +12903,8 @@ SPFonts.init().then(()=>{txRefreshMissing();});
     var z = prefs.zoom; if (!z || z === 'off') return null;
     try {
       var key = this.log.length + ':' + z; if (this._zk === key) return this._zr;
-      var st = newState(this.base); this.log.forEach(function (e) { applyData(st, e); });
-      var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, any = false;
-      st.strokes.forEach(function (s) { var b = strokeBBox(s); if (!b) return; any = true; x0 = Math.min(x0, b.x0); y0 = Math.min(y0, b.y0); x1 = Math.max(x1, b.x1); y1 = Math.max(y1, b.y1); });
-      st.placed.forEach(function (p) { try { var m = motifs.find(function (q) { return q.id === p.motifId; }), im = m && m.img; if (!im) return; var iw = (im.naturalWidth || im.width) * (p.s || 1) * (p.fx == null ? 1 : Math.abs(p.fx)), ih = (im.naturalHeight || im.height) * (p.s || 1) * (p.fy == null ? 1 : Math.abs(p.fy)), th = (p.r || 0) * Math.PI / 180, c = Math.abs(Math.cos(th)), sn = Math.abs(Math.sin(th)), ex = (iw * c + ih * sn) / 2, ey = (iw * sn + ih * c) / 2; any = true; x0 = Math.min(x0, p.x - ex); y0 = Math.min(y0, p.y - ey); x1 = Math.max(x1, p.x + ex); y1 = Math.max(y1, p.y + ey); } catch (e) { } });
-      var side = Math.min(TW, TH), r = null;
-      if (any) {
-        var cx = (x0 + x1) / 2 - CX, cy = (y0 + y1) / 2 - CY, sd;
-        var fitSd = Math.max(x1 - x0, y1 - y0) * 1.12; // never zoom in so far that part of the drawing is cut off
-        if (z === 'fit') sd = fitSd; else sd = Math.max(side / (+z || 1), fitSd);
-        sd = Math.max(120, Math.min(side, sd));
-        r = { x: Math.max(0, Math.min(TW - sd, cx - sd / 2)), y: Math.max(0, Math.min(TH - sd, cy - sd / 2)), s: sd };
-        if (r.s >= side - 1) r = null;
-      }
-      this._zk = key; this._zr = r; return r;
+      var fr = new Framer(this.base); for (var k = 0; k < this.log.length; k++) fr.step(this.log[k]);
+      var r = fr.fitRect(z); this._zk = key; this._zr = r; return r;
     } catch (e) { this._zk = null; return null; }
   };
   Player.prototype.drawTileTo = function (g, size, whole) {
@@ -13055,7 +13076,9 @@ SPFonts.init().then(()=>{txRefreshMissing();});
     get size() { try { return +localStorage.getItem('sp-tlSize') || ((navigator.maxTouchPoints > 1) ? 720 : 1080); } catch (e) { return 1080; } },
     set size(v) { try { localStorage.setItem('sp-tlSize', v); } catch (e) { } },
     get zoom() { try { return localStorage.getItem('sp-tlZoom') || 'off'; } catch (e) { return 'off'; } },
-    set zoom(v) { try { localStorage.setItem('sp-tlZoom', v); } catch (e) { } }
+    set zoom(v) { try { localStorage.setItem('sp-tlZoom', v); } catch (e) { } },
+    get guide() { try { return localStorage.getItem('sp-tlGuide') === '1'; } catch (e) { return false; } },
+    set guide(v) { try { localStorage.setItem('sp-tlGuide', v ? '1' : '0'); } catch (e) { } }
   };
   function css() {
     if ($('tlCss')) return;
@@ -13084,6 +13107,7 @@ SPFonts.init().then(()=>{txRefreshMissing();});
       '<div class="tlrow"><label class="tlsm">Length <select id="tlDur"><option value="auto">Auto (quick)</option><option value="3">3 s</option><option value="4">4 s</option><option value="6">6 s</option><option value="10">10 s</option><option value="15">15 s</option><option value="20">20 s</option><option value="30">30 s</option><option value="45">45 s</option><option value="60">60 s</option><option value="90">90 s</option></select></label>' +
       '<label class="tlsm">Size <select id="tlSize"><option value="720">720 × 720</option><option value="1080">1080 × 1080</option></select></label>' +
       '<label class="tlsm">Zoom in <select id="tlZoom"><option value="off">Whole tile</option><option value="fit">Fit to my drawing</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="3">3×</option></select></label></div>' +
+      '<label class="tlsm" style="display:block;margin:4px 0"><input type="checkbox" id="tlGuide"> Show replay frame on the canvas</label><div id="tlGuideNote" class="tlsm" style="margin:0 0 6px 22px"></div>' +
       '<label class="tlsm" style="display:block;margin:4px 0"><input type="checkbox" id="tlReveal"> Finish with the seamless repeat reveal (holds on the finished art, then zooms out to show the pattern repeating)</label>' +
       '<div class="tlrow"><button class="btn primary" id="tlExport">🎞️ Export video</button><button class="btn danger" id="tlDelete">🗑️ Delete timelapse data</button></div>' +
       '<div class="tlrow"><button class="btn" id="tlCopyFrom" title="Use the recording of another project, for example the original of a copy">📋 Copy recording from another project…</button></div>' +
@@ -13106,6 +13130,9 @@ SPFonts.init().then(()=>{txRefreshMissing();});
     $('tlDefChk').onchange = function (e) { try { localStorage.setItem('sp-tlAuto', e.target.checked ? '1' : '0'); } catch (x) { } };
     $('tlDur').value = prefs.dur; $('tlDur').onchange = function (e) { prefs.dur = e.target.value; rebuildTimes(); };
     $('tlZoom').value = prefs.zoom; $('tlZoom').onchange = function (e) { prefs.zoom = e.target.value; try { if (P) { P._zk = null; } paint(playT); } catch (x) { } };
+    function guideNote() { var z = prefs.zoom; $('tlGuideNote').textContent = !prefs.guide ? 'Draws a thin outline on your canvas showing the area the video will show. It is never saved into your artwork, brushes or video.' : (S.on ? '' : 'Turn recording on to see the frame. ') + (z === 'off' ? 'The video shows the whole tile, so the frame is the whole tile.' : z === 'fit' ? 'Fit to my drawing: the frame follows the size of your artwork so far, so it grows as you add more. The exported video uses the size of your finished artwork.' : 'The ' + z + '× camera follows your pen, so the frame moves to wherever you drew last. At the end the video zooms back out to the whole piece.'); }
+    $('tlGuide').checked = prefs.guide; $('tlGuide').onchange = function (e) { prefs.guide = e.target.checked; guideNote(); try { window.SPTimelapse._guide.update(); } catch (x) { } };
+    guideNote(); $('tlZoom').addEventListener('change', function () { guideNote(); try { window.SPTimelapse._guide.update(); } catch (x) { } });
     $('tlSize').value = String(prefs.size); $('tlSize').onchange = function (e) { prefs.size = +e.target.value; };
     $('tlReveal').checked = prefs.reveal; $('tlReveal').onchange = function (e) { prefs.reveal = e.target.checked; rebuildTimes(); };
     ui.play.onclick = function () { if (playing) pause(); else play(); };
@@ -13225,6 +13252,46 @@ SPFonts.init().then(()=>{txRefreshMissing();});
     exporting = null; ui.bar.style.display = 'none'; $('tlExport').textContent = '🎞️ Export video'; $('tlExport').onclick = doExport;
     try { P.reset(); playT = 0; seekTo(fullLen(), true); } catch (x) { }
   }
+  // ------------------------------------------------------------------ on-canvas "replay frame" guide
+  // A DOM overlay (never canvas pixels, pointer-events:none) so it can't end up in artwork exports, brush stamps or the video, and drawing/selection pass through it.
+  // It uses the same Framer maths as the export. For "Whole tile" and "Fit to my drawing" that is the frame; for 1.5x/2x/3x the video camera
+  // follows the pen, so the guide shows where the camera will be after your latest action (it moves as you draw).
+  var G = { fr: null, sig: '', timer: 0 };
+  function guideEl() { return $('replayGuide'); }
+  function guideRect(fr, z) {
+    if (!z || z === 'off') return { r: wholeFrame(), kind: 'whole' };
+    if (z === 'fit') { var f = fr.fitRect('fit'); return f ? { r: f, kind: 'fit' } : { r: wholeFrame(), kind: 'whole' }; }
+    var w = camWindow(z, fr.cur ? fr.cur.x : TW / 2, fr.cur ? fr.cur.y : TH / 2);
+    return w ? { r: w, kind: 'follow' } : { r: wholeFrame(), kind: 'whole' };
+  }
+  function guideSync() {
+    var fr = G.fr;
+    var ok = fr && fr.base === S.base && fr.folded === S.folded && fr.n <= S.log.length && (fr.n === 0 || S.log[fr.n - 1] === fr.lastEv);
+    if (!ok) { fr = G.fr = new Framer(S.base); fr.folded = S.folded; }
+    while (fr.n < S.log.length) fr.step(S.log[fr.n]);
+    return fr;
+  }
+  function guideUpdate() {
+    var el = guideEl(); if (!el) return;
+    var on = prefs.guide && S.on && S.base;
+    var last = S.log.length ? S.log[S.log.length - 1] : null;
+    var sig = on ? [S.pid, S.folded, S.log.length, last && last.d, prefs.zoom, TW, TH, CX, CY].join('|') : 'off';
+    if (sig === G.sig) return; G.sig = sig;
+    if (!on) { el.style.display = 'none'; return; }
+    var fr; try { fr = guideSync(); } catch (e) { el.style.display = 'none'; return; }
+    var g = guideRect(fr, prefs.zoom), r = g.r;
+    el.style.width = TW + 'px'; el.style.height = TH + 'px';
+    var box = el.firstChild;
+    box.style.left = r.x + 'px'; box.style.top = r.y + 'px'; box.style.width = r.s + 'px'; box.style.height = r.s + 'px';
+    var zl = prefs.zoom === 'fit' ? 'fit' : (prefs.zoom && prefs.zoom !== 'off' ? prefs.zoom + '×' : 'whole');
+    box.firstChild.textContent = 'Replay frame · ' + (g.kind === 'follow' ? zl + ' follows your pen' : g.kind === 'fit' ? 'fit to drawing (grows as you draw)' : 'whole tile');
+    el.style.display = 'block';
+    try { if (typeof applyTransform === 'function') applyTransform(); } catch (e) { }
+  }
+  function guideSoon() { if (G.timer) return; G.timer = setTimeout(function () { G.timer = 0; try { guideUpdate(); } catch (e) { } }, 60); }
+  setInterval(function () { try { guideUpdate(); } catch (e) { } }, 700);
+  window.SPTimelapse._guide = { update: function () { G.sig = ''; guideUpdate(); }, rect: function () { var fr = guideSync(); return guideRect(fr, prefs.zoom); }, soon: guideSoon };
+
   window.SPTimelapse.open = open;
   window.SPTimelapse.close = close;
   window.SPTimelapse._test = { Player: Player, makeTimes: makeTimes, drawFrame: drawFrame, Mp4: Mp4, detect: detectEncoders, encodeWebCodecs: encodeWebCodecs, encodeRecorder: encodeRecorder, mkP: function (secs) { var p = new Player(S.base, S.log.slice()); return { P: p, times: makeTimes(S.log, secs || 10) }; } };
@@ -13236,7 +13303,7 @@ SPFonts.init().then(()=>{txRefreshMissing();});
 })();
 </script>
 <script>
-/* ===== v210: icon rail + floating panels =====
+/* ===== v211: icon rail + floating panels =====
    Every control that used to live in the sidebar is still the same DOM element (same ids, same handlers). The panels only MOVE those
    sections between the hidden sidebar and a floating (or docked) panel, so nothing about drawing, layers, saving or exporting changes. */
 (function(){
