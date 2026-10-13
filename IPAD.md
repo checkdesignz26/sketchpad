@@ -673,3 +673,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v205
 - Adaptive Colour: new Harmony menu (Vibe mix / Analogous / Monochrome / Complementary). It uses the same vibe saturation/brightness curve and Richness, but places the Secondary/Accent/Accent 2/Filler colours (and the Extra swatches) on neighbouring hues, one hue, or the opposite side of the wheel.
+
+## v206
+- Fix: while editing a motif (and with Stroke tools on in Edit mode), selecting a stroke now opens the Selection panel with the stroke tools (colour, size, Edit Path...). The auto-open added in v195 tested the wrong variable and never fired. Verified: without the fix the panel stayed closed, with it it opens.
