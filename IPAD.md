@@ -725,3 +725,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 ## v220 — Less lag when moving things while zoomed in
 - Cause: `drawTiles()` copied all 9 tile repeats of the full 1800×1800 canvas on every `redraw()` (~20 MP/frame) even when only a small part is on screen; moving a stroke redraws every frame. Now, once zoomed past the sharp-detail threshold (`detailNeeded()`), only the on-screen area plus a 50 % margin is copied (`visibleCanvasRect`); `applyTransform` triggers a redraw if the view leaves the drawn area, and zooming out redraws in full. Headless frame time while dragging a stroke at 350 %: ~27 ms → ~16 ms (vsync).
 - Dragging a selected stroke also draws it once onto its own sheet and just slides that picture (bounding box only) instead of re-rendering the brush stroke on every pointer event; coalesced to one update per frame.
+
+## v221 — Tiling on/off from the Repeat panel
+- The first line of the Repeat & tiling panel (and so the 🔁 pill → panel) is now a button that turns tiling on/off in any project ("… — tap to turn off" / "🔲 Single canvas · Tiling Off — tap to turn on"). The underlying `#tilingBtn` was hidden since v195, so there was no in-app switch.
