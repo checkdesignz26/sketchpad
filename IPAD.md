@@ -679,3 +679,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v207
 - Procreate brush export: the preview thumbnail (QuickLook/Thumbnail.png) now shows ONE stamp instead of three, so the brush list matches what a single tap makes. Re-export the brush set to get the new previews.
+
+## v208
+- Procreate brush export: "Made by" field in the Pattern brush panel (remembered on the device, localStorage sp-author). The name is written into every exported brush (Brush.archive authorName, main + reset), so Procreate shows who made the brush/set. Verified by building the archive in node and finding the name in both.
