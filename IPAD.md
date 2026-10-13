@@ -744,3 +744,7 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v225 — Edit Path size box
 - Jumping from one stroke to another inside Edit Path now refreshes the size, colour and brush boxes to the new stroke (it kept showing the previous stroke's size).
+
+## v226 — moving a stroke while zoomed in
+- Zoomed in, dragging a stroke used to leave the original showing under the sharp picture and the moving copy was hidden, so it jumped/lagged. Now the real stroke is hidden and a picture of it slides under the pen (cheap per move), then it is committed on release.
+- The sharp picture ignores strokes that are being dragged.
