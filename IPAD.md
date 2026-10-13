@@ -748,3 +748,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 ## v226 — moving a stroke while zoomed in
 - Zoomed in, dragging a stroke used to leave the original showing under the sharp picture and the moving copy was hidden, so it jumped/lagged. Now the real stroke is hidden and a picture of it slides under the pen (cheap per move), then it is committed on release.
 - The sharp picture ignores strokes that are being dragged.
+
+## v227 — duplicate on the same spot
+- Duplicating a stroke (or text) now puts the copy exactly on top of the original instead of offset. (Duplicating pictures/groups still offsets.)
