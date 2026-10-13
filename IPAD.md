@@ -736,3 +736,8 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 - Selection panel no longer opens on top of the Stroke panel while editing a motif.
 - Done now redraws every layer from the remaining strokes before rebuilding the motif picture, so deleted items (text, strokes) don't come back.
 - Note: if you delete everything in a motif, the old picture is kept on purpose (safety).
+
+## v224 — hold-to-straighten fixes
+- Held line no longer comes out shorter: it ends at the pen tip.
+- After the line snaps, keep the pen down and drag: the far end follows the pen exactly and stays straight (no jumping).
+- Zooming out of the sharp view always redraws the normal canvas, so strokes can't be left missing until you tap.
