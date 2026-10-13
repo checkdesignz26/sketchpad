@@ -741,3 +741,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 - Held line no longer comes out shorter: it ends at the pen tip.
 - After the line snaps, keep the pen down and drag: the far end follows the pen exactly and stays straight (no jumping).
 - Zooming out of the sharp view always redraws the normal canvas, so strokes can't be left missing until you tap.
+
+## v225 — Edit Path size box
+- Jumping from one stroke to another inside Edit Path now refreshes the size, colour and brush boxes to the new stroke (it kept showing the previous stroke's size).
