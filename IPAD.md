@@ -708,3 +708,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v215 — Snap ignores the path being edited
 - Edit Path snap no longer targets the path's own nodes (the confusing "Join" highlight is gone); it snaps only to other paths. Use Close path to join a shape's own ends.
+
+## v216 — "Join" only for the path's other end
+- Edit Path snap: "Join" appears only when an END node is dragged onto the path's other END. Middle nodes of the same path never snap or show Join.
