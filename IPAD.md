@@ -705,3 +705,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 ## v214 — Edit Path: snap to geometry
 - Dragging a node in Edit Path snaps to a nearby node of another visible path (green ring, label "Node"; "Join" for the path's own other node) or, failing that, the nearest point along another path (green diamond, "Path"). Radius 16 screen px. Targets collected once per drag; erasers/hidden layers ignored.
 - New `🧲 Snap on/off` button in the Edit Path bar (`#pathSnapBtn`, pref `sp-snapGeo`, default on).
+
+## v215 — Snap ignores the path being edited
+- Edit Path snap no longer targets the path's own nodes (the confusing "Join" highlight is gone); it snaps only to other paths. Use Close path to join a shape's own ends.
