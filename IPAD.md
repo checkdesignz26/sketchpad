@@ -688,3 +688,9 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v210
 - Author name is written only into the main Brush.archive (Procreate leaves it empty in Reset/Brush.archive), as seen in a real brush with Made by set.
+
+## v211 — Time-lapse "Show replay frame" guide
+- Timelapse panel → **Show replay frame on the canvas** (remembered, `sp-tlGuide`). Draws a thin dashed pink outline + small label showing what the exported video shows. Only visible while recording is on.
+- Uses the same framing code as the export (`Framer` in the SPTimelapse IIFE: `fitRect`, `camWindow`, follow-pen camera). `Player.camPath/zoomRect` now use it too, so guide and video cannot disagree.
+- Whole tile: the full video square. Fit: bounds of your artwork so far (grows as you draw; the video uses the finished artwork's size). 1.5×/2×/3×: the camera follows the pen, so the frame shows where the camera is after your latest action and moves as you draw; the video zooms back out at the end.
+- DOM overlay `#replayGuide` (pointer-events:none, follows pan/zoom/rotate with `#tileOutline`); never drawn into canvases, so not in exports, stamps or video.
