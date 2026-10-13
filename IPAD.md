@@ -697,3 +697,7 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v212 — Trace art sized by the art, not the picture
 - Trace Image to Vector → "Size on the canvas": "Fit inside one repeat tile" now sizes by the traced shapes' own bounds (not the source picture's empty margins), so art fills the tile (90%). New option "Fill the whole tile, edge to edge" (100%). "Exactly one repeat tile" is unchanged (needed for seamless tiles).
+
+## v213 — Trace picture: bounding box (move / resize / rotate, then lock)
+- Trace Reference → "Trace Artwork": adding a picture now unlocks it and shows a pink box (`#traceBox`, DOM overlay in canvas coords, follows pan/zoom/rotate). Drag the body to move, corners to resize (opposite corner stays fixed), round top handle to rotate (snaps to 0/90/180), "🔒 Lock" chip (or the panel button) locks it; locked = box hidden and drawing works normally.
+- Trace pictures now have `rot` (saved in the project, drawn rotated in `drawTraces`). Old "drag the canvas in Edit mode to move" removed. Button reads "🔓 Move & resize".
