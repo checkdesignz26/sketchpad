@@ -714,3 +714,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v217 — Eraser: fine spacing for small erasers (bead-chain fix)
 - `eraseSweep` spaced its rub-out circles at least 1 unit apart, which for a size-1 eraser equals the circle's own diameter, so zoomed in the erased band looked like a chain of beads / scattered flecks (beta tester report at 3200%). Now step = max(0.12, 0.35·r) for r<6 (was max(1, 0.5·r)); cuts stored to 2 decimals; per-stroke cut cap 1500→4000; sweep cap 64→400 samples. Measured gap for r=0.5: 0.89 → 0.17.
+
+## v218 — "Hard" eraser is now truly hard
+- The rub-out punch used a radial gradient even for Hard (fading over the outer 8%), so Hard looked soft on wide strokes. Cuts with h≥0.92 (Hard, and older saved Hard cuts) are now a solid circle: crisp edge, no grey transition (checked: edge samples are pure on/off). Soft/Rough/Like-my-brush unchanged.
