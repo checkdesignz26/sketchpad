@@ -685,3 +685,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v209
 - Procreate brush export: author Logo and Signature pictures (Pattern brush panel > Motif brush set, below Made by). Stored on the device resized to Procreate sizes (AuthorPicture/AuthorPicture.png 384x384, Signature/SignaturePicture.png 800x240) and written into every exported brush, matching the layout of a real Procreate brush (paths taken from a user-supplied Heart matcha .brush). Test hook window.__sketchpadBrushFiles.
+
+## v210
+- Author name is written only into the main Brush.archive (Procreate leaves it empty in Reset/Brush.archive), as seen in a real brush with Made by set.
