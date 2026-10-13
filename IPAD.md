@@ -731,3 +731,8 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v222 — Editing a motif: taps reach the strokes every time
 - `selectAtBase` tested placed pictures first, by bounding box. While editing a motif the edited instance (hidden, but still in `placed`) and other pictures still counted, so any tap inside their invisible box selected the motif (box + handles) instead of the stroke, and the stroke panel only opened when a tap happened to land outside it ("works sometimes"). Placed pictures are now skipped while `editingMotifId` is set. Test: 4/4 stroke taps select a stroke inside the motif (before: motif selected instead).
+
+## v223 — Edit Motif panels + deletes
+- Selection panel no longer opens on top of the Stroke panel while editing a motif.
+- Done now redraws every layer from the remaining strokes before rebuilding the motif picture, so deleted items (text, strokes) don't come back.
+- Note: if you delete everything in a motif, the old picture is kept on purpose (safety).
