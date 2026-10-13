@@ -721,3 +721,7 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 ## v219 — Brush / eraser size cursor
 - A ring the size of the brush (size × zoom, min 6 px; dashed for the eraser) follows the mouse or Pencil (hover where supported, and while drawing) when a drawing brush or the eraser is active in Draw mode. Hidden for finger touches and for Select/Edit, Pen, Shapes, Fill, Smudge, Warp, Edit Path. The OS cursor is hidden while it shows.
 - View ▾ → "⭕ Brush cursor: On/Off" (pref `sp-brushCursor`, default on). DOM element `#brushCursor`, never drawn into artwork.
+
+## v220 — Less lag when moving things while zoomed in
+- Cause: `drawTiles()` copied all 9 tile repeats of the full 1800×1800 canvas on every `redraw()` (~20 MP/frame) even when only a small part is on screen; moving a stroke redraws every frame. Now, once zoomed past the sharp-detail threshold (`detailNeeded()`), only the on-screen area plus a 50 % margin is copied (`visibleCanvasRect`); `applyTransform` triggers a redraw if the view leaves the drawn area, and zooming out redraws in full. Headless frame time while dragging a stroke at 350 %: ~27 ms → ~16 ms (vsync).
+- Dragging a selected stroke also draws it once onto its own sheet and just slides that picture (bounding box only) instead of re-rendering the brush stroke on every pointer event; coalesced to one update per frame.
