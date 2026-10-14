@@ -802,3 +802,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 ## v241 — Contour fixes
 - Outside contours no longer produce stray inner rings (holes that appeared where a shape has a narrow gap, e.g. a hook). Only outer boundaries are kept for Outside.
 - Inside: if the gap leaves no room, the original's copies are no longer silently wiped; a message says there is no room (or "Only N of M copies fit"). 
+
+## v242 — Contour: Remove copies
+- New "Remove copies" button next to "Detach copies" (shown when the selected original has contour copies).
