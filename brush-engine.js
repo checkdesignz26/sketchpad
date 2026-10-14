@@ -996,13 +996,13 @@
   // The GPU is only used if it measures faster than the CPU on this device: the first big steps are timed both ways (alternating, results
   // are identical either way) and the winner is remembered. On a device where WebGL is slow or missing the CPU path stays in charge.
   const _lq = { on: true, bad: false, gl: null, cv: null, prog: null, u: null, tex: null, src: null, sctx: null, pick: 'auto', samples: { gl: [], cpu: [] } };
-  try { const v = localStorage.getItem('sp-lqgl'); if (v === 'gl' || v === 'cpu') _lq.pick = v; } catch (e) { }
+  // Off by default: the GPU path is only tried when sp-lqgl-try is set to 1 (it needs extra graphics memory, which is tight on an iPad).
+  _lq.pick = 'cpu'; try { if (localStorage.getItem('sp-lqgl-try') === '1') _lq.pick = 'auto'; } catch (e) { }
   function lqRecord(kind, ms, area) {
     const a = _lq.samples[kind]; a.push(ms / area); if (a.length > 4) a.shift();
     if (_lq.pick !== 'auto' || _lq.samples.gl.length < 3 || _lq.samples.cpu.length < 3) return;
     const med = q => q.slice().sort((x, y) => x - y)[q.length >> 1];
     _lq.pick = med(_lq.samples.gl) < med(_lq.samples.cpu) * 0.85 ? 'gl' : 'cpu';
-    try { localStorage.setItem('sp-lqgl', _lq.pick); } catch (e) { }
   }
   const LQ_VS = 'attribute vec2 aPos;varying vec2 vUv;void main(){vUv=vec2(aPos.x*0.5+0.5,0.5-aPos.y*0.5);gl_Position=vec4(aPos,0.0,1.0);}';
   const LQ_FS = 'precision highp float;varying vec2 vUv;uniform sampler2D uTex;uniform vec2 uRes;uniform vec2 uC;uniform vec2 uPd;uniform float uR;uniform float uS;uniform float uAng;uniform float uPf;uniform float uReps;uniform int uMode;' +
