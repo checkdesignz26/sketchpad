@@ -817,3 +817,7 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v246 — Contour: "Keep sharp tips" option
 - Contour panel has a "Keep sharp tips" tick (default on). On: pointed tips, even very narrow ones (miter limit ~10×), are followed exactly in the outer and inner rings. Off: rounded corners. Status text no longer says "inside" when fewer copies fit.
+
+## v247 — Gradient + Adjust colours
+- New **Gradient** rail panel: Flat / Linear / Radial fill for closed shapes (start, optional middle, end colour, project palette strip, angle, radial centre, opacity). Stored on the outline's linked fill, so it moves/resizes/rotates with the shape, follows Edit Path, undoes, and exports to SVG as a real gradient.
+- New **Adjust colours** rail panel: Invert, Hue, Saturation, Brightness for Selected / This layer / Everything (gradients included). Sliders snap back after applying; one undo step each.
