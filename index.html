@@ -10778,7 +10778,7 @@ async function renderProjects(){
     const tx=pjEl('div','pj-hero-tx');tx.appendChild(pjEl('div','pj-hero-k','Pick up where you left off'));tx.appendChild(pjEl('div','pj-hero-n',lm.name));tx.appendChild(pjEl('div','pj-meta','Edited '+friendlyWhen(lm.updatedAt)+' · '+(lm.strokes||0)+' strokes'));
     const go=pjEl('button','btn primary pj-big','▶ Continue');go.onclick=async()=>{startMode=false;closeProjects(true);await bootOpen(lm);if(!activeProject){startMode=true;openProjects();}};
     tx.appendChild(go);hero.appendChild(th);hero.appendChild(tx);body.appendChild(hero);
-    const lab=pjEl('label','pj-auto');const cb=document.createElement('input');cb.type='checkbox';try{cb.checked=localStorage.getItem('sp-autoOpen')==='1';}catch(e){}
+    const lab=pjEl('label','pj-auto');const cb=document.createElement('input');cb.type='checkbox';try{cb.checked=localStorage.getItem('sp-autoOpen')!=='0';}catch(e){}
     cb.onchange=()=>{try{localStorage.setItem('sp-autoOpen',cb.checked?'1':'0');}catch(e){}};lab.appendChild(cb);lab.appendChild(document.createTextNode(' Open my last project automatically next time'));body.appendChild(lab);
   }
   if(live.length&&pjView!=='trash'){
@@ -10870,7 +10870,7 @@ async function bootProjects(){
     if(!metas.length){await enterNoProject();startMode=true;openProjects();return;}
     let id=null;try{id=localStorage.getItem('sp-activeProject');}catch(e){}
     const meta=metas.find(m=>m.id===id)||metas.sort((a,b)=>b.updatedAt-a.updatedAt)[0];
-    let auto=false;try{auto=localStorage.getItem('sp-autoOpen')==='1';}catch(e){}
+    let auto=true;try{auto=localStorage.getItem('sp-autoOpen')!=='0';}catch(e){} // reopening the last project is the default; the crash guard in bootOpen still protects a project that failed to open last time
     startLast=meta;
     if(auto){await bootOpen(meta);return;}
     // Start screen: nothing is opened (and nothing can crash) until she picks a project.
