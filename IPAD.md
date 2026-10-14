@@ -751,3 +751,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v227 — duplicate on the same spot
 - Duplicating a stroke (or text) now puts the copy exactly on top of the original instead of offset. (Duplicating pictures/groups still offsets.)
+
+## v228 — top-bar size follows the stroke you're editing
+- While a stroke is selected (or in Edit Path) the top-bar size box shows that stroke's size and editing it changes that stroke only; your brush size (e.g. 8) is never touched. With nothing selected it shows/edits the brush size as before.
