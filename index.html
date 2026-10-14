@@ -13977,6 +13977,8 @@ SPFonts.init().then(()=>{txRefreshMissing();});
   };
   Player.prototype.rebuildLayer = function (id, rect) {
     var c = this.canvasFor(id), g = c.getContext('2d'), list = this.st.strokes.filter(function (s) { return s.layerId === id; });
+    // Liquify / smudge move paint around outside their own path (and wrap over the tile edges), so a layer that has any must be redrawn whole, never just inside a rectangle
+    if (rect && list.some(function (s) { return s.brushId === 'smudge'; })) rect = null;
     g.save();
     if (rect) {
       var x = Math.max(0, Math.floor(rect.x0)), y = Math.max(0, Math.floor(rect.y0)), w = Math.min(W, Math.ceil(rect.x1)) - x, h = Math.min(H, Math.ceil(rect.y1)) - y;
