@@ -754,3 +754,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v228 — top-bar size follows the stroke you're editing
 - While a stroke is selected (or in Edit Path) the top-bar size box shows that stroke's size and editing it changes that stroke only; your brush size (e.g. 8) is never touched. With nothing selected it shows/edits the brush size as before.
+
+## v229 — size dropdown tick matches the real size
+- From a screen recording: the size dropdown (▾ next to the size box) kept its tick on the last size picked (6) even when the box said 8. It now always ticks the real size (panel and top bar), and re-syncs when you switch strokes.
