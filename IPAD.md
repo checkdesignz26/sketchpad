@@ -798,3 +798,7 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v240 — Contour thickness option
 - Contour panel: "Thickness" slider = size change per copy (default 0 = same as the original and follows it when the original's size changes; + thicker outer rings, − finer inner ones). Copies also follow the original's colour and brush.
+
+## v241 — Contour fixes
+- Outside contours no longer produce stray inner rings (holes that appeared where a shape has a narrow gap, e.g. a hook). Only outer boundaries are kept for Outside.
+- Inside: if the gap leaves no room, the original's copies are no longer silently wiped; a message says there is no room (or "Only N of M copies fit"). 
