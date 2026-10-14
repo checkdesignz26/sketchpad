@@ -990,7 +990,7 @@
   // swirl into each other like marbling. One call = one small step; holding the pen makes many steps. Steps are stored on the
   // stroke and replayed in order, so undo, saving and hi-res export see exactly the same result.
   let _lqOut = null; // scratch buffer reused between steps (a fresh multi-MB array per step was what made big brushes lag and crash)
-  function liquifyStep(ctx, x, y, mode, strength, radius, dx, dy) {
+  function liquifyStep(ctx, x, y, mode, strength, radius, dx, dy, reps) {
     const m = ctx.getTransform ? ctx.getTransform() : { a: 1, d: 1, e: 0, f: 0 };
     const sc = Math.max(0.05, Math.abs(m.a));
     const R = Math.max(2, radius * sc), cx = m.a * x + m.e, cy = m.d * y + m.f;
@@ -1004,7 +1004,7 @@
     const W4 = w * 4, R2 = R * R;
     const ang = (mode === 'twirlR' ? 1 : mode === 'twirlL' ? -1 : 0) * 0.075 * strength;
     const pf = mode === 'pinch' ? 1 : mode === 'bloat' ? -1 : 0;
-    const isPush = mode === 'push', pdx = dx * sc, pdy = dy * sc;
+    const isPush = mode === 'push', pdx = dx * sc, pdy = dy * sc, bigAng = Math.abs(ang) > 0.3; // merged steps can twirl a long way, so they use real cos/sin
     for (let py = 0; py < h; py++) {
       const gy = y0 + py + 0.5 - cy, gy2 = gy * gy;
       if (gy2 >= R2) continue;
@@ -1016,7 +1016,12 @@
         const u = 1 - d2 / R2, u2 = u * u, k = u2 * strength;
         let sx, sy; // where this pixel's new colour comes from
         if (isPush) { sx = gx - pdx * k; sy = gy - pdy * k; }
-        else if (pf) { const f = 1 + pf * k * 0.042; sx = gx * f; sy = gy * f; }
+        else if (pf) {
+          let qx = gx, qy = gy, rem = reps > 1 ? Math.min(reps, 400) : 1; // reps > 1 = several merged steps: repeat the same pinch / bloat mapping that many times
+          while (rem > 0) { const part = rem >= 1 ? 1 : rem; rem -= part; const dd = qx * qx + qy * qy; if (dd >= R2) break; const uu = 1 - dd / R2; qx *= 1 + pf * uu * uu * strength * part * 0.042; qy *= 1 + pf * uu * uu * strength * part * 0.042; }
+          sx = qx; sy = qy;
+        }
+        else if (bigAng) { const a2 = ang * u2, c2 = Math.cos(a2), s2 = -Math.sin(a2); sx = gx * c2 - gy * s2; sy = gx * s2 + gy * c2; }
         else { const a2 = ang * u2, c2 = 1 - a2 * a2 * 0.5, s2 = -(a2 - a2 * a2 * a2 / 6); sx = gx * c2 - gy * s2; sy = gx * s2 + gy * c2; } // angle is at most 0.075 rad, so this is exact enough and skips cos/sin per pixel
         // bilinear sample with premultiplied alpha (so transparent pixels do not darken the colours)
         const fx = sx + cx - x0 - 0.5, fy = sy + cy - y0 - 0.5, ix = Math.floor(fx), iy = Math.floor(fy), ux = fx - ix, uy = fy - iy;
@@ -1039,12 +1044,35 @@
     }
     id.data.set(n === out.length ? out : out.subarray(0, n)); ctx.putImageData(id, x0, y0);
   }
+  // A long hold (twirl / pinch / bloat) is stored as hundreds of tiny steps at almost the same spot, and a long push drag as hundreds
+  // of tiny moves. Replaying all of them on every project open / layer rebuild is what made big projects unusable. Neighbouring steps
+  // are merged here: for a hold the result is the same (rotation and scaling about one centre simply add up), for a push it is
+  // within a hair of the original.
+  function liquifyMerge(pts, size) {
+    const out = [], lim = Math.max(2, size * 0.06);
+    let run = null;
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i], m = p.m || 'push', s = p.s || 1, pdx = p.dx || 0, pdy = p.dy || 0, last = out[out.length - 1];
+      if (last && last.m === m) {
+        if (m !== 'push') {
+          if (Math.hypot(p.x - last.x, p.y - last.y) < lim) { const tot = last.s + s; last.x = (last.x * last.s + p.x * s) / tot; last.y = (last.y * last.s + p.y * s) / tot; last.s = tot; continue; }
+        } else {
+          const l = Math.hypot(pdx, pdy);
+          if (run.len + l <= lim) { last.dx += pdx; last.dy += pdy; last.x = (last.x * run.n + p.x) / (run.n + 1); last.y = (last.y * run.n + p.y) / (run.n + 1); run.n++; run.len += l; continue; }
+        }
+      }
+      out.push({ x: p.x, y: p.y, m: m, dx: pdx, dy: pdy, s: s }); run = { n: 1, len: Math.hypot(pdx, pdy) };
+    }
+    return out;
+  }
   function liquifyStroke(ctx, stroke) {
     const st = stroke.settings || {}, lq = st.liquify || {};
-    const pts = stroke.points || [];
+    const size = lq.size || 80, base = lq.strength == null ? 0.8 : lq.strength;
+    const pts = liquifyMerge(stroke.points || [], size);
     for (let i = 0; i < pts.length; i++) {
       const p = pts[i];
-      liquifyStep(ctx, p.x, p.y, p.m || lq.mode || 'push', (lq.strength == null ? 0.8 : lq.strength) * (p.s || 1), lq.size || 80, p.dx || 0, p.dy || 0);
+      const m = p.m || lq.mode || 'push', sv = p.s || 1, hold = m === 'pinch' || m === 'bloat';
+      liquifyStep(ctx, p.x, p.y, m, hold ? base : base * sv, size, p.dx || 0, p.dy || 0, hold ? sv : 1);
     }
   }
   function smudgeStroke(ctx, stroke) {
