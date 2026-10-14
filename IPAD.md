@@ -791,3 +791,7 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 - New rail icon + floating panel "Contour & corners". Contour: make 1–12 copies of the selected outline, outside or inside, at a set gap (original kept; open paths work outside). Round corners: rounds sharp corners of a closed shape (optionally the dented ones too), radius slider, undoable.
 - Built from PolyBool unions (retry with looser epsilon on tangent edges).
 - Not yet reproduced: "sharp tip becomes round when resizing" (geometry scales exactly in tests).
+
+## v239 — Linked contour copies; resize no longer rebuilds a stale shape
+- Contour copies are linked to the original (like Rotate & Repeat): the Gap / Copies / Inside-Outside controls update them live while the panel is open, and editing, moving, rotating, resizing or deleting the original makes them follow. "Detach copies" makes them ordinary strokes. Selecting a copy selects its original.
+- Resize/rotate: a stroke that still carried an old parametric .shape (e.g. a hold-recognised ellipse later reshaped) was rebuilt from that shape on resize, turning a sharp leaf into an ellipse. The shape is now only used while it still matches the points.
