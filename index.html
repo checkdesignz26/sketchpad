@@ -10920,6 +10920,8 @@ async function applyDocObject(doc){
     // layerId onto the fallback layer (old, pre-layers documents) happens inside it.
     try{await txPreLoad(doc);}catch(e){}
     strokes=JSON.parse(doc.strokesJSON||'[]');
+    // older liquify strokes stored thousands of tiny steps; the replay merges them anyway, so keep the merged form (smaller saves, undo steps and timelapse)
+    try{strokes.forEach(q=>{if(q&&q.brushId==='smudge'&&q.settings&&q.settings.liquify&&Array.isArray(q.points)&&q.points.length>12)q.points=BrushEngine.liquifyCompact(q.points,q.settings.liquify.size);});}catch(e){}
     applyLayerMeta(doc.layersJSON?JSON.parse(doc.layersJSON):[],doc.activeLayerId);
     rebuildAllLayers();
     renderLayersList();
@@ -11898,7 +11900,7 @@ function warpUp(){
     if(d.raf){cancelAnimationFrame(d.raf);d.raf=0;}
     if(warpMode==='push'&&(d.ax||d.ay))warpPaintStep(d,d.last.x,d.last.y,d.ax,d.ay);
     if(!d.steps.length)return;
-    strokes.push({id:crypto.randomUUID(),brushId:'smudge',layerId:d.layer.id,color:'#000000',settings:{size:warpR*2,opacity:1,smoothing:0,pressureWidth:0,pressureOpacity:0,spacing:6,liquify:{mode:warpMode,strength:warpStr,size:warpR,wrap:d.wrap?1:0}},points:d.steps});
+    strokes.push({id:crypto.randomUUID(),brushId:'smudge',layerId:d.layer.id,color:'#000000',settings:{size:warpR*2,opacity:1,smoothing:0,pressureWidth:0,pressureOpacity:0,spacing:6,liquify:{mode:warpMode,strength:warpStr,size:warpR,wrap:d.wrap?1:0}},points:(function(){try{return BrushEngine.liquifyCompact(d.steps,warpR);}catch(e){return d.steps;}})()});
     // The steps were already applied live, so replaying them all again here only repeated the work (the lag and crash on pen-up).
         compositeDirty=true;
     redraw();pushHist();return;

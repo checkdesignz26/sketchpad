@@ -1194,6 +1194,15 @@
     }
     return out;
   }
+  // Stored form of a liquify stroke: the same merged steps the replay uses, with only the fields that matter (a long hold used to be thousands of steps, which every undo step, save and timelapse copied again)
+  function liquifyCompact(pts, size) {
+    const r1 = v => Math.round(v * 10) / 10, r2 = v => Math.round(v * 100) / 100;
+    return liquifyMerge(pts || [], size || 80).map(p => {
+      const o = { x: r1(p.x), y: r1(p.y), m: p.m, pressure: 0.5 };
+      if (p.m === 'push') { o.dx = r2(p.dx); o.dy = r2(p.dy); } else if (p.s && Math.abs(p.s - 1) > 0.001) o.s = r2(p.s);
+      return o;
+    });
+  }
   function liquifyStroke(ctx, stroke) {
     const st = stroke.settings || {}, lq = st.liquify || {};
     const size = lq.size || 80, base = lq.strength == null ? 0.8 : lq.strength;
@@ -1433,6 +1442,6 @@
     getSettings, setSettings,
     touchRecent, getRecents,
     isFavorite, toggleFavorite, getFavorites,
-    underlay: null, skipSmudge: BrushEngine_skipSmudge, wrap: BrushEngine_wrap, liveEnd, makeSmudger, makeCloner, liquifyStep, liquifyGL: _lq, pressureFactor, stampDab, colorWithAlpha, resample, renderStroke, smoothPoints, seededRandom,
+    underlay: null, skipSmudge: BrushEngine_skipSmudge, wrap: BrushEngine_wrap, liveEnd, makeSmudger, makeCloner, liquifyStep, liquifyCompact, liquifyGL: _lq, pressureFactor, stampDab, colorWithAlpha, resample, renderStroke, smoothPoints, seededRandom,
   };
 })(window);
