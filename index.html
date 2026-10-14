@@ -1475,6 +1475,9 @@ function renderDetail(){
     d.fillStyle='#fff';if(showTiling)d.fillRect(0,0,W,H);else d.fillRect(CX,CY,TW,TH);
     drawBackground();drawTraces();
     const offs=showTiling?offsets():[[0,0]];
+    // Liquify / smudge strokes move paint, so redrawing them sharply means replaying every swirl at screen size for every tile copy (seconds, growing with each one).
+    // A layer that has them shows its own hi-res picture instead, which is already kept up to date.
+    const pixLayers=new Set();strokes.forEach(s=>{if(s.brushId==='smudge')pixLayers.add(s.layerId);});
     offs.forEach(([ox,oy])=>{
       const vx0=vis.x0-ox,vy0=vis.y0-oy,vx1=vis.x1-ox,vy1=vis.y1-oy;
       if(vx1<0||vy1<0||vx0>W||vy0>H)return;
@@ -1483,6 +1486,11 @@ function renderDetail(){
         if(l.blur>0){ // a blurred layer is soft anyway: use its screen-resolution picture instead of redrawing strokes sharply
           const bp=blurredLayerPicture(l);
           d.save();d.setTransform(M[0],M[1],M[2],M[3],M[4]+M[0]*ox+M[2]*oy,M[5]+M[1]*ox+M[3]*oy);d.globalAlpha=l.opacity/100;d.globalCompositeOperation=l.blend||'source-over';d.drawImage(bp,0,0,W,H);d.restore();
+          return;
+        }
+        if(pixLayers.has(l.id)&&!l.asleep&&l.dcanvas){
+          if(ox||oy)return; // the picture already holds every tile copy
+          d.save();d.setTransform(M[0],M[1],M[2],M[3],M[4],M[5]);d.globalAlpha=l.opacity/100;d.globalCompositeOperation=l.blend||'source-over';d.drawImage(l.dcanvas,0,0,W,H);d.restore();
           return;
         }
         const hit=strokes.filter(s=>{if(s.layerId!==l.id||hiddenStrokeIds.has(s.id))return false;const b=strokeBoundsPad(s);return b&&b.x1>=vx0&&b.x0<=vx1&&b.y1>=vy0&&b.y0<=vy1;});
@@ -11836,7 +11844,7 @@ function warpPaintRun(d,x,y,dx,dy,mult){
 function warpPaintStep(d,x,y,dx,dy,mult){
   if(d.steps.length>=2400)return;
   const sm=mult&&Math.abs(mult-1)>0.02?Math.round(mult*100)/100:1; // a slow step covers the time of several, so the swirl keeps its speed
-  try{BrushEngine.liquifyStep(d.layer.ctx,x,y,warpMode,warpStr*sm,warpR,dx,dy,1,d.wrap);}catch(e){return;}
+  try{BrushEngine.liquifyStep(d.layer.ctx,x,y,warpMode,warpStr*sm,warpR,dx,dy,1,d.wrap);if(d.layer.dctx!==d.layer.ctx)BrushEngine.liquifyStep(d.layer.dctx,x,y,warpMode,warpStr*sm,warpR,dx,dy,1,d.wrap);}catch(e){return;} // the sharp zoomed-in copy gets the same step, so nothing has to be replayed from scratch on pen-up
   const st={x:Math.round(x*10)/10,y:Math.round(y*10)/10,m:warpMode,dx:Math.round(dx*100)/100,dy:Math.round(dy*100)/100,pressure:0.5};if(sm!==1)st.s=sm;d.steps.push(st);
   d.moved=true;compositeDirty=true;if(!d.raf)d.raf=requestAnimationFrame(()=>{d.raf=0;redraw();});
 }
@@ -11875,9 +11883,7 @@ function warpUp(){
     if(!d.steps.length)return;
     strokes.push({id:crypto.randomUUID(),brushId:'smudge',layerId:d.layer.id,color:'#000000',settings:{size:warpR*2,opacity:1,smoothing:0,pressureWidth:0,pressureOpacity:0,spacing:6,liquify:{mode:warpMode,strength:warpStr,size:warpR,wrap:d.wrap?1:0}},points:d.steps});
     // The steps were already applied live, so replaying them all again here only repeated the work (the lag and crash on pen-up).
-    // A layer with a separate hi-res copy still needs the rebuild to bring that copy up to date.
-    if(d.layer.dctx!==d.layer.ctx){try{rebuildLayer(d.layer.id);}catch(err){console.error(err);}}
-    else{compositeDirty=true;}
+        compositeDirty=true;
     redraw();pushHist();return;
   }
   if(warpRaf){cancelAnimationFrame(warpRaf);warpRaf=0;}
