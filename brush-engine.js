@@ -1091,6 +1091,16 @@
     const W4 = w * 4, R2 = R * R;
     const ang = (mode === 'twirlR' ? 1 : mode === 'twirlL' ? -1 : 0) * 0.075 * strength;
     const pf = mode === 'pinch' ? 1 : mode === 'bloat' ? -1 : 0;
+    // Repeated pinch / bloat (a long hold, merged on replay) turns the same radial mapping into a loop per pixel; it only depends on the distance from the centre, so work it out once per step
+    let tbl = null; const TN = 192;
+    if (pf && reps > 1) {
+      tbl = new Float32Array(TN + 1);
+      for (let i = 0; i <= TN; i++) {
+        const r = Math.max(R * 0.002, i / TN * R); let q = r, rem = Math.min(reps, 400);
+        while (rem > 0) { const part = rem >= 1 ? 1 : rem; rem -= part; const dd = q * q; if (dd >= R2) break; const uu = 1 - dd / R2; q *= 1 + pf * uu * uu * strength * part * 0.042; }
+        tbl[i] = q / r;
+      }
+    }
     const isPush = mode === 'push', pdx = dx * sc, pdy = dy * sc, bigAng = Math.abs(ang) > 0.3; // merged steps can twirl a long way, so they use real cos/sin
     for (let py = 0; py < h; py++) {
       const gy = y0 + py + 0.5 - cy, gy2 = gy * gy;
@@ -1103,6 +1113,7 @@
         const u = 1 - d2 / R2, u2 = u * u, k = u2 * strength;
         let sx, sy; // where this pixel's new colour comes from
         if (isPush) { sx = gx - pdx * k; sy = gy - pdy * k; }
+        else if (tbl) { const f = Math.sqrt(d2) / R * TN, i0 = f | 0, i1 = i0 < TN ? i0 + 1 : TN, k2 = tbl[i0] + (tbl[i1] - tbl[i0]) * (f - i0); sx = gx * k2; sy = gy * k2; }
         else if (pf) {
           let qx = gx, qy = gy, rem = reps > 1 ? Math.min(reps, 400) : 1; // reps > 1 = several merged steps: repeat the same pinch / bloat mapping that many times
           while (rem > 0) { const part = rem >= 1 ? 1 : rem; rem -= part; const dd = qx * qx + qy * qy; if (dd >= R2) break; const uu = 1 - dd / R2; qx *= 1 + pf * uu * uu * strength * part * 0.042; qy *= 1 + pf * uu * uu * strength * part * 0.042; }
@@ -1162,7 +1173,7 @@
   // are merged here: for a hold the result is the same (rotation and scaling about one centre simply add up), for a push it is
   // within a hair of the original.
   function liquifyMerge(pts, size) {
-    const out = [], lim = Math.max(2, size * 0.06), plim = Math.max(3, size * 0.1);
+    const out = [], lim = Math.max(2, size * 0.06), plim = Math.max(4, size * 0.22);
     let run = null;
     for (let i = 0; i < pts.length; i++) {
       const p = pts[i], m = p.m || 'push', s = p.s || 1, pdx = p.dx || 0, pdy = p.dy || 0, last = out[out.length - 1];
