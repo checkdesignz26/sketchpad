@@ -945,8 +945,50 @@
       },
     };
   }
+  // Clone: copies the picture found at an offset (dx, dy canvas px away) onto the spot you paint, through a soft round tip.
+  // It samples a snapshot taken when the stroke starts, so what it just painted is never copied again (no smearing feedback).
+  let _clSnap = null, _clPiece = null, _clMask = null;
+  function makeCloner(ctx, radius, opacity, hardness, dx, dy) {
+    const m = ctx.getTransform ? ctx.getTransform() : { a: 1, d: 1, e: 0, f: 0 };
+    const sc = Math.max(0.05, Math.abs(m.a));
+    let R = Math.max(1, radius * sc); const MAXR = 400; if (R > MAXR) R = MAXR;
+    const D = Math.max(4, Math.ceil(R * 2) + 2);
+    const W = ctx.canvas.width, H = ctx.canvas.height;
+    if (!_clSnap) _clSnap = document.createElement('canvas');
+    if (!_clPiece) _clPiece = document.createElement('canvas');
+    if (!_clMask) _clMask = document.createElement('canvas');
+    _clSnap.width = W; _clSnap.height = H;
+    _clSnap.getContext('2d').drawImage(ctx.canvas, 0, 0);
+    _clPiece.width = D; _clPiece.height = D; _clMask.width = D; _clMask.height = D;
+    const pg = _clPiece.getContext('2d'), mg = _clMask.getContext('2d');
+    const h = Math.max(0.02, Math.min(1, hardness == null ? 0.5 : hardness));
+    const grad = mg.createRadialGradient(D / 2, D / 2, R * Math.min(0.98, h), D / 2, D / 2, R);
+    grad.addColorStop(0, 'rgba(0,0,0,1)'); grad.addColorStop(1, 'rgba(0,0,0,0)');
+    mg.fillStyle = grad; mg.fillRect(0, 0, D, D);
+    const odx = dx * sc, ody = dy * sc, alpha = Math.max(0.05, Math.min(1, opacity));
+    return {
+      done() { _clSnap.width = _clSnap.height = 1; _clPiece.width = _clPiece.height = 1; _clMask.width = _clMask.height = 1; },
+      step: Math.max(1.2 / sc, radius * 0.16),
+      to(x, y) {
+        const cx = m.a * x + m.e, cy = m.d * y + m.f, sx = Math.round(cx - D / 2), sy = Math.round(cy - D / 2);
+        pg.setTransform(1, 0, 0, 1, 0, 0); pg.globalCompositeOperation = 'source-over'; pg.globalAlpha = 1; pg.clearRect(0, 0, D, D);
+        try { pg.drawImage(_clSnap, Math.round(sx + odx), Math.round(sy + ody), D, D, 0, 0, D, D); } catch (e) { return; }
+        pg.globalCompositeOperation = 'destination-in'; pg.drawImage(_clMask, 0, 0);
+        ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = alpha * 0.55;
+        ctx.drawImage(_clPiece, sx, sy); ctx.restore();
+      },
+    };
+  }
+  function cloneStroke(ctx, stroke) {
+    const st = stroke.settings || {}, c = st.clone || {};
+    const cl = makeCloner(ctx, Math.max(1, (st.size || 40) / 2), st.opacity == null ? 0.8 : st.opacity, st.hardness, c.dx || 0, c.dy || 0);
+    let pts = resample(stroke.points, cl.step * 1.5);
+    if (pts.length > 600) { const k = pts.length / 600; pts = Array.from({ length: 600 }, (_, i) => pts[Math.min(pts.length - 1, Math.floor(i * k))]); }
+    try { for (let i = 0; i < pts.length; i++) cl.to(pts[i].x, pts[i].y); } finally { cl.done(); }
+  }
   function smudgeStroke(ctx, stroke) {
     const st = stroke.settings || {};
+    if (st.clone) return cloneStroke(ctx, stroke);
     const sb = st.sb ? byId.get(st.sb) : null;
     const sm = makeSmudger(ctx, Math.max(1, (st.size || 30) / 2), (st.opacity == null ? 70 : st.opacity) / 100, sb && sb.id !== 'eraser' ? sb : null);
     let pts = resample(stroke.points, sm.step * 1.5);
@@ -1171,6 +1213,6 @@
     getSettings, setSettings,
     touchRecent, getRecents,
     isFavorite, toggleFavorite, getFavorites,
-    underlay: null, skipSmudge: BrushEngine_skipSmudge, liveEnd, makeSmudger, pressureFactor, stampDab, colorWithAlpha, resample, renderStroke, smoothPoints, seededRandom,
+    underlay: null, skipSmudge: BrushEngine_skipSmudge, liveEnd, makeSmudger, makeCloner, pressureFactor, stampDab, colorWithAlpha, resample, renderStroke, smoothPoints, seededRandom,
   };
 })(window);
