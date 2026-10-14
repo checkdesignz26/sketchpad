@@ -760,3 +760,7 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v230 — opens in Edit
 - Opening a project that already has strokes (restart, Continue, Open) now starts in Edit, so tapping a stroke selects it instead of drawing. Tap Draw to draw. "Stay in Draw" (More menu) keeps the old start in Draw. Empty/new projects still start in Draw.
+
+## v231 — Edit Path: tap to add, easier end drags
+- In Edit Path (Select tool) tapping the path itself, away from any node, now adds a node there (Add Node still works the same). Tapping a different stroke still switches to it.
+- Snapping no longer grabs a node the moment you touch it: it only starts after you have dragged ~14 px, and its pull range is smaller (11 px), so path ends next to another path or their own other end can be dragged freely.
