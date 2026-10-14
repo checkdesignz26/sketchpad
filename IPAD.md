@@ -764,3 +764,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 ## v231 — Edit Path: tap to add, easier end drags
 - In Edit Path (Select tool) tapping the path itself, away from any node, now adds a node there (Add Node still works the same). Tapping a different stroke still switches to it.
 - Snapping no longer grabs a node the moment you touch it: it only starts after you have dragged ~14 px, and its pull range is smaller (11 px), so path ends next to another path or their own other end can be dragged freely.
+
+## v232 — snapping back, without sticking
+- Snap highlights work again as soon as you drag a node (pull range 15 px). A node that STARTS right next to another path/node stays free until you drag ~26 px away from it, then snapping turns on — so ends can still be picked up and moved.
