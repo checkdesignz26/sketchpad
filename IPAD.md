@@ -757,3 +757,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v229 — size dropdown tick matches the real size
 - From a screen recording: the size dropdown (▾ next to the size box) kept its tick on the last size picked (6) even when the box said 8. It now always ticks the real size (panel and top bar), and re-syncs when you switch strokes.
+
+## v230 — opens in Edit
+- Opening a project that already has strokes (restart, Continue, Open) now starts in Edit, so tapping a stroke selects it instead of drawing. Tap Draw to draw. "Stay in Draw" (More menu) keeps the old start in Draw. Empty/new projects still start in Draw.
