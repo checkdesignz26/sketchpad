@@ -10781,10 +10781,19 @@ async function bootOpen(meta){
     // Crash guard: if the last attempt to open this project never finished, open it without replaying
     // smudge strokes (they are kept in the file) and offer a button to bring them back.
     let crashed=false;try{crashed=localStorage.getItem('sp-booting')===meta.id;localStorage.setItem('sp-booting',meta.id);}catch(e){}
-    const hasSmudge=!!(doc&&Array.isArray(doc.strokes)&&doc.strokes.some(s=>s&&s.brushId==='smudge'));
+    const hasSmudge=!!(doc&&((Array.isArray(doc.strokes)&&doc.strokes.some(s=>s&&s.brushId==='smudge'))||(typeof doc.strokesJSON==='string'&&/"brushId"\s*:\s*"smudge"/.test(doc.strokesJSON)))); // projects keep their strokes as strokesJSON text
     if(crashed&&hasSmudge)BrushEngine.skipSmudge.on=true;
-    const ok=doc?await loadProject(meta,doc,{quiet:true,boot:true}):false;
+    // Time limit for opening: if replaying smudge / liquify strokes takes longer than this, the rest are paused so the project still opens.
+    BrushEngine.skipSmudge.hit=false;BrushEngine.skipSmudge.until=hasSmudge&&!BrushEngine.skipSmudge.on?performance.now()+6000:0;
+    let ok=false;try{ok=doc?await loadProject(meta,doc,{quiet:true,boot:true}):false;}finally{BrushEngine.skipSmudge.until=0;}
+    const paused=BrushEngine.skipSmudge.hit;BrushEngine.skipSmudge.hit=false;
     setTimeout(()=>{try{if(localStorage.getItem('sp-booting')===meta.id)localStorage.removeItem('sp-booting');}catch(e){}},4000);
+    if(ok&&paused){
+      const b=document.createElement('button');b.textContent='🌀 Some smudge / liquify strokes were paused so the project could open. Tap to bring them back (may take a while)';
+      b.style.cssText='position:fixed;left:50%;bottom:60px;transform:translateX(-50%);z-index:99999;padding:12px 18px;border-radius:14px;border:2px solid #8f6bd8;background:#fff;font:600 15px system-ui;box-shadow:0 4px 16px rgba(0,0,0,.25);max-width:92vw';
+      b.onclick=()=>{b.textContent='Working…';setTimeout(()=>{try{rebuildAllLayers();redraw();}catch(e){}b.remove();},50);};
+      document.body.appendChild(b);
+    }
     if(ok&&BrushEngine.skipSmudge.on){
       const b=document.createElement('button');b.textContent='👆 Smudges are switched off (the last open crashed). Tap to bring them back';
       b.style.cssText='position:fixed;left:50%;bottom:60px;transform:translateX(-50%);z-index:99999;padding:12px 18px;border-radius:14px;border:2px solid #e8789a;background:#fff;font:600 15px system-ui;box-shadow:0 4px 16px rgba(0,0,0,.25)';
