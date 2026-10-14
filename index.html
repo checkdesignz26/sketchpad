@@ -11783,19 +11783,20 @@ function warpDown(e){
   if(warpPaint){
     if(!layer||layer.locked||layer.asleep){warpDrag=null;return;}
     const d=warpDrag;
-    if(warpMode!=='push'){const tick=()=>{if(warpDrag!==d)return;if(performance.now()-d.lastT>=Math.max(30,d.gap))warpPaintRun(d,d.last.x,d.last.y,0,0);d.hold=requestAnimationFrame(tick);};d.hold=requestAnimationFrame(tick);}
+    if(warpMode!=='push'){const tick=()=>{if(warpDrag!==d)return;const now=performance.now();if(now-d.lastT>=Math.max(40,d.gap)){const mult=d.lastT?Math.max(0.5,Math.min(3,(now-d.lastT)/50)):1;warpPaintRun(d,d.last.x,d.last.y,0,0,mult);}d.hold=requestAnimationFrame(tick);};d.hold=requestAnimationFrame(tick);}
     return;
   }
   if(warpMode!=='push'){const d=warpDrag;const tick=()=>{if(warpDrag!==d)return;warpApply(d.last.x,d.last.y,0,0);d.hold=requestAnimationFrame(tick);};d.hold=requestAnimationFrame(tick);}
 }
-function warpPaintRun(d,x,y,dx,dy){
-  const t0=performance.now();warpPaintStep(d,x,y,dx,dy);d.ax=0;d.ay=0;
-  const t1=performance.now();d.lastT=t1;d.gap=Math.min(120,(t1-t0)*1.2); // slow device or big brush: leave breathing room so the app stays responsive
+function warpPaintRun(d,x,y,dx,dy,mult){
+  const t0=performance.now();warpPaintStep(d,x,y,dx,dy,mult);d.ax=0;d.ay=0;
+  const t1=performance.now();d.lastT=t1;d.gap=Math.min(150,(t1-t0)*1.5); // slow device or big brush: leave breathing room so the app stays responsive
 }
-function warpPaintStep(d,x,y,dx,dy){
+function warpPaintStep(d,x,y,dx,dy,mult){
   if(d.steps.length>=900)return;
-  try{BrushEngine.liquifyStep(d.layer.ctx,x,y,warpMode,warpStr,warpR,dx,dy);}catch(e){return;}
-  d.steps.push({x:Math.round(x*10)/10,y:Math.round(y*10)/10,m:warpMode,dx:Math.round(dx*100)/100,dy:Math.round(dy*100)/100,pressure:0.5});
+  const sm=mult&&Math.abs(mult-1)>0.02?Math.round(mult*100)/100:1; // a slow step covers the time of several, so the swirl keeps its speed
+  try{BrushEngine.liquifyStep(d.layer.ctx,x,y,warpMode,warpStr*sm,warpR,dx,dy);}catch(e){return;}
+  const st={x:Math.round(x*10)/10,y:Math.round(y*10)/10,m:warpMode,dx:Math.round(dx*100)/100,dy:Math.round(dy*100)/100,pressure:0.5};if(sm!==1)st.s=sm;d.steps.push(st);
   d.moved=true;compositeDirty=true;if(!d.raf)d.raf=requestAnimationFrame(()=>{d.raf=0;redraw();});
 }
 function warpApply(x,y,dx,dy){

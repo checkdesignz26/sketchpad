@@ -1044,7 +1044,7 @@
     const pts = stroke.points || [];
     for (let i = 0; i < pts.length; i++) {
       const p = pts[i];
-      liquifyStep(ctx, p.x, p.y, p.m || lq.mode || 'push', lq.strength == null ? 0.8 : lq.strength, lq.size || 80, p.dx || 0, p.dy || 0);
+      liquifyStep(ctx, p.x, p.y, p.m || lq.mode || 'push', (lq.strength == null ? 0.8 : lq.strength) * (p.s || 1), lq.size || 80, p.dx || 0, p.dy || 0);
     }
   }
   function smudgeStroke(ctx, stroke) {
