@@ -1153,15 +1153,8 @@
       const sx = Math.max(0, Math.floor(m.a * ax + m.e)), sy = Math.max(0, Math.floor(m.d * ay + m.f));
       const ex = Math.min(cv.width, Math.ceil(m.a * bx + m.e)), ey = Math.min(cv.height, Math.ceil(m.d * by + m.f));
       const sw = ex - sx, sh = ey - sy; if (sw < 1 || sh < 1) continue;
-      ctx.save();
-      try {
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        for (let k = 0; k < wrap.offs.length; k++) {
-          const ox = Math.round(wrap.offs[k][0] * m.a), oy = Math.round(wrap.offs[k][1] * m.d);
-          ctx.clearRect(sx + ox, sy + oy, sw, sh);
-          ctx.drawImage(cv, sx, sy, sw, sh, sx + ox, sy + oy, sw, sh);
-        }
-      } finally { ctx.restore(); }
+      let id; try { id = ctx.getImageData(sx, sy, sw, sh); } catch (e) { continue; } // one read, then plain pixel writes (drawing the canvas onto itself was ~20x slower)
+      for (let k = 0; k < wrap.offs.length; k++) ctx.putImageData(id, sx + Math.round(wrap.offs[k][0] * m.a), sy + Math.round(wrap.offs[k][1] * m.d));
     }
   }
   // A long hold (twirl / pinch / bloat) is stored as hundreds of tiny steps at almost the same spot, and a long push drag as hundreds
