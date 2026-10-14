@@ -786,3 +786,8 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 ## v237 — Easy fill + project palettes
 - **Easy fill** block in the Stroke panel, Edit Path panel and Selection panel: Fill On/Off, fill colour, "Same colour as stroke", and a "Palette colour goes to Stroke / Fill / Both" switch. The fill is a linked shape under the outline and follows it when edited, moved, rotated or duplicated.
 - **Project palette** (Colour panel): pick the adaptive palette or your own; saved with the project. ＋New, ＋Colour, ✎Edit, Rename, 🗑, and a 📚 Library (kept on the device) to copy palettes between projects.
+
+## v238 — Contour & round corners
+- New rail icon + floating panel "Contour & corners". Contour: make 1–12 copies of the selected outline, outside or inside, at a set gap (original kept; open paths work outside). Round corners: rounds sharp corners of a closed shape (optionally the dented ones too), radius slider, undoable.
+- Built from PolyBool unions (retry with looser epsilon on tangent edges).
+- Not yet reproduced: "sharp tip becomes round when resizing" (geometry scales exactly in tests).
