@@ -782,3 +782,7 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 ## v236 — linked repeat copies
 - Rotate & Repeat → Make copies now creates LINKED copies. Edit the original (reshape in Edit Path, size, colour, brush, rotate, move) and every copy follows around the same centre. Select a copy and it tells you to edit the original.
 - Pressing Make copies again REPLACES the earlier copies instead of stacking new ones on top; a copy that would land exactly on the original (a full 360°) is skipped.
+
+## v237 — Easy fill + project palettes
+- **Easy fill** block in the Stroke panel, Edit Path panel and Selection panel: Fill On/Off, fill colour, "Same colour as stroke", and a "Palette colour goes to Stroke / Fill / Both" switch. The fill is a linked shape under the outline and follows it when edited, moved, rotated or duplicated.
+- **Project palette** (Colour panel): pick the adaptive palette or your own; saved with the project. ＋New, ＋Colour, ✎Edit, Rename, 🗑, and a 📚 Library (kept on the device) to copy palettes between projects.
