@@ -419,6 +419,8 @@
     let closed = !!stroke.closed && (stroke.shape || stroke.nodes || stroke.cornerAuto) && pts.length > 3;
     if (closed && Math.hypot(pts[0].x - pts[pts.length - 1].x, pts[0].y - pts[pts.length - 1].y) < 0.5) pts.pop();
     else closed = false;
+    // Corner shapes (rectangle, triangle, diamond, polygon, star) get true pointed corners, not round ones.
+    if (stroke.shape && SHARP_SHAPES[stroke.shape.type] && stroke.shape.type !== 'line') { ctx.lineJoin = 'miter'; ctx.miterLimit = 12; }
     if (pts.length < 2) {
       ctx.beginPath(); ctx.arc(pts[0].x, pts[0].y, settings.size / 2, 0, Math.PI * 2); ctx.fill();
     } else {
