@@ -795,3 +795,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 ## v239 — Linked contour copies; resize no longer rebuilds a stale shape
 - Contour copies are linked to the original (like Rotate & Repeat): the Gap / Copies / Inside-Outside controls update them live while the panel is open, and editing, moving, rotating, resizing or deleting the original makes them follow. "Detach copies" makes them ordinary strokes. Selecting a copy selects its original.
 - Resize/rotate: a stroke that still carried an old parametric .shape (e.g. a hold-recognised ellipse later reshaped) was rebuilt from that shape on resize, turning a sharp leaf into an ellipse. The shape is now only used while it still matches the points.
+
+## v240 — Contour thickness option
+- Contour panel: "Thickness" slider = size change per copy (default 0 = same as the original and follows it when the original's size changes; + thicker outer rings, − finer inner ones). Copies also follow the original's colour and brush.
