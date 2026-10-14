@@ -834,3 +834,7 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 ## v250 — Clone tool
 - New **Clone** tool (rail icon): tap the artwork you want to copy from (on the active layer), then paint where the copy should go. The first stroke fixes the offset; later strokes keep it (aligned). "Move source" picks a new spot. Size, Opacity, Softness sliders.
 - Samples a snapshot taken at stroke start, so it never re-copies what it just painted. Stored as a replayed raster step (like Smudge): undo, save, hi-res export all replay it. Copies only the active layer's pixels; the eraser can't rub it out (Undo).
+
+## v251 — Liquify Paint (marbling) + fill on open lines
+- Liquify has a **Paint / Lines** switch (Paint is the default). **Paint** moves the actual pixels of the active layer, so neighbouring colours smear and swirl into each other like marbling (Push, Pinch, Bloat, Twirl). Stored as a replayed raster step like Smudge: undo, save and hi-res export match. **Lines** is the old vector behaviour (sharp, editable).
+- Fill now works on open lines too (filled as if the ends were joined); the "only closed shapes" block is gone.

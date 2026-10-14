@@ -986,9 +986,56 @@
     if (pts.length > 600) { const k = pts.length / 600; pts = Array.from({ length: 600 }, (_, i) => pts[Math.min(pts.length - 1, Math.floor(i * k))]); }
     try { for (let i = 0; i < pts.length; i++) cl.to(pts[i].x, pts[i].y); } finally { cl.done(); }
   }
+  // Liquify on real paint: moves the pixels around the brush (push / pinch / bloat / twirl), so neighbouring colours smear and
+  // swirl into each other like marbling. One call = one small step; holding the pen makes many steps. Steps are stored on the
+  // stroke and replayed in order, so undo, saving and hi-res export see exactly the same result.
+  function liquifyStep(ctx, x, y, mode, strength, radius, dx, dy) {
+    const m = ctx.getTransform ? ctx.getTransform() : { a: 1, d: 1, e: 0, f: 0 };
+    const sc = Math.max(0.05, Math.abs(m.a));
+    const R = Math.max(2, radius * sc), cx = m.a * x + m.e, cy = m.d * y + m.f;
+    const x0 = Math.max(0, Math.floor(cx - R) - 1), y0 = Math.max(0, Math.floor(cy - R) - 1);
+    const x1 = Math.min(ctx.canvas.width, Math.ceil(cx + R) + 1), y1 = Math.min(ctx.canvas.height, Math.ceil(cy + R) + 1);
+    const w = x1 - x0, h = y1 - y0; if (w < 2 || h < 2) return;
+    let id; try { id = ctx.getImageData(x0, y0, w, h); } catch (e) { return; }
+    const src = id.data, out = new Uint8ClampedArray(src), W4 = w * 4;
+    const ang = (mode === 'twirlR' ? 1 : mode === 'twirlL' ? -1 : 0) * 0.075 * strength, co = Math.cos(-ang), si = Math.sin(-ang);
+    const pf = mode === 'pinch' ? 1 : mode === 'bloat' ? -1 : 0;
+    const pdx = dx * sc, pdy = dy * sc;
+    for (let py = 0; py < h; py++) {
+      for (let px = 0; px < w; px++) {
+        const gx = x0 + px + 0.5 - cx, gy = y0 + py + 0.5 - cy, d = Math.hypot(gx, gy);
+        if (d >= R) continue;
+        const t = d / R, k = (1 - t * t) * (1 - t * t) * strength;
+        let sx, sy; // where this pixel's new colour comes from
+        if (mode === 'push') { sx = gx - pdx * k; sy = gy - pdy * k; }
+        else if (pf) { const f = 1 + pf * k * 0.042; sx = gx * f; sy = gy * f; }
+        else { const a2 = ang * (1 - t * t) * (1 - t * t); const c2 = Math.cos(-a2), s2 = Math.sin(-a2); sx = gx * c2 - gy * s2; sy = gx * s2 + gy * c2; }
+        // bilinear sample with premultiplied alpha (so transparent pixels do not darken the colours)
+        const fx = sx + cx - x0 - 0.5, fy = sy + cy - y0 - 0.5, ix = Math.floor(fx), iy = Math.floor(fy), ux = fx - ix, uy = fy - iy;
+        let r = 0, g = 0, b = 0, a = 0;
+        for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) {
+          const qx = ix + i, qy = iy + j; if (qx < 0 || qy < 0 || qx >= w || qy >= h) continue;
+          const wt = (i ? ux : 1 - ux) * (j ? uy : 1 - uy), o = qy * W4 + qx * 4, al = src[o + 3] / 255 * wt;
+          r += src[o] * al; g += src[o + 1] * al; b += src[o + 2] * al; a += al;
+        }
+        const o = py * W4 + px * 4;
+        if (a > 0.002) { out[o] = r / a; out[o + 1] = g / a; out[o + 2] = b / a; out[o + 3] = a * 255; } else { out[o] = out[o + 1] = out[o + 2] = out[o + 3] = 0; }
+      }
+    }
+    id.data.set(out); ctx.putImageData(id, x0, y0);
+  }
+  function liquifyStroke(ctx, stroke) {
+    const st = stroke.settings || {}, lq = st.liquify || {};
+    const pts = stroke.points || [];
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i];
+      liquifyStep(ctx, p.x, p.y, p.m || lq.mode || 'push', lq.strength == null ? 0.8 : lq.strength, lq.size || 80, p.dx || 0, p.dy || 0);
+    }
+  }
   function smudgeStroke(ctx, stroke) {
     const st = stroke.settings || {};
     if (st.clone) return cloneStroke(ctx, stroke);
+    if (st.liquify) return liquifyStroke(ctx, stroke);
     const sb = st.sb ? byId.get(st.sb) : null;
     const sm = makeSmudger(ctx, Math.max(1, (st.size || 30) / 2), (st.opacity == null ? 70 : st.opacity) / 100, sb && sb.id !== 'eraser' ? sb : null);
     let pts = resample(stroke.points, sm.step * 1.5);
@@ -1213,6 +1260,6 @@
     getSettings, setSettings,
     touchRecent, getRecents,
     isFavorite, toggleFavorite, getFavorites,
-    underlay: null, skipSmudge: BrushEngine_skipSmudge, liveEnd, makeSmudger, makeCloner, pressureFactor, stampDab, colorWithAlpha, resample, renderStroke, smoothPoints, seededRandom,
+    underlay: null, skipSmudge: BrushEngine_skipSmudge, liveEnd, makeSmudger, makeCloner, liquifyStep, pressureFactor, stampDab, colorWithAlpha, resample, renderStroke, smoothPoints, seededRandom,
   };
 })(window);
