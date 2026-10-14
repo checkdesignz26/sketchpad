@@ -1062,6 +1062,9 @@
       return true;
     } catch (e) { _lq.bad = true; _lq.gl = null; return false; }
   }
+  // The app keeps one nearly invisible pixel in the top-left corner of every layer to notice when the iPad wipes a canvas (and then redraws the whole layer).
+  // Liquify writes pixels there too, so it has to put the marker back or the app thinks the layer was wiped and replays everything.
+  function lqSentinel(ctx) { try { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; ctx.fillStyle = 'rgba(255,255,255,0.004)'; ctx.fillRect(0, 0, 1, 1); ctx.restore(); } catch (e) { } }
   let _lqOut = null; // scratch buffer reused between steps (a fresh multi-MB array per step was what made big brushes lag and crash)
   function liquifyCore(ctx, x, y, mode, strength, radius, dx, dy, reps) {
     const m = ctx.getTransform ? ctx.getTransform() : { a: 1, d: 1, e: 0, f: 0 };
@@ -1141,6 +1144,7 @@
       }
     }
     id.data.set(n === out.length ? out : out.subarray(0, n)); ctx.putImageData(id, x0, y0);
+    if (x0 === 0 && y0 === 0) lqSentinel(ctx);
     if (timed) { try { ctx.getImageData(x0, y0, 1, 1); } catch (e) { } lqRecord('cpu', performance.now() - tStart, area); }
   }
   // Seamless tiling: the layer canvas holds copies of one tile, so a liquify at one spot must also happen at every lattice copy of that
@@ -1167,6 +1171,7 @@
       let id; try { id = ctx.getImageData(sx, sy, sw, sh); } catch (e) { continue; } // one read, then plain pixel writes (drawing the canvas onto itself was ~20x slower)
       for (let k = 0; k < wrap.offs.length; k++) ctx.putImageData(id, sx + Math.round(wrap.offs[k][0] * m.a), sy + Math.round(wrap.offs[k][1] * m.d));
     }
+    lqSentinel(ctx);
   }
   // A long hold (twirl / pinch / bloat) is stored as hundreds of tiny steps at almost the same spot, and a long push drag as hundreds
   // of tiny moves. Replaying all of them on every project open / layer rebuild is what made big projects unusable. Neighbouring steps
