@@ -989,6 +989,7 @@
   // Liquify on real paint: moves the pixels around the brush (push / pinch / bloat / twirl), so neighbouring colours smear and
   // swirl into each other like marbling. One call = one small step; holding the pen makes many steps. Steps are stored on the
   // stroke and replayed in order, so undo, saving and hi-res export see exactly the same result.
+  let _lqOut = null; // scratch buffer reused between steps (a fresh multi-MB array per step was what made big brushes lag and crash)
   function liquifyStep(ctx, x, y, mode, strength, radius, dx, dy) {
     const m = ctx.getTransform ? ctx.getTransform() : { a: 1, d: 1, e: 0, f: 0 };
     const sc = Math.max(0.05, Math.abs(m.a));
@@ -997,32 +998,46 @@
     const x1 = Math.min(ctx.canvas.width, Math.ceil(cx + R) + 1), y1 = Math.min(ctx.canvas.height, Math.ceil(cy + R) + 1);
     const w = x1 - x0, h = y1 - y0; if (w < 2 || h < 2) return;
     let id; try { id = ctx.getImageData(x0, y0, w, h); } catch (e) { return; }
-    const src = id.data, out = new Uint8ClampedArray(src), W4 = w * 4;
-    const ang = (mode === 'twirlR' ? 1 : mode === 'twirlL' ? -1 : 0) * 0.075 * strength, co = Math.cos(-ang), si = Math.sin(-ang);
+    const src = id.data, n = src.length;
+    if (!_lqOut || _lqOut.length < n) _lqOut = new Uint8ClampedArray(n);
+    const out = _lqOut; out.set(src);
+    const W4 = w * 4, R2 = R * R;
+    const ang = (mode === 'twirlR' ? 1 : mode === 'twirlL' ? -1 : 0) * 0.075 * strength;
     const pf = mode === 'pinch' ? 1 : mode === 'bloat' ? -1 : 0;
-    const pdx = dx * sc, pdy = dy * sc;
+    const isPush = mode === 'push', pdx = dx * sc, pdy = dy * sc;
     for (let py = 0; py < h; py++) {
-      for (let px = 0; px < w; px++) {
-        const gx = x0 + px + 0.5 - cx, gy = y0 + py + 0.5 - cy, d = Math.hypot(gx, gy);
-        if (d >= R) continue;
-        const t = d / R, k = (1 - t * t) * (1 - t * t) * strength;
+      const gy = y0 + py + 0.5 - cy, gy2 = gy * gy;
+      if (gy2 >= R2) continue;
+      const half = Math.sqrt(R2 - gy2); // only visit the pixels inside the circle on this row
+      const pxs = Math.max(0, Math.ceil(cx - half - x0 - 0.5)), pxe = Math.min(w - 1, Math.floor(cx + half - x0 - 0.5));
+      for (let px = pxs; px <= pxe; px++) {
+        const gx = x0 + px + 0.5 - cx, d2 = gx * gx + gy2;
+        if (d2 >= R2) continue;
+        const u = 1 - d2 / R2, u2 = u * u, k = u2 * strength;
         let sx, sy; // where this pixel's new colour comes from
-        if (mode === 'push') { sx = gx - pdx * k; sy = gy - pdy * k; }
+        if (isPush) { sx = gx - pdx * k; sy = gy - pdy * k; }
         else if (pf) { const f = 1 + pf * k * 0.042; sx = gx * f; sy = gy * f; }
-        else { const a2 = ang * (1 - t * t) * (1 - t * t); const c2 = Math.cos(-a2), s2 = Math.sin(-a2); sx = gx * c2 - gy * s2; sy = gx * s2 + gy * c2; }
+        else { const a2 = ang * u2, c2 = 1 - a2 * a2 * 0.5, s2 = -(a2 - a2 * a2 * a2 / 6); sx = gx * c2 - gy * s2; sy = gx * s2 + gy * c2; } // angle is at most 0.075 rad, so this is exact enough and skips cos/sin per pixel
         // bilinear sample with premultiplied alpha (so transparent pixels do not darken the colours)
         const fx = sx + cx - x0 - 0.5, fy = sy + cy - y0 - 0.5, ix = Math.floor(fx), iy = Math.floor(fy), ux = fx - ix, uy = fy - iy;
         let r = 0, g = 0, b = 0, a = 0;
-        for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) {
-          const qx = ix + i, qy = iy + j; if (qx < 0 || qy < 0 || qx >= w || qy >= h) continue;
-          const wt = (i ? ux : 1 - ux) * (j ? uy : 1 - uy), o = qy * W4 + qx * 4, al = src[o + 3] / 255 * wt;
-          r += src[o] * al; g += src[o + 1] * al; b += src[o + 2] * al; a += al;
+        const ix1 = ix + 1, iy1 = iy + 1;
+        const okx0 = ix >= 0 && ix < w, okx1 = ix1 >= 0 && ix1 < w, oky0 = iy >= 0 && iy < h, oky1 = iy1 >= 0 && iy1 < h;
+        if (oky0) {
+          const row = iy * W4;
+          if (okx0) { const o = row + ix * 4, al = src[o + 3] / 255 * (1 - ux) * (1 - uy); r += src[o] * al; g += src[o + 1] * al; b += src[o + 2] * al; a += al; }
+          if (okx1) { const o = row + ix1 * 4, al = src[o + 3] / 255 * ux * (1 - uy); r += src[o] * al; g += src[o + 1] * al; b += src[o + 2] * al; a += al; }
+        }
+        if (oky1) {
+          const row = iy1 * W4;
+          if (okx0) { const o = row + ix * 4, al = src[o + 3] / 255 * (1 - ux) * uy; r += src[o] * al; g += src[o + 1] * al; b += src[o + 2] * al; a += al; }
+          if (okx1) { const o = row + ix1 * 4, al = src[o + 3] / 255 * ux * uy; r += src[o] * al; g += src[o + 1] * al; b += src[o + 2] * al; a += al; }
         }
         const o = py * W4 + px * 4;
         if (a > 0.002) { out[o] = r / a; out[o + 1] = g / a; out[o + 2] = b / a; out[o + 3] = a * 255; } else { out[o] = out[o + 1] = out[o + 2] = out[o + 3] = 0; }
       }
     }
-    id.data.set(out); ctx.putImageData(id, x0, y0);
+    id.data.set(n === out.length ? out : out.subarray(0, n)); ctx.putImageData(id, x0, y0);
   }
   function liquifyStroke(ctx, stroke) {
     const st = stroke.settings || {}, lq = st.liquify || {};

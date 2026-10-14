@@ -11632,14 +11632,15 @@ document.querySelectorAll('.smooth-path-btn').forEach(b=>{b.onclick=smoothSelect
 // ================= Warp tool =================
 // Drag across the canvas to push/bend strokes on the active layer (like a finger in wet paint).
 // Radius and strength are adjustable. Shapes and node paths become ordinary free paths when warped.
-let warpOn=false,warpR=80,warpStr=0.8,warpDrag=null,warpRaf=0,warpMode='push',warpPaint=true;
+let warpOn=false,warpR=80,warpStr=0.8,warpDrag=null,warpRaf=0,warpMode='push',warpPaint=true,warpDirL=false;
+try{warpDirL=localStorage.getItem('sp-warpDir')==='L';}catch(e){}
 try{warpPaint=localStorage.getItem('sp-warpPaint')!=='0';}catch(e){}
 try{warpR=Math.min(400,Math.max(10,+localStorage.getItem('sp-warpR')||80));warpStr=Math.min(1,Math.max(0.1,+localStorage.getItem('sp-warpS')||0.8));}catch(e){}
 {
   const ring=document.createElement('div');ring.id='warpRing';ring.style.cssText='position:absolute;display:none;pointer-events:none;z-index:8;border:2px dashed #8f6bd8;border-radius:50%;box-sizing:border-box;background:rgba(143,107,216,.08)';
   wrap.appendChild(ring);
   const bar=document.createElement('div');bar.id='warpBar';bar.className='pen-bar';bar.style.display='none';
-  bar.innerHTML='<b>🌀 Liquify</b><span id="warpSpace" style="display:inline-flex;gap:3px"><button class="btn mini" data-ws="paint" type="button" title="Moves the actual paint, so colours smear and swirl into each other like marbling">Paint</button><button class="btn mini" data-ws="vector" type="button" title="Bends the vector lines and shapes, keeping them sharp and editable">Lines</button></span><span id="warpModes" style="display:inline-flex;gap:3px;flex-wrap:wrap"><button class="btn mini active" data-wm="push" type="button" title="Push strokes along your drag">Push</button><button class="btn mini" data-wm="pinch" type="button" title="Hold or drag: pulls strokes toward the centre">Pinch</button><button class="btn mini" data-wm="bloat" type="button" title="Hold or drag: pushes strokes away from the centre">Bloat</button><button class="btn mini" data-wm="twirlR" type="button" title="Hold or drag: swirls strokes clockwise">Twirl ↻</button><button class="btn mini" data-wm="twirlL" type="button" title="Hold or drag: swirls strokes anticlockwise">Twirl ↺</button></span><label>Size <input id="warpSize" type="range" min="10" max="400" step="1"></label><label>Strength <input id="warpStrength" type="range" min="10" max="100" step="1"></label><button id="warpDoneBtn" class="btn mini primary">✓ Done</button><span style="flex-basis:100%;text-align:center">Drag on the canvas to push strokes on the active layer.</span>';
+  bar.innerHTML='<b>🌀 Liquify</b><span id="warpSpace" style="display:inline-flex;gap:3px"><button class="btn mini" data-ws="paint" type="button" title="Moves the actual paint, so colours smear and swirl into each other like marbling">Paint</button><button class="btn mini" data-ws="vector" type="button" title="Bends the vector lines and shapes, keeping them sharp and editable">Lines</button></span><span id="warpModes" style="display:inline-flex;gap:3px;flex-wrap:wrap"><button class="btn mini active" data-wm="push" type="button" title="Push strokes along your drag">Push</button><button class="btn mini" data-wm="pinch" type="button" title="Hold or drag: pulls strokes toward the centre">Pinch</button><button class="btn mini" data-wm="bloat" type="button" title="Hold or drag: pushes strokes away from the centre">Bloat</button><button class="btn mini" data-wm="twirl" type="button" title="Hold or drag: swirls strokes around the centre of the brush">Twirl</button></span><span id="warpDir" style="display:none;gap:3px"><button class="btn mini" data-wd="R" type="button" title="Swirl clockwise">↻ Clockwise</button><button class="btn mini" data-wd="L" type="button" title="Swirl anticlockwise">↺ Anticlockwise</button></span><label>Size <input id="warpSize" type="range" min="10" max="400" step="1"></label><label>Strength <input id="warpStrength" type="range" min="10" max="100" step="1"></label><button id="warpDoneBtn" class="btn mini primary">✓ Done</button><span style="flex-basis:100%;text-align:center">Drag on the canvas to push strokes on the active layer.</span>';
   wrap.appendChild(bar);
 }
 function warpRingAt(clientX,clientY,show){
@@ -11777,15 +11778,19 @@ function warpFlush(){
 function warpDown(e){
   const layer=getActiveLayer();
   const p=screenToCanvas(e.clientX,e.clientY);
-  warpDrag={last:p,dirty:new Set(),moved:false,hold:0,steps:[],paint:warpPaint,layer};
+  warpDrag={last:p,dirty:new Set(),moved:false,hold:0,steps:[],paint:warpPaint,layer,ax:0,ay:0,lastT:0,gap:0};
   warpRingAt(e.clientX,e.clientY,true);
   if(warpPaint){
     if(!layer||layer.locked||layer.asleep){warpDrag=null;return;}
     const d=warpDrag;
-    if(warpMode!=='push'){let fr=0;const tick=()=>{if(warpDrag!==d)return;if(++fr%3===0)warpPaintStep(d,d.last.x,d.last.y,0,0);d.hold=requestAnimationFrame(tick);};d.hold=requestAnimationFrame(tick);}
+    if(warpMode!=='push'){const tick=()=>{if(warpDrag!==d)return;if(performance.now()-d.lastT>=Math.max(30,d.gap))warpPaintRun(d,d.last.x,d.last.y,0,0);d.hold=requestAnimationFrame(tick);};d.hold=requestAnimationFrame(tick);}
     return;
   }
   if(warpMode!=='push'){const d=warpDrag;const tick=()=>{if(warpDrag!==d)return;warpApply(d.last.x,d.last.y,0,0);d.hold=requestAnimationFrame(tick);};d.hold=requestAnimationFrame(tick);}
+}
+function warpPaintRun(d,x,y,dx,dy){
+  const t0=performance.now();warpPaintStep(d,x,y,dx,dy);d.ax=0;d.ay=0;
+  const t1=performance.now();d.lastT=t1;d.gap=Math.min(120,(t1-t0)*1.2); // slow device or big brush: leave breathing room so the app stays responsive
 }
 function warpPaintStep(d,x,y,dx,dy){
   if(d.steps.length>=900)return;
@@ -11806,9 +11811,12 @@ function warpMove(e){
   const p=screenToCanvas(e.clientX,e.clientY),dx=p.x-warpDrag.last.x,dy=p.y-warpDrag.last.y;
   warpRingAt(e.clientX,e.clientY,true);
   if(warpDrag.paint){
-    if(warpMode!=='push'){warpDrag.last=p;return;}
-    if(Math.hypot(dx,dy)<0.01)return;
-    warpDrag.last=p;warpPaintStep(warpDrag,p.x,p.y,dx,dy);return;
+    const d=warpDrag;d.last=p;
+    if(warpMode!=='push')return;
+    d.ax+=dx;d.ay+=dy; // pen events arrive faster than a step can run: add the movement up and apply it in one step
+    if(Math.hypot(d.ax,d.ay)<0.01)return;
+    if(performance.now()-d.lastT<d.gap)return;
+    warpPaintRun(d,p.x,p.y,d.ax,d.ay);return;
   }
   if(warpMode!=='push'){warpDrag.last=p;return;} // pinch / bloat / twirl keep working at the pointer every frame (see warpDown)
   if(Math.hypot(dx,dy)<0.01)return;
@@ -11820,9 +11828,13 @@ function warpUp(){
   if(d.hold){cancelAnimationFrame(d.hold);d.hold=0;}
   if(d.paint){
     if(d.raf){cancelAnimationFrame(d.raf);d.raf=0;}
+    if(warpMode==='push'&&(d.ax||d.ay))warpPaintStep(d,d.last.x,d.last.y,d.ax,d.ay);
     if(!d.steps.length)return;
     strokes.push({id:crypto.randomUUID(),brushId:'smudge',layerId:d.layer.id,color:'#000000',settings:{size:warpR*2,opacity:1,smoothing:0,pressureWidth:0,pressureOpacity:0,spacing:6,liquify:{mode:warpMode,strength:warpStr,size:warpR}},points:d.steps});
-    try{rebuildLayer(d.layer.id);}catch(err){console.error(err);}
+    // The steps were already applied live, so replaying them all again here only repeated the work (the lag and crash on pen-up).
+    // A layer with a separate hi-res copy still needs the rebuild to bring that copy up to date.
+    if(d.layer.dctx!==d.layer.ctx){try{rebuildLayer(d.layer.id);}catch(err){console.error(err);}}
+    else{compositeDirty=true;}
     redraw();pushHist();return;
   }
   if(warpRaf){cancelAnimationFrame(warpRaf);warpRaf=0;}
@@ -11842,9 +11854,19 @@ $('warpDoneBtn').onclick=()=>warpSet(false);
 const wsSync=()=>document.querySelectorAll('#warpSpace [data-ws]').forEach(x=>x.classList.toggle('active',(x.dataset.ws==='paint')===warpPaint));
 document.querySelectorAll('#warpSpace [data-ws]').forEach(b=>b.onclick=()=>{warpPaint=b.dataset.ws==='paint';try{localStorage.setItem('sp-warpPaint',warpPaint?'1':'0');}catch(e){}wsSync();setStatus(warpPaint?'🌀 Liquify Paint: moves the paint itself, so colours smear and swirl together like marbling.':'🌀 Liquify Lines: bends vector lines and shapes and keeps them editable.');});
 wsSync();
-document.querySelectorAll('#warpModes [data-wm]').forEach(b=>b.onclick=()=>{warpMode=b.dataset.wm;document.querySelectorAll('#warpModes [data-wm]').forEach(x=>x.classList.toggle('active',x===b));try{localStorage.setItem('sp-warpMode',warpMode);}catch(e){}
-  const hint={push:'Drag on the canvas to push strokes on the active layer.',pinch:'Press and hold (or drag) on strokes to pinch them together.',bloat:'Press and hold (or drag) on strokes to bloat them outward.',twirlR:'Press and hold (or drag) to swirl strokes clockwise.',twirlL:'Press and hold (or drag) to swirl strokes anticlockwise.'}[warpMode];
-  const sp=$('warpBar').querySelector('span:last-child');if(sp&&sp.id!=='warpModes')sp.textContent=hint;setStatus('🌀 Liquify: '+hint);});
+const warpIsTwirl=()=>warpMode==='twirlR'||warpMode==='twirlL';
+function warpHint(){return {push:'Drag on the canvas to push strokes on the active layer.',pinch:'Press and hold (or drag) on strokes to pinch them together.',bloat:'Press and hold (or drag) on strokes to bloat them outward.',twirlR:'Press and hold (or drag) to swirl strokes clockwise.',twirlL:'Press and hold (or drag) to swirl strokes anticlockwise.'}[warpMode];}
+function warpModeUI(){
+  document.querySelectorAll('#warpModes [data-wm]').forEach(x=>x.classList.toggle('active',x.dataset.wm==='twirl'?warpIsTwirl():x.dataset.wm===warpMode));
+  $('warpDir').style.display=warpIsTwirl()?'inline-flex':'none';
+  document.querySelectorAll('#warpDir [data-wd]').forEach(x=>x.classList.toggle('active',(x.dataset.wd==='L')===warpDirL));
+  const sp=$('warpBar').querySelector('span:last-child');if(sp&&sp.id!=='warpModes'&&sp.id!=='warpDir')sp.textContent=warpHint();
+}
+document.querySelectorAll('#warpModes [data-wm]').forEach(b=>b.onclick=()=>{const wm=b.dataset.wm;warpMode=wm==='twirl'?(warpDirL?'twirlL':'twirlR'):wm;try{localStorage.setItem('sp-warpMode',warpMode);}catch(e){}
+  warpModeUI();setStatus('🌀 Liquify: '+warpHint());});
+document.querySelectorAll('#warpDir [data-wd]').forEach(b=>b.onclick=()=>{warpDirL=b.dataset.wd==='L';try{localStorage.setItem('sp-warpDir',warpDirL?'L':'R');}catch(e){}
+  if(warpIsTwirl())warpMode=warpDirL?'twirlL':'twirlR';warpModeUI();setStatus('🌀 Liquify: '+warpHint());});
+warpModeUI();
 $('warpSize').oninput=e=>{warpR=+e.target.value;try{localStorage.setItem('sp-warpR',String(warpR));}catch(err){}
   const r=wrap.getBoundingClientRect();warpRingAt(r.left+r.width/2,r.top+r.height/2,true);clearTimeout(warpSet._t);warpSet._t=setTimeout(()=>warpRingAt(0,0,false),900);};
 $('warpStrength').oninput=e=>{warpStr=+e.target.value/100;try{localStorage.setItem('sp-warpS',String(warpStr));}catch(err){}};
