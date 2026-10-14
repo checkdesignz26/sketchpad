@@ -814,3 +814,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v245 — Contour keeps sharp tips
 - Contour copies use mitered (sharp) corners like an offset path in a vector app, so a pointed leaf tip stays pointed in the outer and inner rings. Extremely sharp spikes (beyond a 3.2× miter limit) fall back to a round corner so they don't shoot out. Round-corners tool is unchanged.
+
+## v246 — Contour: "Keep sharp tips" option
+- Contour panel has a "Keep sharp tips" tick (default on). On: pointed tips, even very narrow ones (miter limit ~10×), are followed exactly in the outer and inner rings. Off: rounded corners. Status text no longer says "inside" when fewer copies fit.
