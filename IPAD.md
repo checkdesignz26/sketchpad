@@ -805,3 +805,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v242 — Contour: Remove copies
 - New "Remove copies" button next to "Detach copies" (shown when the selected original has contour copies).
+
+## v243 — Contour is live
+- No Make step needed: touching Gap / Copies / Thickness / Inside-Outside on a selected outline makes the copies straight away and updates them as you go. The tool replaces its own set each time, so there are always exactly N copies in the chosen direction. Make / Detach / Remove buttons remain.
