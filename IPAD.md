@@ -778,3 +778,7 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v235 — Rotate icon during Edit Path
 - Tapping the Rotate icon while Edit Path is open now finishes Edit Path for you and opens the Rotate & Repeat panel (it used to refuse with a message).
+
+## v236 — linked repeat copies
+- Rotate & Repeat → Make copies now creates LINKED copies. Edit the original (reshape in Edit Path, size, colour, brush, rotate, move) and every copy follows around the same centre. Select a copy and it tells you to edit the original.
+- Pressing Make copies again REPLACES the earlier copies instead of stacking new ones on top; a copy that would land exactly on the original (a full 360°) is skipped.
