@@ -775,3 +775,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v234 — Rotate panel was hidden
 - The Rotate panel was opening underneath the Selection panel. It now sits on top and opens low on the left, clear of the other panels.
+
+## v235 — Rotate icon during Edit Path
+- Tapping the Rotate icon while Edit Path is open now finishes Edit Path for you and opens the Rotate & Repeat panel (it used to refuse with a message).
