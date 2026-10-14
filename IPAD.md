@@ -772,3 +772,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 - New rail icon (two overlapping circles) opens a floating **Shape builder** panel: Pick shapes, then Add, Subtract (top shape cuts those below), Intersect, Xor, Divide (every overlap becomes its own piece). Works on closed outline shapes; results are normal editable vector shapes; undo restores the originals. (The old Merge/Subtract/Intersect box is still in the Stroke tools.)
 - New rail **Rotate** icon opens the Rotate panel (select a stroke first).
 - The Selection panel no longer pops open over the Shape builder while it's open.
+
+## v234 — Rotate panel was hidden
+- The Rotate panel was opening underneath the Selection panel. It now sits on top and opens low on the left, clear of the other panels.
