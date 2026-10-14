@@ -1743,6 +1743,10 @@ let armedShapeType=null,constrainShape=false,shapeDrawStroke=null,shapeDrawStart
 // starts; once true, further pointermoves adjust the recognised shape instead of accumulating more
 // freehand points (see adjustHeldShape).
 const HOLD_MS=420,HOLD_MOVE_TOLERANCE=9;
+// Auto-straighten (tiled preview only): a stroke that runs the whole length of the tile, is nearly straight and is within a few degrees of
+// vertical / horizontal is snapped to an exactly vertical / horizontal line when the pen lifts. Without it, hand wobble makes the stroke
+// overlap itself with a small kink where the tile wraps. Can be switched off in the More menu.
+let autoStraight=true;try{autoStraight=localStorage.getItem('sp-autoStraight')!=='0';}catch(e){}
 let holdTimer=null,holdAnchor=null,holdTriggered=false,holdCorrectedShape=null,holdPressureProfile=null,holdRecognitionSnapshot=null;
 let holdAdjustBaseHw=0,holdAdjustBaseHh=0,holdAdjustAnchorDist=1,holdAdjustAnchorPos=null,holdAdjustBaseX1=0,holdAdjustBaseY1=0;
 // Real Apple Pencil keeps emitting pointermove events even while the hand is "holding still" —
@@ -3233,6 +3237,7 @@ canvas.addEventListener('pointerup',e=>{
     pushHist();redraw();return;
   }
   if(currentPoints.length>=1){
+    autoStraightenLong();
     const settingsSnapshot=Object.assign({},currentSettings());
     // Tag with the current Paint Inside target (if any) at the moment the stroke is COMMITTED —
     // clipStrokeId is a plain field on the stroke, so it rides along automatically through
@@ -7892,6 +7897,25 @@ function applyPressureProfile(points,profile){
   const n=points.length;
   return points.map((p,i)=>({...p,pressure:profile(n>1?i/(n-1):0)}));
 }
+function autoStraightenLong(){
+  try{
+    if(!autoStraight||!showTiling||holdTriggered||eraserActive||continueStrokeId||shapeDrawStroke)return;
+    const pts=currentPoints;if(!pts||pts.length<6)return;
+    const first=pts[0],last=pts[pts.length-1],dx=last.x-first.x,dy=last.y-first.y,len=Math.hypot(dx,dy);
+    if(len<40)return;
+    const vertical=Math.abs(dx)<Math.abs(dy),along=vertical?Math.abs(dy):Math.abs(dx),across=vertical?Math.abs(dx):Math.abs(dy);
+    if(along<(vertical?TH:TW)*0.9)return; // only strokes that run (nearly) the whole tile
+    if(across>along*Math.tan(4*Math.PI/180))return; // within 4 degrees of vertical / horizontal
+    let maxDev=0;pts.forEach(p=>{maxDev=Math.max(maxDev,distToSeg(p.x,p.y,first.x,first.y,last.x,last.y));});
+    if(maxDev>len*0.06)return; // really a curve, leave it alone
+    let sum=0;pts.forEach(p=>{sum+=vertical?p.x:p.y;});const mid=sum/pts.length;
+    const shape=shapeFromRecognition({kind:'line',x0:vertical?mid:first.x,y0:vertical?first.y:mid,x1:vertical?mid:last.x,y1:vertical?last.y:mid});
+    const profile=buildPressureProfile(pts);
+    currentPoints=applyPressureProfile(shapeToPoints(shape),profile);
+    holdCorrectedShape=shape;holdPressureProfile=profile;holdTriggered=true;
+    setStatus('📏 Straightened — a long, nearly straight line snapped to a clean '+(vertical?'vertical':'horizontal')+' line. Undo to remove it; turn this off in ⋯ More.');
+  }catch(e){console.warn('[sketchpad] auto-straighten failed',e);}
+}
 function resetHoldState(){
   clearTimeout(holdTimer);holdTimer=null;holdAnchor=null;holdTriggered=false;holdCorrectedShape=null;holdPressureProfile=null;holdAdjustAnchorPos=null;holdRecognitionSnapshot=null;
 }
@@ -11262,7 +11286,7 @@ function tbMoreMenu(btn){
     const lab=it.dataset.ovl||it.textContent.trim();
     items.push({label:lab,disabled:it.disabled,run:()=>{if(it.id==='zoomPill'||it.id==='viewToggleBtn'){it.classList.remove('tb-ov');it.click();it.classList.add('tb-ov');}else it.click();}});
   });
-  items.push({sep:1},{label:'📋 Copy selection',sub:'to paste in another project',run:()=>copySelectionToClipboard()},{label:'📥 Paste copied artwork',sub:'onto the active layer',run:()=>pasteFromClipboard()},{sep:1},{label:'⏱ Speed test',sub:'times the open project',run:()=>showBenchmark()},{label:'🧠 Memory check',sub:'what is using memory',run:()=>{try{projAsk({title:'🧠 Memory check',message:memoryReport(),ok:'OK',cancel:null});}catch(e){showErrToast('Memory check: '+(e&&e.message||e));}}});
+  items.push({sep:1},{label:'📏 Auto-straighten long lines: '+(autoStraight?'On':'Off'),sub:'in tiled view, a long nearly straight upright or flat stroke snaps clean',run:()=>{autoStraight=!autoStraight;try{localStorage.setItem('sp-autoStraight',autoStraight?'1':'0');}catch(e){}setStatus('📏 Auto-straighten long lines is '+(autoStraight?'on':'off')+'.');}},{label:'📋 Copy selection',sub:'to paste in another project',run:()=>copySelectionToClipboard()},{label:'📥 Paste copied artwork',sub:'onto the active layer',run:()=>pasteFromClipboard()},{sep:1},{label:'⏱ Speed test',sub:'times the open project',run:()=>showBenchmark()},{label:'🧠 Memory check',sub:'what is using memory',run:()=>{try{projAsk({title:'🧠 Memory check',message:memoryReport(),ok:'OK',cancel:null});}catch(e){showErrToast('Memory check: '+(e&&e.message||e));}}});
   items.push({label:drawLock?'🔒 Stay in Draw: ON (tap to turn off)':'🔓 Stay in Draw: off (tap to turn on)',sub:'stops accidental Edit',run:()=>{drawLock=!drawLock;try{localStorage.setItem('sp-drawLock',drawLock?'1':'0');}catch(e){}if(drawLock&&mode==='edit'){$('drawModeBtn').click();}setStatus(drawLock?'🔒 Stay in Draw is on. The app will not jump into Edit by itself, and the Edit button needs two taps.':'🔓 Stay in Draw is off.');}});
   if(btn.id==='tbMoreMain')items.push({sep:1},{head:'Autosave'},{label:$('saveStatusPill').textContent,disabled:true});
   tbMenu(btn,items);
