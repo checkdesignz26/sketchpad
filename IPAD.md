@@ -808,3 +808,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v243 — Contour is live
 - No Make step needed: touching Gap / Copies / Thickness / Inside-Outside on a selected outline makes the copies straight away and updates them as you go. The tool replaces its own set each time, so there are always exactly N copies in the chosen direction. Make / Detach / Remove buttons remain.
+
+## v244 — Duplicate no longer clones contour links
+- Duplicating (or pasting) an outline that had contour copies used to clone its contour settings too, so the duplicate sat exactly on top with its own (e.g. old Inside) ring set — looking like extra inside/outside rings. Duplicates now start as plain strokes; pasted copies are re-linked properly or become plain strokes.
