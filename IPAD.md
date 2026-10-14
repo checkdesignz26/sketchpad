@@ -811,3 +811,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v244 — Duplicate no longer clones contour links
 - Duplicating (or pasting) an outline that had contour copies used to clone its contour settings too, so the duplicate sat exactly on top with its own (e.g. old Inside) ring set — looking like extra inside/outside rings. Duplicates now start as plain strokes; pasted copies are re-linked properly or become plain strokes.
+
+## v245 — Contour keeps sharp tips
+- Contour copies use mitered (sharp) corners like an offset path in a vector app, so a pointed leaf tip stays pointed in the outer and inner rings. Extremely sharp spikes (beyond a 3.2× miter limit) fall back to a round corner so they don't shoot out. Round-corners tool is unchanged.
