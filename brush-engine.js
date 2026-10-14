@@ -1063,7 +1063,7 @@
     } catch (e) { _lq.bad = true; _lq.gl = null; return false; }
   }
   let _lqOut = null; // scratch buffer reused between steps (a fresh multi-MB array per step was what made big brushes lag and crash)
-  function liquifyStep(ctx, x, y, mode, strength, radius, dx, dy, reps) {
+  function liquifyCore(ctx, x, y, mode, strength, radius, dx, dy, reps) {
     const m = ctx.getTransform ? ctx.getTransform() : { a: 1, d: 1, e: 0, f: 0 };
     const sc = Math.max(0.05, Math.abs(m.a));
     const R = Math.max(2, radius * sc), cx = m.a * x + m.e, cy = m.d * y + m.f;
@@ -1132,6 +1132,38 @@
     id.data.set(n === out.length ? out : out.subarray(0, n)); ctx.putImageData(id, x0, y0);
     if (timed) { try { ctx.getImageData(x0, y0, 1, 1); } catch (e) { } lqRecord('cpu', performance.now() - tStart, area); }
   }
+  // Seamless tiling: the layer canvas holds copies of one tile, so a liquify at one spot must also happen at every lattice copy of that
+  // spot that touches the central tile, and the changed part of the tile is then copied back to all the other tile positions.
+  const BrushEngine_wrap = { get: null }; // set by the app: () => {x,y,w,h, lat:[[ox,oy]..], offs:[[ox,oy]..]} (the tile rectangle, lattice translations, neighbour tile offsets)
+  function liquifyStep(ctx, x, y, mode, strength, radius, dx, dy, reps, wrap) {
+    if (!wrap) return liquifyCore(ctx, x, y, mode, strength, radius, dx, dy, reps);
+    const R = radius, hits = [];
+    for (let i = 0; i < wrap.lat.length; i++) {
+      const cx = x + wrap.lat[i][0], cy = y + wrap.lat[i][1];
+      if (cx + R <= wrap.x || cx - R >= wrap.x + wrap.w || cy + R <= wrap.y || cy - R >= wrap.y + wrap.h) continue;
+      hits.push([cx, cy]);
+    }
+    if (!hits.length) return liquifyCore(ctx, x, y, mode, strength, radius, dx, dy, reps);
+    const m = ctx.getTransform ? ctx.getTransform() : { a: 1, d: 1, e: 0, f: 0 };
+    const cv = ctx.canvas;
+    for (let i = 0; i < hits.length; i++) liquifyCore(ctx, hits[i][0], hits[i][1], mode, strength, radius, dx, dy, reps); // all warps first (each reads untouched pixels), copies after
+    for (let i = 0; i < hits.length; i++) {
+      const cx = hits[i][0], cy = hits[i][1];
+      const ax = Math.max(wrap.x, cx - R - 2), bx = Math.min(wrap.x + wrap.w, cx + R + 2), ay = Math.max(wrap.y, cy - R - 2), by = Math.min(wrap.y + wrap.h, cy + R + 2);
+      const sx = Math.max(0, Math.floor(m.a * ax + m.e)), sy = Math.max(0, Math.floor(m.d * ay + m.f));
+      const ex = Math.min(cv.width, Math.ceil(m.a * bx + m.e)), ey = Math.min(cv.height, Math.ceil(m.d * by + m.f));
+      const sw = ex - sx, sh = ey - sy; if (sw < 1 || sh < 1) continue;
+      ctx.save();
+      try {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        for (let k = 0; k < wrap.offs.length; k++) {
+          const ox = Math.round(wrap.offs[k][0] * m.a), oy = Math.round(wrap.offs[k][1] * m.d);
+          ctx.clearRect(sx + ox, sy + oy, sw, sh);
+          ctx.drawImage(cv, sx, sy, sw, sh, sx + ox, sy + oy, sw, sh);
+        }
+      } finally { ctx.restore(); }
+    }
+  }
   // A long hold (twirl / pinch / bloat) is stored as hundreds of tiny steps at almost the same spot, and a long push drag as hundreds
   // of tiny moves. Replaying all of them on every project open / layer rebuild is what made big projects unusable. Neighbouring steps
   // are merged here: for a hold the result is the same (rotation and scaling about one centre simply add up), for a push it is
@@ -1157,10 +1189,11 @@
     const st = stroke.settings || {}, lq = st.liquify || {};
     const size = lq.size || 80, base = lq.strength == null ? 0.8 : lq.strength;
     const pts = liquifyMerge(stroke.points || [], size);
+    let wrap = null; if (lq.wrap && BrushEngine_wrap.get) { try { wrap = BrushEngine_wrap.get(); } catch (e) { wrap = null; } }
     for (let i = 0; i < pts.length; i++) {
       const p = pts[i];
       const m = p.m || lq.mode || 'push', sv = p.s || 1, hold = m === 'pinch' || m === 'bloat';
-      liquifyStep(ctx, p.x, p.y, m, hold ? base : base * sv, size, p.dx || 0, p.dy || 0, hold ? sv : 1);
+      liquifyStep(ctx, p.x, p.y, m, hold ? base : base * sv, size, p.dx || 0, p.dy || 0, hold ? sv : 1, wrap);
     }
   }
   function smudgeStroke(ctx, stroke) {
@@ -1391,6 +1424,6 @@
     getSettings, setSettings,
     touchRecent, getRecents,
     isFavorite, toggleFavorite, getFavorites,
-    underlay: null, skipSmudge: BrushEngine_skipSmudge, liveEnd, makeSmudger, makeCloner, liquifyStep, liquifyGL: _lq, pressureFactor, stampDab, colorWithAlpha, resample, renderStroke, smoothPoints, seededRandom,
+    underlay: null, skipSmudge: BrushEngine_skipSmudge, wrap: BrushEngine_wrap, liveEnd, makeSmudger, makeCloner, liquifyStep, liquifyGL: _lq, pressureFactor, stampDab, colorWithAlpha, resample, renderStroke, smoothPoints, seededRandom,
   };
 })(window);

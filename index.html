@@ -11804,6 +11804,14 @@ function smudgeUp(){
 canvas.addEventListener('pointermove',e=>{if(smudgeDrag&&isPen(e))smudgeMove(e);});
 canvas.addEventListener('pointerup',()=>smudgeUp());
 canvas.addEventListener('pointercancel',()=>smudgeUp());
+// Liquify across tile edges: the tile rectangle, every lattice translation, and the 8 neighbour tile offsets (see BrushEngine.liquifyStep)
+function liquifyWrapInfo(){
+  const lat=[],offs=[];
+  for(let ix=-3;ix<=3;ix++)for(let iy=-3;iy<=3;iy++)lat.push(tilePos(ix,iy));
+  for(let ix=-1;ix<=1;ix++)for(let iy=-1;iy<=1;iy++){if(ix||iy)offs.push(tilePos(ix,iy));}
+  return {x:CX,y:CY,w:TW,h:TH,lat,offs};
+}
+try{BrushEngine.wrap.get=liquifyWrapInfo;}catch(e){}
 function warpFlush(){
   warpRaf=0;if(!warpDrag)return;
   warpDrag.dirty.forEach(id=>rebuildLayer(id));warpDrag.dirty.clear();redraw();
@@ -11811,7 +11819,7 @@ function warpFlush(){
 function warpDown(e){
   const layer=getActiveLayer();
   const p=screenToCanvas(e.clientX,e.clientY);
-  warpDrag={last:p,dirty:new Set(),moved:false,hold:0,steps:[],paint:warpPaint,layer,ax:0,ay:0,lastT:0,gap:0};
+  warpDrag={last:p,dirty:new Set(),moved:false,hold:0,steps:[],paint:warpPaint,wrap:(warpPaint&&showTiling)?liquifyWrapInfo():null,layer,ax:0,ay:0,lastT:0,gap:0};
   warpRingAt(e.clientX,e.clientY,true);
   if(warpPaint){
     if(!layer||layer.locked||layer.asleep){warpDrag=null;return;}
@@ -11828,7 +11836,7 @@ function warpPaintRun(d,x,y,dx,dy,mult){
 function warpPaintStep(d,x,y,dx,dy,mult){
   if(d.steps.length>=900)return;
   const sm=mult&&Math.abs(mult-1)>0.02?Math.round(mult*100)/100:1; // a slow step covers the time of several, so the swirl keeps its speed
-  try{BrushEngine.liquifyStep(d.layer.ctx,x,y,warpMode,warpStr*sm,warpR,dx,dy);}catch(e){return;}
+  try{BrushEngine.liquifyStep(d.layer.ctx,x,y,warpMode,warpStr*sm,warpR,dx,dy,1,d.wrap);}catch(e){return;}
   const st={x:Math.round(x*10)/10,y:Math.round(y*10)/10,m:warpMode,dx:Math.round(dx*100)/100,dy:Math.round(dy*100)/100,pressure:0.5};if(sm!==1)st.s=sm;d.steps.push(st);
   d.moved=true;compositeDirty=true;if(!d.raf)d.raf=requestAnimationFrame(()=>{d.raf=0;redraw();});
 }
@@ -11836,7 +11844,8 @@ function warpApply(x,y,dx,dy){
   strokes.forEach(s=>{
     if(s.layerId!==activeLayerId)return;
     const layer=layers.find(l=>l.id===s.layerId);if(!layer||layer.locked)return;
-    if(warpStroke(s,x,y,dx,dy)){warpDrag.dirty.add(s.layerId);warpDrag.moved=true;}
+    // a stroke is drawn once but shown at every tile copy: touching a copy at the cursor means touching the stroke itself at (cursor - copy offset)
+    offsets().forEach(o=>{if(warpStroke(s,x-o[0],y-o[1],dx,dy)){warpDrag.dirty.add(s.layerId);warpDrag.moved=true;}});
   });
   if(warpDrag.dirty.size&&!warpRaf)warpRaf=requestAnimationFrame(warpFlush);
 }
@@ -11864,7 +11873,7 @@ function warpUp(){
     if(d.raf){cancelAnimationFrame(d.raf);d.raf=0;}
     if(warpMode==='push'&&(d.ax||d.ay))warpPaintStep(d,d.last.x,d.last.y,d.ax,d.ay);
     if(!d.steps.length)return;
-    strokes.push({id:crypto.randomUUID(),brushId:'smudge',layerId:d.layer.id,color:'#000000',settings:{size:warpR*2,opacity:1,smoothing:0,pressureWidth:0,pressureOpacity:0,spacing:6,liquify:{mode:warpMode,strength:warpStr,size:warpR}},points:d.steps});
+    strokes.push({id:crypto.randomUUID(),brushId:'smudge',layerId:d.layer.id,color:'#000000',settings:{size:warpR*2,opacity:1,smoothing:0,pressureWidth:0,pressureOpacity:0,spacing:6,liquify:{mode:warpMode,strength:warpStr,size:warpR,wrap:d.wrap?1:0}},points:d.steps});
     // The steps were already applied live, so replaying them all again here only repeated the work (the lag and crash on pen-up).
     // A layer with a separate hi-res copy still needs the rebuild to bring that copy up to date.
     if(d.layer.dctx!==d.layer.ctx){try{rebuildLayer(d.layer.id);}catch(err){console.error(err);}}
