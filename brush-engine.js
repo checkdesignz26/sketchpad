@@ -1066,28 +1066,8 @@
   // Liquify writes pixels there too, so it has to put the marker back or the app thinks the layer was wiped and replays everything.
   function lqSentinel(ctx) { try { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; ctx.fillStyle = 'rgba(255,255,255,0.004)'; ctx.fillRect(0, 0, 1, 1); ctx.restore(); } catch (e) { } }
   let _lqOut = null; // scratch buffer reused between steps (a fresh multi-MB array per step was what made big brushes lag and crash)
-  function liquifyCore(ctx, x, y, mode, strength, radius, dx, dy, reps) {
-    const m = ctx.getTransform ? ctx.getTransform() : { a: 1, d: 1, e: 0, f: 0 };
-    const sc = Math.max(0.05, Math.abs(m.a));
-    const R = Math.max(2, radius * sc), cx = m.a * x + m.e, cy = m.d * y + m.f;
-    const x0 = Math.max(0, Math.floor(cx - R) - 1), y0 = Math.max(0, Math.floor(cy - R) - 1);
-    const x1 = Math.min(ctx.canvas.width, Math.ceil(cx + R) + 1), y1 = Math.min(ctx.canvas.height, Math.ceil(cy + R) + 1);
-    const w = x1 - x0, h = y1 - y0; if (w < 2 || h < 2) return;
-    const area = w * h;
-    let tryGL = false, timed = false;
-    if (_lq.on && !_lq.bad && _lq.pick !== 'cpu') {
-      if (_lq.pick === 'gl') tryGL = true;
-      else if (area >= 40000) { timed = true; tryGL = _lq.samples.gl.length <= _lq.samples.cpu.length; }
-    }
-    const tStart = timed ? performance.now() : 0;
-    if (tryGL) {
-      if (lqGL(ctx, x0, y0, w, h, cx, cy, R, mode, strength, (mode === 'twirlR' ? 1 : mode === 'twirlL' ? -1 : 0) * 0.075 * strength, dx * sc, dy * sc, reps)) {
-        if (timed) { try { ctx.getImageData(x0, y0, 1, 1); } catch (e) { } lqRecord('gl', performance.now() - tStart, area); } // reading a pixel makes the GPU finish, so the timing is honest
-        return;
-      }
-      timed = false; _lq.pick = 'cpu'; // WebGL failed: stay on the CPU path
-    }
-    let id; try { id = ctx.getImageData(x0, y0, w, h); } catch (e) { return; }
+  // The warp itself, on a plain pixel buffer: id covers canvas pixels (x0,y0)..(x0+w,y0+h), the brush centre is (cx,cy) in the same pixels.
+  function lqApply(id, w, h, x0, y0, cx, cy, R, sc, mode, strength, dx, dy, reps) {
     const src = id.data, n = src.length;
     if (!_lqOut || _lqOut.length < n) _lqOut = new Uint8ClampedArray(n);
     const out = _lqOut; out.set(src);
@@ -1143,33 +1123,96 @@
         if (a > 0.002) { out[o] = r / a; out[o + 1] = g / a; out[o + 2] = b / a; out[o + 3] = a * 255; } else { out[o] = out[o + 1] = out[o + 2] = out[o + 3] = 0; }
       }
     }
-    id.data.set(n === out.length ? out : out.subarray(0, n)); ctx.putImageData(id, x0, y0);
+    id.data.set(n === out.length ? out : out.subarray(0, n));
+  }
+  function liquifyCore(ctx, x, y, mode, strength, radius, dx, dy, reps) {
+    const m = ctx.getTransform ? ctx.getTransform() : { a: 1, d: 1, e: 0, f: 0 };
+    const sc = Math.max(0.05, Math.abs(m.a));
+    const R = Math.max(2, radius * sc), cx = m.a * x + m.e, cy = m.d * y + m.f;
+    const x0 = Math.max(0, Math.floor(cx - R) - 1), y0 = Math.max(0, Math.floor(cy - R) - 1);
+    const x1 = Math.min(ctx.canvas.width, Math.ceil(cx + R) + 1), y1 = Math.min(ctx.canvas.height, Math.ceil(cy + R) + 1);
+    const w = x1 - x0, h = y1 - y0; if (w < 2 || h < 2) return;
+    const area = w * h;
+    let tryGL = false, timed = false;
+    if (_lq.on && !_lq.bad && _lq.pick !== 'cpu') {
+      if (_lq.pick === 'gl') tryGL = true;
+      else if (area >= 40000) { timed = true; tryGL = _lq.samples.gl.length <= _lq.samples.cpu.length; }
+    }
+    const tStart = timed ? performance.now() : 0;
+    if (tryGL) {
+      if (lqGL(ctx, x0, y0, w, h, cx, cy, R, mode, strength, (mode === 'twirlR' ? 1 : mode === 'twirlL' ? -1 : 0) * 0.075 * strength, dx * sc, dy * sc, reps)) {
+        if (timed) { try { ctx.getImageData(x0, y0, 1, 1); } catch (e) { } lqRecord('gl', performance.now() - tStart, area); } // reading a pixel makes the GPU finish, so the timing is honest
+        return;
+      }
+      timed = false; _lq.pick = 'cpu'; // WebGL failed: stay on the CPU path
+    }
+    let id; try { id = ctx.getImageData(x0, y0, w, h); } catch (e) { return; }
+    lqApply(id, w, h, x0, y0, cx, cy, R, sc, mode, strength, dx, dy, reps);
+    ctx.putImageData(id, x0, y0);
     if (x0 === 0 && y0 === 0) lqSentinel(ctx);
     if (timed) { try { ctx.getImageData(x0, y0, 1, 1); } catch (e) { } lqRecord('cpu', performance.now() - tStart, area); }
   }
-  // Seamless tiling: the layer canvas holds copies of one tile, so a liquify at one spot must also happen at every lattice copy of that
-  // spot that touches the central tile, and the changed part of the tile is then copied back to all the other tile positions.
-  const BrushEngine_wrap = { get: null }; // set by the app: () => {x,y,w,h, lat:[[ox,oy]..], offs:[[ox,oy]..]} (the tile rectangle, lattice translations, neighbour tile offsets)
+  // Seamless tiling. The app shows a layer by laying its canvas over itself at every neighbouring tile position, so what you see is the SUM of those shifted copies.
+  // To warp that picture correctly (paint that leaves one side of the tile re-enters on the other side) the layer is first reduced to "just the tile cell"
+  // (the sum of all copies, cropped to the tile), then every step reads the tile as if it repeated forever and writes the result back into the cell only.
+  const BrushEngine_wrap = { get: null }; // set by the app: () => {x,y,w,h, lat:[[ox,oy]..], offs:[[ox,oy]..]} (tile rectangle, repeat vectors, the 8 neighbour offsets)
+  let _lqTmp = null, _lqBuf = null;
+  function lqNormalize(ctx, wrap, m) {
+    const cv = ctx.canvas;
+    if (!_lqTmp) _lqTmp = document.createElement('canvas');
+    if (_lqTmp.width !== cv.width || _lqTmp.height !== cv.height) { _lqTmp.width = cv.width; _lqTmp.height = cv.height; }
+    const t = _lqTmp.getContext('2d');
+    t.setTransform(1, 0, 0, 1, 0, 0); t.clearRect(0, 0, cv.width, cv.height);
+    t.drawImage(cv, 0, 0);
+    for (let k = 0; k < wrap.offs.length; k++) t.drawImage(cv, Math.round(wrap.offs[k][0] * m.a), Math.round(wrap.offs[k][1] * m.d));
+    const tx = Math.max(0, Math.round(m.a * wrap.x + m.e)), ty = Math.max(0, Math.round(m.d * wrap.y + m.f));
+    const tw = Math.min(cv.width - tx, Math.round(m.a * wrap.w)), th = Math.min(cv.height - ty, Math.round(m.d * wrap.h));
+    ctx.save();
+    try { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'copy'; ctx.globalAlpha = 1; ctx.clearRect(0, 0, cv.width, cv.height); ctx.drawImage(_lqTmp, tx, ty, tw, th, tx, ty, tw, th); } finally { ctx.restore(); }
+    t.setTransform(1, 0, 0, 1, 0, 0); t.clearRect(0, 0, cv.width, cv.height);
+    cv._lqNorm = true;
+  }
   function liquifyStep(ctx, x, y, mode, strength, radius, dx, dy, reps, wrap) {
     if (!wrap) return liquifyCore(ctx, x, y, mode, strength, radius, dx, dy, reps);
-    const R = radius, hits = [];
-    for (let i = 0; i < wrap.lat.length; i++) {
-      const cx = x + wrap.lat[i][0], cy = y + wrap.lat[i][1];
-      if (cx + R <= wrap.x || cx - R >= wrap.x + wrap.w || cy + R <= wrap.y || cy - R >= wrap.y + wrap.h) continue;
-      hits.push([cx, cy]);
+    const m = ctx.getTransform ? ctx.getTransform() : { a: 1, d: 1, e: 0, f: 0 }, cv = ctx.canvas;
+    const sc = Math.max(0.05, Math.abs(m.a)), R = Math.max(2, radius * sc);
+    const tx = Math.round(m.a * wrap.x + m.e), ty = Math.round(m.d * wrap.y + m.f), tw = Math.round(m.a * wrap.w), th = Math.round(m.d * wrap.h);
+    const lat = wrap.lat.map(v => [Math.round(v[0] * m.a), Math.round(v[1] * m.d)]);
+    let cx = m.a * x + m.e, cy = m.d * y + m.f, home = null;
+    for (let i = 0; i < lat.length; i++) { const px = cx + lat[i][0], py = cy + lat[i][1]; if (px >= tx && px < tx + tw && py >= ty && py < ty + th) { home = lat[i]; break; } }
+    if (!home || tw < 4 || th < 4) return liquifyCore(ctx, x, y, mode, strength, radius, dx, dy, reps); // brush is outside the repeating area: plain warp
+    cx += home[0]; cy += home[1];
+    if (!cv._lqNorm) lqNormalize(ctx, wrap, m);
+    const rx0 = Math.floor(cx - R) - 1, ry0 = Math.floor(cy - R) - 1, w = Math.ceil(cx + R) + 1 - rx0, h = Math.ceil(cy + R) + 1 - ry0;
+    if (w < 2 || h < 2 || w * h > 4e6) return;
+    // the part of the repeating picture around the brush, assembled from the tile cell
+    const need = w * h * 4;
+    if (!_lqBuf || _lqBuf.length < need) _lqBuf = new Uint8ClampedArray(need);
+    const buf = _lqBuf; buf.fill(0, 0, need);
+    const pieces = [];
+    for (let i = 0; i < lat.length; i++) {
+      const cx0 = tx + lat[i][0], cy0 = ty + lat[i][1];
+      const ax = Math.max(rx0, cx0), ay = Math.max(ry0, cy0), bx = Math.min(rx0 + w, cx0 + tw), by = Math.min(ry0 + h, cy0 + th);
+      if (bx <= ax || by <= ay) continue;
+      pieces.push([lat[i][0], lat[i][1], ax, ay, bx - ax, by - ay]);
     }
-    if (!hits.length) return liquifyCore(ctx, x, y, mode, strength, radius, dx, dy, reps);
-    const m = ctx.getTransform ? ctx.getTransform() : { a: 1, d: 1, e: 0, f: 0 };
-    const cv = ctx.canvas;
-    for (let i = 0; i < hits.length; i++) liquifyCore(ctx, hits[i][0], hits[i][1], mode, strength, radius, dx, dy, reps); // all warps first (each reads untouched pixels), copies after
-    for (let i = 0; i < hits.length; i++) {
-      const cx = hits[i][0], cy = hits[i][1];
-      const ax = Math.max(wrap.x, cx - R - 2), bx = Math.min(wrap.x + wrap.w, cx + R + 2), ay = Math.max(wrap.y, cy - R - 2), by = Math.min(wrap.y + wrap.h, cy + R + 2);
-      const sx = Math.max(0, Math.floor(m.a * ax + m.e)), sy = Math.max(0, Math.floor(m.d * ay + m.f));
-      const ex = Math.min(cv.width, Math.ceil(m.a * bx + m.e)), ey = Math.min(cv.height, Math.ceil(m.d * by + m.f));
-      const sw = ex - sx, sh = ey - sy; if (sw < 1 || sh < 1) continue;
-      let id; try { id = ctx.getImageData(sx, sy, sw, sh); } catch (e) { continue; } // one read, then plain pixel writes (drawing the canvas onto itself was ~20x slower)
-      for (let k = 0; k < wrap.offs.length; k++) ctx.putImageData(id, sx + Math.round(wrap.offs[k][0] * m.a), sy + Math.round(wrap.offs[k][1] * m.d));
+    for (let k = 0; k < pieces.length; k++) {
+      const pc = pieces[k]; let src;
+      const sx = pc[2] - pc[0], sy = pc[3] - pc[1], sw = pc[4], sh = pc[5];
+      if (sx < 0 || sy < 0 || sx + sw > cv.width || sy + sh > cv.height) continue;
+      try { src = ctx.getImageData(sx, sy, sw, sh).data; } catch (e) { return; }
+      for (let r = 0; r < sh; r++) {
+        const from = r * sw * 4, to = ((pc[3] - ry0 + r) * w + (pc[2] - rx0)) * 4;
+        buf.set(src.subarray(from, from + sw * 4), to);
+      }
+    }
+    const id = new ImageData(buf.subarray(0, need), w, h);
+    lqApply(id, w, h, rx0, ry0, cx, cy, R, sc, mode, strength, dx, dy, reps);
+    for (let k = 0; k < pieces.length; k++) {
+      const pc = pieces[k];
+      const sx = pc[2] - pc[0], sy = pc[3] - pc[1];
+      if (sx < 0 || sy < 0 || sx + pc[4] > cv.width || sy + pc[5] > cv.height) continue;
+      ctx.putImageData(id, rx0 - pc[0], ry0 - pc[1], pc[2] - rx0, pc[3] - ry0, pc[4], pc[5]);
     }
     lqSentinel(ctx);
   }
@@ -1227,6 +1270,7 @@
   function renderStroke(ctx, stroke, brush, settings, alphaMul) {
     if (!stroke.points || stroke.points.length === 0) return;
     if (stroke.brushId === 'smudge') { if (BrushEngine_skipSmudge.on) return; if (BrushEngine_skipSmudge.until && performance.now() > BrushEngine_skipSmudge.until) { BrushEngine_skipSmudge.hit = true; return; } try { smudgeStroke(ctx, stroke); } catch (e) {} return; }
+    try { ctx.canvas._lqNorm = false; } catch (e) { }
     if (alphaMul === undefined) alphaMul = 1;
     if (alphaMul <= 0) return; // fully hidden — skip dabs entirely rather than stamp at opacity 0
     if (brush.id === 'watercolour' && settings && settings.engine === 'raster') { try { renderWatercolour(ctx, stroke, brush, settings, alphaMul); } catch (e) { try { renderBase(ctx, stroke, brush, settings, alphaMul); } catch (e2) {} } return; }
