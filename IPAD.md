@@ -826,3 +826,7 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 - Adjust panel now has **Blur this layer** (0–80 px) plus Remove blur. It is a layer setting, not baked in: change or remove any time, undo/redo, saved in the project, copied by Duplicate layer.
 - Wraps around tile edges when tiling is on (and always in hi-res export) so patterns stay seamless. Shows in screen, zoomed view, PNG and hi-res export; SVG can't hold it.
 - Uses the canvas blur filter when available, otherwise a built-in box-blur fallback (for iPads without it).
+
+## v249 — Liquify modes
+- Warp is now **Liquify**: Push (as before), **Pinch**, **Bloat**, **Twirl ↻** and **Twirl ↺**. Pinch/Bloat/Twirl work while you press and hold (or drag) with the pen; Size and Strength sliders apply to all.
+- Acts on vector points of the active layer; one undo step per press.
