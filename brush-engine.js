@@ -989,6 +989,79 @@
   // Liquify on real paint: moves the pixels around the brush (push / pinch / bloat / twirl), so neighbouring colours smear and
   // swirl into each other like marbling. One call = one small step; holding the pen makes many steps. Steps are stored on the
   // stroke and replayed in order, so undo, saving and hi-res export see exactly the same result.
+  // ---- Liquify on the GPU ----
+  // The pixel warp is the same maths as the CPU loop below, run as a WebGL fragment shader. Reading the layer back with getImageData and
+  // pushing it up again with putImageData is what made big brushes lag; here the pixels only move GPU to GPU. If WebGL is not
+  // available (or ever fails) the CPU path below is used instead.
+  // The GPU is only used if it measures faster than the CPU on this device: the first big steps are timed both ways (alternating, results
+  // are identical either way) and the winner is remembered. On a device where WebGL is slow or missing the CPU path stays in charge.
+  const _lq = { on: true, bad: false, gl: null, cv: null, prog: null, u: null, tex: null, src: null, sctx: null, pick: 'auto', samples: { gl: [], cpu: [] } };
+  try { const v = localStorage.getItem('sp-lqgl'); if (v === 'gl' || v === 'cpu') _lq.pick = v; } catch (e) { }
+  function lqRecord(kind, ms, area) {
+    const a = _lq.samples[kind]; a.push(ms / area); if (a.length > 4) a.shift();
+    if (_lq.pick !== 'auto' || _lq.samples.gl.length < 3 || _lq.samples.cpu.length < 3) return;
+    const med = q => q.slice().sort((x, y) => x - y)[q.length >> 1];
+    _lq.pick = med(_lq.samples.gl) < med(_lq.samples.cpu) * 0.85 ? 'gl' : 'cpu';
+    try { localStorage.setItem('sp-lqgl', _lq.pick); } catch (e) { }
+  }
+  const LQ_VS = 'attribute vec2 aPos;varying vec2 vUv;void main(){vUv=vec2(aPos.x*0.5+0.5,0.5-aPos.y*0.5);gl_Position=vec4(aPos,0.0,1.0);}';
+  const LQ_FS = 'precision highp float;varying vec2 vUv;uniform sampler2D uTex;uniform vec2 uRes;uniform vec2 uC;uniform vec2 uPd;uniform float uR;uniform float uS;uniform float uAng;uniform float uPf;uniform float uReps;uniform int uMode;' +
+    'void main(){vec2 g=vUv*uRes-uC;float R2=uR*uR;float d2=dot(g,g);if(d2>=R2){gl_FragColor=texture2D(uTex,vUv);return;}' +
+    'float u=1.0-d2/R2;float u2=u*u;float k=u2*uS;vec2 s;' +
+    'if(uMode==0){s=g-uPd*k;}' +
+    'else if(uMode==1){vec2 q=g;float rem=uReps;for(int i=0;i<400;i++){if(rem<=0.0)break;float part=min(rem,1.0);rem-=part;float dd=dot(q,q);if(dd>=R2)break;float uu=1.0-dd/R2;q*=1.0+uPf*uu*uu*uS*part*0.042;}s=q;}' +
+    'else{float a=uAng*u2;float c=cos(a);float sn=-sin(a);s=vec2(g.x*c-g.y*sn,g.x*sn+g.y*c);}' +
+    'vec2 t=(s+uC)/uRes;if(t.x<0.0||t.y<0.0||t.x>1.0||t.y>1.0){gl_FragColor=vec4(0.0);return;}gl_FragColor=texture2D(uTex,t);}';
+  function lqInitGL() {
+    if (_lq.gl) return true; if (_lq.bad) return false;
+    try {
+      const cv = document.createElement('canvas'); cv.width = cv.height = 256;
+      const gl = cv.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: false, depth: false, stencil: false, preserveDrawingBuffer: true });
+      if (!gl) throw new Error('no webgl');
+      const sh = (type, src) => { const o = gl.createShader(type); gl.shaderSource(o, src); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; };
+      const pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, LQ_VS)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, LQ_FS)); gl.linkProgram(pr);
+      if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(pr));
+      gl.useProgram(pr);
+      const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+      const ap = gl.getAttribLocation(pr, 'aPos'); gl.enableVertexAttribArray(ap); gl.vertexAttribPointer(ap, 2, gl.FLOAT, false, 0, 0);
+      const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.disable(gl.BLEND); gl.disable(gl.DEPTH_TEST);
+      const u = {}; ['uTex', 'uRes', 'uC', 'uPd', 'uR', 'uS', 'uAng', 'uPf', 'uReps', 'uMode'].forEach(n => { u[n] = gl.getUniformLocation(pr, n); });
+      cv.addEventListener('webglcontextlost', e => { e.preventDefault(); _lq.gl = null; _lq.bad = true; });
+      _lq.cv = cv; _lq.gl = gl; _lq.prog = pr; _lq.u = u; _lq.tex = tex;
+      _lq.src = document.createElement('canvas'); _lq.sctx = _lq.src.getContext('2d');
+      return true;
+    } catch (e) { _lq.bad = true; _lq.gl = null; return false; }
+  }
+  function lqGL(ctx, x0, y0, w, h, cx, cy, R, mode, strength, ang, pdx, pdy, reps) {
+    if (!_lq.on || !lqInitGL()) return false;
+    try {
+      const gl = _lq.gl, cv = _lq.cv, u = _lq.u;
+      if (_lq.src.width !== w || _lq.src.height !== h) { _lq.src.width = w; _lq.src.height = h; }
+      const sc = _lq.sctx; sc.setTransform(1, 0, 0, 1, 0, 0); sc.globalCompositeOperation = 'copy'; sc.globalAlpha = 1;
+      sc.drawImage(ctx.canvas, x0, y0, w, h, 0, 0, w, h);
+      if (cv.width < w || cv.height < h) { cv.width = Math.max(cv.width, Math.ceil(w / 64) * 64); cv.height = Math.max(cv.height, Math.ceil(h / 64) * 64); }
+      gl.viewport(0, cv.height - h, w, h);
+      gl.bindTexture(gl.TEXTURE_2D, _lq.tex);
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, _lq.src);
+      gl.uniform1i(u.uTex, 0); gl.uniform2f(u.uRes, w, h); gl.uniform2f(u.uC, cx - x0, cy - y0); gl.uniform2f(u.uPd, pdx, pdy);
+      gl.uniform1f(u.uR, R); gl.uniform1f(u.uS, strength); gl.uniform1f(u.uAng, ang);
+      const pf = mode === 'pinch' ? 1 : mode === 'bloat' ? -1 : 0;
+      gl.uniform1f(u.uPf, pf); gl.uniform1f(u.uReps, reps > 1 ? Math.min(reps, 400) : 1);
+      gl.uniform1i(u.uMode, mode === 'push' ? 0 : pf ? 1 : 2);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      ctx.save();
+      try {
+        ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.beginPath(); ctx.rect(x0, y0, w, h); ctx.clip();
+        ctx.globalCompositeOperation = 'copy'; ctx.globalAlpha = 1; try { ctx.filter = 'none'; ctx.shadowColor = 'transparent'; } catch (e2) { }
+        ctx.drawImage(cv, 0, 0, w, h, x0, y0, w, h);
+      } finally { ctx.restore(); }
+      return true;
+    } catch (e) { _lq.bad = true; _lq.gl = null; return false; }
+  }
   let _lqOut = null; // scratch buffer reused between steps (a fresh multi-MB array per step was what made big brushes lag and crash)
   function liquifyStep(ctx, x, y, mode, strength, radius, dx, dy, reps) {
     const m = ctx.getTransform ? ctx.getTransform() : { a: 1, d: 1, e: 0, f: 0 };
@@ -997,6 +1070,20 @@
     const x0 = Math.max(0, Math.floor(cx - R) - 1), y0 = Math.max(0, Math.floor(cy - R) - 1);
     const x1 = Math.min(ctx.canvas.width, Math.ceil(cx + R) + 1), y1 = Math.min(ctx.canvas.height, Math.ceil(cy + R) + 1);
     const w = x1 - x0, h = y1 - y0; if (w < 2 || h < 2) return;
+    const area = w * h;
+    let tryGL = false, timed = false;
+    if (_lq.on && !_lq.bad && _lq.pick !== 'cpu') {
+      if (_lq.pick === 'gl') tryGL = true;
+      else if (area >= 40000) { timed = true; tryGL = _lq.samples.gl.length <= _lq.samples.cpu.length; }
+    }
+    const tStart = timed ? performance.now() : 0;
+    if (tryGL) {
+      if (lqGL(ctx, x0, y0, w, h, cx, cy, R, mode, strength, (mode === 'twirlR' ? 1 : mode === 'twirlL' ? -1 : 0) * 0.075 * strength, dx * sc, dy * sc, reps)) {
+        if (timed) { try { ctx.getImageData(x0, y0, 1, 1); } catch (e) { } lqRecord('gl', performance.now() - tStart, area); } // reading a pixel makes the GPU finish, so the timing is honest
+        return;
+      }
+      timed = false; _lq.pick = 'cpu'; // WebGL failed: stay on the CPU path
+    }
     let id; try { id = ctx.getImageData(x0, y0, w, h); } catch (e) { return; }
     const src = id.data, n = src.length;
     if (!_lqOut || _lqOut.length < n) _lqOut = new Uint8ClampedArray(n);
@@ -1043,13 +1130,14 @@
       }
     }
     id.data.set(n === out.length ? out : out.subarray(0, n)); ctx.putImageData(id, x0, y0);
+    if (timed) { try { ctx.getImageData(x0, y0, 1, 1); } catch (e) { } lqRecord('cpu', performance.now() - tStart, area); }
   }
   // A long hold (twirl / pinch / bloat) is stored as hundreds of tiny steps at almost the same spot, and a long push drag as hundreds
   // of tiny moves. Replaying all of them on every project open / layer rebuild is what made big projects unusable. Neighbouring steps
   // are merged here: for a hold the result is the same (rotation and scaling about one centre simply add up), for a push it is
   // within a hair of the original.
   function liquifyMerge(pts, size) {
-    const out = [], lim = Math.max(2, size * 0.06);
+    const out = [], lim = Math.max(2, size * 0.06), plim = Math.max(3, size * 0.1);
     let run = null;
     for (let i = 0; i < pts.length; i++) {
       const p = pts[i], m = p.m || 'push', s = p.s || 1, pdx = p.dx || 0, pdy = p.dy || 0, last = out[out.length - 1];
@@ -1058,7 +1146,7 @@
           if (Math.hypot(p.x - last.x, p.y - last.y) < lim) { const tot = last.s + s; last.x = (last.x * last.s + p.x * s) / tot; last.y = (last.y * last.s + p.y * s) / tot; last.s = tot; continue; }
         } else {
           const l = Math.hypot(pdx, pdy);
-          if (run.len + l <= lim) { last.dx += pdx; last.dy += pdy; last.x = (last.x * run.n + p.x) / (run.n + 1); last.y = (last.y * run.n + p.y) / (run.n + 1); run.n++; run.len += l; continue; }
+          if (run.len + l <= plim) { last.dx += pdx; last.dy += pdy; last.x = (last.x * run.n + p.x) / (run.n + 1); last.y = (last.y * run.n + p.y) / (run.n + 1); run.n++; run.len += l; continue; }
         }
       }
       out.push({ x: p.x, y: p.y, m: m, dx: pdx, dy: pdy, s: s }); run = { n: 1, len: Math.hypot(pdx, pdy) };
@@ -1303,6 +1391,6 @@
     getSettings, setSettings,
     touchRecent, getRecents,
     isFavorite, toggleFavorite, getFavorites,
-    underlay: null, skipSmudge: BrushEngine_skipSmudge, liveEnd, makeSmudger, makeCloner, liquifyStep, pressureFactor, stampDab, colorWithAlpha, resample, renderStroke, smoothPoints, seededRandom,
+    underlay: null, skipSmudge: BrushEngine_skipSmudge, liveEnd, makeSmudger, makeCloner, liquifyStep, liquifyGL: _lq, pressureFactor, stampDab, colorWithAlpha, resample, renderStroke, smoothPoints, seededRandom,
   };
 })(window);
