@@ -1207,7 +1207,7 @@
     const st = stroke.settings || {}, lq = st.liquify || {};
     const size = lq.size || 80, base = lq.strength == null ? 0.8 : lq.strength;
     const pts = liquifyMerge(stroke.points || [], size);
-    let wrap = null; if (lq.wrap && BrushEngine_wrap.get) { try { wrap = BrushEngine_wrap.get(); } catch (e) { wrap = null; } }
+    let wrap = null; if (lq.wrap !== 0 && BrushEngine_wrap.get) { try { wrap = BrushEngine_wrap.get(); } catch (e) { wrap = null; } }
     for (let i = 0; i < pts.length; i++) {
       const p = pts[i];
       const m = p.m || lq.mode || 'push', sv = p.s || 1, hold = m === 'pinch' || m === 'bloat';
