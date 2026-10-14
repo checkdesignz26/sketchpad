@@ -767,3 +767,8 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v232 — snapping back, without sticking
 - Snap highlights work again as soon as you drag a node (pull range 15 px). A node that STARTS right next to another path/node stays free until you drag ~26 px away from it, then snapping turns on — so ends can still be picked up and moved.
+
+## v233 — Shape builder panel + Rotate icon
+- New rail icon (two overlapping circles) opens a floating **Shape builder** panel: Pick shapes, then Add, Subtract (top shape cuts those below), Intersect, Xor, Divide (every overlap becomes its own piece). Works on closed outline shapes; results are normal editable vector shapes; undo restores the originals. (The old Merge/Subtract/Intersect box is still in the Stroke tools.)
+- New rail **Rotate** icon opens the Rotate panel (select a stroke first).
+- The Selection panel no longer pops open over the Shape builder while it's open.
