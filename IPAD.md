@@ -830,3 +830,7 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 ## v249 — Liquify modes
 - Warp is now **Liquify**: Push (as before), **Pinch**, **Bloat**, **Twirl ↻** and **Twirl ↺**. Pinch/Bloat/Twirl work while you press and hold (or drag) with the pen; Size and Strength sliders apply to all.
 - Acts on vector points of the active layer; one undo step per press.
+
+## v250 — Clone tool
+- New **Clone** tool (rail icon): tap the artwork you want to copy from (on the active layer), then paint where the copy should go. The first stroke fixes the offset; later strokes keep it (aligned). "Move source" picks a new spot. Size, Opacity, Softness sliders.
+- Samples a snapshot taken at stroke start, so it never re-copies what it just painted. Stored as a replayed raster step (like Smudge): undo, save, hi-res export all replay it. Copies only the active layer's pixels; the eraser can't rub it out (Undo).
