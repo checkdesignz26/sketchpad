@@ -38,10 +38,11 @@ with sync_playwright() as p:
     # --- select group, recolour
     js("document.getElementById('editModeBtn').click()");pg.wait_for_timeout(300)
     ids=js(ST+".strokes.filter(s=>!s.fillOf).map(s=>s.id)")
-    js(f"window.__sketchpadInternals().setMulti({ids},[],null);window.__sketchpadInternals().syncStrokeSelectionUI&&window.__sketchpadInternals().syncStrokeSelectionUI()");pg.wait_for_timeout(300)
+    js(f"window.__sketchpadInternals().setMulti({ids},[],null);window.__sketchpadInternals().syncStrokeSelectionUI&&window.__sketchpadInternals().syncStrokeSelectionUI();window.__sketchpadInternals().segVerBump()");pg.wait_for_timeout(300)
     ok('group bar visible',js("getComputedStyle(document.getElementById('groupBar')).display")!='none')
     ok('mixed marker shown',js("document.getElementById('grpColour').classList.contains('cs-mixed')"))
-    js("document.getElementById('grpColour').click()");pg.wait_for_timeout(300)
+    r=js("(()=>{const r=document.getElementById('grpColour').getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2]})()")
+    pg.mouse.click(r[0],r[1]);pg.wait_for_timeout(300)
     ok('group opens studio',studio(pg)=='block')
     ok('studio mixed state did not recolour',[o[0] for o in outl()]==['#cc0000','#0000cc','#00aa00'],outl())
     js("document.querySelector('[data-cst=stroke]').click()")
