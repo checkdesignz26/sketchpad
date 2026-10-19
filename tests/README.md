@@ -9,3 +9,7 @@ They draw with real mouse events and read canvas geometry through `window.__sket
 - test_linked_fill.py: Fill on/off, colour, node drag, count change and reload across 6-8 linked petals
 - test_pivot_drag.py: drag the centre marker, copies turn about the new centre live, undo restores it
 - test_stroke_width_state.py: size box follows the selected stroke, mixed selections show "mixed", the drawing tool width is never overwritten by editing a stroke
+
+## Tiled export (v322)
+- `test_tiled_export.py`: every layout (Grid / Half Drop / Half Brick) at 1×1, 2×2, 3×3 is compared pixel by pixel with the lattice rule built from the seamless tile; checks transparency and the size limits.
+- `test_tiled_export_ui.py`: Export menu → Tiled export → Save through the real buttons; PNG validity (IDAT inflates to the right size), project untouched, 49 MP save, large-size warning, plain exports still work.
