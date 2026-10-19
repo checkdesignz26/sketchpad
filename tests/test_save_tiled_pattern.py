@@ -27,8 +27,8 @@ with sync_playwright() as p:
   cards=js("[...document.querySelectorAll('.col-card')].map(c=>c.textContent.trim().slice(0,40))")
   print('cards',cards)
   res.append(ok(len(cards)==2,'exactly one new filmstrip entry'))
-  res.append(ok(S()==base,'original strokes untouched'))
-  res.append(ok(js("window.__sketchpadCanvasTiling.get()")==3,'original keeps its tiling setting'))
+  res.append(ok(len(S())==len(base)*9,'new pattern opened straight away for editing',len(S())))
+  nm=js("[...document.querySelectorAll('.col-card')].map(c=>c.textContent)");res.append(ok(any('— 3×3' in t for t in nm),'auto name uses an em dash and the count',nm))
   # open the new pattern
   pg.locator('.col-card').nth(1).click();pg.wait_for_timeout(2500)
   ns=S();print('new strokes',len(ns))

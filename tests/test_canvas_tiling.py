@@ -31,6 +31,9 @@ with sync_playwright() as p:
   pg.screenshot(path='cvt3.png')
   pg.evaluate("window.__sketchpadCanvasTiling.set(2,true)");pg.wait_for_timeout(500);pg.screenshot(path='cvt2.png')
   pg.evaluate("window.__sketchpadCanvasTiling.set(1,true)");pg.wait_for_timeout(500);pg.screenshot(path='cvt1.png')
-  print('png export dims',js("(async()=>{window.__sketchpadCanvasTiling.set(3,true);const c=await window.__sketchpadCanvasTiling.png(false);window.__sketchpadCanvasTiling.set(1,true);return [c.width,c.height]})()"))
+  for n in (4,8):
+    js("n=>window.__sketchpadCanvasTiling.set(n,true)",n);pg.wait_for_timeout(300);print('n',n,'effective',js('window.__sketchpadCanvasTiling.n()'))
+  js('window.__sketchpadCanvasTiling.set(99,true)');print('clamped',js('window.__sketchpadCanvasTiling.get()'))
+  js('window.__sketchpadCanvasTiling.set(1,true)')
   print('errs',errs);print('OK' if ok and not errs else 'FAIL')
   b.close()
