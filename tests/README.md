@@ -16,3 +16,5 @@ They draw with real mouse events and read canvas geometry through `window.__sket
 
 ## Canvas Tiling (v323)
 `tests/test_canvas_tiling.py` checks 1×1 / 2×2 / 3×3 pattern scale on Grid, Half Drop and Half Brick: the strokes never change, drawing inside a small copy lands in the source tile, and "Save canvas as shown" keeps the tile size. `tests/test_tile_preview.py` covers the live Tiled Export preview.
+
+`tests/test_save_tiled_pattern.py` (v324): Save as New Pattern adds exactly one filmstrip entry with independent editable vectors (Grid, Half Drop, Half Brick counted), leaves the original untouched, and edits in either pattern stay in that pattern.
