@@ -13,3 +13,6 @@ They draw with real mouse events and read canvas geometry through `window.__sket
 ## Tiled export (v322)
 - `test_tiled_export.py`: every layout (Grid / Half Drop / Half Brick) at 1×1, 2×2, 3×3 is compared pixel by pixel with the lattice rule built from the seamless tile; checks transparency and the size limits.
 - `test_tiled_export_ui.py`: Export menu → Tiled export → Save through the real buttons; PNG validity (IDAT inflates to the right size), project untouched, 49 MP save, large-size warning, plain exports still work.
+
+## Canvas Tiling (v323)
+`tests/test_canvas_tiling.py` checks 1×1 / 2×2 / 3×3 pattern scale on Grid, Half Drop and Half Brick: the strokes never change, drawing inside a small copy lands in the source tile, and "Save canvas as shown" keeps the tile size. `tests/test_tile_preview.py` covers the live Tiled Export preview.
