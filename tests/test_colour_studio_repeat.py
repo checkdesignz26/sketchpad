@@ -1,0 +1,47 @@
+from playwright.sync_api import sync_playwright
+import common as t500
+def ok(n,c,extra=''): print(('PASS ' if c else 'FAIL ')+n,extra)
+ST="window.__sketchpadGetState()"
+with sync_playwright() as p:
+    b,pg,errs=t500.boot(p);js=pg.evaluate
+    js("document.querySelector('.shape-btn[data-shape=teardrop]').click()");pg.wait_for_timeout(200)
+    pg.mouse.move(560,250);pg.mouse.down();pg.mouse.move(660,450,steps=8);pg.mouse.up();pg.wait_for_timeout(400)
+    js("document.getElementById('editModeBtn').click()");pg.wait_for_timeout(300)
+    pg.mouse.click(610,350);pg.wait_for_timeout(400)
+    js("document.getElementById('openRotatePanelBtn').click()");pg.wait_for_timeout(400)
+    js("document.getElementById('repeatMakeBtn').click()");pg.wait_for_timeout(500)
+    n=js(ST+".strokes.filter(s=>s.radial||s.radialOf).length");ok('flower made',n>=3,n)
+    pg.mouse.click(610,350);pg.wait_for_timeout(300)
+    # open studio via selection colour input
+    js("[...document.querySelectorAll('.sel-colour')].find(e=>e.offsetParent!==null).click()");pg.wait_for_timeout(300)
+    ok('selection colour opens studio',js("document.getElementById('colourStudio').style.display")=='block')
+    js("document.querySelector('[data-cstab=custom]').click();document.querySelector('[data-cst=both]').click()")
+    pg.fill('#csHex','#ff3366');pg.keyboard.press('Enter');pg.wait_for_timeout(500)
+    q=js("(()=>{const S="+ST+".strokes;const pet=S.filter(s=>(s.radial||s.radialOf));return [pet.length,pet.map(s=>s.color),pet.map(s=>s.fill&&s.fill.on?s.fill.color:null),S.filter(x=>x.fillOf).map(x=>x.fillColor)]})()")
+    ok('all petals stroke recoloured',set(q[1])=={'#ff3366'},q[1])
+    ok('all petals filled',set(q[2])=={'#ff3366'},q[2])
+    ok('fill strokes follow',set(q[3])=={'#ff3366'} and len(q[3])==q[0],q[3])
+    ok('still linked',js(ST+".strokes.filter(s=>s.radialOf).length")==q[0]-1)
+    # stroke-only different colour
+    js("document.querySelector('[data-cst=stroke]').click()")
+    pg.fill('#csHex','#3366ff');pg.keyboard.press('Enter');pg.wait_for_timeout(500)
+    q=js("(()=>{const S="+ST+".strokes;const pet=S.filter(s=>(s.radial||s.radialOf));return [pet.map(s=>s.color),pet.map(s=>s.fill&&s.fill.on?s.fill.color:null)]})()")
+    ok('stroke-only propagates, fill kept',set(q[0])=={'#3366ff'} and set(q[1])=={'#ff3366'},q)
+    js("document.getElementById('csDoneBtn').click()")
+    js("document.getElementById('undoBtn').click()");pg.wait_for_timeout(400)
+    q=js("(()=>{const S="+ST+".strokes;return S.filter(s=>(s.radial||s.radialOf)).map(s=>s.color)})()")
+    ok('undo restores stroke colour on all copies',set(q)=={'#ff3366'},q)
+    js("document.getElementById('redoBtn').click()");pg.wait_for_timeout(400)
+    pg.wait_for_timeout(2500);pg.reload();pg.wait_for_timeout(3000)
+    q=js("(()=>{const S="+ST+".strokes;return [S.filter(s=>(s.radial||s.radialOf)).map(s=>s.color),S.filter(x=>x.fillOf).map(x=>x.fillColor)]})()")
+    print('after reload',q)
+    # palette persistence
+    js("document.getElementById('tbColor').click()");pg.wait_for_timeout(300)
+    js("document.querySelector('[data-cstab=custom]').click()");pg.fill('#csHex','#abcdef');pg.keyboard.press('Enter')
+    js("document.getElementById('csAddBtn').click()");pg.wait_for_timeout(2500)
+    pg.reload();pg.wait_for_timeout(3000)
+    js("document.getElementById('tbColor').click()");pg.wait_for_timeout(300)
+    js("document.querySelector('[data-cstab=mine]').click()");pg.wait_for_timeout(300)
+    sw=js("[...document.querySelectorAll('#csMine .pal-sw')].map(e=>e.title||e.style.background)")
+    ok('saved palette survives reopen',any('abcdef' in str(x).lower() or '171, 205, 239' in str(x) for x in sw),sw)
+    print('errors',errs);b.close()
