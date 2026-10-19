@@ -43,7 +43,7 @@ with sync_playwright() as p:
     pg.locator('#undoBtn').click();pg.wait_for_timeout(400)
     print('UNDO     ',js(GEOM))
     pg.locator('#redoBtn').click();pg.wait_for_timeout(400)
-    pg.mouse.click(610,350);pg.wait_for_timeout(300)
+    t500.pick_petal(pg);pg.wait_for_timeout(300)
     js("document.getElementById('editPathBtn').click()");pg.wait_for_timeout(400)
     fillbtn(pg).click();pg.wait_for_timeout(500)
     print('FILL OFF ',js(GEOM),js(FILL))

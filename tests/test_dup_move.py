@@ -15,7 +15,7 @@ with sync_playwright() as p:
     pg.locator('#pathEditBar button:has-text("Fill:")').first.click();pg.wait_for_timeout(400)
     pg.locator('#pathEditDoneTopBtn').click();pg.wait_for_timeout(400)
     # select ONE petal, duplicate from quick actions
-    pg.mouse.click(610,350);pg.wait_for_timeout(300)
+    t500.pick_petal(pg);pg.wait_for_timeout(300)
     print('sel',js(ST+".selectedStrokeId"),js(ST+".multiSel?"+ST+".multiSel.strokeIds.length:0"))
     js("document.getElementById('qaDup').click()");pg.wait_for_timeout(600)
     r=js(FL);print(r)

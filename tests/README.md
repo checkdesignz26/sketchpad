@@ -18,3 +18,5 @@ They draw with real mouse events and read canvas geometry through `window.__sket
 `tests/test_canvas_tiling.py` checks 1×1 / 2×2 / 3×3 pattern scale on Grid, Half Drop and Half Brick: the strokes never change, drawing inside a small copy lands in the source tile, and "Save canvas as shown" keeps the tile size. `tests/test_tile_preview.py` covers the live Tiled Export preview.
 
 `tests/test_save_tiled_pattern.py` (v324): Save as New Pattern adds exactly one filmstrip entry with independent editable vectors (Grid, Half Drop, Half Brick counted), leaves the original untouched, and edits in either pattern stay in that pattern.
+
+`tests/test_rotate_group.py` (v326): Make copies groups the flower; tap = whole flower, double-tap = one petal (no accidental duplicate); ungroup keeps the repeat links, Unlink repeats keeps the group; Duplicate makes a new group with its own links; other groups untouched. Older flower tests now use `common.pick_petal()` (double-tap) because a tap on a grouped flower selects the whole flower.

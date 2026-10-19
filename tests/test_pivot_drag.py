@@ -17,7 +17,7 @@ with sync_playwright() as p:
     # live follow during drag: 6 petals, drag a node and read kids mid-drag
     js("(n)=>{const c=document.getElementById('repeatCount');c.value=n;c.dispatchEvent(new Event('input'))}",6)
     js("document.getElementById('repeatMakeBtn').click()");pg.wait_for_timeout(300)
-    pg.mouse.click(610,350);pg.wait_for_timeout(300)
+    t500.pick_petal(pg);pg.wait_for_timeout(300)
     js("document.getElementById('editPathBtn').click()");pg.wait_for_timeout(400)
     r=js("(()=>{const e=document.getElementById('pathNodeOverlay').children[3].getBoundingClientRect();return [e.x+e.width/2,e.y+e.height/2]})()")
     s0=js(t505.SNAP)

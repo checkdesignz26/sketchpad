@@ -31,7 +31,7 @@ if __name__=='__main__':
     # edit source again (select source first)
     sid=js("window.__sketchpadGetState().strokes.find(s=>s.radial).id")
     js("(id)=>{const I=window.__sketchpadInternals();}",sid)
-    pg.mouse.click(610,350);pg.wait_for_timeout(400)
+    t500.pick_petal(pg);pg.wait_for_timeout(400)
     print('sel2',js("(()=>{const s=window.__sketchpadGetState();const x=s.strokes.find(q=>q.id===s.selectedStrokeId);return x&&[!!x.radial,x.radialOf]})()"))
     editsrc(pg,30,60,3)
     print('after 2nd edit',js(CHECK))

@@ -37,7 +37,7 @@ with sync_playwright() as p:
     pg.locator('#redoBtn').click();pg.wait_for_timeout(400);print('redo',js(ST),t505.dev(snap,js(t505.SNAP)))
     pg.wait_for_timeout(2500);pg.reload();pg.wait_for_timeout(2500)
     print('reload',js(ST),t505.dev(snap,js(t505.SNAP)))
-    pg.mouse.click(610,350);pg.wait_for_timeout(400)
+    __import__("common").pick_petal(pg);pg.wait_for_timeout(400)
     js("document.getElementById('openRotatePanelBtn').click()");pg.wait_for_timeout(400)
     print('panel reflects saved flower',js("[document.getElementById('repeatCount').value,document.getElementById('repeatAngle').value,document.getElementById('repeatEven').checked]"))
     pg.locator('#repeatMinus').click();pg.wait_for_timeout(300);print('minus after reload',js(ST),js(t501.CHECK)['worst'])
