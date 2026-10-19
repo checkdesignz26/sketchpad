@@ -22,3 +22,4 @@ They draw with real mouse events and read canvas geometry through `window.__sket
 
 ## Pattern Templates (v329)
 - `test_templates.py`: 12 mixed-shape presets, outline-only guides on their own layers, no node editing, replace shape, add shape/arrow, guides excluded from every pattern export, transparent guide PNG + 3×3 preview, native file validation, refresh persistence, undo, half-drop/half-brick layouts, edge wrapping.
+- `test_templates_v2.py` / `test_templates_seamless.py` (v330): one colour per shape type, arrows inside placeholders, edge-crossing presets, master tile equals the repeat lattice for grid / half-drop / half-brick.
