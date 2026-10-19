@@ -19,3 +19,6 @@ They draw with real mouse events and read canvas geometry through `window.__sket
 `tests/test_save_tiled_pattern.py` (v324): Save as New Pattern adds exactly one filmstrip entry with independent editable vectors (Grid, Half Drop, Half Brick counted), leaves the original untouched, and edits in either pattern stay in that pattern.
 
 `tests/test_rotate_group.py` (v326): Make copies groups the flower; tap = whole flower, double-tap = one petal (no accidental duplicate); ungroup keeps the repeat links, Unlink repeats keeps the group; Duplicate makes a new group with its own links; other groups untouched. Older flower tests now use `common.pick_petal()` (double-tap) because a tap on a grouped flower selects the whole flower.
+
+## Pattern Templates (v329)
+- `test_templates.py`: 12 mixed-shape presets, outline-only guides on their own layers, no node editing, replace shape, add shape/arrow, guides excluded from every pattern export, transparent guide PNG + 3×3 preview, native file validation, refresh persistence, undo, half-drop/half-brick layouts, edge wrapping.
