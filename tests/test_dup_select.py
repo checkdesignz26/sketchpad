@@ -24,6 +24,7 @@ with sync_playwright() as p:
     pt=js("(()=>{const S=window.__sketchpadGetState().strokes;const src=S.filter(s=>s.radial)[1];const o=[src,...S.filter(c=>c.radialOf===src.id)][1];const c=document.getElementById('canvas').getBoundingClientRect();const p=o.points[Math.floor(o.points.length/2)];return [p.x,p.y,c.left,c.top,c.width,c.height,document.getElementById('canvas').width,document.getElementById('canvas').height]})()")
     sx=pt[2]+pt[0]*pt[4]/pt[6];sy=pt[3]+pt[1]*pt[5]/pt[7]
     pg.mouse.click(sx,sy);pg.wait_for_timeout(400)
+    pg.wait_for_timeout(900)
     print('1st tap: single',js(ST+".selectedStrokeId")!=None)
     pg.mouse.move(sx,sy);pg.mouse.down();pg.mouse.move(sx+20,sy+10,steps=4);pg.mouse.up();pg.wait_for_timeout(400)
     n=js(ST+".multiSel?"+ST+".multiSel.strokeIds.length:0");ok('re-tap/drag petal selects whole flower',n==12,n)
