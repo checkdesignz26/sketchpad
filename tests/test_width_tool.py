@@ -78,7 +78,7 @@ with sync_playwright() as p:
   js("document.querySelector('.wp-pre[data-k=swell]').click()");pg.wait_for_timeout(300)
   js("(()=>{const i=document.getElementById('wpNameInput');i.value='Soft Swell'})()");js("document.getElementById('wpSaveBtn').click()");pg.wait_for_timeout(300)
   prof=js("JSON.parse(localStorage.getItem('sp-width-profiles-v1'))");print(prof)
-  ok(len(prof)==1 and prof[0]['name']=='Soft Swell' and set(prof[0].keys())=={'id','name','v','interp','pts'},'profile saved (name + shape only)')
+  ok(len(prof)==1 and prof[0]['name']=='Soft Swell' and set(prof[0].keys())=={'id','name','v','interp','pts','ref'},'profile saved (name + shape only)')
   ok(js("document.querySelectorAll('#wpProfList canvas').length")==1,'profile thumbnail shown')
   # second, longer stroke with a bigger brush
   js("document.getElementById('modeDrawBtn')&&document.getElementById('modeDrawBtn').click()")

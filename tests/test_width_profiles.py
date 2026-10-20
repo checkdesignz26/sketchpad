@@ -21,7 +21,7 @@ with sync_playwright() as p:
   js("document.querySelector('.wp-pre[data-k=swell]').click()");pg.wait_for_timeout(300)
   js("document.getElementById('wpNameInput').value='Soft Swell'");js("document.getElementById('wpSaveBtn').click()");pg.wait_for_timeout(300)
   prof=js("JSON.parse(localStorage.getItem('sp-width-profiles-v1'))")
-  ok(len(prof)==1 and set(prof[0].keys())=={'id','name','v','interp','pts'},'profile holds only name/shape/schema (no path, colour or thickness)')
+  ok(len(prof)==1 and set(prof[0].keys())=={'id','name','v','interp','pts','ref'},'profile holds only name/shape/schema (no path, colour or thickness)')
   # stroke B: long, bigger brush, other colour
   js("document.getElementById('drawModeBtn')&&document.getElementById('drawModeBtn').click()")
   js("document.getElementById('editModeBtn').click()")

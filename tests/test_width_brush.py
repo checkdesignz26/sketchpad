@@ -39,6 +39,7 @@ with sync_playwright() as p:
   ok(any('Tapered ink eye lashes' in o for o in opts) and 'Uniform' in opts,'dropdown lists None, Uniform, Custom and the saved profiles')
   js("(()=>{const e=document.getElementById('bmFrom');e.value='taperedInk';e.dispatchEvent(new Event('change'))})()");pg.wait_for_timeout(300)
   js("(()=>{const e=document.getElementById('bmWProf');e.value='p:%s';e.dispatchEvent(new Event('change'))})()"%prof[0]['id']);pg.wait_for_timeout(300)
+  ok(prof[0].get('ref',0)>0 and abs(float(js("document.getElementById('bmSize').value"))-prof[0]['ref'])<.06,'a saved profile remembers the thickness of the line it came from and the new brush starts at that size (%s)'%prof[0].get('ref'))
   js("(()=>{const e=document.getElementById('bmPW');e.value='0';e.dispatchEvent(new Event('input'))})()")
   js("(()=>{const e=document.getElementById('bmSize');e.value='5';e.dispatchEvent(new Event('input'))})()")
   ok(js("document.getElementById('bmTaperS').disabled && document.getElementById('bmTaperE').disabled"),'basic taper sliders are switched off while a profile is used')
