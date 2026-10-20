@@ -11,13 +11,13 @@ with sync_playwright() as p:
   pg.mouse.click(cx,cy);pg.wait_for_timeout(600)
   assert js("window.__sketchpadGetState().selectedStrokeId"),'no stroke'
   clip={'x':cx-190,'y':cy-50,'width':380,'height':100}
-  js("document.getElementById('strokePanelBtn').click()");pg.wait_for_timeout(500)
-  js("document.querySelector('.cap-btn[data-cap=capS][data-v=flat]').click()");pg.wait_for_timeout(300)
+  vis=js("(()=>{const b=document.querySelector('#strokeActionsBar .cap-btn');const r=b.getBoundingClientRect();return [getComputedStyle(document.getElementById('strokeActionsBar')).display,r.width,r.height]})()");print('bar cap btn',vis);assert vis[0]!='none' and vis[1]>0
+  js("document.querySelector('#strokeActionsBar .cap-btn[data-cap=capS][data-v=flat]').click()");pg.wait_for_timeout(300)
   pg.screenshot(path=SD+'cap_sq_start.png',clip=clip)
-  js("document.querySelector('.cap-btn[data-cap=capE][data-v=flat]').click()");pg.wait_for_timeout(300)
-  js("(()=>{const s=document.getElementById('dashSel');s.value='dashed';s.dispatchEvent(new Event('change'))})()");pg.wait_for_timeout(300)
+  js("document.querySelector('#strokeActionsBar .cap-btn[data-cap=capE][data-v=flat]').click()");pg.wait_for_timeout(300)
+  js("(()=>{const s=document.querySelector('#strokeActionsBar .dash-sel');s.value='dashed';s.dispatchEvent(new Event('change'))})()");pg.wait_for_timeout(300)
   pg.screenshot(path=SD+'cap_dash_sq.png',clip=clip)
-  js("document.querySelector('.cap-btn[data-cap=capS][data-v=round]').click();document.querySelector('.cap-btn[data-cap=capE][data-v=round]').click()")
-  js("(()=>{const s=document.getElementById('dashSel');s.value='dotted';s.dispatchEvent(new Event('change'))})()");pg.wait_for_timeout(300)
+  js("document.querySelector('#strokeActionsBar .cap-btn[data-cap=capS][data-v=round]').click();document.querySelector('#strokeActionsBar .cap-btn[data-cap=capE][data-v=round]').click()")
+  js("(()=>{const s=document.querySelector('#strokeActionsBar .dash-sel');s.value='dotted';s.dispatchEvent(new Event('change'))})()");pg.wait_for_timeout(300)
   pg.screenshot(path=SD+'cap_dotted.png',clip=clip)
   print(errs);b.close()
