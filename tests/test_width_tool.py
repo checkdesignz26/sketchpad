@@ -78,9 +78,15 @@ with sync_playwright() as p:
   js("document.querySelector('.wp-pre[data-k=swell]').click()");pg.wait_for_timeout(300)
   js("(()=>{const i=document.getElementById('wpNameInput');i.value='Soft Swell'})()");js("document.getElementById('wpSaveBtn').click()");pg.wait_for_timeout(300)
   prof=js("JSON.parse(localStorage.getItem('sp-width-profiles-v1'))");print(prof)
-  ok(len(prof)==1 and prof[0]['name']=='Soft Swell' and 'x' not in str(prof[0]),'profile saved (name + shape only)')
+  ok(len(prof)==1 and prof[0]['name']=='Soft Swell' and set(prof[0].keys())=={'id','name','v','interp','pts'},'profile saved (name + shape only)')
   ok(js("document.querySelectorAll('#wpProfList canvas').length")==1,'profile thumbnail shown')
   # second, longer stroke with a bigger brush
   js("document.getElementById('modeDrawBtn')&&document.getElementById('modeDrawBtn').click()")
   print('done');
+  # drawing must never be intercepted: Width panel left open, back to Draw mode, draw right over the selected line
+  js("document.getElementById('drawModeBtn').click()");pg.wait_for_timeout(400)
+  n0=len(js("window.__sketchpadGetState().strokes"));pg.mouse.move(cx-100,cy+30);pg.mouse.down()
+  for i in range(1,12):pg.mouse.move(cx-100+i*10,cy+30+math.sin(i/2)*20)
+  pg.mouse.up();pg.wait_for_timeout(300)
+  ok(len(js("window.__sketchpadGetState().strokes"))==n0+1,'drawing still works with the Width panel open in Draw mode (not intercepted)')
   print(errs);b.close()

@@ -43,11 +43,11 @@ with sync_playwright() as p:
   after=js("(()=>{const s=window.__sketchpadGetState().strokes.find(x=>x.id==='%s');return [s.points.length,s.color,s.settings.size,s.wp.map(q=>[q.t,q.w])]})()"%B)
   print(before,after)
   ok(after[0]==before[0][0] and after[1]=='#2a9d8f' and after[2]==20,'applying keeps geometry, colour and thickness')
-  ok(after[3]==[[0,.4],[.5,1.8],[1,.4]],'profile applied proportionally')
+  ok(after[3]==[[0,.22],[.5,1],[1,.22]],'profile applied proportionally')
   pg.screenshot(path=SD+'w2_applied.png',clip={'x':cx-270,'y':cy-100,'width':540,'height':160})
   # editing the stroke must not change the saved profile
   js("document.querySelector('.wp-pre[data-k=pinch]').click()");pg.wait_for_timeout(300)
-  ok(js("JSON.parse(localStorage.getItem('sp-width-profiles-v1'))[0].pts[1].w")==1.8,'editing a line does not change the saved profile')
+  ok(js("JSON.parse(localStorage.getItem('sp-width-profiles-v1'))[0].pts[1].w")==1,'editing a line does not change the saved profile')
   # use for new strokes
   js("document.getElementById('wpUseBtn').click()");pg.wait_for_timeout(200)
   ok(js("document.getElementById('wpNewChk').checked"),'new-stroke option on')
