@@ -1460,7 +1460,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v344'; // keep in step with CACHE in sw.js
+const APP_V='v345'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -3010,11 +3010,11 @@ function snapshot(){
     groupsJSON:JSON.stringify(groups),
   };
 }
-// Undo steps keep a full copy of the drawing each; with very detailed drawings 40 of them add up to hundreds of MB of memory,
+// Undo steps keep a full copy of the drawing each; with very detailed drawings 100 of them add up to hundreds of MB of memory,
 // so the oldest steps are dropped once they pass a size budget (always keeping the last few).
 function histSize(){let n=0;history.forEach(h=>{n+=(h.strokesJSON||'').length+(h.placed||'').length+(h.groupsJSON||'').length+(h.layersJSON||'').length;});return n;}
-function histTrim(){while(history.length>4&&histSize()>24e6)history.shift();}
-function pushHist(){try{tplArrowSync();}catch(e){}try{radialSync();}catch(e){console.warn('[sketchpad] radial sync failed',e);}try{fillSync();}catch(e){console.warn('[sketchpad] fill sync failed',e);}try{ctSync();}catch(e){console.warn('[sketchpad] contour sync failed',e);}crumb('pushHist '+strokes.length+' strokes');try{pruneGroups();}catch(e){}try{symSync();}catch(e){console.warn('[sketchpad] symmetry sync failed',e);}try{txRefresh();}catch(e){}try{if(window.SPTimelapse)SPTimelapse.onPush();}catch(e){}try{if(typeof refreshBlends==='function')refreshBlends();if(typeof refreshObjBlends==='function')refreshObjBlends();}catch(e){console.warn('[sketchpad] blend refresh failed',e);}history=history.slice(0,hIndex+1);history.push(snapshot());if(history.length>40)history.shift();histTrim();hIndex=history.length-1;try{if(window.SPTimelapse)SPTimelapse.afterPush();}catch(e){}scheduleAutosave();}
+function histTrim(){while(history.length>4&&histSize()>48e6)history.shift();}
+function pushHist(){try{tplArrowSync();}catch(e){}try{radialSync();}catch(e){console.warn('[sketchpad] radial sync failed',e);}try{fillSync();}catch(e){console.warn('[sketchpad] fill sync failed',e);}try{ctSync();}catch(e){console.warn('[sketchpad] contour sync failed',e);}crumb('pushHist '+strokes.length+' strokes');try{pruneGroups();}catch(e){}try{symSync();}catch(e){console.warn('[sketchpad] symmetry sync failed',e);}try{txRefresh();}catch(e){}try{if(window.SPTimelapse)SPTimelapse.onPush();}catch(e){}try{if(typeof refreshBlends==='function')refreshBlends();if(typeof refreshObjBlends==='function')refreshObjBlends();}catch(e){console.warn('[sketchpad] blend refresh failed',e);}history=history.slice(0,hIndex+1);history.push(snapshot());if(history.length>100)history.shift();histTrim();hIndex=history.length-1;try{if(window.SPTimelapse)SPTimelapse.afterPush();}catch(e){}scheduleAutosave();}
 // Synchronous now (no more toDataURL()/Image round-trip for the drawing layer) — cheaper AND
 // simpler: JSON-serialised stroke points are far smaller than a full 1800x1800 PNG snapshot per
 // undo step, and replaying them is deterministic so this never has to wait on an image decode.
@@ -3062,8 +3062,8 @@ function applyLayerMeta(layerMeta,wantActiveId){
   strokes.forEach(s=>{if(!s.layerId||!layers.find(l=>l.id===s.layerId))s.layerId=fallback.id;});
   activeLayerId=(wantActiveId&&layers.find(l=>l.id===wantActiveId))?wantActiveId:fallback.id;
 }
-function undo(){if(hIndex>0){hIndex--;restore(history[hIndex]);try{radialSync();}catch(e){}try{if(window.SPTimelapse)SPTimelapse.afterRestore('undo');}catch(e){}setStatus('↩️ Undo');scheduleAutosave();}}
-function redo(){if(hIndex<history.length-1){hIndex++;restore(history[hIndex]);try{radialSync();}catch(e){}try{if(window.SPTimelapse)SPTimelapse.afterRestore('redo');}catch(e){}setStatus('↪️ Redo');scheduleAutosave();}}
+function undo(){if(pathEditHistStep(-1))return;if(hIndex>0){hIndex--;restore(history[hIndex]);try{radialSync();}catch(e){}try{if(window.SPTimelapse)SPTimelapse.afterRestore('undo');}catch(e){}setStatus('↩️ Undo');scheduleAutosave();}}
+function redo(){if(pathEditHistStep(1))return;if(hIndex<history.length-1){hIndex++;restore(history[hIndex]);try{radialSync();}catch(e){}try{if(window.SPTimelapse)SPTimelapse.afterRestore('redo');}catch(e){}setStatus('↪️ Redo');scheduleAutosave();}}
 // Resizes every render target's BACKING STORE (physical pixels) to the current renderScale,
 // without touching its on-screen CSS size — canvas.style.width/height keep it at logical W x H
 // so nothing about layout, pan or the existing zoom/rotate CSS transform math changes; only the
@@ -10717,6 +10717,33 @@ function closeRotatePanel(){const p=$('rotatePanel');if(p)p.style.display='none'
 $('rotatePanelDoneBtn').onclick=closeRotatePanel;
 $('openRotatePanelBtn').onclick=openRotatePanel;
 document.querySelectorAll('.rotQuick').forEach(b=>{b.onclick=()=>{const d=+b.dataset.deg;rotateSelectedStroke(d);setStatus('Rotated '+d+'\u00b0.');};});
+// Undo / Redo while Edit Path is open: every node move, add, delete, corner/smooth change etc. is its own step, so Undo takes back
+// the last node change instead of throwing away the whole path edit. Done still records one normal undo step for the finished shape.
+let peStack=[],peIdx=0,peTimer=0;
+function peSnap(){return JSON.stringify([pathEditClosed,pathEditNodes.map(n=>({...n}))]);}
+function peReset(){peStack=pathEditNodes?[peSnap()]:[];peIdx=0;clearTimeout(peTimer);}
+function peCheckpoint(){
+  if(!pathEditStrokeId||!pathEditNodes||!peStack.length)return;
+  const s=peSnap();if(s===peStack[peIdx])return;
+  peStack=peStack.slice(0,peIdx+1);peStack.push(s);if(peStack.length>200)peStack.shift();peIdx=peStack.length-1;
+}
+function peSoon(){if(!pathEditStrokeId)return;clearTimeout(peTimer);peTimer=setTimeout(peCheckpoint,40);}
+document.addEventListener('pointerup',peSoon,{capture:true,passive:true});
+document.addEventListener('pointercancel',peSoon,{capture:true,passive:true});
+document.addEventListener('click',e=>{if(pathEditStrokeId&&e.target&&e.target.closest&&e.target.closest('#pathEditBar'))peSoon();},{capture:true,passive:true});
+function pathEditHistStep(dir){
+  if(!pathEditStrokeId||!pathEditNodes||!peStack.length)return false;
+  clearTimeout(peTimer);peCheckpoint(); // pick up a change that has not been recorded yet
+  const ni=peIdx+dir;
+  if(ni<0||ni>=peStack.length){setStatus(dir<0?'\u21a9\ufe0f Nothing more to undo in Edit Path. Tap Done first to undo earlier changes.':'\u21aa\ufe0f Nothing more to redo in Edit Path.');return true;}
+  peIdx=ni;const [closed,nodes]=JSON.parse(peStack[peIdx]);
+  pathEditClosed=closed;pathEditNodes=nodes;selectedNodeIndex=null;
+  try{renderPathNodeOverlay();}catch(e){}
+  try{renderPathLivePreview();}catch(e){}
+  try{radialLiveFollow();}catch(e){}
+  redraw();setStatus(dir<0?'\u21a9\ufe0f Undid the last node change':'\u21aa\ufe0f Redid the node change');
+  return true;
+}
 function enterEditPath(strokeId){
   let stroke=strokes.find(s=>s.id===strokeId);if(!stroke)return;
   if(stroke.tpl){setStatus('📐 Template placeholders are fixed outlines: move, resize, rotate or replace them, but they have no nodes to edit.');return;}
@@ -10732,7 +10759,7 @@ function enterEditPath(strokeId){
   pathEditNodes=stroke.nodes?stroke.nodes.map(n=>({...n})):strokeToEditNodes(stroke);
   pathEditClosed=!!stroke.closed;
   pathEditInitial=JSON.stringify([pathEditClosed,pathEditNodes.map(n=>[Math.round(n.x*100),Math.round(n.y*100),n.type])]);
-  selectedNodeIndex=null;
+  selectedNodeIndex=null;peReset();
   pathEditTool='select';
   $('pathSelectToolBtn').classList.add('active');$('pathAddNodeToolBtn').classList.remove('active');
   // Fully hidden (alpha 0), not dimmed — the live preview IS the stroke while editing, so
@@ -10831,7 +10858,7 @@ function commitEditPath(){
 }
 function exitEditPath(silent){
   if(window.__radialLive){window.__radialLive=false;try{strokes.forEach(x=>{if(x.radial)x.radial.sig='';});radialSync();}catch(e){}} // copies were moved live: make them match the saved (or cancelled) source exactly
-  pathEditStrokeId=null;pathEditNodes=null;pathEditClosed=false;selectedNodeIndex=null;try{tbSizeSync();}catch(e){}
+  pathEditStrokeId=null;pathEditNodes=null;pathEditClosed=false;selectedNodeIndex=null;peStack=[];peIdx=0;clearTimeout(peTimer);try{tbSizeSync();}catch(e){}
   if(floatPanelPositions.pathEditBar)floatPanelPositions.strokeActionsBar={...floatPanelPositions.pathEditBar};
   $('pathEditBar').style.display='none';$('pathEditBar').classList.remove('open');
   $('pathNodeOverlay').innerHTML='';
