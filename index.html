@@ -6095,7 +6095,7 @@ function sgDraw(guides){
     host.appendChild(sgSvg);
   }
   if(!guides||!guides.length){sgSvg.innerHTML='';return;}
-  const pad=14/Math.max(.05,zoom*baseScale),seen=new Set();let out='';
+  const pad=14/Math.max(.05,zoom*baseScale),seen=new Map();let out='';
   for(const g of guides){
     if(g.seg){ // an angle-lock guide: the line itself, carried on a little past both ends
       const dx=g.x2-g.x1,dy=g.y2-g.y1,L=Math.hypot(dx,dy)||1,e=40/Math.max(.05,zoom*baseScale),ux=dx/L*e,uy=dy/L*e;
@@ -6114,7 +6114,12 @@ function sgDraw(guides){
       }
       continue;
     }
-    const k=g.v+'|'+Math.round(g.pos*100)+'|'+Math.round(g.a)+'|'+Math.round(g.b);if(seen.has(k))continue;seen.add(k);
+    // Many elements can share one line (after Align they all do). Merge every guide on the same line into ONE line that spans them all,
+    // otherwise each matching element adds its own overlapping <line> and a drag redraws hundreds of them on every move.
+    const k=g.v+'|'+Math.round(g.pos*100)+'|'+(g.canvas?1:0),L0=seen.get(k);
+    if(L0){if(g.a<L0.a)L0.a=g.a;if(g.b>L0.b)L0.b=g.b;}else seen.set(k,{v:g.v,pos:g.pos,a:g.a,b:g.b,canvas:g.canvas});
+  }
+  for(const g of seen.values()){
     const p1=g.v?canvasToScreen(g.pos,g.a-pad):canvasToScreen(g.a-pad,g.pos),p2=g.v?canvasToScreen(g.pos,g.b+pad):canvasToScreen(g.b+pad,g.pos);
     out+='<line x1="'+p1.x.toFixed(1)+'" y1="'+p1.y.toFixed(1)+'" x2="'+p2.x.toFixed(1)+'" y2="'+p2.y.toFixed(1)+'" stroke="'+(g.canvas?'#19c37d':'#ff2d95')+'" stroke-width="1.5" stroke-dasharray="'+(g.canvas?'6 4':'none')+'"/>';
   }
