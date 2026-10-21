@@ -1476,7 +1476,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v362'; // keep in step with CACHE in sw.js
+const APP_V='v363'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -9325,6 +9325,36 @@ function palOnSelect(v){
   else{const L=libGet().find(x=>x.id===v.slice(2));if(L){const ex=savedPalettes.find(x=>x.name===L.name&&x.hexes.join()===L.hexes.join());if(ex)projectPaletteId=ex.id;else palNewCustom(L.name,L.hexes);setStatus('📚 Added “'+L.name+'” to this project.');}}
   scheduleAutosave();palRefresh();
 }
+// ---- Eyedropper for the palette: tap the artwork, the colour under the Pencil goes into the active palette ----
+let eyedropOn=false;
+function eyedropSetUI(){document.querySelectorAll('.pal-pick').forEach(b=>b.classList.toggle('active',eyedropOn));}
+function eyedropToggle(){
+  eyedropOn=!eyedropOn;eyedropSetUI();
+  setStatus(eyedropOn?'💧 Eyedropper on: tap the artwork to add that colour to your palette. Tap 💧 Pick again to cancel.':'Eyedropper off.');
+}
+function eyedropColourAt(cx,cy){
+  // read what is on screen: the sharp zoomed-in picture when it is showing, otherwise the normal drawing; semi-see-through paint is shown over white paper
+  let g,x,y;
+  if(typeof detailShown!=='undefined'&&detailShown&&detailCanvas.width>1){
+    const r=detailCanvas.getBoundingClientRect();g=detailCanvas.getContext('2d');x=(cx-r.left)*detailCanvas.width/r.width;y=(cy-r.top)*detailCanvas.height/r.height;
+  }else{
+    const p=screenToCanvas(cx,cy),rs=(typeof renderScale==='number'&&renderScale)||1;g=canvas.getContext('2d');x=p.x*rs;y=p.y*rs;
+  }
+  const d=g.getImageData(Math.max(0,Math.floor(x)),Math.max(0,Math.floor(y)),1,1).data;
+  if(d[3]<8)return null;const a=d[3]/255;
+  return csToHex(d[0]*a+255*(1-a),d[1]*a+255*(1-a),d[2]*a+255*(1-a));
+}
+wrap.addEventListener('pointerdown',e=>{
+  if(!eyedropOn||!wrap.contains(e.target))return;
+  e.preventDefault();e.stopPropagation();
+  let hex=null;try{hex=eyedropColourAt(e.clientX,e.clientY);}catch(err){}
+  if(!hex){setStatus('💧 Nothing there to pick. Tap a spot with colour.');return;}
+  let p=savedPalettes.find(x=>x.id===projectPaletteId);
+  if(!p)p=palNewCustom('My palette '+(savedPalettes.length+1),adaptiveHexes());
+  const had=p.hexes.includes(hex);if(!had)p.hexes.push(hex);
+  scheduleAutosave();palRefresh();
+  setStatus('💧 '+(had?hex+' is already in':'Added '+hex+' to')+' “'+p.name+'”. Tap another spot, or tap 💧 Pick to finish.');
+},true);
 function mountPalette(host,editor,onPick,withNone){
   host.innerHTML='';
   const top=document.createElement('div');top.className='ef-row';
@@ -9341,6 +9371,8 @@ function mountPalette(host,editor,onPick,withNone){
       if(!p)p=palNewCustom('My palette '+(savedPalettes.length+1),adaptiveHexes());
       const c=palHex(palAddColour?palAddColour():currentColor)||'#000000';if(!p.hexes.includes(c))p.hexes.push(c);
       scheduleAutosave();palRefresh();setStatus('🎨 Added '+c+' to “'+p.name+'”.');});
+    const pk=mk('💧 Pick','Eyedropper: tap anywhere on your artwork to add the colour you see there to this palette',()=>{eyedropToggle(pk);});
+    pk.classList.add('pal-pick');
     const eb=mk('✎ Edit','Show a ✕ on each colour so you can remove it',()=>{editing=!editing;eb.classList.toggle('active',editing);render();});
     mk('Rename','Rename this palette',async()=>{const p=savedPalettes.find(x=>x.id===projectPaletteId);if(!p){setStatus('The adaptive palette can\'t be renamed — use ＋ New or ＋ Colour to make your own.');return;}const n=await palAskName('Rename palette',p.name);if(n){p.name=n;scheduleAutosave();palRefresh();try{renderSavedPalettesList();}catch(e){}}});
     mk('📚 Library','Keep a copy in your library so any project can use it',()=>{const a=activePalette();if(!a.hexes.length){setStatus('This palette has no colours yet.');return;}const lib=libGet();const ex=lib.find(x=>x.name===a.name&&x.hexes.join()===a.hexes.join());if(!ex){lib.push({id:crypto.randomUUID(),name:a.name,hexes:a.hexes.slice()});libSet(lib);}palRefresh();setStatus('📚 “'+a.name+'” is in your library — pick it in any project.');});
