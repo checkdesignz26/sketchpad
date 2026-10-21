@@ -580,6 +580,10 @@ html.in-suite .suite-only{display:block!important}
 .fpanel.docked{position:static;width:auto;max-width:none;max-height:none!important;flex:none;box-shadow:none;border-radius:18px}
 .fp-head{display:flex;align-items:center;gap:4px;padding:6px 6px 6px 12px;cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none;font-weight:900;font-size:14px;border-bottom:1px solid var(--line);flex:none}
 .fpanel.docked .fp-head{cursor:default}
+.fpanel.pinned .fp-head{cursor:default}
+.fp-rz{position:absolute;right:0;bottom:0;width:30px;height:30px;cursor:nwse-resize;touch-action:none;z-index:2;opacity:.55;background:linear-gradient(135deg,transparent 0 55%,currentColor 55% 60%,transparent 60% 72%,currentColor 72% 77%,transparent 77% 100%);color:var(--text);border-bottom-right-radius:18px}
+.fp-rz:active{opacity:.9}
+.fpanel.docked .fp-rz{display:none}
 .fp-head .fp-ttl{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:8px}
 .fp-head .fp-ttl svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none;opacity:.8}
 .fp-b{width:40px;height:40px;border-radius:12px;border:1px solid transparent;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;font:800 18px system-ui;flex:none;touch-action:manipulation}
@@ -700,6 +704,10 @@ html.in-suite .suite-only{display:block!important}
         <div class="row" style="margin-top:8px;">
           <input id="acPaletteName" placeholder="palette name" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);">
           <button id="acSavePaletteBtn" class="btn mini primary" style="flex:1;">💾 Save Palette</button>
+        </div>
+        <div class="row" style="margin-top:8px;align-items:center;gap:6px;">
+          <select id="acAddToPal" title="Which saved palette to add these colours to" style="flex:1;min-width:0;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></select>
+          <button id="acAddToPalBtn" class="btn mini" style="flex:1;" title="Add the colours above to the chosen saved palette (colours it already has are skipped)">➕ Add to palette</button>
         </div>
       </div>
       <div id="acSavedPalettesBox" style="margin-top:10px;">
@@ -1460,7 +1468,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v345'; // keep in step with CACHE in sw.js
+const APP_V='v346'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -7669,7 +7677,7 @@ $('rcMake').onclick=()=>{
   setStatus('⌒ Corners rounded (radius '+r+'). Undo brings them back.');
 };
 let drawLock=false,editExplicit=false;try{drawLock=localStorage.getItem('sp-drawLock')==='1';}catch(e){}
-function syncMode(){if(drawLock&&mode==='edit'&&!editExplicit)mode='draw';try{tbToolSync();}catch(e){}try{if(penOn&&mode==='edit')penSet(false);if(warpOn&&mode==='edit')warpSet(false);if(cloneOn&&mode==='edit')cloneSet(false);if(smudgeOn&&mode==='edit')smudgeSet(false);}catch(e){}$('drawModeBtn').classList.toggle('active',mode==='draw');$('editModeBtn').classList.toggle('active',mode==='edit');canvas.style.cursor=mode==='draw'?'crosshair':'grab';setStatus(mode==='draw'?'✏️ Draw Mode: Apple Pencil draws, two fingers move the canvas.':'↔️ Edit Mode: tap a motif, then move, scale, rotate or flip.');;if(typeof syncStrokeSelectionUI==='function')syncStrokeSelectionUI();}
+function syncMode(){if(drawLock&&mode==='edit'&&!editExplicit)mode='draw';try{tbToolSync();}catch(e){}try{tbSizeSync();}catch(e){}try{if(penOn&&mode==='edit')penSet(false);if(warpOn&&mode==='edit')warpSet(false);if(cloneOn&&mode==='edit')cloneSet(false);if(smudgeOn&&mode==='edit')smudgeSet(false);}catch(e){}$('drawModeBtn').classList.toggle('active',mode==='draw');$('editModeBtn').classList.toggle('active',mode==='edit');canvas.style.cursor=mode==='draw'?'crosshair':'grab';setStatus(mode==='draw'?'✏️ Draw Mode: Apple Pencil draws, two fingers move the canvas.':'↔️ Edit Mode: tap a motif, then move, scale, rotate or flip.');;if(typeof syncStrokeSelectionUI==='function')syncStrokeSelectionUI();}
 $('drawModeBtn').onclick=()=>{if(pathEditStrokeId)commitEditPath();if(joinPendingStrokeId)endJoinPick();disarmAreaFill();disarmShapeMultiSelect();armedShapeType=null;syncShapeToolUI();mode='draw';selected=null;selectedStrokeId=null;multiSel=null;selAddArmed=false;groupInsideId=null;multiSelectMode=false;multiSelectIds=[];$('multiSelectToggle').textContent='🔢 Multi-Select: Off';$('multiSelectToggle').classList.remove('active');syncAlignUI();syncStrokeSelectionUI();syncMode();redraw()};$('editModeBtn').onclick=()=>{disarmAreaFill();armedShapeType=null;syncShapeToolUI();mode='edit';editExplicit=true;try{syncMode();}finally{editExplicit=false;}};$('captureBtn').onclick=()=>captureMotif();
 // Capture Area: drag a box on the canvas; only strokes inside it become the motif.
 function setCaptureArea(on){
@@ -9064,6 +9072,7 @@ $('acSavePaletteBtn').onclick=()=>{
   setStatus('💾 Saved palette "'+name+'".');
 };
 function renderSavedPalettesList(){
+  try{acSyncAddSel();}catch(e){} // keeps the Add-to-palette chooser in step with the list (deleted / new / renamed palettes)
   const box=$('acSavedPalettesList');
   if(!savedPalettes.length){box.className='hint';box.textContent='No saved palettes yet — extract one from an image and save it above.';return;}
   box.className='';box.innerHTML='';
@@ -9132,6 +9141,29 @@ function adaptiveHexes(){return [...document.querySelectorAll('#acSwatches .ac-s
 function activePalette(){const p=savedPalettes.find(x=>x.id===projectPaletteId);return p?{id:p.id,name:p.name,hexes:p.hexes,custom:true}:{id:null,name:'Adaptive palette',hexes:adaptiveHexes(),custom:false};}
 const palInst=[];
 function palRefresh(){palInst.forEach(f=>{try{f();}catch(e){}});}
+// ---- add the colours pulled from an image / trace to a palette you already have ----
+function acSyncAddSel(){
+  const sel=$('acAddToPal');if(!sel)return;
+  const keep=sel.value;
+  if(!savedPalettes.length){sel.innerHTML='<option value="">New palette</option>';return;}
+  sel.innerHTML=savedPalettes.map(p=>'<option value="'+p.id+'">'+String(p.name).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</option>').join('');
+  sel.value=savedPalettes.some(p=>p.id===keep)?keep:(savedPalettes.some(p=>p.id===projectPaletteId)?projectPaletteId:savedPalettes[0].id);
+}
+palInst.push(acSyncAddSel);acSyncAddSel();
+$('acAddToPalBtn').onclick=()=>{
+  if(!acExtractedColours.length){setStatus('🖼️ Extract colours from an image or traced artwork first.');return;}
+  let pl=savedPalettes.find(x=>x.id===$('acAddToPal').value);
+  if(!pl){ // no palette to add to yet: make one (named from the box above, if you typed a name)
+    const nm=($('acPaletteName').value||'').trim()||('Palette '+(savedPalettes.length+1));
+    pl={id:crypto.randomUUID(),name:nm,hexes:[]};savedPalettes.push(pl);$('acPaletteName').value='';
+  }
+  const have=new Set(pl.hexes.map(palHex));let added=0;
+  acExtractedColours.forEach(h=>{const x=palHex(h);if(x&&!have.has(x)){have.add(x);pl.hexes.push(x);added++;}});
+  scheduleAutosave();
+  try{renderSavedPalettesList();}catch(e){}
+  palRefresh();$('acAddToPal').value=pl.id;
+  setStatus(added?('🎨 Added '+added+' colour'+(added===1?'':'s')+' to “'+pl.name+'”.'):('🎨 “'+pl.name+'” already has all of these colours.'));
+};
 function palAskName(title,value){return projAsk({title,fields:[{key:'name',label:'Palette name',type:'text',value:value||''}],ok:'Save'}).then(r=>r&&(r.name||'').trim());}
 function palNewCustom(name,hexes){
   let nm=name||('My palette '+(savedPalettes.length+1)),base=nm,k=2;while(savedPalettes.some(x=>x.name===nm))nm=base+' ('+k++ +')';
@@ -15252,8 +15284,10 @@ function tbPencilGo(){
   if(warpOn)warpSet(false);if(typeof cloneOn!=='undefined'&&cloneOn)cloneSet(false);
   if(smudgeOn)smudgeSet(false);
   eraserActive=false;armedShapeType=null;try{syncShapeToolUI();disarmAreaFill();}catch(e){}
-  if(mode==='edit')$('drawModeBtn').onclick();
-  syncControlsFromSettings();syncActiveSwatches();tbToolSync();
+  // Picking the drawing tool always leaves selection behind (even when the app is already in Draw mode, e.g. with Stay in Draw on, where a
+  // Select All / marquee selection would otherwise stay on and keep the toolbar saying "Selection").
+  if(mode==='edit'||multiSel||selectedStrokeId||selected)$('drawModeBtn').onclick();
+  syncControlsFromSettings();syncActiveSwatches();tbToolSync();try{tbSyncSelect();}catch(e){}
   setStatus('✏️ '+BrushEngine.getBrush(activeBrushId).name+' — draw with Apple Pencil.');
 }
 const TB_FAMILY_NAMES={inking:'Inking',pencil:'Pencil',marker:'Marker',paint:'Paint',stamp:'Motif brushes',custom:'Custom'};
@@ -15272,10 +15306,13 @@ $('tbPencilBtn').onclick=()=>tbPencilGo();
 $('tbPencilMenuBtn').onclick=()=>tbBrushMenu();
 
 // The top-bar size follows whatever you are working on: the selected stroke while one is selected (or being edited), otherwise the brush.
-function tbTargetStroke(){return strokes.find(x=>x.id===(pathEditStrokeId||selectedStrokeId))||null;}
+// While you are DRAWING (Draw mode, not editing a path) the box always belongs to the brush: a selection left over from Edit mode must not
+// capture it, or changing the size resizes that old selection and the brush you are drawing with never changes.
+function tbDrawingNow(){return mode==='draw'&&!pathEditStrokeId;}
+function tbTargetStroke(){if(tbDrawingNow())return null;return strokes.find(x=>x.id===(pathEditStrokeId||selectedStrokeId))||null;}
 // Several strokes selected together (marquee / Select All / a group): the size box belongs to THEM, not to the drawing tool.
 function tbMultiStrokes(){
-  if(pathEditStrokeId||selectedStrokeId||!multiSel)return null;
+  if(tbDrawingNow()||pathEditStrokeId||selectedStrokeId||!multiSel)return null;
   const st=selMembers().st.filter(x=>x.points&&x.points.length&&!x.fillColor);
   return st.length>1?st:null;
 }
@@ -18467,8 +18504,8 @@ SPFonts.init().then(()=>{txRefreshMissing();});
   // The old top-bar copies are hidden by CSS; take them out of the ⋯ More overflow logic too.
   ['tbPenBtn','tbEraserBtn','tbSmudgeBtn','tbSymBtn','tbTimelapseBtn','tbTextBtn','tbWarpBtn','tbCloneBtn'].forEach(id=>{const b=$(id);if(b){b.removeAttribute('data-ovp');b.removeAttribute('data-more');}});
   // ---- remembered preferences ----
-  let pref={pos:{},dock:{},pin:{}};
-  try{const p=JSON.parse(localStorage.getItem('sp-panels-v1')||'{}');if(p&&typeof p==='object'){pref.pos=p.pos||{};pref.dock=p.dock||{};pref.pin=p.pin||{};}}catch(e){}
+  let pref={pos:{},dock:{},pin:{},size:{}};
+  try{const p=JSON.parse(localStorage.getItem('sp-panels-v1')||'{}');if(p&&typeof p==='object'){pref.pos=p.pos||{};pref.dock=p.dock||{};pref.pin=p.pin||{};pref.size=p.size||{};}}catch(e){}
   const savePref=()=>{try{localStorage.setItem('sp-panels-v1',JSON.stringify(pref));}catch(e){}};
   // ---- panel shells (created on first use) ----
   const P={};            // id -> {id,el,body,secs,open}
@@ -18496,7 +18533,7 @@ SPFonts.init().then(()=>{txRefreshMissing();});
     if(P[id])return P[id];
     const def=PANELS[id];if(!def)return null;
     const el=document.createElement('div');el.className='fpanel';el.id='fp-'+id;el.setAttribute('role','dialog');el.setAttribute('aria-label',def.title);
-    el.innerHTML='<div class="fp-head"><span class="fp-ttl">'+svg(def.icon)+'<span>'+def.title+'</span></span>'+(def.pin?'<button type="button" class="fp-b fp-pin" aria-label="Keep open while switching tools" title="Keep open while switching tools">'+svg('pin')+'</button>':'')+'<button type="button" class="fp-b fp-dock" aria-label="Dock beside the canvas" title="Dock beside the canvas">'+svg('dock')+'</button><button type="button" class="fp-b fp-x" aria-label="Close" title="Close">✕</button></div><div class="fp-body"></div>';
+    el.innerHTML='<div class="fp-head"><span class="fp-ttl">'+svg(def.icon)+'<span>'+def.title+'</span></span>'+(def.pin?'<button type="button" class="fp-b fp-pin" aria-label="Pin panel: keep open and lock in place" title="Pin: keep open and lock in place">'+svg('pin')+'</button>':'')+'<button type="button" class="fp-b fp-dock" aria-label="Dock beside the canvas" title="Dock beside the canvas">'+svg('dock')+'</button><button type="button" class="fp-b fp-x" aria-label="Close" title="Close">✕</button></div><div class="fp-body"></div><div class="fp-rz" role="separator" aria-label="Resize panel" title="Drag to resize"></div>';
     document.body.appendChild(el);
     const p=P[id]={id,el,body:el.querySelector('.fp-body'),open:false,secs:[]};
     // Nothing touching a panel may reach the drawing surface.
@@ -18504,7 +18541,7 @@ SPFonts.init().then(()=>{txRefreshMissing();});
     el.querySelector('.fp-x').onclick=()=>closePanel(id);
     el.querySelector('.fp-dock').onclick=()=>toggleDock(id);
     const pb=el.querySelector('.fp-pin');if(pb){pb.onclick=()=>{pref.pin[id]=!pref.pin[id];savePref();syncPanel(p);};}
-    dragify(p);
+    dragify(p);resizify(p);
     return p;
   }
   function fill(p){
@@ -18514,14 +18551,15 @@ SPFonts.init().then(()=>{txRefreshMissing();});
   }
   function syncPanel(p){
     const pinned=!!pref.pin[p.id];
-    const pb=p.el.querySelector('.fp-pin');if(pb)pb.classList.toggle('on',pinned);
+    const pb=p.el.querySelector('.fp-pin');if(pb){pb.classList.toggle('on',pinned);pb.title=pinned?'Pinned: stays open and stays put (tap to unpin)':'Pin: keep open and lock in place';}
+    p.el.classList.toggle('pinned',pinned);
     const docked=p.el.classList.contains('docked');
     const db=p.el.querySelector('.fp-dock');db.classList.toggle('on',docked);db.innerHTML=svg(docked?'undock':'dock');db.title=docked?'Float over the canvas':'Dock beside the canvas';
     syncRail();
   }
   function placeDock(p,side){
     const host=$(side==='R'?'dockR':'dockL');
-    p.el.classList.add('docked');p.el.style.transform='';p.el.style.maxHeight='';
+    p.el.classList.add('docked');p.el.style.transform='';p.el.style.maxHeight='';p.el.style.width='';p.el.style.height='';
     host.appendChild(p.el);
   }
   function refreshDocks(){
@@ -18544,7 +18582,7 @@ SPFonts.init().then(()=>{txRefreshMissing();});
     if(!p.el.classList.contains('docked')){
       const sp=pref.pos[id]||defaultPos(id);
       p.el.dataset.x=sp[0];p.el.dataset.y=sp[1];
-      clamp(p);
+      applySize(p);clamp(p);
     }
     syncPanel(p);refreshDocks();
     try{const b=p.body;b.scrollTop=0;}catch(e){}
@@ -18561,18 +18599,44 @@ SPFonts.init().then(()=>{txRefreshMissing();});
     const p=P[id];if(!p)return;
     if(p.el.classList.contains('docked')){
       pref.dock[id]=null;p.el.classList.remove('docked');document.body.appendChild(p.el);
-      const sp=pref.pos[id]||defaultPos(id);p.el.dataset.x=sp[0];p.el.dataset.y=sp[1];clamp(p);
+      const sp=pref.pos[id]||defaultPos(id);p.el.dataset.x=sp[0];p.el.dataset.y=sp[1];applySize(p);clamp(p);
     }else{
       const r=p.el.getBoundingClientRect();const side=(r.left+r.width/2)<innerWidth/2?'L':'R';
       pref.dock[id]=side;placeDock(p,side);
     }
     savePref();syncPanel(p);refreshDocks();
   }
+  // ---- size: remembered per panel; docked panels size themselves, so the saved size is only applied while floating ----
+  function applySize(p){
+    const sz=pref.size[p.id];if(!sz||p.el.classList.contains('docked'))return;
+    p.el.style.width=sz[0]+'px';p.el.style.height=sz[1]+'px';
+  }
+  function resizify(p){
+    const rz=p.el.querySelector('.fp-rz');let st=null;
+    rz.addEventListener('pointerdown',e=>{
+      if(p.el.classList.contains('docked'))return;
+      e.preventDefault();e.stopPropagation();
+      st={id:e.pointerId,sx:e.clientX,sy:e.clientY,w:p.el.offsetWidth,h:p.el.offsetHeight};
+      try{rz.setPointerCapture(e.pointerId);}catch(_){}
+    });
+    rz.addEventListener('pointermove',e=>{
+      if(!st||e.pointerId!==st.id)return;
+      const R=wsRect(),m=6,x=parseFloat(p.el.dataset.x)||0,y=parseFloat(p.el.dataset.y)||0;
+      const w=Math.max(240,Math.min(st.w+e.clientX-st.sx,R.right-x-m,640));
+      const h=Math.max(160,Math.min(st.h+e.clientY-st.sy,R.bottom-y-m));
+      p.el.style.width=Math.round(w)+'px';p.el.style.height=Math.round(h)+'px';
+    });
+    const end=e=>{
+      if(!st||(e&&e.pointerId!==st.id))return;
+      st=null;pref.size[p.id]=[p.el.offsetWidth,p.el.offsetHeight];savePref();clamp(p);
+    };
+    rz.addEventListener('pointerup',end);rz.addEventListener('pointercancel',end);rz.addEventListener('lostpointercapture',end);
+  }
   // ---- dragging: only a transform changes while the finger moves, so it stays cheap ----
   function dragify(p){
     const head=p.el.querySelector('.fp-head');let st=null;
     head.addEventListener('pointerdown',e=>{
-      if(e.target.closest('.fp-b')||p.el.classList.contains('docked'))return;
+      if(e.target.closest('.fp-b')||p.el.classList.contains('docked')||pref.pin[p.id])return;
       e.preventDefault();e.stopPropagation();
       st={id:e.pointerId,sx:e.clientX,sy:e.clientY,x:parseFloat(p.el.dataset.x)||0,y:parseFloat(p.el.dataset.y)||0};
       try{head.setPointerCapture(e.pointerId);}catch(_){}
