@@ -1670,25 +1670,23 @@
     // kept one (always keeping the ends, and every sample where the stroke is tightly curved), so the path stays small and fast.
     const n0 = pts.length, R0 = new Array(n0);
     for (let i = 0; i < n0; i++) R0[i] = (settings.size / 2) * pressureFactor(pts[i].pressure, settings.pressureWidth) * taperAt(brush, i, n0);
-    const keep = [0];
-    for (let i = 1; i < n0 - 1; i++) { const l = pts[keep[keep.length - 1]]; if (Math.hypot(pts[i].x - l.x, pts[i].y - l.y) >= Math.max(0.4, 0.3 * R0[i])) keep.push(i); }
+    const keep = [0]; let lh = null; // lh: heading of the last kept step
+    for (let i = 1; i < n0 - 1; i++) {
+      const k = keep[keep.length - 1], l = pts[k], dx = pts[i].x - l.x, dy = pts[i].y - l.y, dd = Math.hypot(dx, dy);
+      if (dd < Math.max(0.4, 0.2 * R0[i])) continue;
+      let turn = 0; if (lh !== null) { turn = Math.abs(Math.atan2(dy, dx) - lh); if (turn > Math.PI) turn = 2 * Math.PI - turn; }
+      if (dd >= Math.max(0.4, 0.6 * R0[i]) || turn > 0.06 || Math.abs(R0[i] - R0[k]) > 0.08 * R0[i]) { keep.push(i); lh = Math.atan2(dy, dx); }
+    }
     if (n0 > 1) keep.push(n0 - 1);
     const n = keep.length, R = keep.map((i) => R0[i]); pts = keep.map((i) => pts[i]);
     ctx.save();
     ctx.globalAlpha = op; ctx.fillStyle = stroke.color || '#000000';
     ctx.beginPath();
-    // A round cap is only needed at the ends and where the stroke actually turns; along a nearly straight run the joined pieces already meet cleanly.
-    let hPrev = 0;
+    // A round cap at every kept sample. Leaving them out along "nearly straight" runs looked fine at normal zoom, but two joined pieces meeting at even a tiny
+    // angle leave a thin wedge uncovered on the outside of the turn, which showed as pale seams across the stroke and a stepped edge once zoomed in.
     for (let i = 0; i < n; i++) {
       if (!(R[i] > 0)) continue;
-      let circle = i === 0 || i === n - 1;
-      if (!circle) {
-        const hNext = Math.atan2(pts[i + 1].y - pts[i].y, pts[i + 1].x - pts[i].x);
-        let dh = Math.abs(hNext - hPrev); if (dh > Math.PI) dh = 2 * Math.PI - dh;
-        circle = dh > 0.035 || Math.abs(R[i] - R[i - 1]) > R[i] * 0.05;
-      }
-      if (i < n - 1) hPrev = Math.atan2(pts[i + 1].y - pts[i].y, pts[i + 1].x - pts[i].x);
-      if (circle) { ctx.moveTo(pts[i].x + R[i], pts[i].y); ctx.arc(pts[i].x, pts[i].y, R[i], 0, Math.PI * 2); }
+      ctx.moveTo(pts[i].x + R[i], pts[i].y); ctx.arc(pts[i].x, pts[i].y, R[i], 0, Math.PI * 2);
     }
     for (let i = 0; i < n - 1; i++) {
       const r0 = R[i], r1 = R[i + 1]; if (!(r0 > 0) || !(r1 > 0)) continue;
