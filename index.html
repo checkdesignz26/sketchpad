@@ -756,7 +756,7 @@ html.in-suite .suite-only{display:block!important}
       <button id="continuousDrawToggle" class="btn mini" style="width:100%;margin-top:8px;">🔗 Continuous Draw: Off</button>
       <button id="liveTileToggle" class="btn mini" style="width:100%;margin-top:8px;">🔲 Live tile preview: Off</button>
       <div class="hint">On = every repeat is drawn while the pen is down. Off = faster on an older iPad: the other tiles catch up when you lift.</div>
-      <div id="continuousDrawHint" class="hint" style="display:none;">On: starting a new stroke right where the last one ended extends it as one continuous path instead of a separate stroke.</div>
+      <div id="continuousDrawHint" class="hint" style="display:none;">On: starting a new stroke on the end of any open stroke (marked with a blue ＋) extends that stroke as one continuous path instead of a separate stroke.</div>
       <div class="brush-family-title">Recent</div>
       <div id="brushRecents" class="brush-family-row"></div>
       <div class="brush-family-title">Favourites</div>
@@ -1340,6 +1340,7 @@ html.in-suite .suite-only{display:block!important}
       <div class="tb-row tb-canvas" id="tbCanvas">
         <button id="selMenuBtn" class="tool-btn tb-fix" aria-haspopup="menu" aria-expanded="false" title="Select Area, Select All, Select same…">▭ Select ▾</button>
         <button id="tbEditBtn" class="tool-btn tb-fix" title="Switch between drawing and editing (select, move, resize shapes and strokes)">↔️ Edit</button>
+        <button id="tbContBtn" class="tool-btn" data-ovp="4" data-ovl="↳ Continue" title="Continue a line: blue ＋ rings mark the ends of your open strokes; start the Pencil on one to draw on from it as the same stroke">↳</button>
         <button id="tbQuickBtn" class="tool-btn" data-ovp="5" data-ovl="⚡ Quick actions" title="Quick actions panel: Select, Move, Duplicate, Delete, Erase — floats anywhere on the canvas">⚡</button>
         <button id="tbDupBtn" class="tool-btn" data-ovp="10" data-ovl="⧉ Duplicate" title="Duplicate the selected shape, stroke or picture (also: double-tap it)">⧉</button>
         <span class="tb-split"><button id="tbPencilBtn" class="tool-btn tb-fix" title="Freehand drawing with the current brush">✏️ Pencil</button><button id="tbPencilMenuBtn" class="tool-btn tb-fix" aria-haspopup="menu" aria-expanded="false" title="Choose a brush">▾</button></span>
@@ -1480,7 +1481,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v369'; // keep in step with CACHE in sw.js
+const APP_V='v370'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -1856,7 +1857,7 @@ function renderDetail(){
         d.save();d.setTransform(1,0,0,1,0,0);d.globalAlpha=l.opacity/100;d.globalCompositeOperation=l.blend||'source-over';d.drawImage(detailScratch,0,0);d.restore();
       });
     });
-    drawPlaced();drawMultiSelectHighlights();drawShapeToolsHighlights();drawStrokeSelection();drawTileBoundary();if(showGuides)drawGuides();
+    drawPlaced();drawMultiSelectHighlights();drawShapeToolsHighlights();drawStrokeSelection();drawContinueMarkers();drawTileBoundary();if(showGuides)drawGuides();
   }catch(err){console.warn('[sketchpad] detail render failed',err);ctx=saved;hideDetail();if(liveOvShown&&!liveOvOn&&!drawing)requestAnimationFrame(liveOvHide);return;}
   ctx=saved;
   detailCanvas.style.transform='none';detailView={zoom:zoom,panX:panX,panY:panY,rot:rot,base:baseScale};
@@ -3210,7 +3211,7 @@ function cvtRender(n){
   }
   // selection outlines belong to the artwork, so they are drawn on the first small copy
   real.save();real.translate(CX,CY);real.scale(1/n,1/n);real.translate(-CX,-CY);
-  drawMultiSelectHighlights();drawShapeToolsHighlights();drawStrokeSelection();
+  drawMultiSelectHighlights();drawShapeToolsHighlights();drawStrokeSelection();drawContinueMarkers();
   real.restore();
 }
 // lays n x n small copies of `img` into a frame of fw x fh on the active layout, exactly as the canvas shows them (a crop of the repeating lattice)
@@ -3436,7 +3437,7 @@ function maskOutsideTile(c){
   c.beginPath();c.rect(0,0,c.canvas.width,c.canvas.height);
   const k=c.canvas.width/W;c.rect(CX*k,CY*k,TW*k,TH*k);c.fill('evenodd');c.restore();
 }
-function redraw(){if(redraw._q)return;redraw._q=requestAnimationFrame(()=>{redraw._q=0;if(pathEditStrokeId&&pathEditNodes&&!liveActive&&!drawing)renderPathLivePreview(); /* Edit Path hides the real stroke, so its live preview must never be lost to a stray clear */if(compositeDirty&&!(detailShown&&detailNeeded())){updateDisplayComposite();compositeDirty=false;} /* zoomed in, the normal canvas is hidden behind the sharp picture, so rebuilding it is wasted work and memory */const _cvn=ctN();{const k=canvasTiling+'|'+layout+'|'+showTiling;if(cvtSync._k!==k){cvtSync._k=k;cvtSync();}}if(_cvn>1)cvtRender(_cvn);else{ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);drawBackground();drawTraces();if(showTiling)drawTiles();else{ctx.drawImage(displayCanvas,0,0,W,H);if(liveActive)ctx.drawImage(liveLayer,0,0);}drawPlaced();if(!showTiling)maskOutsideTile(ctx);drawMultiSelectHighlights();drawShapeToolsHighlights();drawStrokeSelection();}drawTileBoundary();if(showGuides)drawGuides();updateSelectionBox();updatePaintBBoxOverlay();updateGroupBox();fabricContentChanged();invalidateDetail();scheduleMotifHi();try{updateTraceBox();}catch(e){}});}
+function redraw(){if(redraw._q)return;redraw._q=requestAnimationFrame(()=>{redraw._q=0;if(pathEditStrokeId&&pathEditNodes&&!liveActive&&!drawing)renderPathLivePreview(); /* Edit Path hides the real stroke, so its live preview must never be lost to a stray clear */if(compositeDirty&&!(detailShown&&detailNeeded())){updateDisplayComposite();compositeDirty=false;} /* zoomed in, the normal canvas is hidden behind the sharp picture, so rebuilding it is wasted work and memory */const _cvn=ctN();{const k=canvasTiling+'|'+layout+'|'+showTiling;if(cvtSync._k!==k){cvtSync._k=k;cvtSync();}}if(_cvn>1)cvtRender(_cvn);else{ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);drawBackground();drawTraces();if(showTiling)drawTiles();else{ctx.drawImage(displayCanvas,0,0,W,H);if(liveActive)ctx.drawImage(liveLayer,0,0);}drawPlaced();if(!showTiling)maskOutsideTile(ctx);drawMultiSelectHighlights();drawShapeToolsHighlights();drawStrokeSelection();drawContinueMarkers();}drawTileBoundary();if(showGuides)drawGuides();updateSelectionBox();updatePaintBBoxOverlay();updateGroupBox();fabricContentChanged();invalidateDetail();scheduleMotifHi();try{updateTraceBox();}catch(e){}});}
 // A pattern (e.g. exported from Magic Builder) loaded as the base of the design - unlike Trace
 // Reference (a non-exported, freely-scaled/positioned tracing guide), this is sized to exactly
 // fill the guide-square tile, tiles using the same repeat offsets as the hand-drawn layer/motifs
@@ -9074,13 +9075,18 @@ function selectBrush(id){eraserActive=false;activeBrushId=id;try{if(smudgeOn)smu
 $('eraserToggle').onclick=()=>{eraserActive=!eraserActive;if(eraserActive)disarmAreaFill();syncControlsFromSettings();syncActiveSwatches();setStatus(eraserActive?'🧹 Eraser: drag over a stroke on the active layer to erase just that part of it.':'✏️ Back to '+BrushEngine.getBrush(activeBrushId).name+'.');};
 $('liveTileToggle').textContent='🔲 Live tile preview: '+(liveTilePreview?'On':'Off');
 $('liveTileToggle').onclick=()=>{liveTilePreview=!liveTilePreview;try{localStorage.setItem('sp-liveTiles2',liveTilePreview?'1':'0');}catch(e){}$('liveTileToggle').textContent='🔲 Live tile preview: '+(liveTilePreview?'On':'Off');};
-$('continuousDrawToggle').onclick=()=>{
-  continuousDrawMode=!continuousDrawMode;
+function setContinueMode(on){
+  continuousDrawMode=!!on;
   $('continuousDrawToggle').textContent='🔗 Continuous Draw: '+(continuousDrawMode?'On':'Off');
   $('continuousDrawToggle').classList.toggle('active',continuousDrawMode);
   $('continuousDrawHint').style.display=continuousDrawMode?'block':'none';
-  setStatus(continuousDrawMode?'🔗 Continuous Draw on — starting a new stroke right where the last one ended extends it as one path.':'🔗 Continuous Draw off.');
-};
+  const tb=$('tbContBtn');if(tb)tb.classList.toggle('active',continuousDrawMode);
+  if(continuousDrawMode&&mode!=='draw'){try{mode='draw';syncMode();}catch(e){}}
+  setStatus(continuousDrawMode?'↳ Continue on — the blue ＋ rings mark the ends of your open strokes. Start the Pencil on one to draw on from it.':'↳ Continue off.');
+  redraw();
+}
+$('continuousDrawToggle').onclick=()=>setContinueMode(!continuousDrawMode);
+$('tbContBtn').onclick=()=>setContinueMode(!continuousDrawMode);
 $('brushSize').oninput=e=>{const v=+e.target.value;$('brushSizeVal').textContent=fmtSize(v);patchCurrentSettings({size:v});};
 // Each brush remembers the colour last used with it (shown again when you pick that brush).
 let brushColours={};try{brushColours=JSON.parse(localStorage.getItem('sp-brushColours')||'{}')||{};}catch(e){brushColours={};}
@@ -11397,20 +11403,34 @@ function simplifyCurrentPath(){
 // pencil and I'm picking the line back up", not silently weld together unrelated nearby strokes
 // drawn at some earlier point in the session. Returns null (no snap) if that one candidate's
 // nearer end is further away than the snap radius, rather than searching further back.
+function contEnds(s){
+  if(s.layerId!==activeLayerId||s.closed||s.clipStrokeId||s.fillColor||s.text||s.regions||s.outlined||s.tpl||hiddenStrokeIds.has(s.id))return null;
+  const pts=s.nodes?nodesToPoints(s.nodes,false):s.points;
+  if(!pts||pts.length<2)return null;
+  return [pts[0],pts[pts.length-1]];
+}
 function findContinuousDrawTarget(p){
+  // Any open stroke on the active layer: the end nearest the Pencil (within a finger-sized, zoom-constant radius) is the one continued.
+  const snapRadius=34/(zoom*baseScale);let best=null,bd=snapRadius;
   for(let i=strokes.length-1;i>=0;i--){
-    const s=strokes[i];
-    if(s.layerId!==activeLayerId||s.closed||s.clipStrokeId||s.fillColor)continue;
-    const pts=s.nodes?nodesToPoints(s.nodes,false):s.points;
-    if(!pts||pts.length<2)return null;
-    const snapRadius=26/(zoom*baseScale);
-    const dStart=Math.hypot(p.x-pts[0].x,p.y-pts[0].y);
-    const dEnd=Math.hypot(p.x-pts[pts.length-1].x,p.y-pts[pts.length-1].y);
-    if(dEnd<=snapRadius&&dEnd<=dStart)return {stroke:s,fromStart:false};
-    if(dStart<=snapRadius)return {stroke:s,fromStart:true};
-    return null;
+    const s=strokes[i],e=contEnds(s);if(!e)continue;
+    const dS=Math.hypot(p.x-e[0].x,p.y-e[0].y),dE=Math.hypot(p.x-e[1].x,p.y-e[1].y);
+    if(dE<=bd&&dE<=dS){bd=dE;best={stroke:s,fromStart:false};}
+    else if(dS<=bd){bd=dS;best={stroke:s,fromStart:true};}
   }
-  return null;
+  return best;
+}
+// blue ＋ rings on the ends of every open stroke on the active layer while Continue is on
+function drawContinueMarkers(){
+  if(!continuousDrawMode)return;
+  const k=1/(zoom*baseScale);
+  ctx.save();ctx.setLineDash([]);
+  strokes.forEach(s=>{const e=contEnds(s);if(!e)return;e.forEach(q=>{
+    ctx.beginPath();ctx.arc(q.x,q.y,13*k,0,Math.PI*2);ctx.fillStyle='rgba(60,130,255,.92)';ctx.fill();
+    ctx.lineWidth=2.5*k;ctx.strokeStyle='#fff';ctx.stroke();
+    ctx.beginPath();ctx.moveTo(q.x-6*k,q.y);ctx.lineTo(q.x+6*k,q.y);ctx.moveTo(q.x,q.y-6*k);ctx.lineTo(q.x,q.y+6*k);ctx.lineWidth=2.5*k;ctx.strokeStyle='#fff';ctx.stroke();
+  });});
+  ctx.restore();
 }
 // Continue Path: commits any pending node edits, then arms the NEXT pencil stroke to extend
 // this same stroke's geometry (from whichever end was selected) instead of starting a new one —
