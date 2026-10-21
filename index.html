@@ -1474,7 +1474,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v358'; // keep in step with CACHE in sw.js
+const APP_V='v359'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -15676,8 +15676,12 @@ function smudgeDown(e){
   const layer=getActiveLayer();if(!layer||layer.locked)return;
   const p=screenToCanvas(e.clientX,e.clientY);
   if(smudgeDrag){try{smudgeDrag.sm.done();}catch(e){}smudgeDrag=null;}
-  const sm=BrushEngine.makeSmudger(layer.ctx,smudgeSize/2,smudgeStr/100,BrushEngine.getBrush(activeBrushId),smudgeBlend?'blend':null);
-  smudgeDrag={layer,sm,blend:smudgeBlend,brushId:activeBrushId,last:p,pts:[{x:p.x,y:p.y,pressure:0.5}],raf:0};
+  const mkS=c=>BrushEngine.makeSmudger(c,smudgeSize/2,smudgeStr/100,BrushEngine.getBrush(activeBrushId),smudgeBlend?'blend':null);
+  const sm=mkS(layer.ctx);
+  // Blend also works on the sharp zoomed-in copy of the layer, so lifting the Pencil needs no replay of the whole layer (see smudgeUp).
+  const sm2=(smudgeBlend&&layer.dctx!==layer.ctx&&!layer.asleep)?mkS(layer.dctx):null;
+  if(sm2){const s1=sm,s2=sm2;sm.to=((f)=>(x,y)=>{f(x,y);s2.to(x,y);})(sm.to.bind(sm));sm.done=((f)=>()=>{f();s2.done();})(sm.done.bind(sm));}
+  smudgeDrag={layer,sm,blend:smudgeBlend,live:smudgeBlend&&!layer.asleep,brushId:activeBrushId,last:p,pts:[{x:p.x,y:p.y,pressure:0.5}],raf:0};
   sm.to(p.x,p.y);smudgeRingAt(e.clientX,e.clientY,true);
 }
 function smudgeMove(e){
@@ -15700,7 +15704,10 @@ function smudgeUp(){
   if(d.pts.length<2){return;}
   // keep it as a stroke (so Undo, saving and the hi-res export replay it in order), then rebuild the layer from the strokes
   strokes.push({id:crypto.randomUUID(),brushId:'smudge',layerId:d.layer.id,color:'#000000',settings:{size:smudgeSize,opacity:smudgeStr,smoothing:0,pressureWidth:0,pressureOpacity:0,spacing:6,sb:d.brushId,blend:d.blend||undefined},points:d.pts});
-  try{rebuildLayer(d.layer.id);}catch(err){console.error(err);}
+  // Blend has already been applied to the layer (and its sharp copy) as you drew, so it is not replayed: replaying every stroke on the layer
+  // is what made lifting the Pencil stall on a finished painting. Smear still rebuilds as before.
+  if(d.live){sentinel(d.layer.ctx);if(d.layer.dctx!==d.layer.ctx)sentinel(d.layer.dctx);compositeDirty=true;}
+  else{try{rebuildLayer(d.layer.id);}catch(err){console.error(err);}}
   redraw();pushHist();
 }
 canvas.addEventListener('pointermove',e=>{if(smudgeDrag&&isPen(e))smudgeMove(e);});
