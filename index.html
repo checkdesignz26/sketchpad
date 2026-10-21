@@ -229,6 +229,9 @@ body.single-canvas #tileOutline{border-color:rgba(65,70,130,.9);box-shadow:0 0 0
 .ac-sw{width:30px;height:30px;border-radius:8px;border:2px solid rgba(0,0,0,.15);cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
 .ac-sw.selected{outline:3px solid var(--pink)}
 .ac-palette-card{border:1px solid var(--btnBorder);border-radius:12px;padding:8px;margin-top:6px}
+.ac-palette-card.active{border:2px solid var(--pink);background:rgba(224,96,154,.09)}
+.ac-sw.picked{position:relative;outline:3px solid #2b9a5a;outline-offset:1px}
+.ac-sw.picked::after{content:'✓';position:absolute;right:-5px;top:-7px;width:16px;height:16px;border-radius:50%;background:#2b9a5a;color:#fff;font:800 11px/16px system-ui;text-align:center}
 .ac-palette-card .ac-palette-head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px;font-weight:800;font-size:13px}
 .ac-palette-swatches{display:flex;flex-wrap:wrap;gap:4px}
 #restoreBanner{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:80;display:flex;align-items:center;gap:12px;background:var(--sideBg);border:1px solid var(--line);border-radius:14px;padding:10px 16px;box-shadow:0 18px 50px rgba(0,0,0,.35);font-size:13.5px;font-weight:700;max-width:calc(100vw - 24px)}
@@ -700,6 +703,7 @@ html.in-suite .suite-only{display:block!important}
         <img id="acImagePreview" style="display:none;width:100%;max-height:120px;object-fit:contain;border-radius:8px;margin-top:8px;background:var(--btnBg);">
         <div class="row" style="margin-top:8px;"><button class="btn mini acModeBtn" data-mode="exact" style="flex:1;" title="Faithful to the artwork, keeps shading">Exact colours</button><button class="btn mini acModeBtn" data-mode="clean" style="flex:1;" title="Merges near-identical shades into a tidy palette">Clean palette</button></div>
         <div class="slider-row" style="margin-top:8px;"><label>Colours</label><input id="acImageCount" type="range" min="3" max="32" value="8"><span id="acImageCountVal">8</span></div>
+        <div class="row" style="margin-top:8px;gap:6px;"><button id="acPickToggle" class="btn mini" style="flex:2;" title="Turn on, then tap the extracted colours you want to add to a palette">☑ Choose colours</button><button id="acPickAll" class="btn mini" style="flex:1;" title="Choose every extracted colour">All</button><button id="acPickNone" class="btn mini" style="flex:1;" title="Un-choose everything">None</button></div>
         <div class="swatches" id="acImageSwatches" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;"><span class="hint">Upload an image, or use the loaded background/trace artwork, to pull its colours.</span></div>
         <div class="row" style="margin-top:8px;">
           <input id="acPaletteName" placeholder="palette name" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);">
@@ -1468,7 +1472,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v346'; // keep in step with CACHE in sw.js
+const APP_V='v347'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -1901,6 +1905,7 @@ let areaFillArmed=false; // Vector Area Fill: next canvas tap fills the enclosed
 // does — regenerating the palette (hero/vibe/richness/image) never recolours anything by itself,
 // exactly like the source panel's own swatch-click design.
 let colorTarget='brush';
+let acPickMode=false,acPicked=new Set(); // Choose-colours mode: tap extracted colours to add just those
 let savedPalettes=[]; // [{id,name,hexes:[...]}] — named, saved extracted-image palettes; persisted with the project
 let acLastUploadedImg=null,acExtractedColours=[],acExtractMode='exact';try{if(localStorage.getItem('sp-extract-mode')==='clean')acExtractMode='clean';}catch(e){}
 function hexToRgbMB(hex){hex=(hex||'#000000').replace('#','').trim();if(hex.length===3)hex=hex.split('').map(c=>c+c).join('');let n=parseInt(hex,16);if(Number.isNaN(n))n=0;return{r:(n>>16)&255,g:(n>>8)&255,b:n&255};}
@@ -9031,8 +9036,16 @@ function acExtractAndRender(){
 function renderAcImageSwatches(){
   const box=$('acImageSwatches');box.innerHTML='';
   if(!acExtractedColours.length){box.innerHTML='<span class="hint">Upload an image, or use the loaded background/trace artwork, to pull its colours.</span>';return;}
-  acExtractedColours.forEach(hex=>box.appendChild(makeAcSwatch(hex)));
-  markAcSwatchSelected();
+  acPicked=new Set([...acPicked].filter(h=>acExtractedColours.some(x=>(palHex(x)||x)===h)));
+  acExtractedColours.forEach(hex=>{
+    const d=makeAcSwatch(hex),hx=palHex(hex)||hex;
+    d.onclick=()=>{ // normally applies the colour; in Choose-colours mode it ticks / unticks it for adding to a palette
+      if(acPickMode){if(acPicked.has(hx))acPicked.delete(hx);else acPicked.add(hx);acPickPaint();}
+      else applyColorToTarget(hex);
+    };
+    box.appendChild(d);
+  });
+  markAcSwatchSelected();acPickPaint();
 }
 $('acImageFile').onchange=e=>{
   const file=e.target.files&&e.target.files[0];e.target.value='';
@@ -9076,15 +9089,21 @@ function renderSavedPalettesList(){
   const box=$('acSavedPalettesList');
   if(!savedPalettes.length){box.className='hint';box.textContent='No saved palettes yet — extract one from an image and save it above.';return;}
   box.className='';box.innerHTML='';
-  savedPalettes.forEach((pal,i)=>{
-    const card=document.createElement('div');card.className='ac-palette-card';
+  // the palette you are using sits at the top, marked Active
+  const order=savedPalettes.slice().sort((a,b)=>(b.id===projectPaletteId)-(a.id===projectPaletteId));
+  order.forEach(pal=>{
+    const isActive=pal.id===projectPaletteId;
+    const card=document.createElement('div');card.className='ac-palette-card'+(isActive?' active':'');
     const head=document.createElement('div');head.className='ac-palette-head';
-    const nameSpan=document.createElement('span');nameSpan.textContent=pal.name;
+    const nameSpan=document.createElement('span');nameSpan.textContent=pal.name;nameSpan.style.cssText='flex:1;min-width:0;overflow-wrap:anywhere;';
+    const useBtn=document.createElement('button');useBtn.className='btn mini'+(isActive?' primary':'');useBtn.textContent=isActive?'✓ Active':'Use';useBtn.disabled=isActive;
+    useBtn.title=isActive?'This is the palette you are using':'Use this palette (it moves to the top)';
+    useBtn.onclick=()=>{palOnSelect('p:'+pal.id);try{$('acAddToPal').value=pal.id;}catch(e){}setStatus('🎨 “'+pal.name+'” is now your active palette.');};
     const delBtn=document.createElement('button');delBtn.className='btn mini danger';delBtn.textContent='✕';delBtn.title='Delete this saved palette';
-    delBtn.onclick=()=>{savedPalettes.splice(i,1);renderSavedPalettesList();scheduleAutosave();};
+    delBtn.onclick=()=>{const i=savedPalettes.indexOf(pal);if(i<0)return;savedPalettes.splice(i,1);if(projectPaletteId===pal.id)projectPaletteId=null;scheduleAutosave();palRefresh();};
     const dlBtn=document.createElement('button');dlBtn.className='btn mini';dlBtn.textContent='⬇';dlBtn.title='Download this palette (file type chosen below the list)';
     dlBtn.onclick=()=>palDownload([pal]);
-    head.appendChild(nameSpan);head.appendChild(dlBtn);head.appendChild(delBtn);
+    head.appendChild(nameSpan);head.appendChild(useBtn);head.appendChild(dlBtn);head.appendChild(delBtn);
     card.appendChild(head);
     const swRow=document.createElement('div');swRow.className='ac-palette-swatches';
     pal.hexes.forEach(hex=>swRow.appendChild(makeAcSwatch(hex,pal.name)));
@@ -9150,15 +9169,32 @@ function acSyncAddSel(){
   sel.value=savedPalettes.some(p=>p.id===keep)?keep:(savedPalettes.some(p=>p.id===projectPaletteId)?projectPaletteId:savedPalettes[0].id);
 }
 palInst.push(acSyncAddSel);acSyncAddSel();
+palInst.push(()=>renderSavedPalettesList());
+function acPickSync(){
+  const t=$('acPickToggle');if(t){t.textContent=acPickMode?'☑ Choosing: tap colours':'☑ Choose colours';t.classList.toggle('primary',acPickMode);}
+  const b=$('acAddToPalBtn');if(b)b.textContent=acPicked.size?('➕ Add '+acPicked.size+' chosen'):'➕ Add all';
+  document.querySelectorAll('#acImageSwatches .ac-sw').forEach(d=>{d.title=(d.dataset.hex||'')+(acPickMode?' — tap to choose / un-choose':' — tap to apply');});
+}
+function acPickPaint(){
+  document.querySelectorAll('#acImageSwatches .ac-sw').forEach(d=>{const hx=palHex(d.dataset.hex)||d.dataset.hex;d.classList.toggle('picked',acPicked.has(hx));});
+  acPickSync();
+}
+$('acPickToggle').onclick=()=>{acPickMode=!acPickMode;acPickSync();setStatus(acPickMode?'☑ Choose colours is on: tap the extracted colours you want, then press Add.':'☑ Choose colours is off: tapping a colour uses it to draw.');};
+$('acPickAll').onclick=()=>{acPickMode=true;acPicked=new Set(acExtractedColours.map(h=>palHex(h)||h));acPickPaint();};
+$('acPickNone').onclick=()=>{acPicked.clear();acPickPaint();};
+acPickSync();
 $('acAddToPalBtn').onclick=()=>{
   if(!acExtractedColours.length){setStatus('🖼️ Extract colours from an image or traced artwork first.');return;}
+  if(acPickMode&&!acPicked.size){setStatus('☑ Tap the colours you want to add first (or tap All).');return;}
   let pl=savedPalettes.find(x=>x.id===$('acAddToPal').value);
   if(!pl){ // no palette to add to yet: make one (named from the box above, if you typed a name)
     const nm=($('acPaletteName').value||'').trim()||('Palette '+(savedPalettes.length+1));
     pl={id:crypto.randomUUID(),name:nm,hexes:[]};savedPalettes.push(pl);$('acPaletteName').value='';
   }
   const have=new Set(pl.hexes.map(palHex));let added=0;
-  acExtractedColours.forEach(h=>{const x=palHex(h);if(x&&!have.has(x)){have.add(x);pl.hexes.push(x);added++;}});
+  const src=acPicked.size?acExtractedColours.filter(h=>acPicked.has(palHex(h)||h)):acExtractedColours; // only the colours you ticked, else all of them
+  src.forEach(h=>{const x=palHex(h);if(x&&!have.has(x)){have.add(x);pl.hexes.push(x);added++;}});
+  acPicked.clear();acPickPaint();
   scheduleAutosave();
   try{renderSavedPalettesList();}catch(e){}
   palRefresh();$('acAddToPal').value=pl.id;
