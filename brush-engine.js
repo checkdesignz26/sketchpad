@@ -993,10 +993,12 @@
     const MAXR = 300; // a finger bigger than this just becomes slow and memory hungry
     const shrink = R > MAXR ? MAXR / R : 1; R *= shrink;
     const D = Math.max(4, Math.ceil(R * 2) + 2);
-    const pooled = !_smBusy; if (pooled) { _smBusy = true; if (!_smPool) _smPool = [0, 1, 2, 3].map(() => document.createElement('canvas')); }
+    const isBlend = mode === 'blend';
+    // Blend works on the pixels directly (see to()), so it only needs the footprint mask, and only for a moment: no working canvases are kept.
+    const pooled = !isBlend && !_smBusy; if (pooled) { _smBusy = true; if (!_smPool) _smPool = [0, 1, 2, 3].map(() => document.createElement('canvas')); }
     const mk = (w, h, i) => { const c = pooled ? _smPool[i] : document.createElement('canvas'); c.width = w; c.height = h; return c; }; // setting the size also clears it
-    const carry = mk(D, D, 0), pick = mk(D, D, 1), laid = mk(D, D, 2), mask = mk(D, D, 3);
-    const cg = carry.getContext('2d'), pg = pick.getContext('2d'), lg = laid.getContext('2d'), mg = mask.getContext('2d');
+    const carry = isBlend ? null : mk(D, D, 0), pick = isBlend ? null : mk(D, D, 1), laid = isBlend ? null : mk(D, D, 2), mask = mk(D, D, 3);
+    const cg = carry && carry.getContext('2d'), pg = pick && pick.getContext('2d'), lg = laid && laid.getContext('2d'), mg = mask.getContext('2d');
     // The footprint of the finger comes from the chosen brush: its tip picture (stamp brushes), its edge
     // softness (a hard brush smudges with a hard edge) and its texture (a dry or grainy brush smears in streaks).
     const tip = brush && brush.stamp ? (brush.stampCanvas || brush.stampImg) : null;
@@ -1024,44 +1026,72 @@
       sg.addColorStop(0, 'rgba(0,0,0,1)'); sg.addColorStop(0.5, 'rgba(0,0,0,0.6)'); sg.addColorStop(1, 'rgba(0,0,0,0)');
       mg.fillStyle = sg; mg.fillRect(0, 0, D, D);
     }
+    let maskA = null; // blend: the footprint's alpha as plain numbers, read once per stroke instead of once per step
+    if (isBlend) { try { const md = mg.getImageData(0, 0, D, D).data; maskA = new Uint8Array(D * D); for (let q = 0; q < maskA.length; q++) maskA[q] = md[q * 4 + 3]; } catch (e) { maskA = null; } mask.width = mask.height = 1; }
     const s01 = Math.max(0.05, Math.min(1, strength));
     const lay = Math.min(1, 0.3 + 0.45 * s01), keep = 0.45 + 0.5 * s01;
     let has = false;
+    // BLEND, one step. The colours under the brush are mixed with a soft blur of their neighbours (a weighted average, worked out per pixel),
+    // only where paint already is, and only through the brush footprint; going over a spot again blends it more. Everything happens on one
+    // small patch: ONE read of the patch from the layer, a blur on a handful of block averages, and ONE write of just the rectangle that changed.
+    // No canvas is created, drawn on or resized per step, and the mask is not read again.
+    const bLev = Math.max(1, Math.min(4, Math.floor(Math.log2(D / 6)))), bF = 1 << bLev, bN = Math.ceil(D / bF);
+    const bS = isBlend ? new Float32Array(bN * bN * 4) : null; // block sums of premultiplied colour (r,g,b,a)
+    const bK = Math.min(1, 0.1 + 0.4 * s01);
+    const cw = ctx.canvas.width, chh = ctx.canvas.height;
+    function blendStep(sx, sy) {
+      if (!maskA || sx >= cw || sy >= chh || sx + D <= 0 || sy + D <= 0) return;
+      let pd; try { pd = ctx.getImageData(sx, sy, D, D); } catch (e) { return; } // a patch that cannot be read is simply skipped
+      const o = pd.data; bS.fill(0);
+      for (let py = 0; py < D; py++) {
+        const rowB = ((py / bF) | 0) * bN;
+        for (let px = 0, q = py * D * 4; px < D; px++, q += 4) {
+          const a = o[q + 3]; if (!a) continue;
+          const bi = (rowB + ((px / bF) | 0)) * 4, af = a / 255;
+          bS[bi] += o[q] * af; bS[bi + 1] += o[q + 1] * af; bS[bi + 2] += o[q + 2] * af; bS[bi + 3] += af;
+        }
+      }
+      // soften the block grid with a [1 2 1] pass each way: the block averages alone blur a little less than the two-stage shrink/enlarge this replaces
+      if (bN > 2) {
+        for (let pass = 0; pass < 2; pass++) {
+          for (let j = 0; j < bN; j++) for (let ch = 0; ch < 4; ch++) {
+            let prev = bS[(j * bN) * 4 + ch], cur = prev;
+            for (let i = 0; i < bN; i++) { const nx = i + 1 < bN ? bS[(j * bN + i + 1) * 4 + ch] : cur; bS[(j * bN + i) * 4 + ch] = (prev + 2 * cur + nx) * 0.25; prev = cur; cur = nx; }
+          }
+          for (let i = 0; i < bN; i++) for (let ch = 0; ch < 4; ch++) {
+            let prev = bS[i * 4 + ch], cur = prev;
+            for (let j = 0; j < bN; j++) { const nx = j + 1 < bN ? bS[((j + 1) * bN + i) * 4 + ch] : cur; bS[(j * bN + i) * 4 + ch] = (prev + 2 * cur + nx) * 0.25; prev = cur; cur = nx; }
+          }
+        }
+      }
+      const inv = 1 / (bF * bF); let x0 = D, y0 = D, x1 = -1, y1 = -1;
+      for (let py = 0; py < D; py++) {
+        const fy = (py + 0.5) / bF - 0.5, j0 = Math.max(0, Math.floor(fy)), j1 = Math.min(bN - 1, j0 + 1), ty = Math.min(1, Math.max(0, fy - j0));
+        for (let px = 0; px < D; px++) {
+          const mi = py * D + px, q = mi * 4, mw = maskA[mi]; if (!mw || !o[q + 3]) continue;
+          const w = (mw / 255) * bK; if (w < 0.01) continue;
+          const fx = (px + 0.5) / bF - 0.5, i0 = Math.max(0, Math.floor(fx)), i1 = Math.min(bN - 1, i0 + 1), tx = Math.min(1, Math.max(0, fx - i0));
+          const b00 = (j0 * bN + i0) * 4, b10 = (j0 * bN + i1) * 4, b01 = (j1 * bN + i0) * 4, b11 = (j1 * bN + i1) * 4;
+          const w00 = (1 - tx) * (1 - ty), w10 = tx * (1 - ty), w01 = (1 - tx) * ty, w11 = tx * ty;
+          const pa = (bS[b00 + 3] * w00 + bS[b10 + 3] * w10 + bS[b01 + 3] * w01 + bS[b11 + 3] * w11) * inv;
+          if (pa * 255 < 8) continue;
+          const k = 1 / (pa * bF * bF);
+          const pr = (bS[b00] * w00 + bS[b10] * w10 + bS[b01] * w01 + bS[b11] * w11) * k, pg2 = (bS[b00 + 1] * w00 + bS[b10 + 1] * w10 + bS[b01 + 1] * w01 + bS[b11 + 1] * w11) * k, pb = (bS[b00 + 2] * w00 + bS[b10 + 2] * w10 + bS[b01 + 2] * w01 + bS[b11 + 2] * w11) * k;
+          o[q] = Math.round(o[q] + (pr - o[q]) * w); o[q + 1] = Math.round(o[q + 1] + (pg2 - o[q + 1]) * w); o[q + 2] = Math.round(o[q + 2] + (pb - o[q + 2]) * w);
+          if (px < x0) x0 = px; if (px > x1) x1 = px; if (py < y0) y0 = py; if (py > y1) y1 = py;
+        }
+      }
+      if (x1 < 0) return;
+      try { ctx.putImageData(pd, sx, sy, x0, y0, x1 - x0 + 1, y1 - y0 + 1); } catch (e) { }
+    }
     return {
-      done() { if (pooled) { _smBusy = false; _smPool.forEach((c) => { c.width = c.height = 1; }); } if (_smBl) { _smBl.width = 1; _smBl.height = 1; } },
+      done() { if (pooled) { _smBusy = false; _smPool.forEach((c) => { c.width = c.height = 1; }); } },
       step: Math.max(1.2 / sc, radius * (mode === 'blend' ? 0.14 : 0.22)),
       to(x, y) {
         const cx = m.a * x + m.e, cy = m.d * y + m.f, sx = Math.round(cx - D / 2), sy = Math.round(cy - D / 2);
+        if (isBlend) { blendStep(sx, sy); return; }
         pg.setTransform(1, 0, 0, 1, 0, 0); pg.globalCompositeOperation = 'source-over'; pg.globalAlpha = 1; pg.clearRect(0, 0, D, D);
         try { pg.drawImage(ctx.canvas, sx, sy, D, D, 0, 0, D, D); } catch (e) { return; }
-        if (mode === 'blend') {
-          // BLEND: instead of dragging paint along, the colours under the brush are mixed with their neighbours. The patch is shrunk twice and
-          // enlarged again (a soft blur that averages the colours), kept to where paint already is (so no haze spreads into empty canvas), and
-          // laid back through the brush footprint. Several passes over the same spot blend more and more.
-          // shrink by halves (each halving averages 2x2 pixels, so no aliasing), then enlarge by doubles: a smooth blur
-          if (!_smBl) _smBl = document.createElement('canvas');
-          const levels = Math.max(1, Math.min(4, Math.floor(Math.log2(D / 6))));
-          _smBl.width = Math.max(_smBl.width, D); _smBl.height = Math.max(_smBl.height, D);
-          const bg = _smBl.getContext('2d');
-          bg.setTransform(1, 0, 0, 1, 0, 0); bg.globalCompositeOperation = 'source-over'; bg.globalAlpha = 1; bg.imageSmoothingEnabled = true; bg.imageSmoothingQuality = 'high';
-          bg.clearRect(0, 0, D, D); bg.drawImage(pick, 0, 0);
-          let w = D;
-          for (let l = 0; l < levels; l++) { const nw = Math.max(2, Math.ceil(w / 2)); bg.drawImage(_smBl, 0, 0, w, w, 0, 0, nw, nw); bg.clearRect(nw, 0, D, D); bg.clearRect(0, nw, D, D); w = nw; }
-          for (let l = 0; l < levels; l++) { const nw = l === levels - 1 ? D : Math.min(D, w * 2); bg.drawImage(_smBl, 0, 0, w, w, 0, 0, nw, nw); w = nw; }
-          // The mix is worked out per pixel (a weighted average of what is there and the blurred colour) and written straight back. Laying a
-          // see-through picture over the layer many times instead made the colour drift darker, from rounding in every pass.
-          try {
-            const bd = bg.getImageData(0, 0, D, D).data, pd = pg.getImageData(0, 0, D, D), md = mg.getImageData(0, 0, D, D).data, o = pd.data;
-            const k = Math.min(1, 0.1 + 0.4 * s01);
-            for (let q = 0; q < o.length; q += 4) {
-              if (o[q + 3] === 0 || bd[q + 3] < 8) continue;
-              const w = (md[q + 3] / 255) * k; if (w < 0.01) continue;
-              o[q] = Math.round(o[q] + (bd[q] - o[q]) * w); o[q + 1] = Math.round(o[q + 1] + (bd[q + 1] - o[q + 1]) * w); o[q + 2] = Math.round(o[q + 2] + (bd[q + 2] - o[q + 2]) * w);
-            }
-            ctx.putImageData(pd, sx, sy);
-          } catch (e) { /* a patch that cannot be read back is simply skipped */ }
-          return;
-        }
         if (!has) { cg.setTransform(1, 0, 0, 1, 0, 0); cg.clearRect(0, 0, D, D); cg.drawImage(pick, 0, 0); has = true; return; }
         lg.setTransform(1, 0, 0, 1, 0, 0); lg.globalCompositeOperation = 'source-over'; lg.globalAlpha = 1; lg.clearRect(0, 0, D, D);
         lg.drawImage(carry, 0, 0); lg.globalCompositeOperation = 'destination-in'; lg.drawImage(mask, 0, 0);
@@ -1547,8 +1577,8 @@
     if (st.liquify) return liquifyStroke(ctx, stroke);
     const sb = st.sb ? byId.get(st.sb) : null;
     const sm = makeSmudger(ctx, Math.max(1, (st.size || 30) / 2), (st.opacity == null ? 70 : st.opacity) / 100, sb && sb.id !== 'eraser' ? sb : null, st.blend ? 'blend' : null);
-    let pts = resample(stroke.points, sm.step * 1.5);
-    if (pts.length > 500) { const k = pts.length / 500; pts = Array.from({ length: 500 }, (_, i) => pts[Math.min(pts.length - 1, Math.floor(i * k))]); }
+    let pts = resample(stroke.points, st.blend ? sm.step : sm.step * 1.5); // blend is replayed at the spacing it was drawn with, so it looks the same after lifting
+    if (pts.length > (st.blend ? 4000 : 500)) { const cap = st.blend ? 4000 : 500; const k = pts.length / cap; pts = Array.from({ length: cap }, (_, i) => pts[Math.min(pts.length - 1, Math.floor(i * k))]); }
     try { for (let i = 0; i < pts.length; i++) sm.to(pts[i].x, pts[i].y); } finally { sm.done(); }
   }
   function renderStroke(ctx, stroke, brush, settings, alphaMul) {
