@@ -760,6 +760,7 @@ html.in-suite .suite-only{display:block!important}
       <div class="brush-family-title">Favourites</div>
       <div id="brushFavorites" class="brush-family-row"></div>
       <div style="display:flex;gap:6px;margin:8px 0 0;"><button id="resetBrushBtn" class="btn mini" style="flex:1;" title="Put this brush back to how it came, undoing your changes to its size, opacity and effects">↺ Reset this brush</button><button id="resetAllBrushesBtn" class="btn mini" style="flex:1;" title="Put every brush back to how it came">↺ Reset all brushes</button></div>
+      <div style="display:flex;gap:6px;margin:6px 0 0;"><button id="undoResetBtn" class="btn mini" style="flex:1;" title="Bring back the brush settings you had just before the last reset">↩ Undo reset</button><button id="restoreFromDrawingBtn" class="btn mini" style="flex:1;" title="Rebuild each brush's settings from the last stroke you drew with it in this drawing">⤴ Restore from my drawing</button></div>
       <button id="makeBrushBtn" class="btn mini" style="width:100%;margin:8px 0;">＋ Create custom brush…</button>
       <div id="brushFamilies"></div>
       <button id="moreSettingsToggle" class="btn mini" style="width:100%;margin-top:10px;">⚙️ More Settings</button>
@@ -1476,7 +1477,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v363'; // keep in step with CACHE in sw.js
+const APP_V='v364'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -8094,7 +8095,8 @@ function syncSelStrokeControls(){
   const newSel=lastSelSizeSyncId!==stroke.id;lastSelSizeSyncId=stroke.id;
   const st=strokeSettings(stroke),br=BrushEngine.getBrush(stroke.brushId),mx=br.stamp?300:120;
   fillSelBrushOptions();document.querySelectorAll('.sel-brush').forEach(e=>{e.value=stroke.brushId;});
-  document.querySelectorAll('.sel-colour').forEach(e=>{e.value=/^#[0-9a-f]{6}$/i.test(stroke.color||'')?stroke.color:'#000000';});
+  {const ly=layers.find(l=>l.id===stroke.layerId),eff=Math.max(0,Math.min(1,(st.opacity==null?100:st.opacity)/100*(ly&&ly.opacity!=null?ly.opacity/100:1)));
+    document.querySelectorAll('.sel-colour').forEach(e=>{e.value=/^#[0-9a-f]{6}$/i.test(stroke.color||'')?stroke.color:'#000000';e.style.opacity=String(Math.max(0.28,eff));e.title='Stroke colour '+e.value+(eff<0.995?' (drawn at '+Math.round(eff*100)+'% so it looks paler)':'');});}
   document.querySelectorAll('.sel-width').forEach(e=>{e.max=mx;e.value=st.size;});
   document.querySelectorAll('.sel-width-val').forEach(e=>{e.textContent=fmtSize(st.size);});
   {const op=Math.round(st.opacity==null?100:st.opacity);document.querySelectorAll('.sel-opacity').forEach(e=>{e.value=op;});document.querySelectorAll('.sel-opacity-val').forEach(e=>{e.textContent=op+'%';});}
@@ -8965,9 +8967,16 @@ function syncActiveSwatches(){document.querySelectorAll('.brush-swatch').forEach
 $('resetBrushBtn').onclick=()=>{
   try{
     const id=eraserActive?'eraser':activeBrushId,b=BrushEngine.getBrush(id);
+    if(!confirm('Put “'+(b&&b.name?b.name:'this brush')+'” back to its original settings? (↩ Undo reset brings your settings back.)'))return;
     BrushEngine.resetSettings(id);syncControlsFromSettings();try{syncActiveSwatches();}catch(e){}
     setStatus('↺ '+(b&&b.name?b.name:'Brush')+' is back to its original settings.');
   }catch(e){}
+};
+$('undoResetBtn').onclick=()=>{
+  try{const n=BrushEngine.restoreSettingsBackup();syncControlsFromSettings();try{syncActiveSwatches();}catch(e){}setStatus(n?('↩ Brought back the saved settings of '+n+' brush'+(n===1?'':'es')+'.'):'Nothing to undo: no reset has been made on this device.');}catch(e){}
+};
+$('restoreFromDrawingBtn').onclick=()=>{
+  try{const n=BrushEngine.settingsFromStrokes(strokes);syncControlsFromSettings();try{syncActiveSwatches();}catch(e){}setStatus(n?('⤴ Rebuilt the settings of '+n+' brush'+(n===1?'':'es')+' from how they were used in this drawing.'):'This drawing has no strokes to learn brush settings from.');}catch(e){}
 };
 $('resetAllBrushesBtn').onclick=()=>{
   if(!confirm('Put ALL brushes back to their original settings? Your drawings are not changed.'))return;
@@ -13269,6 +13278,7 @@ let coll=null;      // pattern collection: {list:[{id,name,thumb,state,tl}],acti
 function buildDocObject(){
   const d={
     tileW:TW,tileH:TH,tilePhys:tilePhys,repeatPreview:showTiling?'tiled':'single',canvasTiling:canvasTiling,
+    brushSettings:BrushEngine.exportSettings(),
     strokesJSON:strokesToJSON(),
     layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock,blur:l.blur||0,clip:!!l.clip,tpl:l.tpl||0,arHide:l.arHide||0}))),
     activeLayerId,
@@ -13991,6 +14001,7 @@ $('newProjectBtn').onclick=()=>newProjectFlow(null);
 async function applyDocObject(doc,opts){
   try{
     if(!doc)return false;
+    try{BrushEngine.mergeSettings(doc.brushSettings);}catch(e){} // brushes with no saved settings on this device get the ones saved in the project
     if(Array.isArray(doc.customBrushes)&&doc.customBrushes.length){
       const add=doc.customBrushes.filter(d=>d&&d.id&&!customDefs.some(c=>c.id===d.id));
       customDefs=customDefs.concat(add);saveCustomDefs();

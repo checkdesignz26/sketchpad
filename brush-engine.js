@@ -238,8 +238,29 @@
     saveJSON(LS_SETTINGS, settingsStore);
   }
   // Back to the brush's own factory settings (size, opacity, smoothing, watercolour effects...).
-  function resetSettings(brushId) { delete settingsStore[brushId]; saveJSON(LS_SETTINGS, settingsStore); }
-  function resetAllSettings() { settingsStore = {}; saveJSON(LS_SETTINGS, settingsStore); }
+  // Before any reset the current settings are copied aside, so a reset tapped by mistake can be undone (restoreSettingsBackup).
+  const LS_SETTINGS_BAK = 'pkmBrushSettingsBackupV1';
+  function backupSettings() { try { if (Object.keys(settingsStore).length) localStorage.setItem(LS_SETTINGS_BAK, JSON.stringify({ at: Date.now(), store: settingsStore })); } catch (err) {} }
+  function resetSettings(brushId) { backupSettings(); delete settingsStore[brushId]; saveJSON(LS_SETTINGS, settingsStore); }
+  function resetAllSettings() { backupSettings(); settingsStore = {}; saveJSON(LS_SETTINGS, settingsStore); }
+  function restoreSettingsBackup() {
+    const b = loadJSON(LS_SETTINGS_BAK, null); if (!b || !b.store) return 0;
+    let n = 0; Object.keys(b.store).forEach((id) => { if (byId.has(id)) { settingsStore[id] = b.store[id]; n++; } });
+    saveJSON(LS_SETTINGS, settingsStore); return n;
+  }
+  // Settings travel with the project file too, so clearing the browser's storage cannot lose them for good.
+  function exportSettings() { try { return JSON.parse(JSON.stringify(settingsStore)); } catch (err) { return {}; } }
+  function mergeSettings(o) { // only fills brushes that have no saved settings here; never overwrites
+    if (!o || typeof o !== 'object') return 0; let n = 0;
+    Object.keys(o).forEach((id) => { if (!settingsStore[id] && byId.has(id) && o[id] && typeof o[id] === 'object') { settingsStore[id] = o[id]; n++; } });
+    if (n) saveJSON(LS_SETTINGS, settingsStore); return n;
+  }
+  // Rebuild brush settings from a drawing: each brush gets the settings of the last stroke drawn with it.
+  function settingsFromStrokes(list) {
+    const last = {}; (list || []).forEach((s) => { if (s && s.brushId && s.brushId !== 'smudge' && s.settings && byId.has(s.brushId)) last[s.brushId] = s.settings; });
+    let n = 0; Object.keys(last).forEach((id) => { const st = Object.assign({}, last[id]); Object.keys(st).forEach((k) => { if (k.charAt(0) === '_') delete st[k]; }); settingsStore[id] = st; n++; });
+    if (n) saveJSON(LS_SETTINGS, settingsStore); return n;
+  }
   function touchRecent(brushId) {
     recents = [brushId].concat(recents.filter((id) => id !== brushId)).slice(0, RECENTS_MAX);
     saveJSON(LS_RECENTS, recents);
@@ -1851,7 +1872,7 @@
   global.BrushEngine = {
     BRUSHES, FAMILY_ORDER, FAMILY_LABEL, ERASER,
     getBrush, isVector, taperAt, registerStampBrush, unregisterStampBrush, makeCustomBrush, registerCustomBrush,
-    getSettings, setSettings, resetSettings, resetAllSettings,
+    getSettings, setSettings, resetSettings, resetAllSettings, restoreSettingsBackup, exportSettings, mergeSettings, settingsFromStrokes,
     touchRecent, getRecents,
     isFavorite, toggleFavorite, getFavorites,
     underlay: null, outlineInk, skipSmudge: BrushEngine_skipSmudge, wrap: BrushEngine_wrap, liveEnd, makeSmudger, makeCloner, liquifyStep, liquifyBegin, liquifyCompact, liquifyGL: _lq, pressureFactor, stampDab, colorWithAlpha, resample, renderStroke, smoothPoints, seededRandom,
