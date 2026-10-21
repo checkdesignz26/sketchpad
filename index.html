@@ -1474,7 +1474,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v356'; // keep in step with CACHE in sw.js
+const APP_V='v357'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -5884,7 +5884,8 @@ function renderLayersList(){
       +'<button type="button" class="layer-icon-btn layer-xform" title="Select this whole layer to resize, turn or move it">⤢</button>'
       +'<button type="button" class="layer-icon-btn layer-up" title="Move up">↑</button>'
       +'<button type="button" class="layer-icon-btn layer-down" title="Move down">↓</button>'
-      +'<button type="button" class="layer-icon-btn layer-del" title="Delete">✕</button>'
+      +'<button type="button" class="layer-icon-btn layer-clear" title="Clear this layer (empty it, keep the layer)">🧹</button>'
+      +'<button type="button" class="layer-icon-btn layer-del" title="Delete this layer">✕</button>'
       +'<div class="layer-clipline"><button type="button" class="layer-clip'+(isClip?' on':'')+'" title="Clipping mask: this layer only shows where the layer below it has paint">'+(isClip?'✂ Clipped to “'+escapeHtml(layers[li-1].name)+'” · tap to release':(li>0?'✂ Clip to layer below':'✂ Clip (needs a layer below)'))+'</button></div>'
       +'<div class="layer-opline"><span>Opacity</span><input type="range" class="layer-opacity" min="0" max="100" step="1" value="'+Math.round(layer.opacity)+'" title="Opacity"><span class="layer-oppct">'+Math.round(layer.opacity)+'%</span></div>';
     const patSts=strokes.filter(q=>q.layerId===layer.id&&q.patFill);
@@ -5920,7 +5921,8 @@ function renderLayersList(){
     row.querySelector('.layer-xform').onclick=e=>{e.stopPropagation();selectLayerArtwork(layer.id);};
     row.querySelector('.layer-up').onclick=e=>{e.stopPropagation();moveLayer(layer.id,1);};
     row.querySelector('.layer-down').onclick=e=>{e.stopPropagation();moveLayer(layer.id,-1);};
-    row.querySelector('.layer-del').onclick=e=>{e.stopPropagation();deleteLayer(layer.id);};
+    row.querySelector('.layer-del').onclick=e=>{e.stopPropagation();askDeleteLayer(layer.id);};
+    row.querySelector('.layer-clear').onclick=e=>{e.stopPropagation();askClearLayer(layer.id);};
     row.onclick=()=>{activeLayerId=layer.id;renderLayersList();compositeDirty=true;redraw();};
     host.appendChild(row);
   });
@@ -5949,6 +5951,46 @@ function moveLayer(id,dir){
   const tmp=layers[i];layers[i]=layers[j];layers[j]=tmp;
   compositeDirty=true;
   renderLayersList();pushHist();redraw();
+}
+// Our own yes/no box (not confirm(): iPad Home-Screen web apps can silently suppress that, which is why deleting a layer used to have no question).
+function askYesNo(title,detail,yesLabel,onYes){
+  const old=document.getElementById('spAskBox');if(old)old.remove();
+  const ov=document.createElement('div');ov.id='spAskBox';
+  ov.style.cssText='position:fixed;inset:0;z-index:100000;background:rgba(40,30,50,.45);display:flex;align-items:center;justify-content:center;padding:16px;';
+  const card=document.createElement('div');
+  card.style.cssText='background:#fffdf8;color:#3a2f3f;border-radius:16px;padding:18px 18px 14px;max-width:340px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,.35);font:600 15px system-ui,sans-serif;';
+  const t=document.createElement('div');t.textContent=title;t.style.cssText='font-weight:800;font-size:16px;margin-bottom:6px;';
+  const d=document.createElement('div');d.textContent=detail;d.style.cssText='font-weight:500;font-size:13.5px;line-height:1.4;margin-bottom:14px;';
+  const row=document.createElement('div');row.style.cssText='display:flex;gap:10px;justify-content:flex-end;';
+  const no=document.createElement('button');no.type='button';no.className='btn';no.textContent='Cancel';
+  const yes=document.createElement('button');yes.type='button';yes.className='btn primary';yes.textContent=yesLabel;yes.style.cssText='background:#d9534f;color:#fff;border-color:#d9534f;';
+  const close=()=>ov.remove();
+  no.onclick=close;ov.onclick=e=>{if(e.target===ov)close();};
+  yes.onclick=()=>{close();try{onYes();}catch(err){console.error(err);}};
+  row.append(no,yes);card.append(t,d,row);ov.appendChild(card);document.body.appendChild(ov);
+  try{no.focus();}catch(e){}
+}
+function askDeleteLayer(id){
+  if(layers.length<=1){setStatus('⚠️ At least one layer is required.');return;}
+  const layer=layers.find(l=>l.id===id);if(!layer)return;
+  const n=strokes.filter(s=>s.layerId===id).length;
+  askYesNo('Delete "'+layer.name+'"?',(n?'This removes the layer and its '+n+' stroke'+(n===1?'':'s')+'. ':'This removes the empty layer. ')+'You can Undo it straight afterwards.','Delete',()=>deleteLayer(id));
+}
+function askClearLayer(id){
+  const layer=layers.find(l=>l.id===id);if(!layer)return;
+  if(layer.locked){setStatus('🔒 "'+layer.name+'" is locked, so it was not cleared. Unlock it first.');return;}
+  const n=strokes.filter(s=>s.layerId===id).length;
+  if(!n){setStatus('Nothing to clear on "'+layer.name+'".');return;}
+  askYesNo('Clear "'+layer.name+'"?','This empties the layer ('+n+' stroke'+(n===1?'':'s')+') but keeps the layer itself. You can Undo it straight afterwards.','Clear',()=>clearLayerNow(id));
+}
+function clearLayerNow(id){
+  const layer=layers.find(l=>l.id===id);if(!layer||layer.locked)return;
+  const n=strokes.filter(s=>s.layerId===id).length;
+  strokes=strokes.filter(s=>s.layerId!==id);
+  if(selectedStrokeId&&!strokes.find(s=>s.id===selectedStrokeId)){selectedStrokeId=null;}
+  try{rebuildLayer(id);}catch(e){console.error(e);}
+  compositeDirty=true;try{syncStrokeSelectionUI();}catch(e){}renderLayersList();pushHist();redraw();try{scheduleAutosave();}catch(e){}
+  setStatus('🧹 Cleared "'+layer.name+'" ('+n+' stroke'+(n===1?'':'s')+'). Tap Undo to bring it back.');
 }
 function deleteLayer(id){
   if(layers.length<=1){setStatus('⚠️ At least one layer is required.');return;}
