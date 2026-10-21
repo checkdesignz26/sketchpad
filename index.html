@@ -1474,7 +1474,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v360'; // keep in step with CACHE in sw.js
+const APP_V='v361'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -3762,7 +3762,7 @@ function renderLivePreviewIncremental(){
   // Clipped, not a cheaper approximation) — clip() is a native, near-free canvas op, so there's no
   // real cost to paying for full-quality clipping on every incremental slice while drawing.
   const clipStrokeId=(paintMode==='inside')?paintInsideTargetId:null;
-  if(brush.stamp||settings.engine==='raster'||(brush.fx&&(brush.fx.grain||brush.fx.dual||(brush.fx.blend&&brush.fx.blend!=='source-over')))){ // stamps (and grain/dual/blend brushes) depend on the whole line along the whole line, so redraw it all each time
+  if(brush.stamp||settings.engine==='raster'||(brush.fx&&(brush.fx.grain||brush.fx.dual||(brush.fx.blend&&brush.fx.blend!=='source-over')))||(currentPoints.length<2500&&BrushEngine.outlineInk&&BrushEngine.outlineInk(brush,settings))){ // joined-outline inks (Tapered Ink) must be drawn as one piece too, or each new slice overlaps the last and shows as dark beads; stamps (and grain/dual/blend brushes) depend on the whole line along the whole line, so redraw it all each time
     const sets=symmetryTransforms().map(tf=>currentPoints.map(pt=>{const t=tf(pt);return{x:t.x,y:t.y,pressure:pt.pressure};}));
     liveDraw(c=>sets.forEach((pts,si)=>renderStrokeClipped(c,{id:currentStrokeId,liveKey:currentStrokeId+':'+si,brushId:activeBrushId,color:currentColor,points:pts,clipStrokeId},brush,settings)),true,liveBBox(sets,settings.size));
     lastRenderedIndex=currentPoints.length;return;
