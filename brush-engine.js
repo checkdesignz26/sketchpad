@@ -804,6 +804,7 @@
     const pts = resample(stroke.points, spacing);
     if (!pts.length) return;
     const rand = live ? null : seededRandom(stroke.id || 'wc');
+    const drHint = !live && global.BrushEngine ? global.BrushEngine.drawRegion : null;
     // region the buffers cover (user space)
     let bx, by, bx1, by1;
     if (live) { bx = 0; by = 0; bx1 = Math.ceil(U.canvas.width / (U.sx || 1)); by1 = Math.ceil(U.canvas.height / (U.sy || 1)); }
@@ -820,6 +821,8 @@
           bx1 = Math.min(bx1, Math.ceil(Math.max.apply(null, xs)) + 2); by1 = Math.min(by1, Math.ceil(Math.max.apply(null, ys)) + 2);
         }
       } catch (e) {}
+      const DR = drHint; // set by a caller that only repaints a small rectangle (the eraser): build just that part of the stroke
+      if (DR) { const pad = Math.ceil(size * 0.1) + 8; bx = Math.max(bx, Math.floor(DR.x0 - pad)); by = Math.max(by, Math.floor(DR.y0 - pad)); bx1 = Math.min(bx1, Math.ceil(DR.x1 + pad)); by1 = Math.min(by1, Math.ceil(DR.y1 + pad)); }
     }
     const bw = bx1 - bx, bh = by1 - by;
     if (bw < 1 || bh < 1) return;
@@ -945,11 +948,11 @@
     }
     if (!live) {
       try {
-        if (pw * ph <= 2500000) {
+        if (pw * ph <= 2500000 && !drHint) { // (a result built for a small repaint rectangle is not the whole stroke, so it is not kept)
           const c = document.createElement('canvas'); c.width = pw; c.height = ph; c.getContext('2d').drawImage(st.O, 0, 0, pw, ph, 0, 0, pw, ph);
           _wcCache.set(ckey, c);
           let tot = 0; _wcCache.forEach((v) => { tot += v.width * v.height; });
-          while ((tot > 6000000 || _wcCache.size > 8) && _wcCache.size > 1) { const k0 = _wcCache.keys().next().value; const v0 = _wcCache.get(k0); tot -= v0.width * v0.height; v0.width = 1; v0.height = 1; _wcCache.delete(k0); }
+          while ((tot > 12000000 || _wcCache.size > 24) && _wcCache.size > 1) { const k0 = _wcCache.keys().next().value; const v0 = _wcCache.get(k0); tot -= v0.width * v0.height; v0.width = 1; v0.height = 1; _wcCache.delete(k0); }
         }
       } catch (e) {}
       // the big working buffers are only needed while strokes are being built: give the memory back once drawing has been idle for a moment
