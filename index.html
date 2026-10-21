@@ -462,6 +462,7 @@ html.in-suite .suite-only{display:block!important}
 #selMenuBtn{min-width:104px}
 #tbEditBtn.active{background:var(--accentTeal,#5cb8ab);color:#fff}
 .tb-row .tool-btn.active,.tb-row .tool-btn.sel-on{box-shadow:0 0 0 2px var(--pink)}
+#tbContBtn.active{background:linear-gradient(135deg,#3c82ff,#6aa5ff);color:#fff;border-color:#2563d9;box-shadow:0 0 0 3px rgba(60,130,255,.45),0 2px 8px rgba(0,0,0,.25);font-weight:800}
 .col-strip{position:fixed;left:92px;right:14px;bottom:46px;z-index:140;display:none;align-items:center;gap:8px;padding:8px 10px;background:var(--sideBg);color:var(--text);border:1px solid var(--line);border-radius:16px;box-shadow:0 10px 34px rgba(0,0,0,.34);max-width:calc(100vw - 106px)}
 .col-head,.col-add,.col-x{flex:0 0 auto;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:12px;padding:0 12px;min-height:44px;font:inherit;font-weight:700;cursor:pointer}
 .col-add{font-size:22px;min-width:48px}.col-x{opacity:.7;min-width:40px}
@@ -1093,7 +1094,7 @@ html.in-suite .suite-only{display:block!important}
   </div>
   <div class="float-panel" id="joinPickBar" style="display:none;">
     <div class="float-panel-handle" id="joinPickBarHandle"><span>⋈ Choose Endpoint to Join</span><span class="float-panel-grip" title="Drag to move">⠿</span></div>
-    <div class="hint">The gold node is the endpoint you're joining from. Tap any pulsing green endpoint to connect it there.</div>
+    <div class="hint">The gold node is the end you're joining from. 1) Tap the line you want to join to. 2) Tap one of its two green ends.</div>
     <button id="joinCancelBtn" class="btn mini" style="width:100%;margin-top:10px;">✕ Cancel</button>
   </div>
   <div class="float-panel" id="textPanel" style="display:none;width:300px;padding:12px;">
@@ -1481,7 +1482,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v372'; // keep in step with CACHE in sw.js
+const APP_V='v373'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -1905,6 +1906,7 @@ let pathEditTool='select';let pathEditInitial=null;
 let continueStrokeId=null,continueBasePoints=null; // Continue Path: next drawn stroke extends this one instead of starting a new one
 let contFocusId=null; // stroke picked with the top-bar Continue button
 let continuousDrawMode=false; // Continuous Draw toggle: auto-continue a nearby stroke's end instead of starting a new one — see findContinuousDrawTarget
+let joinTargetId=null,joinPickHandler=null; // Join: the one stroke picked as the join target (only its two ends are shown)
 let joinPendingStrokeId=null,joinPendingFromEnd=false; // Join Path: waiting for a tap on another stroke's endpoint
 let areaSelectMode=false,captureAreaArmed=false,captureRect=null;let afMode='colour',afGrad=null,afPat=null,afPendingEdit=false; // Area Fill: what the next tapped area is filled with (colour / the Gradient tool's gradient / a pattern)
 let areaFillArmed=false; // Vector Area Fill: next canvas tap fills the enclosed region under it instead of drawing/selecting
@@ -11495,8 +11497,8 @@ function startJoinPath(){
   mode='edit';syncMode();syncStrokeSelectionUI();
   $('joinPickBar').style.display='block';
   {const vr=viewportOuter.getBoundingClientRect();positionFloatPanel('joinPickBar',vr.right-294,vr.top+16);}
-  renderJoinTargets();
-  setStatus('⋈ Choose Endpoint to Join: tap a highlighted endpoint, or Cancel.');
+  armJoinPick();renderJoinTargets();
+  setStatus('⋈ Join: tap the line you want to join to — only its two ends will light up. Cancel to exit.');
 }
 // Join Strokes, direct from a normal stroke selection — no need to enter Edit Path and pick a
 // specific endpoint node first. Since there's no pre-chosen endpoint here, BOTH of the selected
@@ -11514,10 +11516,29 @@ function startJoinSelectedStroke(){
   mode='edit';syncMode();selectedStrokeId=null;syncStrokeSelectionUI();
   $('joinPickBar').style.display='block';
   {const vr=viewportOuter.getBoundingClientRect();positionFloatPanel('joinPickBar',vr.right-294,vr.top+16);}
-  renderJoinTargets();
-  setStatus('⋈ Tap another open path (highlighted ends) to join it to this one, or Cancel.');
+  armJoinPick();renderJoinTargets();
+  setStatus('⋈ Join: tap the line you want to join to — only its two ends will light up. Cancel to exit.');
+}
+function armJoinPick(){
+  joinTargetId=null;
+  if(joinPickHandler)viewportOuter.removeEventListener('pointerup',joinPickHandler,true);
+  joinPickHandler=e=>{
+    if(!joinPendingStrokeId||!isPen(e)||e.target.closest&&e.target.closest('.path-node,#joinPickBar,.float-panel'))return;
+    const A=strokes.find(x=>x.id===joinPendingStrokeId);if(!A)return;
+    const p=screenToCanvas(e.clientX,e.clientY),r=34/(zoom*baseScale);let best=null,bd=r;
+    strokes.forEach(s=>{
+      if(s.closed||s.layerId!==A.layerId||(joinPendingFromEnd==null&&s.id===A.id)||s.fillColor||s.text||s.regions)return;
+      const pts=s.nodes?nodesToPoints(s.nodes,false):s.points;if(!pts||pts.length<2)return;
+      const d=distanceToPolyline(p.x,p.y,pts);if(d<=bd){bd=d;best=s;}
+    });
+    if(!best){setStatus('⋈ Tap the line you want to join to (it needs an open end).');return;}
+    joinTargetId=best.id;renderJoinTargets();
+    setStatus('⋈ Tap one of its blue ends to join, tap another line to switch, or Cancel.');
+  };
+  viewportOuter.addEventListener('pointerup',joinPickHandler,true);
 }
 function endJoinPick(){
+  joinTargetId=null;if(joinPickHandler){viewportOuter.removeEventListener('pointerup',joinPickHandler,true);joinPickHandler=null;}
   joinPendingStrokeId=null;joinPendingFromEnd=false;
   $('joinPickBar').style.display='none';
   $('pathNodeOverlay').innerHTML='';
@@ -11547,6 +11568,7 @@ function renderJoinTargets(){
   });
   strokes.forEach(s=>{
     if(s.closed||s.layerId!==strokeA.layerId)return;
+    if(s.id!==joinTargetId)return; // only the picked line's two ends are offered
     if(autoMode&&s.id===strokeA.id)return; // auto mode only joins to ANOTHER path — self-join is Edit Path's manual Close Shape gesture
     const pts=s.nodes?nodesToPoints(s.nodes,false):s.points;
     if(!pts||pts.length<2)return;
