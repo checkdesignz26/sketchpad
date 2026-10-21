@@ -1622,7 +1622,8 @@
     // when light pressure shrinks it), so the stroke breaks into visible dots, worst when zoomed in.
     // Cap the gap to a fraction of the dab's narrowest width; sizes of ~3.5+ are unchanged.
     const narrow = Math.max(0.35, 1 - settings.pressureWidth / 100);
-    spacingPx = Math.max(0.2, Math.min(spacingPx, settings.size * narrow * 0.6));
+    const solidInk = brush.family === 'inking' && brush.hardness >= 0.98 && !(brush.jitter > 0) && !(brush.streaky > 0) && !hasCdyn(brush);
+    spacingPx = Math.max(0.2, Math.min(spacingPx, settings.size * narrow * (solidInk ? 0.3 : 0.6)));
     // A width-profiled stroke (settings._wpFine): spacing follows the dab's own width, so tapered tips stay solid lines.
     const pts = settings._wpFine
       ? resampleVar(stroke.points, pr => Math.max(0.12, Math.min(spacingPx, settings.size * pressureFactor(pr, settings.pressureWidth) * 0.22)))
@@ -1634,10 +1635,25 @@
     const n = pts.length;
     const hold = Math.max(1, Math.round(settings.size * 0.2 / spacingPx));
     let curCol = stroke.color || '#000000';
-    pts.forEach((pt, i) => {
+    // Solid ink: where a taper or light pressure shrinks the dab, the fixed spacing leaves it wider than the dab itself and the line breaks into separate dots.
+    // Add in-between dabs (position, pressure and taper all blended) so the line stays joined down to its finest point.
+    let dabs = pts, tmul = null;
+    if (solidInk) {
+      dabs = []; tmul = [];
+      for (let i = 0; i < n; i++) {
+        const pt = pts[i], tm = taperAt(brush, i, n), r = (settings.size / 2) * pressureFactor(pt.pressure, settings.pressureWidth) * tm;
+        if (i > 0) {
+          const q = pts[i - 1], qm = tmul[tmul.length - 1], rq = (settings.size / 2) * pressureFactor(q.pressure, settings.pressureWidth) * qm;
+          const gap = Math.hypot(pt.x - q.x, pt.y - q.y), need = Math.max(0.15, 0.35 * Math.min(r, rq));
+          if (gap > need) { const k = Math.min(60, Math.ceil(gap / need)); for (let j = 1; j < k; j++) { const f = j / k; dabs.push({ x: q.x + (pt.x - q.x) * f, y: q.y + (pt.y - q.y) * f, pressure: q.pressure + (pt.pressure - q.pressure) * f }); tmul.push(qm + (tm - qm) * f); } }
+        }
+        dabs.push(pt); tmul.push(tm);
+      }
+    }
+    dabs.forEach((pt, i) => {
       const widthMul = pressureFactor(pt.pressure, settings.pressureWidth);
       const opMul = pressureFactor(pt.pressure, settings.pressureOpacity);
-      const taperMul = taperAt(brush, i, n);
+      const taperMul = tmul ? tmul[i] : taperAt(brush, i, n);
       let radius = (settings.size / 2) * widthMul * taperMul;
       let opacity = (settings.opacity / 100) * opMul * alphaMul;
       if (brush.jitter > 0) {
@@ -1661,10 +1677,12 @@
   // now joined into a single outline (a circle at every sample plus the smooth shape joining each neighbouring pair) and filled once, so the opacity is
   // exactly what was chosen, the edge is smooth at any zoom, and the shape is the same one the dabs covered.
   function outlineInk(brush, settings) {
-    return brush.family === 'inking' && !brush.stamp && !brush.nib && !brush.path && !brush.fx && brush.hardness >= 0.98 && !(brush.jitter > 0) && !(brush.streaky > 0) && !hasCdyn(brush) && !(settings.pressureOpacity > 0);
+    return brush.family === 'inking' && !brush.stamp && !brush.nib && !brush.path && !brush.fx && brush.hardness >= 0.98 && !(brush.jitter > 0) && !(brush.streaky > 0) && !hasCdyn(brush) && !(settings.pressureOpacity > 20); // a light Pencil-pressure→opacity setting (up to 20%) is applied as the stroke's average
   }
   function renderOutlineInk(ctx, pts, stroke, brush, settings, alphaMul) {
-    const op = Math.max(0, Math.min(1, (settings.opacity / 100) * alphaMul));
+    let opM = 1;
+    if (settings.pressureOpacity > 0 && pts.length) { let t = 0; for (let i = 0; i < pts.length; i++) t += pressureFactor(pts[i].pressure, settings.pressureOpacity); opM = t / pts.length; }
+    const op = Math.max(0, Math.min(1, (settings.opacity / 100) * alphaMul * opM));
     if (!pts.length || op <= 0) return;
     // The dabs were laid ~0.6 px apart, far closer than a joined outline needs. Keep a sample only once it is about 0.3 of a dab radius from the last
     // kept one (always keeping the ends, and every sample where the stroke is tightly curved), so the path stays small and fast.
