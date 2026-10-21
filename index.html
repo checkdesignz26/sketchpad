@@ -15252,8 +15252,10 @@ function tbPencilGo(){
   if(warpOn)warpSet(false);if(typeof cloneOn!=='undefined'&&cloneOn)cloneSet(false);
   if(smudgeOn)smudgeSet(false);
   eraserActive=false;armedShapeType=null;try{syncShapeToolUI();disarmAreaFill();}catch(e){}
-  if(mode==='edit')$('drawModeBtn').onclick();
-  syncControlsFromSettings();syncActiveSwatches();tbToolSync();
+  // Picking the drawing tool always leaves selection behind (even when the app is already in Draw mode, e.g. with Stay in Draw on, where a
+  // Select All / marquee selection would otherwise stay on and keep the toolbar saying "Selection").
+  if(mode==='edit'||multiSel||selectedStrokeId||selected)$('drawModeBtn').onclick();
+  syncControlsFromSettings();syncActiveSwatches();tbToolSync();try{tbSyncSelect();}catch(e){}
   setStatus('✏️ '+BrushEngine.getBrush(activeBrushId).name+' — draw with Apple Pencil.');
 }
 const TB_FAMILY_NAMES={inking:'Inking',pencil:'Pencil',marker:'Marker',paint:'Paint',stamp:'Motif brushes',custom:'Custom'};
