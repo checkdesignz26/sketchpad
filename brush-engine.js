@@ -661,14 +661,27 @@
     const narrow = Math.max(0.35, 1 - settings.pressureWidth / 100);
     spacingPx = Math.max(0.2, Math.min(spacingPx, settings.size * narrow * 0.6));
     spacingPx = Math.max(spacingPx, Math.min(settings.size * 0.25, 6)); // the scratch buffer saturates anyway, so fewer dabs look the same
-    const pts = resample(stroke.points, spacingPx);
+    let pts = resample(stroke.points, spacingPx);
     const rand = seededRandom(stroke.id || 'live');
-    const n = pts.length, dabs = [];
+    const n = pts.length, dabs = []; let tmulR = null;
+    if (!(brush.jitter > 0) && !(brush.streaky > 0) && n > 1) { // keep the line joined where a taper or light pressure shrinks the dab below the dab spacing
+      const P2 = [], T2 = [];
+      for (let i = 0; i < n; i++) {
+        const pt = pts[i], tm = taperAt(brush, i, n), r = (settings.size / 2) * pressureFactor(pt.pressure, settings.pressureWidth) * tm;
+        if (i > 0) {
+          const q = pts[i - 1], qm = T2[T2.length - 1], rq = (settings.size / 2) * pressureFactor(q.pressure, settings.pressureWidth) * qm;
+          const gap = Math.hypot(pt.x - q.x, pt.y - q.y), need = Math.max(0.15, 0.35 * Math.min(r, rq));
+          if (gap > need) { const k = Math.min(60, Math.ceil(gap / need)); for (let j = 1; j < k; j++) { const f = j / k; P2.push({ x: q.x + (pt.x - q.x) * f, y: q.y + (pt.y - q.y) * f, pressure: q.pressure + (pt.pressure - q.pressure) * f }); T2.push(qm + (tm - qm) * f); } }
+        }
+        P2.push(pt); T2.push(tm);
+      }
+      pts = P2; tmulR = T2;
+    }
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity, pSum = 0;
     pts.forEach((pt, i) => {
       const widthMul = pressureFactor(pt.pressure, settings.pressureWidth);
       const opMul = pressureFactor(pt.pressure, settings.pressureOpacity);
-      let radius = (settings.size / 2) * widthMul * taperAt(brush, i, n);
+      let radius = (settings.size / 2) * widthMul * (tmulR ? tmulR[i] : taperAt(brush, i, n));
       let op = opMul;
       if (brush.jitter > 0) { radius *= (1 - brush.jitter * 0.3) + rand() * brush.jitter * 0.6; op *= (1 - brush.jitter * 0.2) + rand() * brush.jitter * 0.4; }
       if (brush.streaky > 0 && rand() < brush.streaky) return;
@@ -1609,6 +1622,9 @@
     if (alphaMul === undefined) alphaMul = 1;
     if (alphaMul <= 0) return; // fully hidden — skip dabs entirely rather than stamp at opacity 0
     if (brush.id === 'watercolour' && settings && settings.engine === 'raster') { try { renderWatercolour(ctx, stroke, brush, settings, alphaMul); } catch (e) { try { renderBase(ctx, stroke, brush, settings, alphaMul); } catch (e2) {} } return; }
+    // Raster solid ink with no dryness and no wet mix is just a solid line: Raster paints dabs into a buffer that saturates to one flat colour, so the continuous
+    // outline gives the identical result (same size, taper and Pencil-pressure width) without the bead edges and broken tips that spaced dabs leave.
+    if (settings && settings.engine === 'raster' && !(settings.dryness > 0) && !(settings.wetMix > 0) && brush.id !== 'eraser' && brush.id !== 'watercolour' && outlineInk(brush, Object.assign({}, settings, { pressureOpacity: 0 }))) { renderBase(ctx, stroke, brush, Object.assign({}, settings, { pressureOpacity: 0 }), alphaMul); return; }
     if (settings && settings.engine === 'raster' && !brush.stamp && !brush.nib && !brush.path && !brush.fx && brush.id !== 'eraser') { try { renderRaster(ctx, stroke, brush, settings, alphaMul); } catch (e) { try { renderBase(ctx, stroke, brush, settings, alphaMul); } catch (e2) {} } return; }
     if (brush.fx && fxActive(brush)) { renderWithFx(ctx, stroke, brush, settings, alphaMul); return; }
     renderBase(ctx, stroke, brush, settings, alphaMul);
