@@ -1472,7 +1472,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v347'; // keep in step with CACHE in sw.js
+const APP_V='v348'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -1740,15 +1740,17 @@ function liveBBox(ptsList,size){
   ptsList.forEach(pts=>{for(let i=0;i<pts.length;i++){const p=pts[i];if(p.x<x0)x0=p.x;if(p.x>x1)x1=p.x;if(p.y<y0)y0=p.y;if(p.y>y1)y1=p.y;}});
   const pad=(size||20)*2+30;return {x0:x0-pad,y0:y0-pad,x1:x1+pad,y1:y1+pad};
 }
-// Pencil lifted (or gesture cancelled). Opaque strokes on a fully opaque layer keep the overlay until the
-// sharp redraw is visible; translucent ones would double up, so they hand over straight away.
+// Pencil lifted (or gesture cancelled). Zoomed in with the sharp detail picture on screen, that picture is stale (it does not have the new
+// stroke yet) until renderDetail redraws it, and for watercolour (pooled edge, raster) that can take a while. So the live preview stays up
+// for EVERY stroke, translucent ones included: the stale picture has no copy of the stroke, so nothing doubles up, and renderDetail hides
+// the preview in the very same step that paints the finished stroke (no blank frame, no overlap). The timer is only a safety net.
+// Otherwise (normal view) the finished stroke is composited in the next animation frame, and the preview is hidden in that same frame.
 function liveOvEnd(settings){
   try{BrushEngine.liveEnd();}catch(e){}
   try{liveTmp.width=1;liveTmp.height=1;}catch(e){}
   if(!liveOvOn)return;
   liveOvOn=false;
-  const lay=getActiveLayer(),opaque=(!settings||(settings.opacity==null||settings.opacity>=99))&&(!lay||lay.opacity>=99);
-  if(opaque&&detailNeeded()){clearTimeout(liveOvTimer);liveOvTimer=setTimeout(liveOvHide,1500);return;}
+  if(detailNeeded()&&detailShown){clearTimeout(liveOvTimer);liveOvTimer=setTimeout(liveOvHide,4000);return;}
   requestAnimationFrame(liveOvHide);
 }
 (function(){
@@ -1763,7 +1765,7 @@ function renderDetail(){
   const _rdT0=performance.now();
   const sharp=detailSharp;detailSharp=false;
   crumb('detail render z'+zoom.toFixed(1)+' rot'+Math.round(rot));
-  if(!detailReady||!detailNeeded())return;
+  if(!detailReady||!detailNeeded()){if(liveOvShown&&!liveOvOn&&!drawing)requestAnimationFrame(liveOvHide);return;} // zoomed out meanwhile: the normal canvas shows the stroke, so hand the preview over there
   // Safety net: if something stays 'busy' (a live preview flag that never cleared, a queued redraw that never ran) the sharp picture used to
   // stay stale for good, so a new stroke looked missing until the view was zoomed in and out a few times. After ~1 s of waiting with the
   // pen up, stop waiting, clear the stuck flags and draw the picture anyway.
@@ -1847,7 +1849,7 @@ function renderDetail(){
       });
     });
     drawPlaced();drawMultiSelectHighlights();drawShapeToolsHighlights();drawStrokeSelection();drawTileBoundary();if(showGuides)drawGuides();
-  }catch(err){console.warn('[sketchpad] detail render failed',err);ctx=saved;hideDetail();return;}
+  }catch(err){console.warn('[sketchpad] detail render failed',err);ctx=saved;hideDetail();if(liveOvShown&&!liveOvOn&&!drawing)requestAnimationFrame(liveOvHide);return;}
   ctx=saved;
   detailCanvas.style.transform='none';detailView={zoom:zoom,panX:panX,panY:panY,rot:rot,base:baseScale};
   detailCanvas.style.display='block';detailShown=true;
