@@ -1472,7 +1472,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v351'; // keep in step with CACHE in sw.js
+const APP_V='v352'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -2584,6 +2584,7 @@ function renderStrokeCuts(ctx,stroke,brush,settings,alphaMul){
   let bx=Math.floor(bb.x0-pad),by=Math.floor(bb.y0-pad),bx1=Math.ceil(bb.x1+pad),by1=Math.ceil(bb.y1+pad);
   try{const inv=m.inverse(),cw=ctx.canvas.width,ch=ctx.canvas.height,xs=[],ys=[];[[0,0],[cw,0],[0,ch],[cw,ch]].forEach(c=>{const q=inv.transformPoint(new DOMPoint(c[0],c[1]));xs.push(q.x);ys.push(q.y);});
     bx=Math.max(bx,Math.floor(Math.min(...xs))-2);by=Math.max(by,Math.floor(Math.min(...ys))-2);bx1=Math.min(bx1,Math.ceil(Math.max(...xs))+2);by1=Math.min(by1,Math.ceil(Math.max(...ys))+2);}catch(e){}
+  {const DR=BrushEngine.drawRegion;if(DR&&brush&&brush.id==='watercolour'){const q=Math.ceil(((settings&&settings.size)||20)*0.1)+10;bx=Math.max(bx,Math.floor(DR.x0-q));by=Math.max(by,Math.floor(DR.y0-q));bx1=Math.min(bx1,Math.ceil(DR.x1+q));by1=Math.min(by1,Math.ceil(DR.y1+q));}} // eraser repaint: only the rubbed rectangle (plus a margin for the pooled rim) is built, not the whole stroke
   const bw=bx1-bx,bh=by1-by;if(bw<1||bh<1)return;
   const se=Math.min(sc,2048/Math.max(bw,bh),Math.sqrt(3000000/(bw*bh))),pw=Math.max(1,Math.ceil(bw*se)),ph=Math.max(1,Math.ceil(bh*se));
   if(!_cutCv)_cutCv=document.createElement('canvas');
@@ -3901,7 +3902,8 @@ function rebuildLayerRegion(layerId,R){
   });
   (layer.dctx===layer.ctx?[layer.ctx]:[layer.ctx,layer.dctx]).forEach(c=>{
     c.save();c.beginPath();c.rect(x0,y0,x1-x0,y1-y0);c.clip();c.clearRect(x0-1,y0-1,x1-x0+2,y1-y0+2);
-    list.forEach(st=>{const brush=BrushEngine.getBrush(st.brushId),settings=st.settings||BrushEngine.getSettings(st.brushId);renderStrokeClipped(c,st,brush,settings);});
+    BrushEngine.drawRegion={x0,y0,x1,y1};
+    try{list.forEach(st=>{const brush=BrushEngine.getBrush(st.brushId),settings=st.settings||BrushEngine.getSettings(st.brushId);renderStrokeClipped(c,st,brush,settings);});}finally{BrushEngine.drawRegion=null;}
     c.restore();
   });
   compositeDirty=true;
