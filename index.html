@@ -765,6 +765,7 @@ html.in-suite .suite-only{display:block!important}
       <div id="brushFamilies"></div>
       <button id="moreSettingsToggle" class="btn mini" style="width:100%;margin-top:10px;">⚙️ More Settings</button>
       <div id="moreSettings" style="display:none;">
+        <div class="slider-row"><label>Colour</label><input id="brushHex" type="text" value="#000000" maxlength="7" spellcheck="false" autocapitalize="off" autocomplete="off" title="This brush's colour as a hex code. Type one, e.g. #05003c" style="flex:1;min-width:0;padding:6px 8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font:600 14px ui-monospace,Menlo,monospace;"><span id="brushHexChip" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--btnBorder);flex:none;"></span></div>
         <div class="slider-row"><label>Smooth</label><input id="brushSmooth" type="range" min="0" max="90" value="30"><span id="brushSmoothVal">30%</span></div>
         <div class="slider-row"><label>Pressure → width</label><input id="pressureWidth" type="range" min="0" max="100" value="50"><span id="pressureWidthVal">50%</span></div>
         <div class="slider-row"><label>Pressure → opacity</label><input id="pressureOpacity" type="range" min="0" max="100" value="10"><span id="pressureOpacityVal">10%</span></div>
@@ -1477,7 +1478,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v364'; // keep in step with CACHE in sw.js
+const APP_V='v365'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -11586,6 +11587,11 @@ bindTapButton($('closePathBtn'),closeSelectedPath);
 bindTapButton($('breakPathBtn'),breakPathAtSelectedNode);
 bindTapButton($('simplifyPathBtn'),simplifyCurrentPath);
 bindTapButton($('smoothInEditBtn'),smoothCurrentPath);
+function syncBrushHex(){const h=$('brushHex');if(!h||document.activeElement===h)return;const c=($('brushColor').value||'#000000').toLowerCase();if(h.value!==c)h.value=c;$('brushHexChip').style.background=c;}
+$('brushHex').oninput=e=>{let v=e.target.value.trim();if(v&&v[0]!=='#')v='#'+v;if(/^#[0-9a-f]{3}$/i.test(v))v='#'+v.slice(1).split('').map(x=>x+x).join('');if(!/^#[0-9a-f]{6}$/i.test(v))return;const b=$('brushColor');b.value=v.toLowerCase();b.dispatchEvent(new Event('input',{bubbles:true}));try{tbColorSync();}catch(_){}$('brushHexChip').style.background=v;};
+$('brushHex').onblur=()=>{syncBrushHex();};
+$('brushColor').addEventListener('input',()=>syncBrushHex());
+setInterval(()=>{if($('moreSettings').style.display!=='none')syncBrushHex();},400);
 $('moreSettingsToggle').onclick=()=>{const box=$('moreSettings');const showing=box.style.display!=='none';box.style.display=showing?'none':'block';$('moreSettingsToggle').textContent=showing?'⚙️ More Settings':'⚙️ Hide Settings';};
 // ---- Make my own brush --------------------------------------------------------------------------
 let customDefs=[];try{customDefs=JSON.parse(localStorage.getItem('sp-customBrushes')||'[]')||[];}catch(e){customDefs=[];}
