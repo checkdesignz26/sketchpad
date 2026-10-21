@@ -1474,7 +1474,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v359'; // keep in step with CACHE in sw.js
+const APP_V='v360'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -3017,7 +3017,18 @@ function updateDisplayComposite(){
 // Stroke points carry long decimals (e.g. 412.38571923) that add up: a detailed drawing's undo step was ~9 million characters.
 // Rounding to 0.01 px (invisible) makes every undo step, autosave and project file 3-4x smaller.
 const _rnd=(k,v)=>typeof v==='number'&&!Number.isInteger(v)?(Math.abs(v)>=10?Math.round(v*100)/100:Math.round(v*10000)/10000):v;
-function strokesToJSON(){return JSON.stringify(strokes,_rnd);}
+// Rounding every number through a JSON.stringify replacer called it ~700,000 times for a detailed drawing (about 0.4 s, twice per stroke: undo step + autosave).
+// Instead each stroke is rounded once, in place, the first time it is saved (the same 0.01 px rounding, so the output is identical), and then the browser's
+// plain fast JSON.stringify does the rest. A stroke that is edited afterwards keeps its flag and may save with a few extra decimals, which is harmless.
+function _roundDeep(o,d){
+  if(d>8)return;
+  if(Array.isArray(o)){for(let i=0;i<o.length;i++){const v=o[i];if(typeof v==='number'){if(!Number.isInteger(v))o[i]=_rnd(0,v);}else if(v&&typeof v==='object')_roundDeep(v,d+1);}}
+  else if(o&&Object.getPrototypeOf(o)===Object.prototype){for(const k in o){const v=o[k];if(typeof v==='number'){if(!Number.isInteger(v))o[k]=_rnd(k,v);}else if(v&&typeof v==='object')_roundDeep(v,d+1);}}
+}
+function strokesToJSON(){
+  for(let i=0;i<strokes.length;i++){const s=strokes[i];if(s&&typeof s==='object'&&!s._r){try{_roundDeep(s,0);Object.defineProperty(s,'_r',{value:1,enumerable:false,writable:true,configurable:true});}catch(e){}}}
+  return JSON.stringify(strokes);
+}
 function snapshot(){
   return {
     strokesJSON:strokesToJSON(),
@@ -3430,7 +3441,25 @@ function drawBackground(){if(!bgImg||!bgShown)return;ctx.save();ctx.globalAlpha=
 // grid/guides overlay (which is off by default and purely a drawing aid).
 function drawTileBoundary(){/* now the #tileOutline DOM overlay (constant thickness at any zoom) */}
 function drawGuides(){ctx.save();ctx.strokeStyle='rgba(54,60,110,.18)';ctx.lineWidth=3;for(let x=CX;x<=CX+TW+.5;x+=TW/4){ctx.beginPath();ctx.moveTo(x,CY);ctx.lineTo(x,CY+TH);ctx.stroke()}for(let y=CY;y<=CY+TH+.5;y+=TH/4){ctx.beginPath();ctx.moveTo(CX,y);ctx.lineTo(CX+TW,y);ctx.stroke()}if(symMode!=='off'){ctx.strokeStyle='rgba(223,111,165,.75)';ctx.lineWidth=3;ctx.setLineDash([14,10]);if(symMode==='vertical'||symMode==='quad'||symMode==='diamond'){ctx.beginPath();ctx.moveTo(symX,CY);ctx.lineTo(symX,CY+TH);ctx.stroke()}if(symMode==='horizontal'||symMode==='quad'||symMode==='diamond'){ctx.beginPath();ctx.moveTo(CX,symY);ctx.lineTo(CX+TW,symY);ctx.stroke()}if(symMode==='diamond'){ctx.beginPath();ctx.moveTo(CX,symY-(symX-CX));ctx.lineTo(CX+TW,symY+(CX+TW-symX));ctx.stroke();ctx.beginPath();ctx.moveTo(CX,symY+(symX-CX));ctx.lineTo(CX+TW,symY-(CX+TW-symX));ctx.stroke();}}ctx.restore();}
-function drawTraces(){traces.forEach(t=>{ctx.save();ctx.globalAlpha=t.opacity;t.w=t.img.width*t.scale;t.h=t.img.height*t.scale;if(t.rot){ctx.translate(t.x,t.y);ctx.rotate(t.rot*Math.PI/180);ctx.drawImage(t.img,-t.w/2,-t.h/2,t.w,t.h);}else ctx.drawImage(t.img,t.x-t.w/2,t.y-t.h/2,t.w,t.h);ctx.restore();});}
+// A trace picture can be huge (this project's is 3600 x 3600 = 52 MB decoded) but is only ever shown about 800 px wide. Drawing the full picture scaled
+// down on every redraw cost ~0.5 s per stroke, so a reduced copy (at most 2048 px, and at least twice the size it is shown at) is made once and drawn instead.
+function traceView(t){
+  const nw=t.img.width,nh=t.img.height,long=Math.max(nw,nh),shown=Math.max(t.img.width*t.scale,t.img.height*t.scale);
+  const want=Math.max(256,Math.min(2048,Math.ceil(shown*Math.max(1,renderScale||1)*2)));
+  if(long<=want*1.25){if(t._v){t._v.width=t._v.height=1;t._v=null;}return t.img;}
+  if(t._v&&t._v.width>=want*0.7&&t._v.width<=want*1.6)return t._v;
+  const k=want/long,c=t._v||(t._v=document.createElement('canvas'));c.width=Math.max(1,Math.round(nw*k));c.height=Math.max(1,Math.round(nh*k));
+  const g=c.getContext('2d');g.imageSmoothingQuality='high';g.drawImage(t.img,0,0,c.width,c.height);return c;
+}
+function traceFree(){traces.forEach(t=>{try{if(t._v){t._v.width=t._v.height=1;t._v=null;}}catch(e){}});}
+let _trJ={sig:'',json:''};
+function tracesToJSON(){
+  const sig=traces.map(t=>[t.name,t.x,t.y,t.scale,t.opacity,t.rot||0,t.src.length,t.src.slice(t.src.length>>1,(t.src.length>>1)+48)].join('~')).join('|');
+  if(sig===_trJ.sig&&_trJ.json)return _trJ.json;
+  const json=JSON.stringify(traces.map(t=>({src:t.src,name:t.name,x:t.x,y:t.y,scale:t.scale,opacity:t.opacity,rot:t.rot||0})));
+  _trJ={sig,json};return json;
+}
+function drawTraces(){traces.forEach(t=>{ctx.save();ctx.globalAlpha=t.opacity;t.w=t.img.width*t.scale;t.h=t.img.height*t.scale;const pic=traceView(t);if(t.rot){ctx.translate(t.x,t.y);ctx.rotate(t.rot*Math.PI/180);ctx.drawImage(pic,-t.w/2,-t.h/2,t.w,t.h);}else ctx.drawImage(pic,t.x-t.w/2,t.y-t.h/2,t.w,t.h);ctx.restore();});}
 // One lattice definition shared by the on-canvas repeats (offsets) and the fabric preview, so
 // "Half-drop / Half-brick / Diamond" mean exactly the same thing in both. ogee/tossed currently
 // fall through to a plain grid, exactly as before.
@@ -12372,8 +12401,12 @@ $('bgOpacitySlider').oninput=e=>{bgOpacity=+e.target.value/100;$('bgOpacityVal')
 $('bgToggle').onclick=()=>{bgShown=!bgShown;$('bgToggle').classList.toggle('active',bgShown);$('bgToggle').textContent=bgShown?'👁️ Shown':'🚫 Hidden';redraw();scheduleAutosave();};
 $('bgClear').onclick=()=>{bgImg=null;$('bgEmpty').style.display='block';$('bgControls').style.display='none';redraw();scheduleAutosave();};
 $('traceInput').onchange=e=>Array.from(e.target.files).forEach(f=>{const r=new FileReader();r.onload=ev=>{const img=new Image();img.onload=()=>{traces.push({img,src:ev.target.result,name:f.name,x:W/2,y:H/2,scale:Math.min(TW/img.width,TH/img.height),opacity:.35,rot:0});renderTraces();setTraceLocked(false);scheduleAutosave();};img.src=ev.target.result;};r.readAsDataURL(f);});
-function renderTraces(){const list=$('traceList');list.innerHTML='';traces.forEach((t,i)=>{const c=document.createElement('div');c.className='trace-card';c.innerHTML=`<img src="${t.src}"><div><div>${t.name}</div><div class="small">Trace ref · ${Math.round(t.opacity*100)}%</div></div><button class="x" style="position:static">×</button>`;c.querySelector('button').onclick=()=>{traces.splice(i,1);renderTraces();redraw();scheduleAutosave();};list.appendChild(c);});}
-$('traceOpacity').oninput=e=>{traces.forEach(t=>t.opacity=+e.target.value/100);$('traceOpacityVal').textContent=e.target.value+'%';renderTraces();redraw();scheduleAutosave();};$('traceScale').oninput=e=>{traces.forEach(t=>t.scale=+e.target.value/100);$('traceScaleVal').textContent=e.target.value+'%';redraw();scheduleAutosave();};$('traceFit').onclick=()=>{traces.forEach(t=>t.scale=Math.min(TW/t.img.width,TH/t.img.height));redraw();scheduleAutosave();};$('traceCentre').onclick=()=>{traces.forEach(t=>{t.x=W/2;t.y=H/2});redraw();scheduleAutosave();};$('traceLock').onclick=()=>{if(!traces.length){setStatus('Add a Trace Artwork picture first.');return;}setTraceLocked(!traceLocked);};$('traceClear').onclick=()=>{traces=[];renderTraces();redraw();scheduleAutosave();};
+function traceThumb(t){
+  if(t._th)return t._th;
+  try{const k=96/Math.max(t.img.width,t.img.height),c=document.createElement('canvas');c.width=Math.max(1,Math.round(t.img.width*k));c.height=Math.max(1,Math.round(t.img.height*k));c.getContext('2d').drawImage(t.img,0,0,c.width,c.height);t._th=c.toDataURL('image/png');c.width=c.height=1;return t._th;}catch(e){return t.src;}
+}
+function renderTraces(){const list=$('traceList');list.innerHTML='';traces.forEach((t,i)=>{const c=document.createElement('div');c.className='trace-card';c.innerHTML=`<img src="${traceThumb(t)}"><div><div>${t.name.replace(/[<&]/g,'')}</div><div class="small">Trace ref · ${Math.round(t.opacity*100)}%</div></div><button class="x" style="position:static">×</button>`;c.querySelector('button').onclick=()=>{traces.splice(i,1);renderTraces();redraw();scheduleAutosave();};list.appendChild(c);});}
+$('traceOpacity').oninput=e=>{traces.forEach(t=>t.opacity=+e.target.value/100);$('traceOpacityVal').textContent=e.target.value+'%';renderTraces();redraw();scheduleAutosave();};$('traceScale').oninput=e=>{traces.forEach(t=>t.scale=+e.target.value/100);$('traceScaleVal').textContent=e.target.value+'%';redraw();scheduleAutosave();};$('traceFit').onclick=()=>{traces.forEach(t=>t.scale=Math.min(TW/t.img.width,TH/t.img.height));redraw();scheduleAutosave();};$('traceCentre').onclick=()=>{traces.forEach(t=>{t.x=W/2;t.y=H/2});redraw();scheduleAutosave();};$('traceLock').onclick=()=>{if(!traces.length){setStatus('Add a Trace Artwork picture first.');return;}setTraceLocked(!traceLocked);};$('traceClear').onclick=()=>{traceFree();traces=[];renderTraces();redraw();scheduleAutosave();};
 // Trace picture box (🔓 unlocked): a pink bounding box with corner handles (resize), a round handle above (rotate), drag the box to move; "🔒 Lock" finishes.
 // DOM overlay in canvas coordinates (follows pan / zoom / rotate); never drawn into the artwork. While locked it is hidden and drawing works normally.
 let traceBoxSig='';
@@ -13196,7 +13229,7 @@ function buildDocObject(){
     editingMotifId,
     editingMotifStash:editingMotifStash?JSON.stringify(editingMotifStash):null,
     bgSrc:bgImg?bgImg.src:null,bgOpacity,bgShown,
-    tracesJSON:JSON.stringify(traces.map(t=>({src:t.src,name:t.name,x:t.x,y:t.y,scale:t.scale,opacity:t.opacity,rot:t.rot||0}))),
+    tracesJSON:tracesToJSON(),
     traceLocked,
     traceSource:traceSource?{name:traceSource.name,src:traceSource.src,settings:traceSource.settings||null}:null,
     customBrushes:serialCustomDefs(),
@@ -13978,7 +14011,7 @@ async function applyDocObject(doc,opts){
       $('bgToggle').classList.toggle('active',bgShown);$('bgToggle').textContent=bgShown?'👁️ Shown':'🚫 Hidden';
     }
     traceSource=(doc.traceSource&&doc.traceSource.src)?doc.traceSource:null;
-    traces=[];
+    traceFree();traces=[];
     traceLocked=true; // always reopen locked so a saved Move state can never get in the way
     $('traceLock').textContent=traceLocked?'🔒 Locked':'🔓 Move & resize';$('traceLock').classList.toggle('active',traceLocked);try{traceBoxSig='';updateTraceBox();}catch(e){}
     for(const t of JSON.parse(doc.tracesJSON||'[]')){
