@@ -701,6 +701,10 @@ html.in-suite .suite-only{display:block!important}
           <input id="acPaletteName" placeholder="palette name" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);">
           <button id="acSavePaletteBtn" class="btn mini primary" style="flex:1;">💾 Save Palette</button>
         </div>
+        <div class="row" style="margin-top:8px;align-items:center;gap:6px;">
+          <select id="acAddToPal" title="Which saved palette to add these colours to" style="flex:1;min-width:0;padding:8px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></select>
+          <button id="acAddToPalBtn" class="btn mini" style="flex:1;" title="Add the colours above to the chosen saved palette (colours it already has are skipped)">➕ Add to palette</button>
+        </div>
       </div>
       <div id="acSavedPalettesBox" style="margin-top:10px;">
         <div class="section-title" style="font-size:11px;margin-bottom:6px;">Saved palettes</div>
@@ -9064,6 +9068,7 @@ $('acSavePaletteBtn').onclick=()=>{
   setStatus('💾 Saved palette "'+name+'".');
 };
 function renderSavedPalettesList(){
+  try{acSyncAddSel();}catch(e){} // keeps the Add-to-palette chooser in step with the list (deleted / new / renamed palettes)
   const box=$('acSavedPalettesList');
   if(!savedPalettes.length){box.className='hint';box.textContent='No saved palettes yet — extract one from an image and save it above.';return;}
   box.className='';box.innerHTML='';
@@ -9132,6 +9137,29 @@ function adaptiveHexes(){return [...document.querySelectorAll('#acSwatches .ac-s
 function activePalette(){const p=savedPalettes.find(x=>x.id===projectPaletteId);return p?{id:p.id,name:p.name,hexes:p.hexes,custom:true}:{id:null,name:'Adaptive palette',hexes:adaptiveHexes(),custom:false};}
 const palInst=[];
 function palRefresh(){palInst.forEach(f=>{try{f();}catch(e){}});}
+// ---- add the colours pulled from an image / trace to a palette you already have ----
+function acSyncAddSel(){
+  const sel=$('acAddToPal');if(!sel)return;
+  const keep=sel.value;
+  if(!savedPalettes.length){sel.innerHTML='<option value="">New palette</option>';return;}
+  sel.innerHTML=savedPalettes.map(p=>'<option value="'+p.id+'">'+String(p.name).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</option>').join('');
+  sel.value=savedPalettes.some(p=>p.id===keep)?keep:(savedPalettes.some(p=>p.id===projectPaletteId)?projectPaletteId:savedPalettes[0].id);
+}
+palInst.push(acSyncAddSel);acSyncAddSel();
+$('acAddToPalBtn').onclick=()=>{
+  if(!acExtractedColours.length){setStatus('🖼️ Extract colours from an image or traced artwork first.');return;}
+  let pl=savedPalettes.find(x=>x.id===$('acAddToPal').value);
+  if(!pl){ // no palette to add to yet: make one (named from the box above, if you typed a name)
+    const nm=($('acPaletteName').value||'').trim()||('Palette '+(savedPalettes.length+1));
+    pl={id:crypto.randomUUID(),name:nm,hexes:[]};savedPalettes.push(pl);$('acPaletteName').value='';
+  }
+  const have=new Set(pl.hexes.map(palHex));let added=0;
+  acExtractedColours.forEach(h=>{const x=palHex(h);if(x&&!have.has(x)){have.add(x);pl.hexes.push(x);added++;}});
+  scheduleAutosave();
+  try{renderSavedPalettesList();}catch(e){}
+  palRefresh();$('acAddToPal').value=pl.id;
+  setStatus(added?('🎨 Added '+added+' colour'+(added===1?'':'s')+' to “'+pl.name+'”.'):('🎨 “'+pl.name+'” already has all of these colours.'));
+};
 function palAskName(title,value){return projAsk({title,fields:[{key:'name',label:'Palette name',type:'text',value:value||''}],ok:'Save'}).then(r=>r&&(r.name||'').trim());}
 function palNewCustom(name,hexes){
   let nm=name||('My palette '+(savedPalettes.length+1)),base=nm,k=2;while(savedPalettes.some(x=>x.name===nm))nm=base+' ('+k++ +')';
