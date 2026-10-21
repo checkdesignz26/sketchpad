@@ -1606,6 +1606,7 @@
     const pts = settings._wpFine
       ? resampleVar(stroke.points, pr => Math.max(0.12, Math.min(spacingPx, settings.size * pressureFactor(pr, settings.pressureWidth) * 0.22)))
       : resample(stroke.points, spacingPx);
+    if (outlineInk(brush, settings)) { renderOutlineInk(ctx, pts, stroke, brush, settings, alphaMul); return; }
     const rand = seededRandom(stroke.id || 'live');
     const baseHsl = hasCdyn(brush) ? hexToHsl(stroke.color || '#000000') : null;
     const cdyn = !!baseHsl, rand2 = cdyn ? seededRandom((stroke.id || 'live') + 'c') : null;
@@ -1631,6 +1632,56 @@
       }
       stampDab(ctx, x, y, radius, opacity, (cdyn && i % hold === 0 ? (curCol = dynColor(baseHsl, brush.cdyn, rand2)) : curCol), brush.hardness);
     });
+  }
+
+  // ---- Solid ink as ONE continuous outline ----
+  // Tapered Ink (and Technical Pen) used to be built from hundreds of overlapping round dabs, each painted at the stroke's opacity. Where dabs overlap the
+  // opacity piles up, so a 57% navy stroke came out as full-strength navy (nearly black), and at high zoom the edge showed a row of beads. The same dabs are
+  // now joined into a single outline (a circle at every sample plus the smooth shape joining each neighbouring pair) and filled once, so the opacity is
+  // exactly what was chosen, the edge is smooth at any zoom, and the shape is the same one the dabs covered.
+  function outlineInk(brush, settings) {
+    return brush.family === 'inking' && !brush.stamp && !brush.nib && !brush.path && !brush.fx && brush.hardness >= 0.98 && !(brush.jitter > 0) && !(brush.streaky > 0) && !hasCdyn(brush) && !(settings.pressureOpacity > 0);
+  }
+  function renderOutlineInk(ctx, pts, stroke, brush, settings, alphaMul) {
+    const op = Math.max(0, Math.min(1, (settings.opacity / 100) * alphaMul));
+    if (!pts.length || op <= 0) return;
+    // The dabs were laid ~0.6 px apart, far closer than a joined outline needs. Keep a sample only once it is about 0.3 of a dab radius from the last
+    // kept one (always keeping the ends, and every sample where the stroke is tightly curved), so the path stays small and fast.
+    const n0 = pts.length, R0 = new Array(n0);
+    for (let i = 0; i < n0; i++) R0[i] = (settings.size / 2) * pressureFactor(pts[i].pressure, settings.pressureWidth) * taperAt(brush, i, n0);
+    const keep = [0];
+    for (let i = 1; i < n0 - 1; i++) { const l = pts[keep[keep.length - 1]]; if (Math.hypot(pts[i].x - l.x, pts[i].y - l.y) >= Math.max(0.4, 0.3 * R0[i])) keep.push(i); }
+    if (n0 > 1) keep.push(n0 - 1);
+    const n = keep.length, R = keep.map((i) => R0[i]); pts = keep.map((i) => pts[i]);
+    ctx.save();
+    ctx.globalAlpha = op; ctx.fillStyle = stroke.color || '#000000';
+    ctx.beginPath();
+    // A round cap is only needed at the ends and where the stroke actually turns; along a nearly straight run the joined pieces already meet cleanly.
+    let hPrev = 0;
+    for (let i = 0; i < n; i++) {
+      if (!(R[i] > 0)) continue;
+      let circle = i === 0 || i === n - 1;
+      if (!circle) {
+        const hNext = Math.atan2(pts[i + 1].y - pts[i].y, pts[i + 1].x - pts[i].x);
+        let dh = Math.abs(hNext - hPrev); if (dh > Math.PI) dh = 2 * Math.PI - dh;
+        circle = dh > 0.035 || Math.abs(R[i] - R[i - 1]) > R[i] * 0.05;
+      }
+      if (i < n - 1) hPrev = Math.atan2(pts[i + 1].y - pts[i].y, pts[i + 1].x - pts[i].x);
+      if (circle) { ctx.moveTo(pts[i].x + R[i], pts[i].y); ctx.arc(pts[i].x, pts[i].y, R[i], 0, Math.PI * 2); }
+    }
+    for (let i = 0; i < n - 1; i++) {
+      const r0 = R[i], r1 = R[i + 1]; if (!(r0 > 0) || !(r1 > 0)) continue;
+      const x0 = pts[i].x, y0 = pts[i].y, dx = pts[i + 1].x - x0, dy = pts[i + 1].y - y0, d = Math.hypot(dx, dy);
+      if (d <= Math.abs(r0 - r1) + 1e-6) continue; // one dab sits inside the next: nothing to join
+      const a = Math.atan2(dy, dx), phi = Math.acos((r0 - r1) / d), t1 = a + phi, t2 = a - phi, c1 = Math.cos(t1), s1 = Math.sin(t1), c2 = Math.cos(t2), s2 = Math.sin(t2);
+      const ax = x0 + r0 * c1, ay = y0 + r0 * s1, bx = pts[i + 1].x + r1 * c1, by = pts[i + 1].y + r1 * s1, cx = pts[i + 1].x + r1 * c2, cy = pts[i + 1].y + r1 * s2, ex = x0 + r0 * c2, ey = y0 + r0 * s2;
+      const area = (ax * by - bx * ay) + (bx * cy - cx * by) + (cx * ey - ex * cy) + (ex * ay - ax * ey); // every piece is wound the same way, so one fill adds them up (union)
+      ctx.moveTo(ax, ay);
+      if (area >= 0) { ctx.lineTo(bx, by); ctx.lineTo(cx, cy); ctx.lineTo(ex, ey); } else { ctx.lineTo(ex, ey); ctx.lineTo(cx, cy); ctx.lineTo(bx, by); }
+      ctx.closePath();
+    }
+    ctx.fill('nonzero');
+    ctx.restore();
   }
 
   // ---- Taper (separate start / end lengths, as a fraction of the stroke) ----
@@ -1803,6 +1854,6 @@
     getSettings, setSettings, resetSettings, resetAllSettings,
     touchRecent, getRecents,
     isFavorite, toggleFavorite, getFavorites,
-    underlay: null, skipSmudge: BrushEngine_skipSmudge, wrap: BrushEngine_wrap, liveEnd, makeSmudger, makeCloner, liquifyStep, liquifyBegin, liquifyCompact, liquifyGL: _lq, pressureFactor, stampDab, colorWithAlpha, resample, renderStroke, smoothPoints, seededRandom,
+    underlay: null, outlineInk, skipSmudge: BrushEngine_skipSmudge, wrap: BrushEngine_wrap, liveEnd, makeSmudger, makeCloner, liquifyStep, liquifyBegin, liquifyCompact, liquifyGL: _lq, pressureFactor, stampDab, colorWithAlpha, resample, renderStroke, smoothPoints, seededRandom,
   };
 })(window);
