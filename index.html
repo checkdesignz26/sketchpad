@@ -600,7 +600,7 @@ html.in-suite .suite-only{display:block!important}
 .fp-body .sec-head:after{display:none!important}
 .fp-body .ktag{display:none}
 .fpanel.single .fp-body>.section>.section-title{display:none}
-#tbPenBtn,#tbEraserBtn,#tbSmudgeBtn,#tbSymBtn,#tbTimelapseBtn,#tbTextBtn,#tbWarpBtn,#tbCloneBtn,#tbEditBtn{display:none!important}
+#tbPenBtn,#tbEraserBtn,#tbSmudgeBtn,#tbBlendBrushBtn,#tbSymBtn,#tbTimelapseBtn,#tbTextBtn,#tbWarpBtn,#tbCloneBtn,#tbEditBtn{display:none!important}
 @media(max-width:900px){#toolRail{width:58px}.rail-btn{width:46px;height:46px}}
 </style>
 
@@ -1342,6 +1342,7 @@ html.in-suite .suite-only{display:block!important}
         <button id="tbPenBtn" class="tool-btn" data-ovp="6" data-ovl="🖋️ Pen" title="Bézier Pen: tap for points, drag to curve">🖋️</button>
         <button id="tbEraserBtn" class="tool-btn" data-ovp="7" data-ovl="🧹 Eraser" title="Eraser">🧹</button>
         <button id="tbEraserStyleBtn" class="tool-btn tb-fix" style="display:none" aria-haspopup="menu" title="Eraser style: hard line, soft, rough or like your brush">▬ Hard ▾</button>
+        <button id="tbBlendBrushBtn" class="tool-btn" title="Blend brush: drag to mix neighbouring colours softly">💧</button>
         <button id="tbSmudgeBtn" class="tool-btn" data-ovp="7.5" data-ovl="👆 Smudge" title="Smudge: drag to smear the paint on the active layer">👆</button>
         <button id="tbSymBtn" class="tool-btn" data-ovp="9" data-ovl="🦋 Symmetry" title="Symmetry: mirror what you draw (vertical, horizontal, quad, diamond)">🦋<span id="tbSymLbl"></span></button>
         
@@ -1472,7 +1473,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v353'; // keep in step with CACHE in sw.js
+const APP_V='v354'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -15596,7 +15597,7 @@ function smudgeSyncUI(){
   try{$('smudgeModeBtn').textContent=smudgeBlend?'💧 Blend':'👆 Smear';$('smudgeTitle').textContent=smudgeBlend?'💧 Blend':'👆 Smudge';}catch(e){}
   try{$('smudgeBrushBtn').textContent='🖌️ '+smudgeBrushName()+' ▾';}catch(e){}
   $('smudgeBar').style.display=smudgeOn?'flex':'none';
-  $('tbSmudgeBtn').classList.toggle('active',smudgeOn);
+  $('tbSmudgeBtn').classList.toggle('active',smudgeOn&&!smudgeBlend);try{$('tbBlendBrushBtn').classList.toggle('active',smudgeOn&&smudgeBlend);}catch(e){}
   $('smudgeSize').value=smudgeSize;$('smudgeStrength').value=smudgeStr;
   try{tbToolSync();}catch(e){}
 }
@@ -15731,7 +15732,9 @@ canvas.addEventListener('pointermove',e=>{if(warpDrag&&isPen(e))warpMove(e);});
 canvas.addEventListener('pointerup',()=>warpUp());
 canvas.addEventListener('pointercancel',()=>warpUp());
 $('tbWarpBtn').onclick=()=>warpSet(!warpOn);
-$('tbSmudgeBtn').onclick=()=>smudgeSet(!smudgeOn);
+function smudgeSetBlend(v){smudgeBlend=!!v;try{localStorage.setItem('sp-smudgeBlend',smudgeBlend?'1':'0');}catch(e){}}
+$('tbSmudgeBtn').onclick=()=>{if(smudgeOn&&smudgeBlend){smudgeSetBlend(false);smudgeSyncUI();return;}smudgeSetBlend(false);smudgeSet(!smudgeOn);};
+$('tbBlendBrushBtn').onclick=()=>{if(smudgeOn&&smudgeBlend){smudgeSet(false);return;}smudgeSetBlend(true);if(smudgeOn)smudgeSyncUI();else smudgeSet(true);try{setStatus('💧 Blend brush: drag over neighbouring colours to mix them softly. Go over a spot again to blend more.');}catch(e){}};
 $('smudgeDoneBtn').onclick=()=>smudgeSet(false);
 $('smudgeBrushBtn').onclick=()=>tbBrushMenu($('smudgeBrushBtn'));
 $('smudgeModeBtn').onclick=()=>{smudgeBlend=!smudgeBlend;try{localStorage.setItem('sp-smudgeBlend',smudgeBlend?'1':'0');}catch(e){}smudgeSyncUI();setStatus(smudgeBlend?'💧 Blend: drag over neighbouring colours to mix them softly. Go over a spot again to blend more.':'👆 Smear: drag to push the paint along.');};
@@ -18464,6 +18467,7 @@ SPFonts.init().then(()=>{txRefreshMissing();});
     pencil:'<path d="M4 20l1-4L16 5l3 3L8 19z"/><path d="M14 7l3 3"/>',
     pen:'<path d="M12 3l5 6-2.2 9h-5.6L7 9z"/><circle cx="12" cy="12" r="1.2"/><path d="M12 13.2V18"/>',
     eraser:'<path d="M4 15l8-9 7 6-5 6H8z"/><path d="M9 20h11"/>',
+    blendbrush:'<path d="M12 3c3.5 4.5 6 7.5 6 11a6 6 0 01-12 0c0-3.5 2.5-6.5 6-11z"/><path d="M9 15a3 3 0 003 3"/>',
     smudge:'<path d="M9 21c-2-2-3-4-3-6v-5a1.5 1.5 0 013 0v3V6.5a1.5 1.5 0 013 0V12V7.5a1.5 1.5 0 013 0V12v-2a1.5 1.5 0 013 0v5c0 3-2 6-5 6z"/>',
     warp:'<path d="M3 8c3-4 6 4 9 0s6 4 9 0"/><path d="M3 16c3-4 6 4 9 0s6 4 9 0"/>',
     shapes:'<rect x="3.5" y="3.5" width="9" height="9" rx="1.6"/><circle cx="16.5" cy="16.5" r="4.5"/>',
@@ -18517,6 +18521,7 @@ SPFonts.init().then(()=>{txRefreshMissing();});
     {id:'brush',label:'Brush',icon:'pencil',proxy:'tbPencilBtn',panel:'brush'},
     {id:'pen',label:'Pen',icon:'pen',proxy:'tbPenBtn',panel:'brush'},
     {id:'eraser',label:'Eraser',icon:'eraser',proxy:'tbEraserBtn',panel:'brush'},
+    {id:'blendbrush',label:'Blend brush (mix colours softly)',icon:'blendbrush',proxy:'tbBlendBrushBtn',panel:'brush'},
     {id:'colour',label:'Colour',icon:'palette',panel:'colour',swatch:1},
     {id:'layers',label:'Layers',icon:'layers',panel:'layers'},
     {id:'repeat',label:'Repeat & tiling',icon:'repeat',panel:'repeat'},
@@ -18533,7 +18538,7 @@ SPFonts.init().then(()=>{txRefreshMissing();});
     {id:'fill',label:'Area fill',icon:'fill',panel:'fill'},
     {id:'text',label:'Text',icon:'text',proxy:'tbTextBtn',panel:'text'},
     {sep:1},
-    {id:'smudge',label:'Smudge',icon:'smudge',proxy:'tbSmudgeBtn',panel:'brush'},
+    {id:'smudge',label:'Smudge (drag paint along)',icon:'smudge',proxy:'tbSmudgeBtn',panel:'brush'},
     {id:'warp',label:'Liquify',icon:'warp',proxy:'tbWarpBtn'},
     {id:'clone',label:'Clone (copy artwork to another spot)',icon:'clone',proxy:'tbCloneBtn'},
     {id:'blend',label:'Blend (select a shape first)',icon:'blend',action:'openBlendBtn'},
