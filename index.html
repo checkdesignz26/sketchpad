@@ -1472,7 +1472,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v352'; // keep in step with CACHE in sw.js
+const APP_V='v353'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -15577,13 +15577,13 @@ function warpStroke(s,cx,cy,dx,dy){
   return true;
 }
 // ---- Smudge tool: drags the paint already on the active layer along your stroke ----
-let smudgeOn=false,smudgeSize=40,smudgeStr=60,smudgeDrag=null;
-try{smudgeSize=Math.min(300,Math.max(6,+localStorage.getItem('sp-smudgeSize')||40));smudgeStr=Math.min(100,Math.max(10,+localStorage.getItem('sp-smudgeStr')||60));}catch(e){}
+let smudgeOn=false,smudgeSize=40,smudgeStr=60,smudgeDrag=null,smudgeBlend=false;
+try{smudgeBlend=localStorage.getItem('sp-smudgeBlend')==='1';smudgeSize=Math.min(300,Math.max(6,+localStorage.getItem('sp-smudgeSize')||40));smudgeStr=Math.min(100,Math.max(10,+localStorage.getItem('sp-smudgeStr')||60));}catch(e){}
 {
   const ring=document.createElement('div');ring.id='smudgeRing';ring.style.cssText='position:absolute;display:none;pointer-events:none;z-index:8;border:2px dashed #e0749a;border-radius:50%;box-sizing:border-box;background:rgba(224,116,154,.08)';
   wrap.appendChild(ring);
   const bar=document.createElement('div');bar.id='smudgeBar';bar.className='pen-bar';bar.style.display='none';
-  bar.innerHTML='<b>👆 Smudge</b><button id="smudgeBrushBtn" class="btn mini" title="The smudge uses the footprint of this brush: its tip, softness and texture">Brush ▾</button><label>Size <input id="smudgeSize" type="range" min="6" max="300" step="1"></label><label>Strength <input id="smudgeStrength" type="range" min="10" max="100" step="1"></label><button id="smudgeDoneBtn" class="btn mini primary">✓ Done</button>';
+  bar.innerHTML='<b id="smudgeTitle">👆 Smudge</b><button id="smudgeModeBtn" class="btn mini" title="Smear drags the paint along your stroke. Blend mixes the colours under the brush together, softly, without dragging them.">Smear</button><button id="smudgeBrushBtn" class="btn mini" title="The smudge uses the footprint of this brush: its tip, softness and texture">Brush ▾</button><label>Size <input id="smudgeSize" type="range" min="6" max="300" step="1"></label><label>Strength <input id="smudgeStrength" type="range" min="10" max="100" step="1"></label><button id="smudgeDoneBtn" class="btn mini primary">✓ Done</button>';
   wrap.appendChild(bar);
 }
 function smudgeRingAt(clientX,clientY,show){
@@ -15593,6 +15593,7 @@ function smudgeRingAt(clientX,clientY,show){
 }
 function smudgeBrushName(){const b=BrushEngine.getBrush(activeBrushId);return b?b.name:'Round';}
 function smudgeSyncUI(){
+  try{$('smudgeModeBtn').textContent=smudgeBlend?'💧 Blend':'👆 Smear';$('smudgeTitle').textContent=smudgeBlend?'💧 Blend':'👆 Smudge';}catch(e){}
   try{$('smudgeBrushBtn').textContent='🖌️ '+smudgeBrushName()+' ▾';}catch(e){}
   $('smudgeBar').style.display=smudgeOn?'flex':'none';
   $('tbSmudgeBtn').classList.toggle('active',smudgeOn);
@@ -15615,8 +15616,8 @@ function smudgeDown(e){
   const layer=getActiveLayer();if(!layer||layer.locked)return;
   const p=screenToCanvas(e.clientX,e.clientY);
   if(smudgeDrag){try{smudgeDrag.sm.done();}catch(e){}smudgeDrag=null;}
-  const sm=BrushEngine.makeSmudger(layer.ctx,smudgeSize/2,smudgeStr/100,BrushEngine.getBrush(activeBrushId));
-  smudgeDrag={layer,sm,brushId:activeBrushId,last:p,pts:[{x:p.x,y:p.y,pressure:0.5}],raf:0};
+  const sm=BrushEngine.makeSmudger(layer.ctx,smudgeSize/2,smudgeStr/100,BrushEngine.getBrush(activeBrushId),smudgeBlend?'blend':null);
+  smudgeDrag={layer,sm,blend:smudgeBlend,brushId:activeBrushId,last:p,pts:[{x:p.x,y:p.y,pressure:0.5}],raf:0};
   sm.to(p.x,p.y);smudgeRingAt(e.clientX,e.clientY,true);
 }
 function smudgeMove(e){
@@ -15638,7 +15639,7 @@ function smudgeUp(){
   try{d.sm.done();}catch(e){}
   if(d.pts.length<2){return;}
   // keep it as a stroke (so Undo, saving and the hi-res export replay it in order), then rebuild the layer from the strokes
-  strokes.push({id:crypto.randomUUID(),brushId:'smudge',layerId:d.layer.id,color:'#000000',settings:{size:smudgeSize,opacity:smudgeStr,smoothing:0,pressureWidth:0,pressureOpacity:0,spacing:6,sb:d.brushId},points:d.pts});
+  strokes.push({id:crypto.randomUUID(),brushId:'smudge',layerId:d.layer.id,color:'#000000',settings:{size:smudgeSize,opacity:smudgeStr,smoothing:0,pressureWidth:0,pressureOpacity:0,spacing:6,sb:d.brushId,blend:d.blend||undefined},points:d.pts});
   try{rebuildLayer(d.layer.id);}catch(err){console.error(err);}
   redraw();pushHist();
 }
@@ -15733,6 +15734,7 @@ $('tbWarpBtn').onclick=()=>warpSet(!warpOn);
 $('tbSmudgeBtn').onclick=()=>smudgeSet(!smudgeOn);
 $('smudgeDoneBtn').onclick=()=>smudgeSet(false);
 $('smudgeBrushBtn').onclick=()=>tbBrushMenu($('smudgeBrushBtn'));
+$('smudgeModeBtn').onclick=()=>{smudgeBlend=!smudgeBlend;try{localStorage.setItem('sp-smudgeBlend',smudgeBlend?'1':'0');}catch(e){}smudgeSyncUI();setStatus(smudgeBlend?'💧 Blend: drag over neighbouring colours to mix them softly. Go over a spot again to blend more.':'👆 Smear: drag to push the paint along.');};
 $('smudgeSize').oninput=e=>{smudgeSize=+e.target.value;try{localStorage.setItem('sp-smudgeSize',String(smudgeSize));}catch(err){}const r=wrap.getBoundingClientRect();smudgeRingAt(r.left+r.width/2,r.top+r.height/2,true);clearTimeout(smudgeSet._t);smudgeSet._t=setTimeout(()=>smudgeRingAt(0,0,false),900);};
 $('smudgeStrength').oninput=e=>{smudgeStr=+e.target.value;try{localStorage.setItem('sp-smudgeStr',String(smudgeStr));}catch(err){}};
 $('warpDoneBtn').onclick=()=>warpSet(false);
