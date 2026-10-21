@@ -756,7 +756,7 @@ html.in-suite .suite-only{display:block!important}
       <button id="continuousDrawToggle" class="btn mini" style="width:100%;margin-top:8px;">🔗 Continuous Draw: Off</button>
       <button id="liveTileToggle" class="btn mini" style="width:100%;margin-top:8px;">🔲 Live tile preview: Off</button>
       <div class="hint">On = every repeat is drawn while the pen is down. Off = faster on an older iPad: the other tiles catch up when you lift.</div>
-      <div id="continuousDrawHint" class="hint" style="display:none;">On: starting a new stroke on the end of any open stroke (marked with a blue ＋) extends that stroke as one continuous path instead of a separate stroke.</div>
+      <div id="continuousDrawHint" class="hint" style="display:none;">On: starting a new stroke right where the last one ended extends it as one continuous path instead of a separate stroke.</div>
       <div class="brush-family-title">Recent</div>
       <div id="brushRecents" class="brush-family-row"></div>
       <div class="brush-family-title">Favourites</div>
@@ -1340,10 +1340,10 @@ html.in-suite .suite-only{display:block!important}
       <div class="tb-row tb-canvas" id="tbCanvas">
         <button id="selMenuBtn" class="tool-btn tb-fix" aria-haspopup="menu" aria-expanded="false" title="Select Area, Select All, Select same…">▭ Select ▾</button>
         <button id="tbEditBtn" class="tool-btn tb-fix" title="Switch between drawing and editing (select, move, resize shapes and strokes)">↔️ Edit</button>
-        <button id="tbContBtn" class="tool-btn" data-ovp="4" data-ovl="↳ Continue" title="Continue a line: blue ＋ rings mark the ends of your open strokes; start the Pencil on one to draw on from it as the same stroke">↳</button>
         <button id="tbQuickBtn" class="tool-btn" data-ovp="5" data-ovl="⚡ Quick actions" title="Quick actions panel: Select, Move, Duplicate, Delete, Erase — floats anywhere on the canvas">⚡</button>
         <button id="tbDupBtn" class="tool-btn" data-ovp="10" data-ovl="⧉ Duplicate" title="Duplicate the selected shape, stroke or picture (also: double-tap it)">⧉</button>
         <span class="tb-split"><button id="tbPencilBtn" class="tool-btn tb-fix" title="Freehand drawing with the current brush">✏️ Pencil</button><button id="tbPencilMenuBtn" class="tool-btn tb-fix" aria-haspopup="menu" aria-expanded="false" title="Choose a brush">▾</button></span>
+        <button id="tbContBtn" class="tool-btn tb-fix" title="Continue a line: select a stroke, tap this, then start the Pencil on one of its two blue ＋ ends to draw on from it as the same stroke">↳ Continue</button>
         <button id="strokePanelBtn" class="tool-btn tb-fix" title="Stroke tools: show or hide the Stroke panel (colour, width, Edit Path of the selected stroke)">🖊️</button>
         <span id="tbSize" class="size-combo tb-size tb-fix" title="Brush size"><input class="size-num" id="tbSizeNum" type="number" inputmode="decimal" min="0.05" step="0.05"><select class="size-pick" id="tbSizePick" title="Common sizes"></select></span>
         <label id="tbColorWrap" class="tb-color tb-fix" title="Current colour: tap to change"><input type="color" id="tbColor" value="#000000" aria-label="Current colour"></label>
@@ -1481,7 +1481,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v370'; // keep in step with CACHE in sw.js
+const APP_V='v371'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -1903,6 +1903,7 @@ let pathEditStrokeId=null,pathEditNodes=null,pathEditClosed=false,selectedNodeIn
 // exact tapped location; an existing node still takes priority if the tap is also close to one).
 let pathEditTool='select';let pathEditInitial=null;
 let continueStrokeId=null,continueBasePoints=null; // Continue Path: next drawn stroke extends this one instead of starting a new one
+let contFocusId=null; // stroke picked with the top-bar Continue button
 let continuousDrawMode=false; // Continuous Draw toggle: auto-continue a nearby stroke's end instead of starting a new one — see findContinuousDrawTarget
 let joinPendingStrokeId=null,joinPendingFromEnd=false; // Join Path: waiting for a tap on another stroke's endpoint
 let areaSelectMode=false,captureAreaArmed=false,captureRect=null;let afMode='colour',afGrad=null,afPat=null,afPendingEdit=false; // Area Fill: what the next tapped area is filled with (colour / the Gradient tool's gradient / a pattern)
@@ -4197,6 +4198,7 @@ canvas.addEventListener('pointerup',e=>{
       // stroke; tap it in Edit Mode afterward if you actually want to edit it.
     }
     continueStrokeId=null;continueBasePoints=null;
+    if(contFocusId)setContinueMode(false); // the top-bar Continue is one-shot: back to normal drawing
     liveOvEnd(currentSettings());
     currentPoints=[];currentStrokeId=null;liveActive=false;lctx.clearRect(0,0,W,H);
     pushHist();redraw();return;
@@ -9075,18 +9077,26 @@ function selectBrush(id){eraserActive=false;activeBrushId=id;try{if(smudgeOn)smu
 $('eraserToggle').onclick=()=>{eraserActive=!eraserActive;if(eraserActive)disarmAreaFill();syncControlsFromSettings();syncActiveSwatches();setStatus(eraserActive?'🧹 Eraser: drag over a stroke on the active layer to erase just that part of it.':'✏️ Back to '+BrushEngine.getBrush(activeBrushId).name+'.');};
 $('liveTileToggle').textContent='🔲 Live tile preview: '+(liveTilePreview?'On':'Off');
 $('liveTileToggle').onclick=()=>{liveTilePreview=!liveTilePreview;try{localStorage.setItem('sp-liveTiles2',liveTilePreview?'1':'0');}catch(e){}$('liveTileToggle').textContent='🔲 Live tile preview: '+(liveTilePreview?'On':'Off');};
-function setContinueMode(on){
-  continuousDrawMode=!!on;
+function setContinueMode(on,focusId){
+  continuousDrawMode=!!on;if(!on)focusId=null;contFocusId=focusId||null;
   $('continuousDrawToggle').textContent='🔗 Continuous Draw: '+(continuousDrawMode?'On':'Off');
   $('continuousDrawToggle').classList.toggle('active',continuousDrawMode);
   $('continuousDrawHint').style.display=continuousDrawMode?'block':'none';
-  const tb=$('tbContBtn');if(tb)tb.classList.toggle('active',continuousDrawMode);
+  const tb=$('tbContBtn');if(tb)tb.classList.toggle('active',!!contFocusId);
   if(continuousDrawMode&&mode!=='draw'){try{mode='draw';syncMode();}catch(e){}}
-  setStatus(continuousDrawMode?'↳ Continue on — the blue ＋ rings mark the ends of your open strokes. Start the Pencil on one to draw on from it.':'↳ Continue off.');
+  if(contFocusId){try{selected=null;selectedStrokeId=null;syncStrokeSelectionUI();}catch(e){}} // drop the selection box so its handles can't catch the Pencil
+  setStatus(contFocusId?'↳ Continue: start the Pencil on a blue ＋ end to draw on from it.':continuousDrawMode?'🔗 Continuous Draw on — starting a new stroke right where the last one ended extends it as one path.':'↳ Continue off.');
   redraw();
 }
+function continueButton(){
+  if(contFocusId){setContinueMode(false);return;}
+  const st=strokes.find(x=>x.id===selectedStrokeId);
+  if(!st){setStatus('↳ Continue: first switch to Edit mode and tap the stroke you want to extend, then tap Continue.');return;}
+  if(!contEnds(st)){setStatus('↳ That stroke has no open end to continue (closed shapes, fills and text cannot be continued).');return;}
+  setContinueMode(true,st.id);
+}
 $('continuousDrawToggle').onclick=()=>setContinueMode(!continuousDrawMode);
-$('tbContBtn').onclick=()=>setContinueMode(!continuousDrawMode);
+$('tbContBtn').onclick=continueButton;
 $('brushSize').oninput=e=>{const v=+e.target.value;$('brushSizeVal').textContent=fmtSize(v);patchCurrentSettings({size:v});};
 // Each brush remembers the colour last used with it (shown again when you pick that brush).
 let brushColours={};try{brushColours=JSON.parse(localStorage.getItem('sp-brushColours')||'{}')||{};}catch(e){brushColours={};}
@@ -11410,22 +11420,29 @@ function contEnds(s){
   return [pts[0],pts[pts.length-1]];
 }
 function findContinuousDrawTarget(p){
-  // Any open stroke on the active layer: the end nearest the Pencil (within a finger-sized, zoom-constant radius) is the one continued.
-  const snapRadius=34/(zoom*baseScale);let best=null,bd=snapRadius;
+  if(contFocusId){ // Continue button: only the stroke that was selected
+    const s=strokes.find(x=>x.id===contFocusId),e=s&&contEnds(s);if(!e)return null;
+    const r=40/(zoom*baseScale),dS=Math.hypot(p.x-e[0].x,p.y-e[0].y),dE=Math.hypot(p.x-e[1].x,p.y-e[1].y);
+    if(dE<=r&&dE<=dS)return {stroke:s,fromStart:false};
+    if(dS<=r)return {stroke:s,fromStart:true};
+    return null;
+  }
+  // Continuous Draw (brush panel): only the most recently drawn open stroke, only if you start right on its end
   for(let i=strokes.length-1;i>=0;i--){
     const s=strokes[i],e=contEnds(s);if(!e)continue;
-    const dS=Math.hypot(p.x-e[0].x,p.y-e[0].y),dE=Math.hypot(p.x-e[1].x,p.y-e[1].y);
-    if(dE<=bd&&dE<=dS){bd=dE;best={stroke:s,fromStart:false};}
-    else if(dS<=bd){bd=dS;best={stroke:s,fromStart:true};}
+    const r=26/(zoom*baseScale),dS=Math.hypot(p.x-e[0].x,p.y-e[0].y),dE=Math.hypot(p.x-e[1].x,p.y-e[1].y);
+    if(dE<=r&&dE<=dS)return {stroke:s,fromStart:false};
+    if(dS<=r)return {stroke:s,fromStart:true};
+    return null;
   }
-  return best;
+  return null;
 }
 // blue ＋ rings on the ends of every open stroke on the active layer while Continue is on
 function drawContinueMarkers(){
-  if(!continuousDrawMode)return;
+  if(!continuousDrawMode||!contFocusId)return;
   const k=1/(zoom*baseScale);
   ctx.save();ctx.setLineDash([]);
-  strokes.forEach(s=>{const e=contEnds(s);if(!e)return;e.forEach(q=>{
+  strokes.forEach(s=>{if(s.id!==contFocusId)return;const e=contEnds(s);if(!e)return;e.forEach(q=>{
     ctx.beginPath();ctx.arc(q.x,q.y,13*k,0,Math.PI*2);ctx.fillStyle='rgba(60,130,255,.92)';ctx.fill();
     ctx.lineWidth=2.5*k;ctx.strokeStyle='#fff';ctx.stroke();
     ctx.beginPath();ctx.moveTo(q.x-6*k,q.y);ctx.lineTo(q.x+6*k,q.y);ctx.moveTo(q.x,q.y-6*k);ctx.lineTo(q.x,q.y+6*k);ctx.lineWidth=2.5*k;ctx.strokeStyle='#fff';ctx.stroke();
