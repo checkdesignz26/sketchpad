@@ -914,7 +914,10 @@
         }
         O.globalAlpha = 1;
         // keep everything inside the overall stroke shape, so the outer edge stays one clean line
+        // destination-in acts on the WHOLE canvas, not just the drawn rectangle, so without the clip every earlier part of a live stroke was wiped
+        O.save(); O.beginPath(); O.rect(rx0, ry0, rw, rh); O.clip();
         O.globalCompositeOperation = 'destination-in'; O.drawImage(st.M, rx0, ry0, rw, rh, rx0, ry0, rw, rh); O.globalCompositeOperation = 'source-over';
+        O.restore();
         if (gran > 0) {
           O.save(); O.beginPath(); O.rect(rx0, ry0, rw, rh); O.clip();
           O.setTransform(se, 0, 0, se, -bx * se, -by * se);
