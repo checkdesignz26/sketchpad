@@ -837,14 +837,14 @@
     // A saved stroke that is drawn again unchanged (the eraser rebuilds every stroke it touches, on every frame) is served from a small cache
     // of finished results instead of being rebuilt from scratch: that rebuild is what made erasing near watercolour slow and memory hungry.
     let ckey = null;
-    if (!live) {
+    if (!live && stroke.id && stroke.id !== 'brush-preview') { // (only real, saved strokes are cached: the brush preview and other throwaway renders would just churn canvases)
       let h = 0; for (let i = 0; i < pts.length; i++) h = (h * 31 + Math.round(pts[i].x * 8) * 7 + Math.round(pts[i].y * 8) + Math.round((pts[i].pressure || 0) * 50)) | 0;
       ckey = sig + '|' + gran + '|' + pts.length + '|' + h;
       const hit = _wcCache.get(ckey);
       if (hit) {
         _wcCache.delete(ckey); _wcCache.set(ckey, hit);
         ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, (settings.opacity / 100) * alphaMul)); ctx.globalCompositeOperation = 'multiply';
-        ctx.drawImage(hit, 0, 0, pw, ph, bx, by, pw / se, ph / se); ctx.restore();
+        ctx.drawImage(hit.c, 0, 0, pw, ph, bx, by, pw / se, ph / se); ctx.restore();
         return;
       }
     }
@@ -951,11 +951,18 @@
     }
     if (!live) {
       try {
-        if (pw * ph <= 2500000 && !drHint) { // (a result built for a small repaint rectangle is not the whole stroke, so it is not kept)
-          const c = document.createElement('canvas'); c.width = pw; c.height = ph; c.getContext('2d').drawImage(st.O, 0, 0, pw, ph, 0, 0, pw, ph);
-          _wcCache.set(ckey, c);
-          let tot = 0; _wcCache.forEach((v) => { tot += v.width * v.height; });
-          while ((tot > 12000000 || _wcCache.size > 24) && _wcCache.size > 1) { const k0 = _wcCache.keys().next().value; const v0 = _wcCache.get(k0); tot -= v0.width * v0.height; v0.width = 1; v0.height = 1; _wcCache.delete(k0); }
+        if (ckey && pw * ph <= 2500000 && !drHint) { // (a result built for a small repaint rectangle is not the whole stroke, so it is not kept)
+          // A bounded set of canvases is reused for ever: iPad Safari does not give canvases back when they are dropped, and creating a fresh one for
+          // every result eventually used up its canvas memory (the whole canvas then drew black).
+          let tot = 0; _wcCache.forEach((v) => { tot += v.c.width * v.c.height; });
+          let ent = null;
+          if (_wcCache.size >= 24 || tot + pw * ph > 12000000) { const k0 = _wcCache.keys().next().value; ent = _wcCache.get(k0); _wcCache.delete(k0); }
+          while ((_wcCache.size >= 24 || tot + pw * ph > 12000000) && _wcCache.size > 0) { const k1 = _wcCache.keys().next().value, v1 = _wcCache.get(k1); tot -= v1.c.width * v1.c.height; v1.c.width = 1; v1.c.height = 1; _wcCache.delete(k1); }
+          if (!ent) ent = { c: document.createElement('canvas') };
+          if (ent.c.width < pw || ent.c.height < ph) { ent.c.width = Math.max(ent.c.width, pw); ent.c.height = Math.max(ent.c.height, ph); }
+          const cg2 = ent.c.getContext('2d'); cg2.setTransform(1, 0, 0, 1, 0, 0); cg2.globalCompositeOperation = 'source-over'; cg2.globalAlpha = 1; cg2.clearRect(0, 0, ent.c.width, ent.c.height);
+          cg2.drawImage(st.O, 0, 0, pw, ph, 0, 0, pw, ph);
+          _wcCache.set(ckey, ent);
         }
       } catch (e) {}
       // the big working buffers are only needed while strokes are being built: give the memory back once drawing has been idle for a moment
