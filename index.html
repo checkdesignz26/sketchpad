@@ -1478,7 +1478,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v367'; // keep in step with CACHE in sw.js
+const APP_V='v368'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -5892,8 +5892,9 @@ function syncStrokeRecipeUI(){
   const stroke=strokes.find(s=>s.id===selectedStrokeId);
   if(!stroke)return;
   const settings=strokeSettings(stroke);
-  $('strokeRecipe').textContent=formatRecipe(stroke.brushId,settings);
+  $('strokeRecipe').textContent=formatRecipe(stroke.brushId,settings)+(settings.engine==='raster'?' · Raster':settings.engine==='vector'?' · Vector':'');
   syncSelStrokeControls();
+  try{syncEngineUI(currentSettings());}catch(e){}
 }
 function syncActiveBrushRecipeLine(){
   const s=currentSettings();
@@ -9028,7 +9029,11 @@ function syncEngineUI(s){
   const isWc=b.id==='watercolour';
   $('wcOpts').style.display=isWc?'block':'none';$('rasterWetRow').style.display=isWc?'none':'';$('rasterDry').parentNode.style.display=isWc?'none':'';
   if(isWc)[['wcEdge',55],['wcSoft',60],['wcGrain',18]].forEach(([k,d])=>{const v=s[k]==null?d:s[k];$(k).value=v;$(k+'Val').textContent=Math.round(v)+'%';});
-  $('engineHint').textContent=ras?'Raster: paints like pixels — grain, soft build-up and colour that mixes with what is underneath.':'Vector: clean, smooth strokes you can edit, smooth and re-brush.';
+  let hint=ras?'Raster: paints like pixels — grain, soft build-up and colour that mixes with what is underneath.':'Vector: clean, smooth strokes you can edit, smooth and re-brush.';
+  // Raster / Vector is only a drawing style (every stroke keeps its points and pressure, so its path can always be edited). It is stored on each stroke when it is
+  // drawn, so these buttons set the NEXT stroke; say so, and show which style the selected stroke actually has.
+  try{const sel=selectedStrokeId&&strokes.find(x=>x.id===selectedStrokeId);if(sel){const ss=strokeSettings(sel);hint+=' — These buttons change the next stroke you draw. The selected stroke is '+(ss.engine==='raster'?'Raster':'Vector')+' (set when it was drawn).';}}catch(e){}
+  $('engineHint').textContent=hint;
 }
 $('engVecBtn').onclick=()=>{patchCurrentSettings({engine:'vector'});syncControlsFromSettings();};
 $('engRasBtn').onclick=()=>{patchCurrentSettings({engine:'raster'});syncControlsFromSettings();};
