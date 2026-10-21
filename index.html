@@ -759,6 +759,7 @@ html.in-suite .suite-only{display:block!important}
       <div id="brushRecents" class="brush-family-row"></div>
       <div class="brush-family-title">Favourites</div>
       <div id="brushFavorites" class="brush-family-row"></div>
+      <div style="display:flex;gap:6px;margin:8px 0 0;"><button id="resetBrushBtn" class="btn mini" style="flex:1;" title="Put this brush back to how it came, undoing your changes to its size, opacity and effects">↺ Reset this brush</button><button id="resetAllBrushesBtn" class="btn mini" style="flex:1;" title="Put every brush back to how it came">↺ Reset all brushes</button></div>
       <button id="makeBrushBtn" class="btn mini" style="width:100%;margin:8px 0;">＋ Create custom brush…</button>
       <div id="brushFamilies"></div>
       <button id="moreSettingsToggle" class="btn mini" style="width:100%;margin-top:10px;">⚙️ More Settings</button>
@@ -1473,7 +1474,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v354'; // keep in step with CACHE in sw.js
+const APP_V='v355'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -8871,6 +8872,17 @@ function renderBrushFamilies(){
 function syncRecents(){const host=$('brushRecents');const ids=BrushEngine.getRecents().filter(id=>BrushEngine.BRUSHES.some(x=>x.id===id));if(!ids.length){host.innerHTML='<div class="hint" style="margin:0;">Brushes you use appear here.</div>';return}host.innerHTML='';ids.forEach(id=>{const b=BrushEngine.getBrush(id);if(b)host.appendChild(makeBrushSwatch(b));});}
 function syncFavorites(){const host=$('brushFavorites');const ids=BrushEngine.getFavorites().filter(id=>BrushEngine.BRUSHES.some(x=>x.id===id));if(!ids.length){host.innerHTML='<div class="hint" style="margin:0;">Tap ★ on a brush to favourite it.</div>';return}host.innerHTML='';ids.forEach(id=>{const b=BrushEngine.getBrush(id);if(b)host.appendChild(makeBrushSwatch(b));});}
 function syncActiveSwatches(){document.querySelectorAll('.brush-swatch').forEach(el=>el.classList.toggle('active',!eraserActive&&el.dataset.brush===activeBrushId));$('eraserToggle').classList.toggle('active',eraserActive);try{tbToolSync();}catch(e){}}
+$('resetBrushBtn').onclick=()=>{
+  try{
+    const id=eraserActive?'eraser':activeBrushId,b=BrushEngine.getBrush(id);
+    BrushEngine.resetSettings(id);syncControlsFromSettings();try{syncActiveSwatches();}catch(e){}
+    setStatus('↺ '+(b&&b.name?b.name:'Brush')+' is back to its original settings.');
+  }catch(e){}
+};
+$('resetAllBrushesBtn').onclick=()=>{
+  if(!confirm('Put ALL brushes back to their original settings? Your drawings are not changed.'))return;
+  try{BrushEngine.resetAllSettings();syncControlsFromSettings();try{syncActiveSwatches();}catch(e){}setStatus('↺ All brushes are back to their original settings.');}catch(e){}
+};
 function syncControlsFromSettings(){
   const s=currentSettings();
   $('brushSize').value=s.size;$('brushSizeVal').textContent=fmtSize(s.size);
