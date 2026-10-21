@@ -779,6 +779,7 @@
   // dabs and refreshes the small rectangle around them, so a long stroke costs the same per move as a
   // short one. A saved stroke is built the same way in one go, so the live look and the final look match.
   const _wcSets = { live: null, doc: null }, _wcLive = { key: null };
+  const _wcCache = new Map(); let _wcTrimT = 0;
   function wcSet(which, pw, ph) {
     let st = _wcSets[which];
     if (!st) { st = _wcSets[which] = { M: document.createElement('canvas'), I: document.createElement('canvas'), I2: document.createElement('canvas'), B: document.createElement('canvas'), O: document.createElement('canvas'), T: document.createElement('canvas') }; st.M.width = st.M.height = 1; ['I', 'I2', 'B', 'O', 'T'].forEach((k) => { st[k].width = st[k].height = 1; }); }
@@ -827,6 +828,20 @@
     const pw = Math.max(1, Math.ceil(bw * se)), ph = Math.max(1, Math.ceil(bh * se));
     const color = stroke.color || '#000000';
     const sig = [size, color, edge, soft, settings.pressureWidth, settings.pressureOpacity, bx, by, bw, bh, se.toFixed(3), spacing.toFixed(2)].join('|');
+    // A saved stroke that is drawn again unchanged (the eraser rebuilds every stroke it touches, on every frame) is served from a small cache
+    // of finished results instead of being rebuilt from scratch: that rebuild is what made erasing near watercolour slow and memory hungry.
+    let ckey = null;
+    if (!live) {
+      let h = 0; for (let i = 0; i < pts.length; i++) h = (h * 31 + Math.round(pts[i].x * 8) * 7 + Math.round(pts[i].y * 8) + Math.round((pts[i].pressure || 0) * 50)) | 0;
+      ckey = sig + '|' + gran + '|' + pts.length + '|' + h;
+      const hit = _wcCache.get(ckey);
+      if (hit) {
+        _wcCache.delete(ckey); _wcCache.set(ckey, hit);
+        ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, (settings.opacity / 100) * alphaMul)); ctx.globalCompositeOperation = 'multiply';
+        ctx.drawImage(hit, 0, 0, pw, ph, bx, by, pw / se, ph / se); ctx.restore();
+        return;
+      }
+    }
     let S = null, firstDab = 0;
     const st = wcSet(live ? 'live' : 'doc', pw, ph);
     if (live) {
@@ -927,6 +942,18 @@
         }
         if (S) { S.bb = S.bb ? { x0: Math.min(S.bb.x0, rx0), y0: Math.min(S.bb.y0, ry0), x1: Math.max(S.bb.x1, rx1), y1: Math.max(S.bb.y1, ry1) } : { x0: rx0, y0: ry0, x1: rx1, y1: ry1 }; }
       }
+    }
+    if (!live) {
+      try {
+        if (pw * ph <= 2500000) {
+          const c = document.createElement('canvas'); c.width = pw; c.height = ph; c.getContext('2d').drawImage(st.O, 0, 0, pw, ph, 0, 0, pw, ph);
+          _wcCache.set(ckey, c);
+          let tot = 0; _wcCache.forEach((v) => { tot += v.width * v.height; });
+          while ((tot > 6000000 || _wcCache.size > 8) && _wcCache.size > 1) { const k0 = _wcCache.keys().next().value; const v0 = _wcCache.get(k0); tot -= v0.width * v0.height; v0.width = 1; v0.height = 1; _wcCache.delete(k0); }
+        }
+      } catch (e) {}
+      // the big working buffers are only needed while strokes are being built: give the memory back once drawing has been idle for a moment
+      clearTimeout(_wcTrimT); _wcTrimT = setTimeout(() => { const d = _wcSets.doc; if (d) ['M', 'I', 'I2', 'B', 'O', 'T'].forEach((k) => { d[k].width = 1; d[k].height = 1; }); }, 1500);
     }
     // lay the result on the target at the stroke opacity (multiply, like real transparent paint)
     let sx0 = 0, sy0 = 0, sx1 = pw, sy1 = ph;

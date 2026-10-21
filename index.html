@@ -1472,7 +1472,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v350'; // keep in step with CACHE in sw.js
+const APP_V='v351'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -1683,8 +1683,7 @@ function liveOvBegin(){
   const vm=viewMatrix();if(!vm)return false;
   if(liveOv.width!==vm.pw||liveOv.height!==vm.ph){liveOv.width=vm.pw;liveOv.height=vm.ph;}
   const o=liveOv.getContext('2d');o.setTransform(1,0,0,1,0,0);o.clearRect(0,0,vm.pw,vm.ph);
-  liveOvVm=vm;try{liveOv.style.mixBlendMode=(BrushEngine.getBrush(activeBrushId).id==='watercolour'&&currentSettings().engine==='raster')?'multiply':'';}catch(e){} // raster watercolour is laid on with multiply when committed, so the live wash multiplies with the artwork too (same colour while painting and after lift)
-  liveOv.style.display='block';liveOvShown=true;liveOvOn=true;return true;
+  liveOvVm=vm;liveOv.style.display='block';liveOvShown=true;liveOvOn=true;return true;
 }
 // draw(c) paints in logical canvas coordinates; bb (optional) lets off-screen tile repeats be skipped
 let liveTilePreview=true;try{liveTilePreview=localStorage.getItem('sp-liveTiles2')!=='0';}catch(e){} // on by default: the repeats are drawn as you draw (switch off in Settings if an old iPad struggles)
