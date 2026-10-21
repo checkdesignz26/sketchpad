@@ -237,6 +237,9 @@
     settingsStore[brushId] = Object.assign({}, getSettings(brushId), patch);
     saveJSON(LS_SETTINGS, settingsStore);
   }
+  // Back to the brush's own factory settings (size, opacity, smoothing, watercolour effects...).
+  function resetSettings(brushId) { delete settingsStore[brushId]; saveJSON(LS_SETTINGS, settingsStore); }
+  function resetAllSettings() { settingsStore = {}; saveJSON(LS_SETTINGS, settingsStore); }
   function touchRecent(brushId) {
     recents = [brushId].concat(recents.filter((id) => id !== brushId)).slice(0, RECENTS_MAX);
     saveJSON(LS_RECENTS, recents);
@@ -1760,7 +1763,7 @@
   global.BrushEngine = {
     BRUSHES, FAMILY_ORDER, FAMILY_LABEL, ERASER,
     getBrush, isVector, taperAt, registerStampBrush, unregisterStampBrush, makeCustomBrush, registerCustomBrush,
-    getSettings, setSettings,
+    getSettings, setSettings, resetSettings, resetAllSettings,
     touchRecent, getRecents,
     isFavorite, toggleFavorite, getFavorites,
     underlay: null, skipSmudge: BrushEngine_skipSmudge, wrap: BrushEngine_wrap, liveEnd, makeSmudger, makeCloner, liquifyStep, liquifyBegin, liquifyCompact, liquifyGL: _lq, pressureFactor, stampDab, colorWithAlpha, resample, renderStroke, smoothPoints, seededRandom,
