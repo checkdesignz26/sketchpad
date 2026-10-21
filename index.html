@@ -1064,6 +1064,7 @@ html.in-suite .suite-only{display:block!important}
       <span class="float-panel-handle-actions"><button id="pathEditDoneTopBtn" class="btn mini primary float-panel-done">✓ Done</button><span class="float-panel-grip" title="Drag to move">⠿</span></span>
     </div>
     <div class="sel-quick" style="display:flex;align-items:center;gap:10px;margin:0 0 8px;"><input class="sel-colour color" type="color" value="#000000" title="Stroke colour" style="width:44px;height:36px;flex:none;"><span style="font-size:12.5px;opacity:.8;flex:none;">Size</span><input class="sel-width" type="range" min="0.05" step="0.05" max="120" value="6" style="flex:1;min-width:90px;"><span class="sel-width-val" style="min-width:26px;text-align:right;font-size:13px;">6</span></div>
+    <div class="sel-quick" style="display:flex;align-items:center;gap:10px;margin:0 0 8px;"><span style="font-size:12.5px;opacity:.8;flex:none;width:44px;text-align:center;">Opacity</span><input class="sel-opacity" type="range" min="1" max="100" step="1" value="100" style="flex:1;min-width:90px;"><span class="sel-opacity-val" style="min-width:34px;text-align:right;font-size:13px;">100%</span></div>
     <div class="sel-quick" style="display:flex;align-items:center;gap:10px;margin:0 0 8px;"><span style="font-size:12.5px;opacity:.8;flex:none;">Brush</span><select class="sel-brush" style="flex:1;min-width:0;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></select></div>
     <div class="efHost"></div>
     <div class="row"><button id="pathSelectToolBtn" class="btn mini active" style="flex:1">↖ Select</button><button id="pathAddNodeToolBtn" class="btn mini" style="flex:1">➕ Add Node</button><button id="pathSnapBtn" class="btn mini" style="flex:1" title="Snap nodes to other paths while you drag">🧲 Snap</button></div>
@@ -1206,6 +1207,7 @@ html.in-suite .suite-only{display:block!important}
       <span class="float-panel-handle-actions"><button id="strokeActionsDoneBtn" class="btn mini primary float-panel-done">✓ Done</button><button id="strokeActionsDeleteTopBtn" class="btn mini danger float-panel-done">✕ Delete</button><span class="float-panel-grip" title="Drag to move">⠿</span></span>
     </div>
     <div class="sel-quick" style="display:flex;align-items:center;gap:10px;margin:6px 0 4px;"><input class="sel-colour color" type="color" value="#000000" title="Stroke colour" style="width:44px;height:36px;flex:none;"><span style="font-size:12.5px;opacity:.8;flex:none;">Size</span><input class="sel-width" type="range" min="0.05" step="0.05" max="120" value="6" style="flex:1;min-width:90px;"><span class="sel-width-val" style="min-width:26px;text-align:right;font-size:13px;">6</span></div>
+    <div class="sel-quick" style="display:flex;align-items:center;gap:10px;margin:0 0 8px;"><span style="font-size:12.5px;opacity:.8;flex:none;width:44px;text-align:center;">Opacity</span><input class="sel-opacity" type="range" min="1" max="100" step="1" value="100" style="flex:1;min-width:90px;"><span class="sel-opacity-val" style="min-width:34px;text-align:right;font-size:13px;">100%</span></div>
     <div class="sel-quick" style="display:flex;align-items:center;gap:10px;margin:0 0 4px;"><span style="font-size:12.5px;opacity:.8;flex:none;">Brush</span><select class="sel-brush" style="flex:1;min-width:0;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></select></div>
     <div class="efHost"></div>
     <div id="fpShapeRow" style="display:none;margin:4px 0 8px;">
@@ -1474,7 +1476,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v361'; // keep in step with CACHE in sw.js
+const APP_V='v362'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -8095,6 +8097,7 @@ function syncSelStrokeControls(){
   document.querySelectorAll('.sel-colour').forEach(e=>{e.value=/^#[0-9a-f]{6}$/i.test(stroke.color||'')?stroke.color:'#000000';});
   document.querySelectorAll('.sel-width').forEach(e=>{e.max=mx;e.value=st.size;});
   document.querySelectorAll('.sel-width-val').forEach(e=>{e.textContent=fmtSize(st.size);});
+  {const op=Math.round(st.opacity==null?100:st.opacity);document.querySelectorAll('.sel-opacity').forEach(e=>{e.value=op;});document.querySelectorAll('.sel-opacity-val').forEach(e=>{e.textContent=op+'%';});}
   try{syncCapUI();syncDashUI();}catch(e){}
   syncSizeNums(newSel);try{tbSizeSync();}catch(e){}
 }
@@ -8137,6 +8140,17 @@ document.querySelectorAll('.sel-width').forEach(el=>{
   el.addEventListener('change',()=>{if(!pathEditStrokeId){pushHist();scheduleAutosave();}});
 });
 
+// Opacity of the selected stroke (it was only ever visible as 'why does my dark navy look pale?': the colour chip shows the solid colour).
+document.querySelectorAll('.sel-opacity').forEach(el=>{
+  el.addEventListener('input',e=>{
+    const stroke=strokes.find(s=>s.id===(pathEditStrokeId||selectedStrokeId));if(!stroke)return;
+    if(!stroke.settings)stroke.settings=Object.assign({},BrushEngine.getSettings(stroke.brushId));
+    stroke.settings.opacity=+e.target.value;
+    syncSelStrokeControls();refreshSelStrokeView(stroke);
+    try{$('strokeRecipe').textContent=formatRecipe(stroke.brushId,stroke.settings);}catch(err){}
+  });
+  el.addEventListener('change',()=>{if(!pathEditStrokeId){pushHist();scheduleAutosave();}});
+});
 function curCapStroke(){return strokes.find(x=>x.id===(pathEditStrokeId||selectedStrokeId));}
 function syncCapUI(){
   const st=curCapStroke();
@@ -10946,14 +10960,17 @@ function enterEditPath(strokeId){
 }
 function renderPathPreviewInto(target){
   const stroke=strokes.find(s=>s.id===pathEditStrokeId);if(!stroke||!pathEditNodes)return;
+  // The stroke's own layer may be set to less than 100%: the finished picture shows the stroke at (stroke opacity x layer opacity), so the live editing view must too,
+  // or the stroke being edited looks darker than it really is.
+  const lyr=layers.find(l=>l.id===stroke.layerId),lo=lyr&&lyr.opacity!=null?Math.max(0,Math.min(1,lyr.opacity/100)):1;
   if(stroke.fillColor){ // a Fill Shape stroke is a solid area, not a brushed line: keep it solid while its path is edited
     const fp=nodesToPoints(pathEditNodes,true);
-    if(fp&&fp.length>=3){target.save();target.globalAlpha=stroke.fillOpacity!=null?stroke.fillOpacity:1;target.beginPath();target.moveTo(fp[0].x,fp[0].y);for(let i=1;i<fp.length;i++)target.lineTo(fp[i].x,fp[i].y);target.closePath();target.fillStyle=stroke.fillGradient?gradStyle(target,stroke.fillGradient,fp):stroke.fillColor;target.fill();target.restore();}
+    if(fp&&fp.length>=3){target.save();target.globalAlpha=(stroke.fillOpacity!=null?stroke.fillOpacity:1)*lo;target.beginPath();target.moveTo(fp[0].x,fp[0].y);for(let i=1;i<fp.length;i++)target.lineTo(fp[i].x,fp[i].y);target.closePath();target.fillStyle=stroke.fillGradient?gradStyle(target,stroke.fillGradient,fp):stroke.fillColor;target.fill();target.restore();}
     return;
   }
   if(stroke.fill&&stroke.fill.on&&pathEditNodes.length>=3){ // the linked fill follows the nodes live (its stored copy is hidden while editing)
     const fp=nodesToPoints(pathEditNodes,true);
-    if(fp&&fp.length>=3){target.save();target.globalAlpha=stroke.fill.opacity==null?1:stroke.fill.opacity;target.beginPath();target.moveTo(fp[0].x,fp[0].y);for(let i=1;i<fp.length;i++)target.lineTo(fp[i].x,fp[i].y);target.closePath();
+    if(fp&&fp.length>=3){target.save();target.globalAlpha=(stroke.fill.opacity==null?1:stroke.fill.opacity)*lo;target.beginPath();target.moveTo(fp[0].x,fp[0].y);for(let i=1;i<fp.length;i++)target.lineTo(fp[i].x,fp[i].y);target.closePath();
       try{target.fillStyle=stroke.fill.gradient?gradStyle(target,stroke.fill.gradient,fp):(stroke.fill.same?stroke.color:stroke.fill.color);}catch(e){target.fillStyle=stroke.fill.color||'#ccc';}
       target.fill();target.restore();}
   }
@@ -10968,7 +10985,7 @@ function renderPathPreviewInto(target){
   // the actual node structure stays unambiguous while editing; the committed stroke still tapers
   // normally the moment Done bakes it back through the ordinary (non-preview) render path.
   const previewBrush=(brush.taper&&brush.taper!=='none')?{...brush,taper:'none',taperS:0,taperE:0}:brush;
-  BrushEngine.renderStroke(target,{...stroke,points:nodesToPoints(pathEditNodes,pathEditClosed)},previewBrush,settings);
+  BrushEngine.renderStroke(target,{...stroke,points:nodesToPoints(pathEditNodes,pathEditClosed)},previewBrush,settings,lo);
 }
 function renderPathLivePreview(){
   const stroke=strokes.find(s=>s.id===pathEditStrokeId);if(!stroke||!pathEditNodes)return;
