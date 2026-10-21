@@ -7669,7 +7669,7 @@ $('rcMake').onclick=()=>{
   setStatus('⌒ Corners rounded (radius '+r+'). Undo brings them back.');
 };
 let drawLock=false,editExplicit=false;try{drawLock=localStorage.getItem('sp-drawLock')==='1';}catch(e){}
-function syncMode(){if(drawLock&&mode==='edit'&&!editExplicit)mode='draw';try{tbToolSync();}catch(e){}try{if(penOn&&mode==='edit')penSet(false);if(warpOn&&mode==='edit')warpSet(false);if(cloneOn&&mode==='edit')cloneSet(false);if(smudgeOn&&mode==='edit')smudgeSet(false);}catch(e){}$('drawModeBtn').classList.toggle('active',mode==='draw');$('editModeBtn').classList.toggle('active',mode==='edit');canvas.style.cursor=mode==='draw'?'crosshair':'grab';setStatus(mode==='draw'?'✏️ Draw Mode: Apple Pencil draws, two fingers move the canvas.':'↔️ Edit Mode: tap a motif, then move, scale, rotate or flip.');;if(typeof syncStrokeSelectionUI==='function')syncStrokeSelectionUI();}
+function syncMode(){if(drawLock&&mode==='edit'&&!editExplicit)mode='draw';try{tbToolSync();}catch(e){}try{tbSizeSync();}catch(e){}try{if(penOn&&mode==='edit')penSet(false);if(warpOn&&mode==='edit')warpSet(false);if(cloneOn&&mode==='edit')cloneSet(false);if(smudgeOn&&mode==='edit')smudgeSet(false);}catch(e){}$('drawModeBtn').classList.toggle('active',mode==='draw');$('editModeBtn').classList.toggle('active',mode==='edit');canvas.style.cursor=mode==='draw'?'crosshair':'grab';setStatus(mode==='draw'?'✏️ Draw Mode: Apple Pencil draws, two fingers move the canvas.':'↔️ Edit Mode: tap a motif, then move, scale, rotate or flip.');;if(typeof syncStrokeSelectionUI==='function')syncStrokeSelectionUI();}
 $('drawModeBtn').onclick=()=>{if(pathEditStrokeId)commitEditPath();if(joinPendingStrokeId)endJoinPick();disarmAreaFill();disarmShapeMultiSelect();armedShapeType=null;syncShapeToolUI();mode='draw';selected=null;selectedStrokeId=null;multiSel=null;selAddArmed=false;groupInsideId=null;multiSelectMode=false;multiSelectIds=[];$('multiSelectToggle').textContent='🔢 Multi-Select: Off';$('multiSelectToggle').classList.remove('active');syncAlignUI();syncStrokeSelectionUI();syncMode();redraw()};$('editModeBtn').onclick=()=>{disarmAreaFill();armedShapeType=null;syncShapeToolUI();mode='edit';editExplicit=true;try{syncMode();}finally{editExplicit=false;}};$('captureBtn').onclick=()=>captureMotif();
 // Capture Area: drag a box on the canvas; only strokes inside it become the motif.
 function setCaptureArea(on){
@@ -15272,10 +15272,13 @@ $('tbPencilBtn').onclick=()=>tbPencilGo();
 $('tbPencilMenuBtn').onclick=()=>tbBrushMenu();
 
 // The top-bar size follows whatever you are working on: the selected stroke while one is selected (or being edited), otherwise the brush.
-function tbTargetStroke(){return strokes.find(x=>x.id===(pathEditStrokeId||selectedStrokeId))||null;}
+// While you are DRAWING (Draw mode, not editing a path) the box always belongs to the brush: a selection left over from Edit mode must not
+// capture it, or changing the size resizes that old selection and the brush you are drawing with never changes.
+function tbDrawingNow(){return mode==='draw'&&!pathEditStrokeId;}
+function tbTargetStroke(){if(tbDrawingNow())return null;return strokes.find(x=>x.id===(pathEditStrokeId||selectedStrokeId))||null;}
 // Several strokes selected together (marquee / Select All / a group): the size box belongs to THEM, not to the drawing tool.
 function tbMultiStrokes(){
-  if(pathEditStrokeId||selectedStrokeId||!multiSel)return null;
+  if(tbDrawingNow()||pathEditStrokeId||selectedStrokeId||!multiSel)return null;
   const st=selMembers().st.filter(x=>x.points&&x.points.length&&!x.fillColor);
   return st.length>1?st:null;
 }
