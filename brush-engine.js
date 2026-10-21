@@ -832,7 +832,7 @@
     if (live) {
       const L = _wcLive;
       const same = L.key === stroke.liveKey && L.sig === sig && L.n <= pts.length + 1 && L.p0 && pts[0].x === L.p0.x && pts[0].y === L.p0.y;
-      if (!same) { L.key = stroke.liveKey; L.sig = sig; L.n = 0; L.p0 = { x: pts[0].x, y: pts[0].y }; L.rand = seededRandom(String(stroke.liveKey)); L.bb = null; L.cleared = false; }
+      if (!same) { L.key = stroke.liveKey; L.sig = sig; L.n = 0; L.p0 = { x: pts[0].x, y: pts[0].y }; L.rand = seededRandom(String(stroke.liveKey)); L.bb = null; L.cleared = false; L.rs = null; L.pp = null; }
       S = L; firstDab = L.n;
     }
     const ctxs = {};
@@ -847,45 +847,74 @@
     const rgb = parseRgb(color), solid = 'rgb(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ')', clear0 = 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',0)';
     const hard = 1 - soft * 0.25; // only the outer part of the wash feathers; the middle stays an even tone
     let vv = live ? (S.v == null ? 1 : S.v) : 1; // slow wander in how much pigment the brush carries
+    // The OUTLINE (M = outer shape, I / I2 = slightly smaller copies used for the pooled rim) is one continuous chain of round-capped segments
+    // with a smoothly eased radius, not a stack of separate discs with their own random sizes. Separate discs gave a scalloped edge and made
+    // the rim follow every dab; a chain has a single smooth boundary, so pooling follows the overall stroke shape. The wash (B) keeps its
+    // per-dab size and pigment variation, and draws the random numbers in the same order as before.
+    let rs = live ? S.rs : null, pp = live ? S.pp : null; // eased outline radius, and the previous point of the chain
+    const chain = (g, x, y, rad) => {
+      if (rad <= 0) return;
+      g.fillStyle = '#fff'; g.strokeStyle = '#fff';
+      if (pp) { g.lineWidth = rad * 2; g.lineCap = 'round'; g.lineJoin = 'round'; g.beginPath(); g.moveTo(pp.x, pp.y); g.lineTo(x, y); g.stroke(); }
+      else { g.beginPath(); g.arc(x, y, rad, 0, 6.2832); g.fill(); }
+    };
     for (let i = firstDab; i < lastIdx; i++) {
       const pt = pts[i];
-      const r = (size / 2) * pressureFactor(pt.pressure, settings.pressureWidth) * (1 - 0.04 + R() * 0.08);
+      const rraw = (size / 2) * pressureFactor(pt.pressure, settings.pressureWidth);
+      const r = rraw * (1 - 0.04 + R() * 0.08); // wash dab radius (varies a little, as before)
       vv = Math.max(0.78, Math.min(1.12, vv + (R() - 0.5) * 0.07));
       const op = Math.max(0.05, pressureFactor(pt.pressure, settings.pressureOpacity)) * vv;
-      if (r <= 0.3) continue;
-      const x = pt.x, y = pt.y, ri = Math.max(0, r - Math.max(1.4, r * 0.24)), ri2 = Math.max(0, r - Math.max(0.7, r * 0.08));
+      if (r <= 0.3) { pp = null; continue; }
+      rs = rs == null ? rraw : rs + (rraw - rs) * 0.35;
+      const x = pt.x, y = pt.y, ro = rs, ri = Math.max(0, rs - Math.max(1.4, rs * 0.22)), ri2 = Math.max(0, rs - Math.max(0.7, rs * 0.07));
       ctxs.M.setTransform(se, 0, 0, se, -bx * se, -by * se); ctxs.I.setTransform(se, 0, 0, se, -bx * se, -by * se); ctxs.I2.setTransform(se, 0, 0, se, -bx * se, -by * se); ctxs.B.setTransform(se, 0, 0, se, -bx * se, -by * se);
-      ctxs.M.fillStyle = '#fff'; ctxs.M.beginPath(); ctxs.M.arc(x, y, r, 0, 6.2832); ctxs.M.fill();
-      ctxs.I.fillStyle = '#fff'; ctxs.I.beginPath(); ctxs.I.arc(x, y, ri, 0, 6.2832); ctxs.I.fill();
-      ctxs.I2.fillStyle = '#fff'; ctxs.I2.beginPath(); ctxs.I2.arc(x, y, ri2, 0, 6.2832); ctxs.I2.fill();
+      chain(ctxs.M, x, y, ro); chain(ctxs.I, x, y, ri); chain(ctxs.I2, x, y, ri2);
       const g = ctxs.B.createRadialGradient(x, y, r * hard * 0.9, x, y, r);
       g.addColorStop(0, solid); g.addColorStop(1, clear0);
       ctxs.B.globalAlpha = Math.min(1, op * 0.4); ctxs.B.fillStyle = g; ctxs.B.beginPath(); ctxs.B.arc(x, y, r, 0, 6.2832); ctxs.B.fill(); ctxs.B.globalAlpha = 1;
-      if (x - r < dx0) dx0 = x - r; if (x + r > dx1) dx1 = x + r; if (y - r < dy0) dy0 = y - r; if (y + r > dy1) dy1 = y + r;
+      const qx = pp ? pp.x : x, qy = pp ? pp.y : y, rr = Math.max(r, ro) + 1;
+      if (Math.min(x, qx) - rr < dx0) dx0 = Math.min(x, qx) - rr; if (Math.max(x, qx) + rr > dx1) dx1 = Math.max(x, qx) + rr;
+      if (Math.min(y, qy) - rr < dy0) dy0 = Math.min(y, qy) - rr; if (Math.max(y, qy) + rr > dy1) dy1 = Math.max(y, qy) + rr;
+      pp = { x, y };
     }
-    if (live) { S.n = Math.max(firstDab, lastIdx); S.v = vv; }
+    if (live) { S.n = Math.max(firstDab, lastIdx); S.v = vv; S.rs = rs; S.pp = pp; }
     // refresh the result O inside the rectangle that changed
     if (isFinite(dx0)) {
-      let rx0 = Math.max(0, Math.floor((dx0 - bx) * se) - 2), ry0 = Math.max(0, Math.floor((dy0 - by) * se) - 2);
-      let rx1 = Math.min(pw, Math.ceil((dx1 - bx) * se) + 2), ry1 = Math.min(ph, Math.ceil((dy1 - by) * se) + 2);
+      // The pooled rim is softened (see below), which spreads it a little past the new dabs, so the refreshed rectangle is padded by that much.
+      const nom = Math.max(0.6, size / 2);
+      const rho1 = Math.max(0.7, 0.45 * Math.max(1.4, nom * 0.22) * se), rho2 = Math.max(0.5, 0.45 * Math.max(0.7, nom * 0.07) * se);
+      const mg = Math.ceil(Math.max(rho1, rho2)) + 1;
+      let rx0 = Math.max(0, Math.floor((dx0 - bx) * se) - 2 - mg), ry0 = Math.max(0, Math.floor((dy0 - by) * se) - 2 - mg);
+      let rx1 = Math.min(pw, Math.ceil((dx1 - bx) * se) + 2 + mg), ry1 = Math.min(ph, Math.ceil((dy1 - by) * se) + 2 + mg);
       const rw = rx1 - rx0, rh = ry1 - ry0;
       if (rw > 0 && rh > 0) {
-        if (st.T.width < rw || st.T.height < rh) { st.T.width = Math.max(st.T.width, rw); st.T.height = Math.max(st.T.height, rh); }
+        // T holds a ring over the refreshed rectangle plus a margin, so the softened copies at the rectangle's edge still see the ring just outside it
+        const tx0 = Math.max(0, rx0 - mg), ty0 = Math.max(0, ry0 - mg), tw = Math.min(pw, rx1 + mg) - tx0, th = Math.min(ph, ry1 + mg) - ty0;
+        if (st.T.width < tw || st.T.height < th) { st.T.width = Math.max(st.T.width, tw); st.T.height = Math.max(st.T.height, th); }
         const T = st.T.getContext('2d'), O = ctxs.O;
-        const ring = (inner) => { // M minus a smaller disc set = a ring round the outline, tinted
-          T.setTransform(1, 0, 0, 1, 0, 0); T.globalCompositeOperation = 'source-over'; T.clearRect(0, 0, rw, rh);
-          T.drawImage(st.M, rx0, ry0, rw, rh, 0, 0, rw, rh);
-          T.globalCompositeOperation = 'destination-out'; T.drawImage(inner, rx0, ry0, rw, rh, 0, 0, rw, rh);
-          T.globalCompositeOperation = 'source-in'; T.fillStyle = solid; T.fillRect(0, 0, rw, rh);
+        const ring = (inner) => { // M minus a smaller shape = a ring round the OVERALL outline, tinted
+          T.setTransform(1, 0, 0, 1, 0, 0); T.globalCompositeOperation = 'source-over'; T.clearRect(0, 0, tw, th);
+          T.drawImage(st.M, tx0, ty0, tw, th, 0, 0, tw, th);
+          T.globalCompositeOperation = 'destination-out'; T.drawImage(inner, tx0, ty0, tw, th, 0, 0, tw, th);
+          T.globalCompositeOperation = 'source-in'; T.fillStyle = solid; T.fillRect(0, 0, tw, th);
           T.globalCompositeOperation = 'source-over';
         };
-        O.setTransform(1, 0, 0, 1, 0, 0); O.globalCompositeOperation = 'source-over'; O.clearRect(rx0, ry0, rw, rh);
+        // the ring laid down as several slightly shifted copies: its inner edge fades smoothly instead of ending in a hard step (no banding)
+        const softRing = (alpha, rho) => {
+          O.save(); O.beginPath(); O.rect(rx0, ry0, rw, rh); O.clip();
+          O.globalAlpha = Math.min(1, alpha) / 8;
+          for (let k = 0; k < 8; k++) { const a = k * 0.7853982; O.drawImage(st.T, 0, 0, tw, th, tx0 + Math.cos(a) * rho, ty0 + Math.sin(a) * rho, tw, th); }
+          O.restore();
+        };
+        O.setTransform(1, 0, 0, 1, 0, 0); O.globalCompositeOperation = 'source-over'; O.globalAlpha = 1; O.clearRect(rx0, ry0, rw, rh);
         O.globalAlpha = 0.6; O.drawImage(st.B, rx0, ry0, rw, rh, rx0, ry0, rw, rh);
         if (edge > 0) {
-          ring(st.I); O.globalAlpha = 0.06 + 0.3 * edge; O.drawImage(st.T, 0, 0, rw, rh, rx0, ry0, rw, rh);
-          ring(st.I2); O.globalAlpha = 0.08 + 0.45 * edge; O.drawImage(st.T, 0, 0, rw, rh, rx0, ry0, rw, rh);
+          ring(st.I); softRing((0.06 + 0.3 * edge) * 1.35, rho1);
+          ring(st.I2); softRing((0.08 + 0.45 * edge) * 1.35, rho2);
         }
         O.globalAlpha = 1;
+        // keep everything inside the overall stroke shape, so the outer edge stays one clean line
+        O.globalCompositeOperation = 'destination-in'; O.drawImage(st.M, rx0, ry0, rw, rh, rx0, ry0, rw, rh); O.globalCompositeOperation = 'source-over';
         if (gran > 0) {
           O.save(); O.beginPath(); O.rect(rx0, ry0, rw, rh); O.clip();
           O.setTransform(se, 0, 0, se, -bx * se, -by * se);
