@@ -1540,7 +1540,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v407'; // keep in step with CACHE in sw.js
+const APP_V='v408'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -6309,6 +6309,10 @@ function mkLoad(){
     const N=512,c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d',{willReadFrequently:true});
     x.drawImage(mk,0,0,N,N);const md=x.getImageData(0,0,N,N).data;
     let x0=N,y0=N,x1=0,y1=0;for(let y=0;y<N;y++)for(let xx=0;xx<N;xx++)if(md[(y*N+xx)*4+3]>128){if(xx<x0)x0=xx;if(xx>x1)x1=xx;if(y<y0)y0=y;if(y>y1)y1=y;}
+    // how the top and bottom edges of the mug body curve (it is seen from slightly above): the print is bent to follow them
+    const prof=(xx)=>{let t=-1,b=-1;for(let y=0;y<N;y++){if(md[(y*N+xx)*4+3]>128){if(t<0)t=y;b=y;}}return [t,b];};
+    const pc=prof(Math.round((x0+x1)/2)),pl=prof(x0+3),pr=prof(x1-3);
+    const sagT=Math.max(0,Math.min(30,pc[0]-Math.min(pl[0],pr[0]))),sagB=Math.max(0,Math.min(40,pc[1]-Math.max(pl[1],pr[1])));
     x.clearRect(0,0,N,N);x.drawImage(ph,0,0,N,N);const pd=x.getImageData(0,0,N,N).data;
     const lum=new Float32Array(N*N),hist=[];
     for(let i=0;i<N*N;i++){const l=0.3*pd[i*4]+0.59*pd[i*4+1]+0.11*pd[i*4+2];lum[i]=l;if(md[i*4+3]>200)hist.push(l);}
@@ -6321,7 +6325,7 @@ function mkLoad(){
       hd.data[i*4]=hd.data[i*4+1]=hd.data[i*4+2]=g;hd.data[i*4+3]=255;
     }
     sx.putImageData(sd,0,0);hx.putImageData(hd,0,0);
-    MK.photo=ph;MK.mask=mk;MK.shade=sh;MK.hl=hl;MK.P={x:x0,y:y0,w:x1-x0+1,h:y1-y0+1};
+    MK.photo=ph;MK.mask=mk;MK.shade=sh;MK.hl=hl;MK.P={x:x0,y:y0,w:x1-x0+1,h:y1-y0+1};MK.sag={t:sagT,b:sagB};
   });
   MK.loading.catch(()=>{MK.loading=null;});
   return MK.loading;
@@ -6413,10 +6417,12 @@ function mkRender(){
   // wrapped round the mug: columns near the edges are squeezed, as on a cylinder
   const T=1.15,sT=Math.sin(T),T2=MK.tmp.T,t=T2.getContext('2d');t.clearRect(0,0,N,N);
   const fx=i=>{const u=i/pw*2-1;return (Math.asin(Math.max(-1,Math.min(1,u*sT)))/T*0.5+0.5)*pw;};
-  for(let i=0;i<pw;i++){const a=fx(i),b=fx(i+1),sw=Math.max(0.5,b-a);t.drawImage(F,a,0,sw,ph,px+i,py,1.02,ph);}
+  const sg=MK.sag||{t:0,b:0},sgT=sg.t*S,sgB=sg.b*S;
+  for(let i=0;i<pw;i++){const a=fx(i),b=fx(i+1),sw=Math.max(0.5,b-a),u=(i+0.5)/pw*2-1,u2=u*u,top=py+sgT*(1-u2),bot=py+ph-sgB*u2;t.drawImage(F,a,0,sw,ph,px+i,top,1.02,Math.max(1,bot-top));}
   // light and shade: multiply by the photo's shading, keep only where there is print, clip to the mug body
   const U=MK.tmp.U,u=U.getContext('2d');u.globalCompositeOperation='source-over';u.clearRect(0,0,N,N);
   u.drawImage(T2,0,0);u.globalCompositeOperation='multiply';u.drawImage(MK.sh,0,0);
+  {const gd=u.createLinearGradient(px,0,px+pw,0);gd.addColorStop(0,'#bdbdbd');gd.addColorStop(.14,'#e4e4e4');gd.addColorStop(.38,'#fff');gd.addColorStop(.62,'#fff');gd.addColorStop(.86,'#e0e0e0');gd.addColorStop(1,'#b4b4b4');u.fillStyle=gd;u.fillRect(px,py-4,pw,ph+8+sgB);} // the sides turn away from the light
   u.globalCompositeOperation='destination-in';u.drawImage(T2,0,0);u.drawImage(MK.msk,0,0);u.globalCompositeOperation='source-over';
   c.drawImage(U,0,0);
   const G=MK.tmp.G,g=G.getContext('2d');g.globalCompositeOperation='source-over';g.clearRect(0,0,N,N);
