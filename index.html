@@ -360,7 +360,7 @@ html.in-suite .suite-only{display:block!important}
 .layer-icon-btn{border:0;background:transparent;font-size:14px;cursor:pointer;padding:2px;width:22px;flex-shrink:0;color:var(--text)}
 .layer-alpha.on{background:var(--pink);color:#fff}
 .layer-blend{max-width:92px;font-size:12px;padding:4px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text)}
-.layer-thumb{position:static;display:block;width:46px;height:46px;flex:none;border-radius:7px;border:1px solid var(--cardBorder);background-color:#fff;background-image:linear-gradient(45deg,#e6e1ee 25%,transparent 25%,transparent 75%,#e6e1ee 75%),linear-gradient(45deg,#e6e1ee 25%,transparent 25%,transparent 75%,#e6e1ee 75%);background-size:10px 10px;background-position:0 0,5px 5px}
+.layer-thumb{position:static;display:block;width:46px;height:46px;flex:none;background:none;border:0}
 .layer-row.hidden-l .layer-thumb{opacity:.35}
 .layer-name{flex:1 1 96px;font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:96px}
 .layer-opacity{flex:1;min-width:0;height:36px;touch-action:none}
@@ -1486,7 +1486,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v381'; // keep in step with CACHE in sw.js
+const APP_V='v382'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
