@@ -1486,7 +1486,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v383'; // keep in step with CACHE in sw.js
+const APP_V='v384'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -4246,6 +4246,7 @@ canvas.addEventListener('pointerup',e=>{
   currentPoints=[];currentStrokeId=null;liveActive=false;lctx.clearRect(0,0,W,H);
   resetHoldState();
   pushHist();redraw();
+  try{alphaLockHint();}catch(e){}
 });
 canvas.addEventListener('pointercancel',()=>{
   if(pathEditStrokeId&&!drawing)return; // a stray cancel (palm/gesture) must not wipe Edit Path's live stroke
@@ -5985,6 +5986,12 @@ function renderLayersList(){
   try{layerThumbsSoon(0);}catch(e){}
 }
 // ---- Layer thumbnails: a small picture of what is on each layer, drawn lazily (one layer at a time), cached until that layer changes ----
+// Drawing on an alpha-locked layer that has nothing painted on it hides every stroke: say why, instead of letting it look like a bug.
+function alphaLockHint(){
+  const l=layers.find(x=>x.id===activeLayerId);
+  if(!l||!l.alphaLock||strokes.some(s=>s.layerId===l.id&&!s.atop))return;
+  setStatus('α "'+l.name+'" has Alpha lock on and nothing painted yet, so your stroke is hidden. Tap α on this layer in Layers to turn it off.');
+}
 function layerThumbSig(id){let h=0,n=0,pts=0;for(const st of strokes){if(st.layerId!==id||hiddenStrokeIds.has(st.id)||st.guideHidden)continue;n++;const P=st.points;if(P&&P.length){pts+=P.length;const m=P[P.length>>1],l=P[P.length-1];h=(Math.imul(h,31)+Math.round(P[0].x*8)+Math.round(m.x*8)*3+Math.round(l.y*8)*5+(st.color?st.color.length+st.color.charCodeAt(st.color.length-1):0)+Math.round(((st.settings&&st.settings.size)||0)*10)+Math.round(((st.settings&&st.settings.opacity)||0)))|0;}else h=(h+7)|0;if(st.fillColor)h=(Math.imul(h,31)+st.fillColor.charCodeAt(st.fillColor.length-1))|0;}return n+':'+pts+':'+h;}
 let _thumbT=0,_thumbBusy=false;
 function layerThumbsSoon(delay){clearTimeout(_thumbT);_thumbT=setTimeout(layerThumbsRun,delay==null?700:delay);}
