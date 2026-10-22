@@ -1533,7 +1533,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v401'; // keep in step with CACHE in sw.js
+const APP_V='v402'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -1877,6 +1877,7 @@ function renderDetail(){
           else if(!sharp&&pixLayers.has(l.id)&&!l.asleep&&l.dcanvas)sc.drawImage(l.dcanvas,0,0,W,H);
           else{
             sc.save();sc.beginPath();if(showTiling)sc.rect(0,0,W,H);else sc.rect(CX,CY,TW,TH);sc.clip();
+            drawLayerMotifs(sc,l.id);
             strokes.forEach(s=>{if(s.layerId!==l.id||hiddenStrokeIds.has(s.id))return;const b=strokeBoundsPad(s);if(!(b&&b.x1>=vx0&&b.x0<=vx1&&b.y1>=vy0&&b.y0<=vy1))return;
               renderStrokeClipped(sc,s,BrushEngine.getBrush(s.brushId),s.settings||BrushEngine.getSettings(s.brushId),s.id===pathEditStrokeId?0:1);});
             sc.restore();
@@ -1897,10 +1898,12 @@ function renderDetail(){
           return;
         }
         const hit=strokes.filter(s=>{if(s.layerId!==l.id||hiddenStrokeIds.has(s.id))return false;const b=strokeBoundsPad(s);return b&&b.x1>=vx0&&b.x0<=vx1&&b.y1>=vy0&&b.y0<=vy1;});
-        if(!hit.length)return;
+        const lmo=layerMotifs(l.id);
+        if(!hit.length&&!lmo.length)return;
         sc.setTransform(1,0,0,1,0,0);sc.clearRect(0,0,pw,ph);
         sc.setTransform(M[0],M[1],M[2],M[3],M[4]+M[0]*ox+M[2]*oy,M[5]+M[1]*ox+M[3]*oy);
         sc.save();sc.beginPath();if(showTiling)sc.rect(0,0,W,H);else sc.rect(CX,CY,TW,TH);sc.clip();
+        if(lmo.length)drawLayerMotifs(sc,l.id);
         hit.forEach(s=>{
           const brush=BrushEngine.getBrush(s.brushId),settings=s.settings||BrushEngine.getSettings(s.brushId);
           renderStrokeClipped(sc,s,brush,settings,s.id===pathEditStrokeId?0:1); // Edit Path shows its own live copy instead
@@ -1947,6 +1950,34 @@ let selectedStrokeId=null;
 // Groups: members carry a `groupId` (strokes and placed pictures); `groups` holds each group's options. multiSel is the
 // current multi-object selection ({strokeIds,placedIds,groupId}); hidden* are members being dragged (drawn live instead).
 let motifsHidden=false,motifsOpen=false;function pHid(p){return motifsHidden||p.hidden||hiddenPlacedIds.has(p.id);}
+// A motif can live ON a layer (p.layerId): it is then drawn as part of that layer, just under the layer's own strokes, so the layer's opacity, blend, blur, clipping and show/hide all apply to it.
+// A motif with no layer (older projects, template slots) stays in the loose group drawn above every layer.
+function pBaked(p){return !!(p.img&&p.layerId&&layers.some(l=>l.id===p.layerId));}
+function layerMotifs(id){return placed.filter(p=>p.layerId===id&&p.img&&!pHid(p));}
+function drawLayerMotifs(c,id){
+  const list=layerMotifs(id);if(!list.length)return false;
+  list.forEach(p=>{c.save();if(p.alpha!=null)c.globalAlpha=Math.max(0,Math.min(1,p.alpha));c.translate(p.x,p.y);c.rotate(p.r*Math.PI/180);c.scale(p.s*(p.fx==null?1:p.fx),p.s*(p.fy==null?1:p.fy));try{c.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);}catch(e){}c.restore();});
+  return true;
+}
+const _imgIds=new WeakMap();let _imgN=0;
+function imgKey(im){if(!im)return 0;let v=_imgIds.get(im);if(!v){v=++_imgN;_imgIds.set(im,v);}return v;}
+function motifSigStr(id){
+  let r='';
+  for(const p of placed){if(p.layerId!==id||!p.img)continue;r+=p.id+(pHid(p)?'h':'v')+imgKey(p.img)+','+Math.round(p.x*100)+','+Math.round(p.y*100)+','+p.s+','+p.r+','+(p.fx==null?1:p.fx)+(p.fy==null?1:p.fy)+','+p.w+','+p.h+','+(p.alpha==null?1:p.alpha)+';';}
+  return r;
+}
+// Called before every redraw/flatten: a layer whose motifs changed since its picture was made is redrawn (cheap for a layer that is mostly motifs).
+function motifSync(){
+  let ch=false;const now=performance.now();
+  layers.forEach(l=>{
+    const sg=motifSigStr(l.id);
+    if(l._msig===undefined&&!sg){l._msig=sg;return;}
+    if(l._msig===sg)return;
+    if(l.asleep===false&&now-(l._mt||0)<140&&strokes.reduce((a,q)=>a+(q.layerId===l.id?1:0),0)>400){clearTimeout(l._mtT);l._mtT=setTimeout(()=>redraw(),150);return;} // a big layer: at most ~7 redraws a second while a motif is being dragged
+    l._msig=sg;l._mt=now;rebuildLayer(l.id);ch=true;
+  });
+  if(ch){segVer++;compositeDirty=true;try{if(typeof invalidateDetail==='function')invalidateDetail();}catch(e){}}
+}
 const motifHi=new Map();let motifHiTimer=0;let groups={},multiSel=null,selAddArmed=false,groupInsideId=null,grpOv=null;const hiddenStrokeIds=new Set(),hiddenPlacedIds=new Set(),selOpts={lock:true,scale:true};
 let blendDraft=null,blendPickArmed=false,blendRaf=0; // Shape Blend (declared early: pushHist runs during boot)
 let copiedBrushStyle=null; // {brushId,settings} — session-only clipboard for Copy/Apply Brush Style
@@ -2401,6 +2432,7 @@ function layerSig(id){
     mixPts(st.points);
     if(st.clipStrokeId){const t=strokes.find(x=>x.id===st.clipStrokeId);if(t){mix(t.closed?1:0);try{mixS(JSON.stringify(t,(k,v)=>k==='points'?undefined:v));}catch(e){}mixPts(t.points);}}
   }
+  mixS(motifSigStr(id));
   return {sig:n+':'+pts+':'+(h1>>>0)+':'+(h2>>>0),n,pts};
 }
 function pixFree(id){const e=_pix.get(id);if(e&&e.cv){try{e.cv.width=e.cv.height=1;}catch(x){}}_pix.delete(id);}
@@ -2461,7 +2493,7 @@ function pixKick(d){
     const c=pixCandidate();if(!c){_pixVer=segVer;return;}
     if(!_pixCv){_pixCv=document.createElement('canvas');_pixCv.width=W;_pixCv.height=H;}
     const cx=_pixCv.getContext('2d');cx.setTransform(1,0,0,1,0,0);cx.clearRect(0,0,W,H);
-    _pixJob={id:c.l.id,sig:c.sig,c:cx,i:0,list:strokes.filter(st=>st.layerId===c.l.id&&!hiddenStrokeIds.has(st.id)&&!st.guideHidden)};
+    drawLayerMotifs(cx,c.l.id);_pixJob={id:c.l.id,sig:c.sig,c:cx,i:0,list:strokes.filter(st=>st.layerId===c.l.id&&!hiddenStrokeIds.has(st.id)&&!st.guideHidden)};
     _pixT=setTimeout(pixStep,0);
   };
   _pixT=setTimeout(run,d!=null?d:(window.__pixDelay!=null?window.__pixDelay:2500));
@@ -2584,6 +2616,7 @@ function layerPlan(){
 function replayLayerInto(c,layerId){
   const pl=layers.find(x=>x.id===layerId),pe=pl&&pl.asleep?pixGet(pl):null;
   if(pe){c.drawImage(pe.cv,pe.x,pe.y);return;}
+  drawLayerMotifs(c,layerId);
   strokes.forEach(s=>{
     if(s.layerId!==layerId||hiddenStrokeIds.has(s.id)||s.guideHidden)return;
     const brush=BrushEngine.getBrush(s.brushId),settings=s.settings||BrushEngine.getSettings(s.brushId);
@@ -3006,6 +3039,7 @@ function rebuildLayer(layerId){
   layer.ctx.clearRect(0,0,W,H);
   layer.dctx.clearRect(0,0,W,H);
   layer._sent=1;
+  drawLayerMotifs(layer.ctx,layerId);if(layer.dctx!==layer.ctx)drawLayerMotifs(layer.dctx,layerId);layer._msig=motifSigStr(layerId);
   strokes.filter(s=>s.layerId===layerId&&!hiddenStrokeIds.has(s.id)&&!s.guideHidden).forEach(s=>{
     const brush=BrushEngine.getBrush(s.brushId),settings=s.settings||BrushEngine.getSettings(s.brushId);
     renderStrokeClipped(layer.ctx,s,brush,settings);
@@ -3026,6 +3060,7 @@ function rebuildLayerDimmed(layerId,dimStrokeId,alpha,dimFill){
   layer.pin=true;
   layer.ctx.clearRect(0,0,W,H);
   layer.dctx.clearRect(0,0,W,H);
+  drawLayerMotifs(layer.ctx,layerId);if(layer.dctx!==layer.ctx)drawLayerMotifs(layer.dctx,layerId);
   strokes.filter(s=>s.layerId===layerId&&!hiddenStrokeIds.has(s.id)&&!s.guideHidden).forEach(s=>{
     const brush=BrushEngine.getBrush(s.brushId),settings=s.settings||BrushEngine.getSettings(s.brushId);
     // alpha is passed straight into renderStroke's per-dab opacity now — stampDab sets its own
@@ -3049,6 +3084,7 @@ function appendStrokeToLayer(stroke){
 }
 // Logical-resolution flatten (export, hit tests). Sleeping layers are drawn from their strokes one at a time.
 function updateComposite(){
+  try{motifSync();}catch(e){}
   syncAwake();
   compositeCtx.clearRect(0,0,W,H);
   let tmp=null;
@@ -3074,6 +3110,7 @@ function updateComposite(){
 // size) rather than left to the image's own (already renderScale-sized) natural pixel size —
 // otherwise the transform would scale an already-scaled bitmap up a second time.
 function updateDisplayComposite(){
+  try{motifSync();}catch(e){}
   syncAwake();
   displayCtx.clearRect(0,0,W,H);
   let si=0;const cp=clipPass();
@@ -3502,7 +3539,7 @@ function maskOutsideTile(c){
   c.beginPath();c.rect(0,0,c.canvas.width,c.canvas.height);
   const k=c.canvas.width/W;c.rect(CX*k,CY*k,TW*k,TH*k);c.fill('evenodd');c.restore();
 }
-function redraw(){if(redraw._q)return;redraw._q=requestAnimationFrame(()=>{redraw._q=0;if(pathEditStrokeId&&pathEditNodes&&!liveActive&&!drawing)renderPathLivePreview(); /* Edit Path hides the real stroke, so its live preview must never be lost to a stray clear */if(compositeDirty&&!(detailShown&&detailNeeded())){updateDisplayComposite();compositeDirty=false;} /* zoomed in, the normal canvas is hidden behind the sharp picture, so rebuilding it is wasted work and memory */const _cvn=ctN();{const k=canvasTiling+'|'+layout+'|'+showTiling;if(cvtSync._k!==k){cvtSync._k=k;cvtSync();}}if(_cvn>1)cvtRender(_cvn);else{ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);drawBackground();drawTraces();if(showTiling)drawTiles();else{ctx.drawImage(displayCanvas,0,0,W,H);if(liveActive)ctx.drawImage(liveLayer,0,0);}drawPlaced();if(!showTiling)maskOutsideTile(ctx);drawMultiSelectHighlights();drawShapeToolsHighlights();drawStrokeSelection();drawContinueMarkers();}drawTileBoundary();if(showGuides)drawGuides();updateSelectionBox();updatePaintBBoxOverlay();updateGroupBox();fabricContentChanged();invalidateDetail();scheduleMotifHi();try{updateTraceBox();}catch(e){}});}
+function redraw(){if(redraw._q)return;redraw._q=requestAnimationFrame(()=>{redraw._q=0;try{motifSync();}catch(e){}if(pathEditStrokeId&&pathEditNodes&&!liveActive&&!drawing)renderPathLivePreview(); /* Edit Path hides the real stroke, so its live preview must never be lost to a stray clear */if(compositeDirty&&!(detailShown&&detailNeeded())){updateDisplayComposite();compositeDirty=false;} /* zoomed in, the normal canvas is hidden behind the sharp picture, so rebuilding it is wasted work and memory */const _cvn=ctN();{const k=canvasTiling+'|'+layout+'|'+showTiling;if(cvtSync._k!==k){cvtSync._k=k;cvtSync();}}if(_cvn>1)cvtRender(_cvn);else{ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);drawBackground();drawTraces();if(showTiling)drawTiles();else{ctx.drawImage(displayCanvas,0,0,W,H);if(liveActive)ctx.drawImage(liveLayer,0,0);}drawPlaced();if(!showTiling)maskOutsideTile(ctx);drawMultiSelectHighlights();drawShapeToolsHighlights();drawStrokeSelection();drawContinueMarkers();}drawTileBoundary();if(showGuides)drawGuides();updateSelectionBox();updatePaintBBoxOverlay();updateGroupBox();fabricContentChanged();invalidateDetail();scheduleMotifHi();try{updateTraceBox();}catch(e){}});}
 // A pattern (e.g. exported from Magic Builder) loaded as the base of the design - unlike Trace
 // Reference (a non-exported, freely-scaled/positioned tracing guide), this is sized to exactly
 // fill the guide-square tile, tiles using the same repeat offsets as the hand-drawn layer/motifs
@@ -3636,7 +3673,7 @@ function drawStrokeSelection(){
     ctx.restore();return;
   }
 }
-function drawPlaced(){placed.forEach(p=>{if(pHid(p))return;offsets().forEach(([ox,oy])=>{if(p.img)drawOne(p,ox,oy);else drawEmptySlot(p,ox,oy);});});}
+function drawPlaced(){placed.forEach(p=>{if(pHid(p)||pBaked(p))return;offsets().forEach(([ox,oy])=>{if(p.img)drawOne(p,ox,oy);else drawEmptySlot(p,ox,oy);});});}
 // Dashed highlight around every Multi-Select-picked motif (only on the primary, non-tiled
 // instance — offsets()[0] is always [0,0]) so it's obvious which motifs an Align/Distribute
 // action is about to affect, distinct from the single-selection box's solid outline.
@@ -3752,7 +3789,7 @@ function placeMotif(motifId,img,returnToDraw,at){
   const boxW=slot.boxW||slot.w,boxH=slot.boxH||slot.h,fit=Math.min(boxW/img.width,boxH/img.height);
   slot.w=img.width*fit;slot.h=img.height*fit;slot.motifId=motifId;slot.img=img;selected=slot.id;
  }else if(at){
-  placed.push({id:crypto.randomUUID(),motifId,img,x:at.x,y:at.y,w:at.w,h:at.h,s:1,r:0,fx:1,fy:1});selected=placed[placed.length-1].id;
+  placed.push({id:crypto.randomUUID(),motifId,img,x:at.x,y:at.y,w:at.w,h:at.h,s:1,r:0,fx:1,fy:1,layerId:(layers.find(l=>l.id===activeLayerId&&!l.tpl)||{}).id});selected=placed[placed.length-1].id;
  }else{
   {const fit=Math.min(1,320/Math.max(img.width,img.height,1));placed.push({id:crypto.randomUUID(),motifId,img,x:W/2,y:H/2,w:img.width*fit,h:img.height*fit,s:1,r:0,fx:1,fy:1});}
   selected=placed[placed.length-1].id;
@@ -5983,6 +6020,20 @@ function syncActiveBrushRecipeLine(){
 // ---- Layers panel -----------------------------------------------------------------------------
 function escapeHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 const LAYER_BLENDS=[['source-over','Normal'],['multiply','Multiply'],['screen','Screen'],['overlay','Overlay'],['soft-light','Soft light'],['hard-light','Hard light'],['darken','Darken'],['lighten','Lighten'],['color-dodge','Dodge'],['color-burn','Burn'],['color','Colour'],['luminosity','Luminosity']];
+function layerOpts(sel){
+  const o=[];if(sel!=='__none')o.push('<option value=""'+(sel===''?' selected':'')+'>Loose, above all layers</option>');
+  layers.slice().reverse().forEach(l=>{if(l.tpl)return;o.push('<option value="'+l.id+'"'+(l.id===sel?' selected':'')+'>'+escapeHtml(l.name)+'</option>');});
+  return o.join('');
+}
+function moveMotifsToLayer(list,target){
+  if(!list.length)return;
+  let name='';
+  if(target==='__new'){const L=makeLayer('Motifs');layers.push(L);target=L.id;name=L.name;}
+  else if(target){const L=layers.find(x=>x.id===target);if(!L)return;name=L.name;}
+  list.forEach(p=>{if(target)p.layerId=target;else delete p.layerId;});
+  compositeDirty=true;renderLayersList();pushHist();redraw();
+  setStatus(target?('🖼 '+list.length+' motif'+(list.length===1?'':'s')+' now on “'+name+'” — they follow that layer’s opacity, blend, order and visibility. Undo reverses it.'):('🖼 '+list.length+' motif'+(list.length===1?'':'s')+' set loose above all layers.'));
+}
 function renderLayersList(){
   try{if(layers.length&&computeRenderScale()!==renderScale)applyTransform();}catch(e){}
   const host=$('layersList');if(!host)return;
@@ -6001,6 +6052,13 @@ function renderLayersList(){
       mr.querySelector('.layer-vis').onclick=e=>{e.stopPropagation();motifsHidden=!motifsHidden;compositeDirty=true;renderLayersList();pushHist();redraw();setStatus(motifsHidden?'Motifs hidden — tap ✓ to show them again.':'Motifs shown.');};
       mr.onclick=()=>{motifsOpen=!motifsOpen;renderLayersList();};
       host.appendChild(mr);
+      if(motifsOpen){
+        const gr=document.createElement('div');gr.className='layer-row motif-sub';gr.style.cssText='margin-left:14px;display:flex;gap:8px;align-items:center;cursor:default';
+        gr.innerHTML='<span style="flex:0 0 auto;font-size:14px">Put all motifs on</span><select class="layer-blend" style="flex:1;min-width:0;height:40px;font-size:15px"><option value="__pick">Choose a layer…</option><option value="__new">➕ A new layer “Motifs”</option>'+layerOpts('__none')+'</select>';
+        const gs=gr.querySelector('select');gs.onclick=e=>e.stopPropagation();
+        gs.onchange=e=>{e.stopPropagation();if(gs.value==='__pick')return;moveMotifsToLayer(placed.filter(q=>q.img),gs.value);};
+        gr.onclick=e=>e.stopPropagation();host.appendChild(gr);
+      }
       if(motifsOpen)pm.slice().reverse().forEach(p=>{
         const mo=motifs.find(q=>q.id===p.motifId),nm=(mo&&mo.name)||'Motif';
         const r=document.createElement('div');
@@ -6013,7 +6071,8 @@ function renderLayersList(){
           +'<div class="layer-tools"><button type="button" class="layer-icon-btn msel" title="Select on canvas">◎</button>'
           +'<button type="button" class="layer-icon-btn mup" title="Bring forward">↑</button>'
           +'<button type="button" class="layer-icon-btn mdn" title="Send back">↓</button>'
-          +'<button type="button" class="layer-icon-btn mdel" title="Delete this motif">✕</button></div>'
+          +'<button type="button" class="layer-icon-btn mdel" title="Delete this motif">✕</button>'
+          +'<span class="layer-br"></span><select class="layer-blend mlay" title="Which layer this motif lives on">'+layerOpts(p.layerId&&layers.some(l=>l.id===p.layerId)?p.layerId:'')+'</select></div>'
           +'<div class="layer-opline"><span>Opacity</span><input type="range" class="mop" min="0" max="100" step="1" value="'+pa+'"><span class="mpct">'+pa+'%</span></div>';
         const c2=r.querySelector('canvas').getContext('2d'),sc=Math.min(104/p.w,104/p.h);
         c2.fillStyle='#fff';c2.fillRect(0,0,116,116);try{c2.drawImage(p.img,58-p.w*sc/2,58-p.h*sc/2,p.w*sc,p.h*sc);}catch(e){}
@@ -6025,6 +6084,8 @@ function renderLayersList(){
         r.querySelector('.mup').onclick=e=>{e.stopPropagation();mv(1);};
         r.querySelector('.mdn').onclick=e=>{e.stopPropagation();mv(-1);};
         r.querySelector('.mdel').onclick=e=>{e.stopPropagation();placed=placed.filter(q=>q!==p);if(selected===p.id)selected=null;compositeDirty=true;renderLayersList();pushHist();redraw();setStatus('Motif deleted — Undo brings it back.');};
+        const ml=r.querySelector('.mlay');ml.onclick=e=>e.stopPropagation();
+        ml.onchange=e=>{e.stopPropagation();moveMotifsToLayer([p],ml.value);};
         const op=r.querySelector('.mop'),pc=r.querySelector('.mpct');
         op.oninput=e=>{p.alpha=+e.target.value/100;pc.textContent=e.target.value+'%';redraw();};
         op.onchange=()=>{compositeDirty=true;pushHist();};
@@ -6102,7 +6163,7 @@ function alphaLockHint(){
   if(!l||!l.alphaLock||strokes.some(s=>s.layerId===l.id&&!s.atop))return;
   setStatus('α "'+l.name+'" has Alpha lock on and nothing painted yet, so your stroke is hidden. Tap α on this layer in Layers to turn it off.');
 }
-function layerThumbSig(id){let h=0,n=0,pts=0;for(const st of strokes){if(st.layerId!==id||hiddenStrokeIds.has(st.id)||st.guideHidden)continue;n++;const P=st.points;if(P&&P.length){pts+=P.length;const m=P[P.length>>1],l=P[P.length-1];h=(Math.imul(h,31)+Math.round(P[0].x*8)+Math.round(m.x*8)*3+Math.round(l.y*8)*5+(st.color?st.color.length+st.color.charCodeAt(st.color.length-1):0)+Math.round(((st.settings&&st.settings.size)||0)*10)+Math.round(((st.settings&&st.settings.opacity)||0)))|0;}else h=(h+7)|0;if(st.fillColor)h=(Math.imul(h,31)+st.fillColor.charCodeAt(st.fillColor.length-1))|0;}return n+':'+pts+':'+h;}
+function layerThumbSig(id){let h=0,n=0,pts=0;for(const st of strokes){if(st.layerId!==id||hiddenStrokeIds.has(st.id)||st.guideHidden)continue;n++;const P=st.points;if(P&&P.length){pts+=P.length;const m=P[P.length>>1],l=P[P.length-1];h=(Math.imul(h,31)+Math.round(P[0].x*8)+Math.round(m.x*8)*3+Math.round(l.y*8)*5+(st.color?st.color.length+st.color.charCodeAt(st.color.length-1):0)+Math.round(((st.settings&&st.settings.size)||0)*10)+Math.round(((st.settings&&st.settings.opacity)||0)))|0;}else h=(h+7)|0;if(st.fillColor)h=(Math.imul(h,31)+st.fillColor.charCodeAt(st.fillColor.length-1))|0;}return n+':'+pts+':'+h+':'+motifSigStr(id);}
 let _thumbT=0,_thumbBusy=false;
 function layerThumbsSoon(delay){clearTimeout(_thumbT);_thumbT=setTimeout(layerThumbsRun,delay==null?700:delay);}
 function layerThumbsRun(){
@@ -6136,6 +6197,7 @@ function drawLayerThumb(l,cv){
   // zoom to the artwork on this layer, so thin line art is still visible in a small picture
   let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
   for(const st of strokes){if(st.layerId!==l.id||hiddenStrokeIds.has(st.id)||st.guideHidden)continue;const P=st.points;if(!P)continue;const pd=((st.settings&&st.settings.size)||10)/2+2;for(let i=0;i<P.length;i++){const q=P[i];if(q.x-pd<x0)x0=q.x-pd;if(q.x+pd>x1)x1=q.x+pd;if(q.y-pd<y0)y0=q.y-pd;if(q.y+pd>y1)y1=q.y+pd;}}
+  layerMotifs(l.id).forEach(p=>{const b=motifAABB(p);if(b){x0=Math.min(x0,b.x0);y0=Math.min(y0,b.y0);x1=Math.max(x1,b.x1);y1=Math.max(y1,b.y1);}});
   if(!(x1>x0)){x0=0;y0=0;x1=W;y1=H;}
   x0=Math.max(0,x0);y0=Math.max(0,y0);x1=Math.min(W,x1);y1=Math.min(H,y1);
   let bw=Math.max(48,x1-x0),bh=Math.max(48,y1-y0);const cxm=(x0+x1)/2,cym=(y0+y1)/2;
@@ -6171,6 +6233,7 @@ function layerPreviewOpen(id){
   // the area to show: this layer's artwork with a little margin, or the whole canvas when the layer is empty
   let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
   for(const st of strokes){if(st.layerId!==l.id||hiddenStrokeIds.has(st.id)||st.guideHidden||!st.points)continue;const pd=((st.settings&&st.settings.size)||10)/2+2;for(const q of st.points){if(q.x-pd<x0)x0=q.x-pd;if(q.x+pd>x1)x1=q.x+pd;if(q.y-pd<y0)y0=q.y-pd;if(q.y+pd>y1)y1=q.y+pd;}}
+  layerMotifs(l.id).forEach(p=>{const bb=motifAABB(p);if(bb){x0=Math.min(x0,bb.x0);y0=Math.min(y0,bb.y0);x1=Math.max(x1,bb.x1);y1=Math.max(y1,bb.y1);}});
   if(!(x1>x0)){x0=0;y0=0;x1=W;y1=H;}
   const mg=Math.max(8,0.04*Math.max(x1-x0,y1-y0));x0=Math.max(0,x0-mg);y0=Math.max(0,y0-mg);x1=Math.min(W,x1+mg);y1=Math.min(H,y1+mg);
   const bw=Math.max(48,x1-x0),bh=Math.max(48,y1-y0);
@@ -6255,6 +6318,7 @@ function mkLoad(){
 // WHOLE canvas first, then repeated at the project's tile offsets and cropped to one tile — exactly how the canvas itself shows it. That is what makes
 // the repeat on the mug seamless. Awake layers are copied from their own bitmaps; a sleeping layer's picture is cached (within a memory budget).
 function mkFlatten(){
+  try{motifSync();}catch(e){}
   const kf=Math.min(1,512/Math.max(TW,TH)),fw=Math.max(1,Math.round(W*kf)),fh=Math.max(1,Math.round(H*kf));
   const aw=Math.max(1,Math.round(TW*kf)),ah=Math.max(1,Math.round(TH*kf));
   const full=MK.full&&MK.full.width===fw&&MK.full.height===fh?MK.full:(MK.full=Object.assign(document.createElement('canvas'),{width:fw,height:fh}));
@@ -6280,7 +6344,7 @@ function mkFlatten(){
     else if(st==='clip'&&base){const t=document.createElement('canvas');t.width=fw;t.height=fh;const g=t.getContext('2d');g.drawImage(src,0,0);g.globalCompositeOperation='destination-in';g.drawImage(base,0,0);src=t;}
     o.save();o.globalAlpha=l.opacity/100;o.globalCompositeOperation=l.blend||'source-over';o.drawImage(src,0,0);o.restore();
   });
-  try{placed.forEach(p=>{if(!p.img||pHid(p))return;o.save();if(p.alpha!=null)o.globalAlpha=p.alpha;o.translate(p.x*kf,p.y*kf);o.rotate(p.r*Math.PI/180);o.scale(p.s*p.fx*kf,p.s*p.fy*kf);o.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);o.restore();});}catch(e){}
+  try{placed.forEach(p=>{if(!p.img||pHid(p)||pBaked(p))return;o.save();if(p.alpha!=null)o.globalAlpha=p.alpha;o.translate(p.x*kf,p.y*kf);o.rotate(p.r*Math.PI/180);o.scale(p.s*p.fx*kf,p.s*p.fy*kf);o.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);o.restore();});}catch(e){}
   // one tile, with everything that wraps in from the neighbouring tiles (the project's own repeat layout)
   if(!MK.art||MK.art.width!==aw||MK.art.height!==ah){MK.art=document.createElement('canvas');MK.art.width=aw;MK.art.height=ah;}
   const a=MK.art,g=a.getContext('2d');g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='source-over';g.clearRect(0,0,aw,ah);
@@ -6466,20 +6530,20 @@ function askYesNo(title,detail,yesLabel,onYes){
 function askDeleteLayer(id){
   if(layers.length<=1){setStatus('⚠️ At least one layer is required.');return;}
   const layer=layers.find(l=>l.id===id);if(!layer)return;
-  const n=strokes.filter(s=>s.layerId===id).length;
-  askYesNo('Delete "'+layer.name+'"?',(n?'This removes the layer and its '+n+' stroke'+(n===1?'':'s')+'. ':'This removes the empty layer. ')+'You can Undo it straight afterwards.','Delete',()=>deleteLayer(id));
+  const n=strokes.filter(s=>s.layerId===id).length+placed.filter(p=>p.layerId===id).length;
+  askYesNo('Delete "'+layer.name+'"?',(n?'This removes the layer and its '+n+' item'+(n===1?'':'s')+'. ':'This removes the empty layer. ')+'You can Undo it straight afterwards.','Delete',()=>deleteLayer(id));
 }
 function askClearLayer(id){
   const layer=layers.find(l=>l.id===id);if(!layer)return;
   if(layer.locked){setStatus('🔒 "'+layer.name+'" is locked, so it was not cleared. Unlock it first.');return;}
-  const n=strokes.filter(s=>s.layerId===id).length;
+  const n=strokes.filter(s=>s.layerId===id).length+placed.filter(p=>p.layerId===id).length;
   if(!n){setStatus('Nothing to clear on "'+layer.name+'".');return;}
-  askYesNo('Clear "'+layer.name+'"?','This empties the layer ('+n+' stroke'+(n===1?'':'s')+') but keeps the layer itself. You can Undo it straight afterwards.','Clear',()=>clearLayerNow(id));
+  askYesNo('Clear "'+layer.name+'"?','This empties the layer ('+n+' item'+(n===1?'':'s')+') but keeps the layer itself. You can Undo it straight afterwards.','Clear',()=>clearLayerNow(id));
 }
 function clearLayerNow(id){
   const layer=layers.find(l=>l.id===id);if(!layer||layer.locked)return;
-  const n=strokes.filter(s=>s.layerId===id).length;
-  strokes=strokes.filter(s=>s.layerId!==id);
+  const n=strokes.filter(s=>s.layerId===id).length+placed.filter(p=>p.layerId===id).length;
+  strokes=strokes.filter(s=>s.layerId!==id);placed=placed.filter(p=>p.layerId!==id);
   if(selectedStrokeId&&!strokes.find(s=>s.id===selectedStrokeId)){selectedStrokeId=null;}
   try{rebuildLayer(id);}catch(e){console.error(e);}
   compositeDirty=true;try{syncStrokeSelectionUI();}catch(e){}renderLayersList();pushHist();redraw();try{scheduleAutosave();}catch(e){}
@@ -6490,7 +6554,7 @@ function deleteLayer(id){
   const layer=layers.find(l=>l.id===id);if(!layer)return;
   const affected=strokes.filter(s=>s.layerId===id).length;
   // No confirm() — iPad Home-Screen web apps can silently suppress it (the layer then looked undeletable). Undo brings it back.
-  strokes=strokes.filter(s=>s.layerId!==id);
+  strokes=strokes.filter(s=>s.layerId!==id);placed=placed.filter(p=>p.layerId!==id);
   layers=layers.filter(l=>l.id!==id);
   try{layer.canvas.width=layer.canvas.height=1;layer.dcanvas.width=layer.dcanvas.height=1;}catch(e){}
   if(activeLayerId===id)activeLayerId=layers[layers.length-1].id;
@@ -6531,6 +6595,7 @@ function duplicateLayerDeep(src,name){
     const c=JSON.parse(JSON.stringify(q));c.id=crypto.randomUUID();c.layerId=pc.id;c.clipStrokeId=idMap.get(q.clipStrokeId);
     strokes.push(c);
   });
+  placed.filter(p=>p.layerId===src.id).forEach(p=>{const c={...p,id:crypto.randomUUID(),layerId:copy.id};delete c.groupId;placed.push(c);});
   return copy;
 }
 $('duplicateLayerBtn').onclick=()=>{
@@ -13310,6 +13375,7 @@ async function pngWithDpi(blob,dpi){
 }
 async function buildHiRes(long,transparent){
   try{await txReady();}catch(e){}
+  try{motifSync();}catch(e){}
   const [w,h]=hiDims(long),k=w/TW;
   const out=document.createElement('canvas');out.width=w;out.height=h;const o=out.getContext('2d');
   if(!transparent){o.fillStyle='#fff';o.fillRect(0,0,w,h);}
@@ -13321,6 +13387,7 @@ async function buildHiRes(long,transparent){
     const st=cp.start(l);if(st==='skip')continue;
     t.setTransform(1,0,0,1,0,0);t.clearRect(0,0,w,h);t.setTransform(k,0,0,k,-CX*k,-CY*k);
     let any=false;
+    if(drawLayerMotifs(t,l.id))any=true;
     strokes.forEach(s=>{
       if(s.layerId!==l.id||hiddenStrokeIds.has(s.id)||s.guideHidden)return;
       const brush=BrushEngine.getBrush(s.brushId),settings=s.settings||BrushEngine.getSettings(s.brushId);
@@ -13333,7 +13400,7 @@ async function buildHiRes(long,transparent){
   }
   tmp.width=tmp.height=1;cp.free();
   placed.forEach(p=>{
-    if(!p.img||pHid(p))return;
+    if(!p.img||pHid(p)||pBaked(p))return;
     const hi=p.motifId?motifHi.get(p.motifId):null;
     o.save();if(p.alpha!=null)o.globalAlpha=Math.max(0,Math.min(1,p.alpha));
     o.setTransform(k,0,0,k,-CX*k,-CY*k);o.translate(p.x,p.y);o.rotate(p.r*Math.PI/180);o.scale(p.s*(p.fx==null?1:p.fx),p.s*(p.fy==null?1:p.fy));
@@ -13346,6 +13413,7 @@ async function buildHiRes(long,transparent){
 // enlarged smoothly instead (they can only be as sharp as they were painted).
 async function buildTileHi(k,transparent){
   try{await txReady();}catch(e){}
+  try{motifSync();}catch(e){}
   const w=Math.round(TW*k),h=Math.round(TH*k);
   const out=document.createElement('canvas');out.width=w;out.height=h;const o=out.getContext('2d');
   if(!transparent){o.fillStyle='#fff';o.fillRect(0,0,w,h);}
@@ -13366,6 +13434,7 @@ async function buildTileHi(k,transparent){
     }else{
       offs.forEach(([ox,oy])=>{
         t.setTransform(k,0,0,k,(ox-CX)*k,(oy-CY)*k);
+        if(drawLayerMotifs(t,l.id))any=true;
         strokes.forEach(s=>{
           if(s.layerId!==l.id||hiddenStrokeIds.has(s.id)||s.guideHidden)return;
           const brush=BrushEngine.getBrush(s.brushId),settings=s.settings||BrushEngine.getSettings(s.brushId);
@@ -13381,7 +13450,7 @@ async function buildTileHi(k,transparent){
   }
   tmp.width=tmp.height=1;cp.free();
   placed.forEach(p=>{
-    if(!p.img||pHid(p))return;
+    if(!p.img||pHid(p)||pBaked(p))return;
     offs.forEach(([ox,oy])=>{
       o.save();if(p.alpha!=null)o.globalAlpha=Math.max(0,Math.min(1,p.alpha));
       o.setTransform(k,0,0,k,(ox-CX)*k,(oy-CY)*k);o.translate(p.x,p.y);o.rotate(p.r*Math.PI/180);o.scale(p.s*(p.fx==null?1:p.fx),p.s*(p.fy==null?1:p.fy));
@@ -13947,7 +14016,7 @@ function makeThumb(){
     if(bgImg&&bgShown){o.save();o.globalAlpha=bgOpacity;o.drawImage(bgImg,0,0,SW,SH);o.restore();}
     const k=S/TILE;
     o.drawImage(compositeCanvas,CX,CY,TW,TH,0,0,SW,SH);
-    placed.forEach(p=>{if(!p.img||motifsHidden)return;o.save();if(p.alpha!=null)o.globalAlpha=p.alpha;o.translate((p.x-CX)*k,(p.y-CY)*k);o.rotate(p.r*Math.PI/180);o.scale(p.s*p.fx*k,p.s*p.fy*k);o.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);o.restore();});
+    placed.forEach(p=>{if(!p.img||motifsHidden||pBaked(p))return;o.save();if(p.alpha!=null)o.globalAlpha=p.alpha;o.translate((p.x-CX)*k,(p.y-CY)*k);o.rotate(p.r*Math.PI/180);o.scale(p.s*p.fx*k,p.s*p.fy*k);o.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);o.restore();});
     return c.toDataURL('image/jpeg',0.82);
   }catch(e){return null;}
 }
