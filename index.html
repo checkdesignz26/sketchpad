@@ -1517,7 +1517,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v392'; // keep in step with CACHE in sw.js
+const APP_V='v393'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -8927,13 +8927,18 @@ function computeAreaFillPolygon(px,py,gapTolerance){
   const off=document.createElement('canvas');off.width=mw;off.height=mh;
   const octx=off.getContext('2d');
   octx.lineCap='round';octx.lineJoin='round';octx.strokeStyle='#000';
+  // A second copy of the walls with flat (butt) ends: the fill is only grown back into THIS one, so across a bridged gap it
+  // stops at the ends of the lines instead of bulging out through the opening.
+  const off2=document.createElement('canvas');off2.width=mw;off2.height=mh;
+  const octx2=off2.getContext('2d');octx2.lineCap='butt';octx2.lineJoin='round';octx2.strokeStyle='#000';
   // Boundaries come from visible ink strokes only — a fillColor stroke is painted content (not a
   // line to wall off against) and a Paint Inside raster scribble is clipped content, not a drawn
   // edge, so both are excluded; only the vector linework the user actually drew counts as a wall.
   const inkStrokes=strokes.filter(s=>{
     if(s.fillColor||s.clipStrokeId)return false;
+    if(s.noStroke||s.fillOf)return false; // an invisible outline (e.g. the shape behind a pattern fill) draws no ink, so it is no wall either
     const layer=layers.find(l=>l.id===s.layerId);
-    return layer&&layer.visible;
+    return layer&&layer.visible&&!(layer.opacity<=0);
   });
   if(!inkStrokes.length)return {ok:false,reason:'empty'};
   // The flood fill below naturally stops at the OUTER edge of each wall (the fully-padded line
@@ -8952,8 +8957,14 @@ function computeAreaFillPolygon(px,py,gapTolerance){
     for(let i=1;i<pts.length;i++)octx.lineTo(pts[i].x,pts[i].y);
     if(s.closed)octx.closePath();
     octx.stroke();
+    octx2.lineWidth=baseWidth+gapTolerance*2;octx2.beginPath();octx2.moveTo(pts[0].x,pts[0].y);
+    for(let i=1;i<pts.length;i++)octx2.lineTo(pts[i].x,pts[i].y);
+    if(s.closed)octx2.closePath();
+    octx2.stroke();
   });
   const data=octx.getImageData(0,0,mw,mh).data;
+  const data2=octx2.getImageData(0,0,mw,mh).data;
+  const isGrow=(x,y)=>data2[(y*mw+x)*4+3]>40;
   const isWall=(x,y)=>data[(y*mw+x)*4+3]>40;
   const startX=Math.round(px),startY=Math.round(py);
   if(startX<0||startY<0||startX>=mw||startY>=mh)return {ok:false,reason:'offcanvas'};
@@ -8981,25 +8992,33 @@ function computeAreaFillPolygon(px,py,gapTolerance){
   // Expand the crop box by the dilation radius on every side (clamped to the canvas) so growing
   // the mask outward below has somewhere to grow INTO — otherwise the dilation would just get cut
   // off at the original flood-fill bounding box and the gap would never actually close.
-  const expand=Math.min(24,Math.ceil(maxHalfWidth));
+  // The flood stopped at the OUTER edge of each wall, which is the ink's edge plus the gap tolerance, so the fill is short of
+  // the line's centre by half the line width PLUS the gap tolerance. Grow it back by exactly that much (so it ends up just
+  // under the ink) — but only through pixels that belong to the padded wall, so it can never creep out across open paper.
+  const grow=Math.min(60,Math.ceil(maxHalfWidth+gapTolerance));
+  const expand=Math.min(60,grow+1);
   const ex0=Math.max(0,minX-expand),ey0=Math.max(0,minY-expand);
   const ex1=Math.min(mw-1,maxX+expand),ey1=Math.min(mh-1,maxY+expand);
   const bw=ex1-ex0+1,bh=ey1-ey0+1;
-  let mask=new Uint8Array(bw*bh);
-  for(let y=minY;y<=maxY;y++)for(let x=minX;x<=maxX;x++)mask[(y-ey0)*bw+(x-ex0)]=visited[y*mw+x];
-  // Dilate the fill outward by roughly half the boundary ink's width, so the traced contour
-  // reaches back up to the stroke's own centreline instead of stopping at the inner edge of its
-  // (fully gap-tolerance-padded) wall — the ink drawn on top then hides the overlap seam entirely,
-  // closing what would otherwise read as a halo of unpainted paper around every fill.
-  for(let iter=0;iter<expand;iter++){
-    const next=new Uint8Array(bw*bh);
-    for(let y=0;y<bh;y++)for(let x=0;x<bw;x++){
-      const i=y*bw+x;
-      if(mask[i]){next[i]=1;continue;}
-      if((x>0&&mask[i-1])||(x<bw-1&&mask[i+1])||(y>0&&mask[i-bw])||(y<bh-1&&mask[i+bw])){next[i]=1;}
-    }
-    mask=next;
+  const mask=new Uint8Array(bw*bh);
+  for(let y=minY;y<=maxY;y++)for(let x=minX;x<=maxX;x++)if(visited[y*mw+x])mask[(y-ey0)*bw+(x-ex0)]=1;
+  // Distance (3x3 chamfer, about 4% accurate) from the flooded area, then take every padded-wall pixel within the growth
+  // radius. Because only wall pixels are added, the fill can never creep out across open paper.
+  const INF=1e9,dist=new Float32Array(bw*bh),A=0.9619,B=1.3604;
+  for(let i=0;i<dist.length;i++)dist[i]=mask[i]?0:INF;
+  for(let y=0;y<bh;y++)for(let x=0;x<bw;x++){
+    const i=y*bw+x;let d=dist[i];if(!d)continue;
+    if(x>0&&dist[i-1]+A<d)d=dist[i-1]+A;
+    if(y>0){const u=i-bw;if(dist[u]+A<d)d=dist[u]+A;if(x>0&&dist[u-1]+B<d)d=dist[u-1]+B;if(x<bw-1&&dist[u+1]+B<d)d=dist[u+1]+B;}
+    dist[i]=d;
   }
+  for(let y=bh-1;y>=0;y--)for(let x=bw-1;x>=0;x--){
+    const i=y*bw+x;let d=dist[i];if(!d)continue;
+    if(x<bw-1&&dist[i+1]+A<d)d=dist[i+1]+A;
+    if(y<bh-1){const u=i+bw;if(dist[u]+A<d)d=dist[u]+A;if(x<bw-1&&dist[u+1]+B<d)d=dist[u+1]+B;if(x>0&&dist[u-1]+B<d)d=dist[u-1]+B;}
+    dist[i]=d;
+  }
+  for(let y=0;y<bh;y++)for(let x=0;x<bw;x++){const i=y*bw+x;if(!mask[i]&&dist[i]<=grow&&isGrow(x+ex0,y+ey0))mask[i]=1;}
   const loop=traceMaskContour(mask,bw,bh);
   if(!loop||loop.length<4)return {ok:false,reason:'traceFailed'};
   let pts=loop.map(v=>({x:v.x+ex0,y:v.y+ey0}));
@@ -9011,15 +9030,50 @@ function computeAreaFillPolygon(px,py,gapTolerance){
   const epsilon=Math.max(0.6,diag*0.0025);
   pts=rdpSimplifyClosedLoop(pts,epsilon);
   if(pts.length<3)return {ok:false,reason:'traceFailed'};
-  return {ok:true,points:pts};
+  // Lines that sit INSIDE the filled area (rather than bounding it) wall off parts of it and leave unfilled patches: report them.
+  const inner=[];
+  try{
+    const inside=(x,y)=>{let c=false;for(let i=0,j=pts.length-1;i<pts.length;j=i++){const a=pts[i],b=pts[j];if((a.y>y)!==(b.y>y)&&x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x)c=!c;}return c;};
+    const edgeDist=(x,y)=>{let m=1e9;for(let i=0,j=pts.length-1;i<pts.length;j=i++){const a=pts[i],b=pts[j],dx=b.x-a.x,dy=b.y-a.y,L=dx*dx+dy*dy;let t=L?((x-a.x)*dx+(y-a.y)*dy)/L:0;t=Math.max(0,Math.min(1,t));const d=Math.hypot(x-(a.x+t*dx),y-(a.y+t*dy));if(d<m)m=d;}return m;};
+    inkStrokes.forEach(s=>{
+      const q=s.nodes?nodesToPoints(s.nodes,s.closed):s.points;if(!q||q.length<2)return;
+      const bw0=Math.max(1,(s.settings&&s.settings.size)||BrushEngine.getSettings(s.brushId).size||4);
+      let n=0,tot=0;const step=Math.max(1,Math.floor(q.length/10));
+      for(let i=0;i<q.length;i+=step){tot++;if(inside(q[i].x,q[i].y)&&edgeDist(q[i].x,q[i].y)>bw0/2+gapTolerance+4)n++;}
+      if(n>=2)inner.push(s);
+    });
+  }catch(e){}
+  return {ok:true,points:pts,inner};
+}
+// Which line is under a tap that the fill refused as "right on a line"? (layer name, colour) — so a hidden or white line can be found.
+function areaFillCulprit(px,py,gapTolerance){
+  let best=null,bd=1e9;
+  strokes.forEach(s=>{
+    if(s.fillColor||s.clipStrokeId||s.noStroke||s.fillOf)return;
+    const layer=layers.find(l=>l.id===s.layerId);if(!layer||!layer.visible)return;
+    const q=s.nodes?nodesToPoints(s.nodes,s.closed):s.points;if(!q||q.length<2)return;
+    const w=Math.max(1,(s.settings&&s.settings.size)||BrushEngine.getSettings(s.brushId).size||4);
+    for(let i=1;i<q.length;i++){
+      const a=q[i-1],b=q[i],dx=b.x-a.x,dy=b.y-a.y,L=dx*dx+dy*dy;let t=L?((px-a.x)*dx+(py-a.y)*dy)/L:0;t=Math.max(0,Math.min(1,t));
+      const d=Math.hypot(px-(a.x+t*dx),py-(a.y+t*dy))-(w/2+gapTolerance);
+      if(d<bd){bd=d;best={s,layer};}
+    }
+  });
+  return bd<=1?best:null;
+}
+function areaFillStrokeDesc(s,layer){
+  const c=String(s.color||'').toLowerCase(),white=/^#f[ef]f[ef]f[ef]$/.test(c)||c==='#fff'||c==='white';
+  return (white?'a white line':'a '+(c||'')+' line')+' on "'+(layer?layer.name:'?')+'"';
 }
 function attemptAreaFillAt(clientX,clientY){
   const p=screenToCanvas(clientX,clientY);
   const gapTolerance=+$('areaFillGapCtl').value;
   const result=computeAreaFillPolygon(p.x,p.y,gapTolerance);
   if(!result.ok){
+    let onLineMsg='🪣 That\'s right on a line — tap inside an enclosed area instead.';
+    if(result.reason==='onLine'){try{const cu=areaFillCulprit(p.x,p.y,gapTolerance);if(cu)onLineMsg='🪣 That\'s right on '+areaFillStrokeDesc(cu.s,cu.layer)+(gapTolerance>0?' (gap tolerance '+gapTolerance+'px widens every line by that much, so lower it to tap closer to a line)':'')+'. Tap somewhere else, or hide/delete that line.';}catch(e){}}
     const messages={
-      onLine:'🪣 That\'s right on a line — tap inside an enclosed area instead.',
+      onLine:onLineMsg,
       open:'🪣 That area isn\'t fully enclosed, so filling it would flood the whole canvas — close the gap (or raise the gap tolerance) and try again.',
       empty:'🪣 No drawn lines to fill against yet — sketch an enclosed shape first.',
       offcanvas:'🪣 Tap inside the canvas.',
@@ -9053,7 +9107,9 @@ function attemptAreaFillAt(clientX,clientY){
   rebuildLayer(targetLayerId);
   renderLayersList();
   pushHist();redraw();
-  setStatus('🪣 Filled area on "'+(layers.find(l=>l.id===targetLayerId)||{}).name+'".');
+  {let msg='🪣 Filled area on "'+(layers.find(l=>l.id===targetLayerId)||{}).name+'".';
+    if(result.inner&&result.inner.length){const f=result.inner[0],fl=layers.find(l=>l.id===f.layerId);msg+=' Heads up: '+result.inner.length+' line'+(result.inner.length>1?'s':'')+' inside the area (e.g. '+areaFillStrokeDesc(f,fl)+') act as walls, so parts stay unfilled.';}
+    setStatus(msg);}
 }
 $('areaFillToggleBtn').onclick=()=>{
   areaFillArmed=!areaFillArmed;
