@@ -1499,7 +1499,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v386'; // keep in step with CACHE in sw.js
+const APP_V='v387'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -2203,6 +2203,15 @@ let editingMotifId=null,editingMotifStash=null,editingMotifFrame=null,editingMot
 let history=[],hIndex=-1;let touchState=null;let lastTouchEnd=0;
 const $=id=>document.getElementById(id);
 function setStatus(t){$('status').textContent=t;}
+// A message right under a top-bar button: the status line at the very bottom can sit under the iPad's home bar, so a refusal there looks like "the button does nothing".
+function tbToast(btn,t){
+  setStatus(t);
+  try{
+    let d=document.getElementById('tbToast');if(!d){d=document.createElement('div');d.id='tbToast';d.style.cssText='position:fixed;z-index:99999;max-width:300px;padding:10px 14px;border-radius:12px;background:#3d2f4a;color:#fff;font:600 14px/1.35 system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.3);pointer-events:none';document.body.appendChild(d);}
+    const r=btn.getBoundingClientRect();d.textContent=t;d.style.left=Math.max(8,Math.min(innerWidth-310,r.left))+'px';d.style.top=(r.bottom+8)+'px';d.style.display='block';
+    clearTimeout(tbToast._t);tbToast._t=setTimeout(()=>{d.style.display='none';},4500);
+  }catch(e){}
+}
 // ---- Input: Apple Pencil, mouse, or (optionally) a finger ----
 // Every tool asks isPen(e) before it reacts, so one switch gives fingers the SAME tools as the Pencil.
 let fingerDraw=false;try{fingerDraw=localStorage.getItem('sp-fingerDraw')==='1';}catch(e){}
@@ -8715,8 +8724,8 @@ $('tbPaintBtn').onclick=()=>{
   if(paintMode==='inside'){setFreePaintMode();return;}
   if(pathEditStrokeId){const id=pathEditStrokeId;try{commitEditPath();}catch(e){}selectedStrokeId=id;}
   const st=strokes.find(x=>x.id===selectedStrokeId);
-  if(!st){setStatus('🖌 Paint inside: first switch to Edit mode and tap the closed shape (like your heart), then tap Paint inside.');return;}
-  if(!st.closed){setStatus('🖌 Only closed shapes can hold paint. Use Edit Path ▸ Close Shape first.');return;}
+  if(!st){tbToast($('tbPaintBtn'),'🖌 First tap the closed shape you want to paint inside (use the Select tool or Edit mode), then tap Paint inside.');return;}
+  if(!st.closed){tbToast($('tbPaintBtn'),'🖌 Only closed shapes can hold paint. Use Edit Path ▸ Close Shape first.');return;}
   startPaintInside();
 };
 $('paintModePill').onclick=setFreePaintMode;
@@ -9211,7 +9220,7 @@ function continueButton(){
   if(contFocusId){setContinueMode(false);return;}
   if(pathEditStrokeId){const id=pathEditStrokeId;try{commitEditPath();}catch(e){}selectedStrokeId=id;} // started from Edit Path: keep any node edits, then continue that stroke
   const st=strokes.find(x=>x.id===selectedStrokeId);
-  if(!st){setStatus('↳ Continue: first switch to Edit mode and tap the stroke you want to extend, then tap Continue.');return;}
+  if(!st){tbToast($('tbContBtn'),'↳ First tap the line you want to extend, then tap Continue.');return;}
   if(!contEnds(st)){setStatus('↳ That stroke has no open end to continue (closed shapes, fills and text cannot be continued).');return;}
   setContinueMode(true,st.id);
 }
