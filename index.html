@@ -1482,7 +1482,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v373'; // keep in step with CACHE in sw.js
+const APP_V='v374'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -9092,6 +9092,7 @@ function setContinueMode(on,focusId){
 }
 function continueButton(){
   if(contFocusId){setContinueMode(false);return;}
+  if(pathEditStrokeId){const id=pathEditStrokeId;try{commitEditPath();}catch(e){}selectedStrokeId=id;} // started from Edit Path: keep any node edits, then continue that stroke
   const st=strokes.find(x=>x.id===selectedStrokeId);
   if(!st){setStatus('↳ Continue: first switch to Edit mode and tap the stroke you want to extend, then tap Continue.');return;}
   if(!contEnds(st)){setStatus('↳ That stroke has no open end to continue (closed shapes, fills and text cannot be continued).');return;}
@@ -11217,18 +11218,6 @@ function renderPathNodeOverlay(){
     });
     host.appendChild(el);
   });
-  // "Continue" handles (like Affinity's): a ＋ just beyond each end of an open path. Tap it, then draw on from that end with the Pencil.
-  if(!pathEditClosed&&pathEditNodes.length>=2){
-    const last=pathEditNodes.length-1;
-    [[0,1],[last,last-1]].forEach(([ei,ni])=>{
-      const e0=canvasToScreen(pathEditNodes[ei].x,pathEditNodes[ei].y),n0=canvasToScreen(pathEditNodes[ni].x,pathEditNodes[ni].y);
-      let dx=e0.x-n0.x,dy=e0.y-n0.y;const d=Math.hypot(dx,dy)||1;dx/=d;dy/=d;
-      const h=document.createElement('div');h.className='path-cont';h.textContent='＋';h.title='Continue drawing from this end';
-      h.style.left=(e0.x+dx*46)+'px';h.style.top=(e0.y+dy*46)+'px';
-      h.addEventListener('pointerdown',ev=>{ev.stopPropagation();ev.preventDefault();selectedNodeIndex=ei;startContinuePath();});
-      host.appendChild(h);
-    });
-  }
   syncPathEditBarButtons();
 }
 // Edit Path's own tool toggle — 'select' (default) or 'addNode'. Switching tool never changes
@@ -11445,9 +11434,9 @@ function drawContinueMarkers(){
   const k=1/(zoom*baseScale);
   ctx.save();ctx.setLineDash([]);
   strokes.forEach(s=>{if(s.id!==contFocusId)return;const e=contEnds(s);if(!e)return;e.forEach(q=>{
-    ctx.beginPath();ctx.arc(q.x,q.y,13*k,0,Math.PI*2);ctx.fillStyle='rgba(60,130,255,.92)';ctx.fill();
-    ctx.lineWidth=2.5*k;ctx.strokeStyle='#fff';ctx.stroke();
-    ctx.beginPath();ctx.moveTo(q.x-6*k,q.y);ctx.lineTo(q.x+6*k,q.y);ctx.moveTo(q.x,q.y-6*k);ctx.lineTo(q.x,q.y+6*k);ctx.lineWidth=2.5*k;ctx.strokeStyle='#fff';ctx.stroke();
+    ctx.beginPath();ctx.arc(q.x,q.y,8*k,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
+    ctx.lineWidth=1.6*k;ctx.strokeStyle='#2f6df6';ctx.stroke();
+    ctx.beginPath();ctx.moveTo(q.x-4*k,q.y);ctx.lineTo(q.x+4*k,q.y);ctx.moveTo(q.x,q.y-4*k);ctx.lineTo(q.x,q.y+4*k);ctx.lineWidth=1.6*k;ctx.strokeStyle='#2f6df6';ctx.stroke();
   });});
   ctx.restore();
 }
