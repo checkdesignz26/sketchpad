@@ -764,6 +764,7 @@ html.in-suite .suite-only{display:block!important}
       <div id="brushFavorites" class="brush-family-row"></div>
       <div style="display:flex;gap:6px;margin:8px 0 0;"><button id="resetBrushBtn" class="btn mini" style="flex:1;" title="Put this brush back to how it came, undoing your changes to its size, opacity and effects">↺ Reset this brush</button><button id="resetAllBrushesBtn" class="btn mini" style="flex:1;" title="Put every brush back to how it came">↺ Reset all brushes</button></div>
       <div style="display:flex;gap:6px;margin:6px 0 0;"><button id="undoResetBtn" class="btn mini" style="flex:1;" title="Bring back the brush settings you had just before the last reset">↩ Undo reset</button><button id="restoreFromDrawingBtn" class="btn mini" style="flex:1;" title="Rebuild each brush's settings from the last stroke you drew with it in this drawing">⤴ Restore from my drawing</button></div>
+      <button id="fullOpacityStrokesBtn" class="btn mini" style="width:100%;margin:6px 0 0;" title="Set every stroke already drawn with this brush to 100% opacity (and the brush itself). Undo brings them back.">🔆 Set this brush and its strokes to 100%</button>
       <button id="makeBrushBtn" class="btn mini" style="width:100%;margin:8px 0;">＋ Create custom brush…</button>
       <div id="brushFamilies"></div>
       <button id="moreSettingsToggle" class="btn mini" style="width:100%;margin-top:10px;">⚙️ More Settings</button>
@@ -1482,7 +1483,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v374'; // keep in step with CACHE in sw.js
+const APP_V='v375'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -8983,6 +8984,20 @@ $('resetBrushBtn').onclick=()=>{
 };
 $('undoResetBtn').onclick=()=>{
   try{const n=BrushEngine.restoreSettingsBackup();syncControlsFromSettings();try{syncActiveSwatches();}catch(e){}setStatus(n?('↩ Brought back the saved settings of '+n+' brush'+(n===1?'':'es')+'.'):'Nothing to undo: no reset has been made on this device.');}catch(e){}
+};
+$('fullOpacityStrokesBtn').onclick=()=>{
+  try{
+    const id=currentBrushIdForSettings(),name=(BrushEngine.getBrush(id)||{}).name||id;
+    const list=strokes.filter(x=>x.brushId===id&&x.points&&strokeSettings(x).opacity<100);
+    if(!list.length){patchCurrentSettings({opacity:100});syncControlsFromSettings();setStatus('🔆 '+name+' is set to 100%. No existing strokes needed changing.');return;}
+    if(!confirm('Set '+list.length+' '+name+' stroke'+(list.length===1?'':'s')+' (and the brush) to 100% opacity? Undo brings them back.'))return;
+    const layers=new Set();
+    list.forEach(x=>{x.settings=Object.assign({},strokeSettings(x),{opacity:100});layers.add(x.layerId);});
+    patchCurrentSettings({opacity:100});syncControlsFromSettings();
+    layers.forEach(l=>{try{rebuildLayer(l);}catch(e){}});
+    pushHist();redraw();
+    setStatus('🔆 '+list.length+' '+name+' stroke'+(list.length===1?'':'s')+' and the brush are now 100%. Undo to go back.');
+  }catch(e){console.warn(e);}
 };
 $('restoreFromDrawingBtn').onclick=()=>{
   try{const n=BrushEngine.settingsFromStrokes(strokes);syncControlsFromSettings();try{syncActiveSwatches();}catch(e){}setStatus(n?('⤴ Rebuilt the settings of '+n+' brush'+(n===1?'':'es')+' from how they were used in this drawing.'):'This drawing has no strokes to learn brush settings from.');}catch(e){}
