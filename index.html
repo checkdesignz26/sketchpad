@@ -353,7 +353,7 @@ html.in-suite .suite-only{display:block!important}
 .brush-swatch .fav-star{position:absolute;top:-7px;right:-7px;width:17px;height:17px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);font-size:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted)}
 .brush-swatch .fav-star.active{background:var(--orange);color:#3a2e26;border-color:var(--orange)}
 #eraserToggle.active{background:var(--dangerBg)!important;border:1px solid var(--dangerBorder)!important}
-.layer-row{display:grid;grid-template-columns:62px minmax(0,1fr) 34px;column-gap:12px;row-gap:8px;align-items:center;padding:8px;border-radius:14px;border:1px solid var(--cardBorder);margin-bottom:8px;background:var(--btnBg);cursor:pointer}
+.layer-row{display:grid;grid-template-columns:78px minmax(0,1fr) 34px;column-gap:12px;row-gap:8px;align-items:center;padding:8px;border-radius:14px;border:1px solid var(--cardBorder);margin-bottom:8px;background:var(--btnBg);cursor:pointer}
 .layer-row.active{border-color:var(--pink);box-shadow:0 0 0 2px rgba(255,142,214,.3)}
 .layer-row.locked .layer-name::after{content:' 🔒';font-size:11px}
 .layer-row.alock .layer-name::after{content:' α';font-size:12px;color:var(--pink)}
@@ -373,7 +373,13 @@ html.in-suite .suite-only{display:block!important}
 .layer-icon-btn{border:0;background:transparent;font-size:14px;cursor:pointer;padding:2px;width:22px;flex-shrink:0;color:var(--text)}
 .layer-alpha.on{background:var(--pink);color:#fff}
 .layer-blend{max-width:92px;font-size:12px;padding:4px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text)}
-.layer-thumb{position:static;grid-column:1;grid-row:1;display:block;width:62px;height:62px;border-radius:12px;border:2px solid var(--btnBorder);background:rgba(255,255,255,.75);box-sizing:border-box}
+.lp-ov{position:fixed;inset:0;z-index:400;display:none;align-items:center;justify-content:center;background:rgba(40,32,58,.5);padding:16px;box-sizing:border-box;touch-action:none}
+.lp-ov.show{display:flex}
+.lp-card{background:#fff;border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.35);padding:12px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:8px;position:relative}
+.lp-card canvas{position:static!important;display:block;background:#fff;border-radius:10px}
+.lp-cap{font:800 13px system-ui;color:#4a4060;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lp-x{position:absolute;right:6px;top:6px;width:40px;height:40px;border-radius:50%;border:1px solid var(--btnBorder);background:#fff;color:#4a4060;font:800 18px system-ui;cursor:pointer;z-index:1}
+.layer-thumb{position:static;grid-column:1;grid-row:1;display:block;width:78px;height:78px;border-radius:13px;border:2px solid var(--btnBorder);background:rgba(255,255,255,.75);box-sizing:border-box;cursor:zoom-in}
 .layer-row.hidden-l .layer-thumb{opacity:.35}
 .layer-name{grid-column:2;grid-row:1;font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .layer-opacity{flex:1;min-width:0;height:36px;touch-action:none}
@@ -1517,7 +1523,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v394'; // keep in step with CACHE in sw.js
+const APP_V='v395'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -3667,7 +3673,7 @@ function drawOne(p,ox=0,oy=0){const hi=p.motifId?motifHi.get(p.motifId):null;ctx
 function drawEmptySlot(p,ox=0,oy=0){
  const w=p.boxW||p.w,h=p.boxH||p.h;
  ctx.save();ctx.translate(p.x+ox,p.y+oy);ctx.rotate(p.r*Math.PI/180);
- ctx.strokeStyle='rgba(255,142,214,.7)';ctx.lineWidth=3;ctx.setLineDash([10,7]);
+ ctx.strokeStyle='rgba(47,109,246,.8)';ctx.lineWidth=3;ctx.setLineDash([10,7]);
  ctx.beginPath();
  if(p.slotShape==='diamond'){ctx.moveTo(0,-h/2);ctx.lineTo(w/2,0);ctx.lineTo(0,h/2);ctx.lineTo(-w/2,0);ctx.closePath();}
  else{ctx.ellipse(0,0,w/2,h/2,0,0,Math.PI*2);}
@@ -5975,7 +5981,7 @@ function renderLayersList(){
     const li=layers.indexOf(layer),isClip=!!layer.clip&&li>0;
     row.className='layer-row'+(layer.visible?'':' hidden-l')+(layer.id===activeLayerId?' active':'')+(layer.locked?' locked':'')+(layer.alphaLock?' alock':'')+(isClip?' clipped':'');
     row.innerHTML=
-      '<canvas class="layer-thumb" width="92" height="92" data-lid="'+layer.id+'" title="What is on this layer"></canvas>'
+      '<canvas class="layer-thumb" width="116" height="116" data-lid="'+layer.id+'" title="What is on this layer"></canvas>'
       +'<span class="layer-name" title="Tap to rename">'+escapeHtml(layer.name)+'</span>'
       +'<button type="button" class="layer-vis'+(layer.visible?' on':'')+'" title="Show/hide">'+(layer.visible?'✓':'')+'</button>'
       +'<div class="layer-tools">'
@@ -6003,6 +6009,7 @@ function renderLayersList(){
       pr.addEventListener('click',e=>e.stopPropagation());
       row.appendChild(pr);
     }
+    row.querySelector('canvas.layer-thumb').onclick=e=>{e.stopPropagation();try{layerPreviewOpen(layer.id);}catch(err){}};
     row.querySelector('.layer-vis').onclick=e=>{e.stopPropagation();layer.visible=!layer.visible;compositeDirty=true;renderLayersList();pushHist();redraw();};
     row.querySelector('.layer-lock').onclick=e=>{e.stopPropagation();layer.locked=!layer.locked;renderLayersList();pushHist();};
     row.querySelector('.layer-name').onclick=e=>{e.stopPropagation();activeLayerId=layer.id;startLayerRename(layer.id);};
@@ -6047,7 +6054,7 @@ function layerThumbsRun(){
   const host=$('layersList');
   if(!host||host.offsetWidth===0){ // panel closed: quietly keep the active layer's picture fresh so it is ready the moment the panel opens
     const al=layers.find(x=>x.id===activeLayerId);
-    if(al&&strokes.reduce((a,q)=>a+(q.layerId===al.id?1:0),0)<=600){const idle=window.requestIdleCallback||(f=>setTimeout(f,60));idle(()=>{try{const c=document.createElement('canvas');c.width=c.height=92;drawLayerThumb(al,c);}catch(e){}},{timeout:1500});}
+    if(al&&strokes.reduce((a,q)=>a+(q.layerId===al.id?1:0),0)<=600){const idle=window.requestIdleCallback||(f=>setTimeout(f,60));idle(()=>{try{const c=document.createElement('canvas');c.width=c.height=116;drawLayerThumb(al,c);}catch(e){}},{timeout:1500});}
     return;
   }
   const cvs=[...host.querySelectorAll('canvas.layer-thumb')];
@@ -6087,6 +6094,60 @@ function drawLayerThumb(l,cv){
   }
   l._tn={sig,cv:t,live:!l.asleep};
   c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,TW,TW);c.drawImage(t,0,0);
+}
+
+// Tap a layer thumbnail: a larger, plain-background look at just that layer (display only: nothing about the layer or artwork changes).
+// The small cached thumbnail is shown instantly, then one sharper picture replaces it. Only one big picture is ever kept, and it is freed on close.
+let lpBig=null;
+function layerPreviewOpen(id){
+  const l=layers.find(x=>x.id===id);if(!l)return;
+  let ov=document.getElementById('lpOv');
+  if(!ov){
+    ov=document.createElement('div');ov.id='lpOv';ov.className='lp-ov';
+    ov.innerHTML='<div class="lp-card"><button type="button" class="lp-x" aria-label="Close preview">✕</button><canvas id="lpCv"></canvas><div class="lp-cap" id="lpCap"></div></div>';
+    document.body.appendChild(ov);
+    ov.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();layerPreviewClose();},true);
+    window.addEventListener('keydown',e=>{if(e.key==='Escape'&&ov.classList.contains('show')){e.stopPropagation();layerPreviewClose();}},true);
+  }
+  const cv=document.getElementById('lpCv');
+  const vw=Math.max(200,innerWidth-56),vh=Math.max(200,innerHeight-120);
+  // the area to show: this layer's artwork with a little margin, or the whole canvas when the layer is empty
+  let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+  for(const st of strokes){if(st.layerId!==l.id||hiddenStrokeIds.has(st.id)||st.guideHidden||!st.points)continue;const pd=((st.settings&&st.settings.size)||10)/2+2;for(const q of st.points){if(q.x-pd<x0)x0=q.x-pd;if(q.x+pd>x1)x1=q.x+pd;if(q.y-pd<y0)y0=q.y-pd;if(q.y+pd>y1)y1=q.y+pd;}}
+  if(!(x1>x0)){x0=0;y0=0;x1=W;y1=H;}
+  const mg=Math.max(8,0.04*Math.max(x1-x0,y1-y0));x0=Math.max(0,x0-mg);y0=Math.max(0,y0-mg);x1=Math.min(W,x1+mg);y1=Math.min(H,y1+mg);
+  const bw=Math.max(48,x1-x0),bh=Math.max(48,y1-y0);
+  const fit=Math.min(Math.min(vw,640)/bw,Math.min(vh,640)/bh);        // CSS pixels per canvas pixel; the aspect ratio is kept
+  const dpr=Math.min(2,window.devicePixelRatio||1);
+  const pw=Math.max(1,Math.round(bw*fit*dpr)),ph=Math.max(1,Math.round(bh*fit*dpr));
+  cv.style.width=Math.round(bw*fit)+'px';cv.style.height=Math.round(bh*fit)+'px';
+  document.getElementById('lpCap').textContent=l.name+(l.visible?'':' (hidden)')+'  ·  tap anywhere to close';
+  ov.classList.add('show');
+  const sig=layerThumbSig(l.id)+'|'+pw+'x'+ph+'|'+(l.asleep?'z':'a');
+  cv.width=pw;cv.height=ph;const c=cv.getContext('2d');
+  if(lpBig&&lpBig.id===l.id&&lpBig.sig===sig){c.drawImage(lpBig.cv,0,0);return;}   // reuse the last big picture
+  // instant placeholder from the cached thumbnail (same artwork box only when it was square-fitted, so just a soft stand-in)
+  try{if(l._tn&&l._tn.cv){c.globalAlpha=.55;const t=l._tn.cv,s0=Math.min(pw,ph);c.drawImage(t,(pw-s0)/2,(ph-s0)/2,s0,s0);c.globalAlpha=1;}}catch(e){}
+  requestAnimationFrame(()=>setTimeout(()=>{
+    if(!ov.classList.contains('show'))return;
+    try{
+      const t=document.createElement('canvas');t.width=pw;t.height=ph;const tc=t.getContext('2d');
+      const nS=strokes.reduce((a,q)=>a+(q.layerId===l.id?1:0),0),k=pw/bw;
+      if(!l.asleep&&nS>800&&l.canvas&&l.canvas.width>1){const rs=l.canvas.width/W;tc.drawImage(l.canvas,x0*rs,y0*rs,bw*rs,bh*rs,0,0,pw,ph);}
+      else{
+        tc.save();tc.setTransform(k,0,0,k,-x0*k,-y0*k);
+        const sk=BrushEngine.skipSmudge,was=sk&&sk.on;if(sk)sk.on=true;
+        try{replayLayerInto(tc,l.id);}finally{if(sk)sk.on=was;tc.restore();}
+      }
+      lpBig={id:l.id,sig,cv:t};
+      if(ov.classList.contains('show')){c.clearRect(0,0,pw,ph);c.drawImage(t,0,0);}
+    }catch(e){}
+  },30));
+}
+function layerPreviewClose(){
+  const ov=document.getElementById('lpOv');if(ov)ov.classList.remove('show');
+  lpBig=null;                                 // free the big picture
+  const cv=document.getElementById('lpCv');if(cv){cv.width=cv.height=1;}
 }
 // Inline rename (no prompt() dialog, which iPad web-apps can suppress): swaps the row's name for a
 // text box; Return or tapping away saves, Escape cancels.
