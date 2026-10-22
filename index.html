@@ -84,7 +84,13 @@ button,input,select{font:inherit}
 .float-panel{position:fixed;z-index:60;width:270px;max-width:calc(100vw - 24px);max-height:calc(100vh - 24px);overflow:auto;background:var(--sideBg);border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:0 18px 50px rgba(0,0,0,.35)}
 .float-panel-handle{cursor:move;touch-action:none;-webkit-user-select:none;user-select:none;display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:900;font-size:15px;margin:-14px -14px 10px -14px;padding:12px 14px;border-radius:18px 18px 0 0;background:var(--panel2);border-bottom:1px solid var(--line)}
 .float-panel-handle.dragging{cursor:grabbing}
-#xformBar{width:290px;padding:12px;z-index:62;height:auto!important;min-height:0!important;max-height:calc(100vh - 24px)}
+#xformBar{width:290px;padding:12px;z-index:62;height:auto;min-height:0;max-height:calc(100vh - 24px);overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+#xformBar .float-panel-handle{flex-wrap:nowrap}
+#xfTitle{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#xformBar .float-panel-handle-actions{flex:none;display:flex;gap:6px;align-items:center}
+#xformBar.collapsed{height:auto!important}
+#xfGripWrap{position:sticky;bottom:-8px;height:0;overflow:visible}
+#xfGrip{position:absolute;right:-6px;bottom:-4px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:20px;opacity:.6;cursor:nwse-resize;touch-action:none;-webkit-user-select:none;user-select:none}
 #xformBar .xf-row{display:flex;gap:6px;align-items:center;margin-top:7px}
 #xformBar .xf-row>label{font-size:12px;opacity:.8;width:18px;flex:none;font-weight:800}
 #xformBar input[type=number]{width:100%;min-width:0;padding:7px 6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-size:16px}
@@ -1353,6 +1359,7 @@ html.in-suite .suite-only{display:block!important}
       <div class="xf-row" id="xfRotRow"><label style="width:auto">Rotate</label><input id="xfRot" type="number" inputmode="decimal" step="any"><span style="font-size:13px">°</span></div>
       <div class="xf-grid" style="grid-template-columns:repeat(2,1fr)"><button id="xfFlipH" class="btn mini">Flip Horizontal</button><button id="xfFlipV" class="btn mini">Flip Vertical</button></div>
       <div class="hint" id="xfHint" style="margin:8px 0 0;">Values are in export pixels. Undo works for every change.</div>
+      <div id="xfGripWrap"><div id="xfGrip" title="Drag to resize">◢</div></div>
     </div>
   </div>
   <div class="float-panel" id="groupBar" style="display:none;width:300px;">
@@ -1533,7 +1540,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v403'; // keep in step with CACHE in sw.js
+const APP_V='v404'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -7573,11 +7580,19 @@ function xfSnapMotif(m){
 }
 // ---- UI ----
 let xfSig='';
+function xfKeepOn(){ // keep the whole panel on screen: it scrolls inside when it is taller than the space below it
+  const bar=$('xformBar');if(!bar||bar.style.display==='none')return;
+  const r=bar.getBoundingClientRect(),vw=innerWidth,vh=innerHeight;
+  const mh=Math.max(140,vh-Math.max(0,r.top)-8);
+  if(bar._mh!==mh){bar._mh=mh;bar.style.setProperty('max-height',mh+'px','important');}
+  if(r.right>vw-6||r.left<4||r.bottom>vh-2){const c=clampFloatPanelPos(bar,Math.min(r.left,vw-r.width-6),r.top);bar.style.left=c.x+'px';bar.style.top=c.y+'px';floatPanelPositions.xformBar=c;}
+}
 function xfSync(force){
   const bar=$('xformBar');if(!bar)return;
   const o=(mode==='edit'&&xfOpen)?xfObj():null;
   if(!o){if(bar.style.display!=='none')bar.style.display='none';xfSig='';return;}
   if(bar.style.display==='none'){bar.style.display='block';if(!bar._placed){const vr=viewportOuter.getBoundingClientRect();positionFloatPanel('xformBar',Math.max(vr.left+16,vr.right-306),vr.top+16);bar._placed=true;}}
+  try{xfKeepOn();}catch(e){}
   const g=xfGeom(o),b=xfBox(g),K=xfCanvasPx(),os=xfOrigSize(o);
   const sig=[o.kind,o.kind==='placed'?o.m.id:o.st.id,g.w,g.h,g.r,g.cx,g.cy,xfLock,xfSnapOn,xfCollapsed,K.pw,K.ph,os&&os.w,o.kind==='placed'?(o.m.fx+','+o.m.fy):''].join('|');
   if(!force&&sig===xfSig)return;xfSig=sig;
@@ -7612,7 +7627,13 @@ function xfSync(force){
   $('xfFit').onclick=()=>xfFitFill('fit');$('xfFill').onclick=()=>xfFitFill('fill');$('xfStretch').onclick=xfStretch;$('xfOrig').onclick=xfOriginal;
   $('xfCentre').onclick=()=>{xfEdit(o=>xfCentreOn(o));setStatus('📐 Centred on the canvas.');};
   $('xfReset').onclick=xfResetAll;
-  $('xfCloseBtn').onclick=()=>{xfOpen=false;xfSync(true);};
+  $('xfCloseBtn').onclick=e=>{e.stopPropagation();xfOpen=false;xfSync(true);};
+  try{const z=JSON.parse(localStorage.getItem('sp-xfSize')||'null');if(z&&z.w){bar.style.width=Math.max(240,Math.min(z.w,innerWidth-16))+'px';if(z.h)bar.style.setProperty('height',Math.max(160,Math.min(z.h,innerHeight-16))+'px','important');}}catch(e){}
+  (function(){const gr=$('xfGrip');let st=null;
+    gr.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();gr.setPointerCapture(e.pointerId);const r=bar.getBoundingClientRect();st={x:e.clientX,y:e.clientY,w:r.width,h:r.height,l:r.left,t:r.top};});
+    gr.addEventListener('pointermove',e=>{if(!st)return;const w=Math.max(240,Math.min(st.w+e.clientX-st.x,innerWidth-st.l-8)),h=Math.max(160,Math.min(st.h+e.clientY-st.y,innerHeight-st.t-8));bar.style.width=w+'px';bar.style.setProperty('height',h+'px','important');});
+    const end=()=>{if(!st)return;st=null;try{const r=bar.getBoundingClientRect();localStorage.setItem('sp-xfSize',JSON.stringify({w:Math.round(r.width),h:Math.round(r.height)}));}catch(e){}};
+    gr.addEventListener('pointerup',end);gr.addEventListener('pointercancel',end);})();
   document.querySelectorAll('.xfOpenBtn').forEach(b=>b.onclick=()=>{xfOpen=true;const bar=$('xformBar');bar._placed=false;bar.style.display='none';xfSync(true);});
   $('xfFlipH').onclick=()=>{const o=xfObj();if(!o)return;if(o.kind==='placed'){o.m.fx=-(o.m.fx==null?1:o.m.fx);pushHist();redraw();xfSync(true);}else flipSelectedStroke('h');};
   $('xfFlipV').onclick=()=>{const o=xfObj();if(!o)return;if(o.kind==='placed'){o.m.fy=-(o.m.fy==null?1:o.m.fy);pushHist();redraw();xfSync(true);}else flipSelectedStroke('v');};
