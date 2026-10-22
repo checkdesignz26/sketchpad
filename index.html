@@ -764,7 +764,6 @@ html.in-suite .suite-only{display:block!important}
       <div id="brushFavorites" class="brush-family-row"></div>
       <div style="display:flex;gap:6px;margin:8px 0 0;"><button id="resetBrushBtn" class="btn mini" style="flex:1;" title="Put this brush back to how it came, undoing your changes to its size, opacity and effects">↺ Reset this brush</button><button id="resetAllBrushesBtn" class="btn mini" style="flex:1;" title="Put every brush back to how it came">↺ Reset all brushes</button></div>
       <div style="display:flex;gap:6px;margin:6px 0 0;"><button id="undoResetBtn" class="btn mini" style="flex:1;" title="Bring back the brush settings you had just before the last reset">↩ Undo reset</button><button id="restoreFromDrawingBtn" class="btn mini" style="flex:1;" title="Rebuild each brush's settings from the last stroke you drew with it in this drawing">⤴ Restore from my drawing</button></div>
-      <button id="fullOpacityStrokesBtn" class="btn mini" style="width:100%;margin:6px 0 0;" title="Set every stroke already drawn with this brush to 100% opacity (and the brush itself). Undo brings them back.">🔆 Set this brush and its strokes to 100%</button>
       <button id="makeBrushBtn" class="btn mini" style="width:100%;margin:8px 0;">＋ Create custom brush…</button>
       <div id="brushFamilies"></div>
       <button id="moreSettingsToggle" class="btn mini" style="width:100%;margin-top:10px;">⚙️ More Settings</button>
@@ -1483,7 +1482,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v375'; // keep in step with CACHE in sw.js
+const APP_V='v376'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -4093,12 +4092,7 @@ canvas.addEventListener('pointerdown',e=>{
       let basePoints=(stroke.nodes?nodesToPoints(stroke.nodes,false):stroke.points).map(pt=>({...pt}));
       if(target.fromStart)basePoints.reverse();
       continueStrokeId=stroke.id;continueBasePoints=basePoints;
-      // Match the continued stroke's own brush/appearance, not whatever happens to be selected
-      // right now — a continuous path with a mid-stroke brush change would look like two strokes
-      // stitched together, defeating the point of "one continuous path".
-      activeBrushId=stroke.brushId;
-      BrushEngine.setSettings(activeBrushId,{...strokeSettings(stroke)});
-      syncControlsFromSettings();syncActiveSwatches();syncActiveBrushRecipeLine();
+      contAdopt(stroke); // match the continued stroke's own brush and style
       rebuildLayerDimmed(stroke.layerId,stroke.id,0);
     }else if(contFocusId){setContinueMode(false);} // started somewhere else: leave Continue and draw normally
   }
@@ -4202,6 +4196,7 @@ canvas.addEventListener('pointerup',e=>{
     }
     continueStrokeId=null;continueBasePoints=null;
     if(contFocusId)setContinueMode(false); // the top-bar Continue is one-shot: back to normal drawing
+    contRestore();
     liveOvEnd(currentSettings());
     currentPoints=[];currentStrokeId=null;liveActive=false;lctx.clearRect(0,0,W,H);
     pushHist();redraw();return;
@@ -4254,7 +4249,7 @@ canvas.addEventListener('pointercancel',()=>{
     eraserDirtyLayerIds=new Set();eraserTouchedIds=new Set();eraserLastPoint=null;
     pushHist();
   }
-  if(continueStrokeId){const s=strokes.find(x=>x.id===continueStrokeId);if(s)rebuildLayer(s.layerId);continueStrokeId=null;continueBasePoints=null;}
+  if(continueStrokeId){const s=strokes.find(x=>x.id===continueStrokeId);if(s)rebuildLayer(s.layerId);continueStrokeId=null;continueBasePoints=null;contRestore();}
   shapeDrawStroke=null;shapeDrawStart=null;
   resetHoldState();
   redraw();
@@ -8985,20 +8980,25 @@ $('resetBrushBtn').onclick=()=>{
 $('undoResetBtn').onclick=()=>{
   try{const n=BrushEngine.restoreSettingsBackup();syncControlsFromSettings();try{syncActiveSwatches();}catch(e){}setStatus(n?('↩ Brought back the saved settings of '+n+' brush'+(n===1?'':'es')+'.'):'Nothing to undo: no reset has been made on this device.');}catch(e){}
 };
-$('fullOpacityStrokesBtn').onclick=()=>{
+// One-time tidy-up (v376): Tapered Ink had been left at 57% opacity, so every stroke drawn with it came out at 57%. Put the brush and every Tapered Ink stroke that is at
+// exactly 57% back to 100%, once per project, and say so. Undo brings them back.
+function fixTaperedInk57(){
   try{
-    const id=currentBrushIdForSettings(),name=(BrushEngine.getBrush(id)||{}).name||id;
-    const list=strokes.filter(x=>x.brushId===id&&x.points&&strokeSettings(x).opacity<100);
-    if(!list.length){patchCurrentSettings({opacity:100});syncControlsFromSettings();setStatus('🔆 '+name+' is set to 100%. No existing strokes needed changing.');return;}
-    if(!confirm('Set '+list.length+' '+name+' stroke'+(list.length===1?'':'s')+' (and the brush) to 100% opacity? Undo brings them back.'))return;
-    const layers=new Set();
-    list.forEach(x=>{x.settings=Object.assign({},strokeSettings(x),{opacity:100});layers.add(x.layerId);});
-    patchCurrentSettings({opacity:100});syncControlsFromSettings();
-    layers.forEach(l=>{try{rebuildLayer(l);}catch(e){}});
-    pushHist();redraw();
-    setStatus('🔆 '+list.length+' '+name+' stroke'+(list.length===1?'':'s')+' and the brush are now 100%. Undo to go back.');
-  }catch(e){console.warn(e);}
-};
+    const id='taperedInk';let changed=0;
+    if(BrushEngine.getSettings(id).opacity===57){BrushEngine.setSettings(id,{opacity:100});changed++;}
+    const list=strokes.filter(x=>x.brushId===id&&x.points&&strokeSettings(x).opacity===57);
+    if(list.length){const layers=new Set();list.forEach(x=>{x.settings=Object.assign({},strokeSettings(x),{opacity:100});layers.add(x.layerId);});layers.forEach(l=>{try{rebuildLayer(l);}catch(e){}});pushHist();redraw();changed+=list.length;}
+    try{syncControlsFromSettings();}catch(e){}
+    if(changed)setStatus('🔆 Tapered Ink is back to 100%: '+list.length+' stroke'+(list.length===1?'':'s')+' changed from 57%. Undo brings them back.');
+    return true;
+  }catch(e){console.warn(e);return true;}
+}
+(function(){let tries=0;const t=setInterval(()=>{
+  tries++;let done=false;
+  try{if(localStorage.getItem('sp-ti57-'+((typeof activeProject!=='undefined'&&activeProject&&activeProject.id)||''))==='1')done=true;}catch(e){}
+  if(!done&&strokes.length>0&&typeof activeProject!=='undefined'&&activeProject){fixTaperedInk57();try{localStorage.setItem('sp-ti57-'+((typeof activeProject!=='undefined'&&activeProject&&activeProject.id)||''),'1');}catch(e){}done=true;}
+  if(done||tries>20)clearInterval(t);
+},1500);})();
 $('restoreFromDrawingBtn').onclick=()=>{
   try{const n=BrushEngine.settingsFromStrokes(strokes);syncControlsFromSettings();try{syncActiveSwatches();}catch(e){}setStatus(n?('⤴ Rebuilt the settings of '+n+' brush'+(n===1?'':'es')+' from how they were used in this drawing.'):'This drawing has no strokes to learn brush settings from.');}catch(e){}
 };
@@ -9096,6 +9096,7 @@ $('liveTileToggle').textContent='🔲 Live tile preview: '+(liveTilePreview?'On'
 $('liveTileToggle').onclick=()=>{liveTilePreview=!liveTilePreview;try{localStorage.setItem('sp-liveTiles2',liveTilePreview?'1':'0');}catch(e){}$('liveTileToggle').textContent='🔲 Live tile preview: '+(liveTilePreview?'On':'Off');};
 function setContinueMode(on,focusId){
   continuousDrawMode=!!on;if(!on)focusId=null;contFocusId=focusId||null;
+  if(!on&&!continueStrokeId)contRestore();
   $('continuousDrawToggle').textContent='🔗 Continuous Draw: '+(continuousDrawMode?'On':'Off');
   $('continuousDrawToggle').classList.toggle('active',continuousDrawMode);
   $('continuousDrawHint').style.display=continuousDrawMode?'block':'none';
@@ -11419,6 +11420,20 @@ function simplifyCurrentPath(){
 // pencil and I'm picking the line back up", not silently weld together unrelated nearby strokes
 // drawn at some earlier point in the session. Returns null (no snap) if that one candidate's
 // nearer end is further away than the snap radius, rather than searching further back.
+// While a stroke is being extended, the pen takes on THAT stroke's own style (brush, size, opacity, colour) so the new part matches; the brush's saved settings and the
+// current colour are put back afterwards, so extending a line never changes what the brush or palette is set to.
+let contSaved=null;
+function contAdopt(stroke){
+  if(!contSaved)contSaved={id:activeBrushId,settings:Object.assign({},currentSettings()),color:currentColor};
+  activeBrushId=stroke.brushId;
+  BrushEngine.setSettings(activeBrushId,Object.assign({},strokeSettings(stroke)));
+  if(stroke.color&&/^#[0-9a-f]{6}$/i.test(stroke.color))currentColor=stroke.color;
+  syncControlsFromSettings();syncActiveSwatches();syncActiveBrushRecipeLine();
+}
+function contRestore(){
+  if(!contSaved)return;const c=contSaved;contSaved=null;
+  try{activeBrushId=c.id;BrushEngine.setSettings(c.id,c.settings);currentColor=c.color;try{$('brushColor').value=c.color;}catch(e){}syncControlsFromSettings();syncActiveSwatches();syncActiveBrushRecipeLine();renderBrushPreview();}catch(e){console.warn(e);}
+}
 function contEnds(s){
   if(s.layerId!==activeLayerId||s.closed||s.clipStrokeId||s.fillColor||s.text||s.regions||s.outlined||s.tpl||hiddenStrokeIds.has(s.id))return null;
   const pts=s.nodes?nodesToPoints(s.nodes,false):s.points;
@@ -11473,10 +11488,9 @@ function startContinuePath(){
   continueStrokeId=committed.id;
   continueBasePoints=basePoints;
   eraserActive=false;
-  activeBrushId=brushIdSnapshot;
-  BrushEngine.setSettings(activeBrushId,settingsSnapshot);
+  contAdopt(committed);
   activeLayerId=layerIdSnapshot;
-  syncControlsFromSettings();syncActiveSwatches();syncActiveBrushRecipeLine();renderLayersList();
+  renderLayersList();
   mode='draw';selected=null;selectedStrokeId=null;syncStrokeSelectionUI();syncMode();
   rebuildLayerDimmed(layerIdSnapshot,committed.id,0);
   setStatus('↳ Continue Path: draw from the highlighted end with Apple Pencil to extend this stroke.');
