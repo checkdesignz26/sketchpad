@@ -1533,7 +1533,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v402'; // keep in step with CACHE in sw.js
+const APP_V='v403'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -6380,9 +6380,14 @@ function mkRender(){
   const f=F.getContext('2d');f.clearRect(0,0,pw,ph);f.imageSmoothingQuality='high';
   if(MK.mode==='repeat'){
     const tw=Math.max(8,pw*0.5*MK.ps),th=tw*A.height/A.width,lay=layout,tp=(ix,iy)=>{let ox=ix*tw,oy=iy*th;if(lay==='halfDrop'&&(ix&1))oy+=th/2;if(lay==='halfBrick'&&(iy&1))ox+=tw/2;if(lay==='diamond'){ox=(ix+iy)*tw/2;oy=(ix-iy)*th/2;}return [ox,oy];};
-    const n=Math.min(40,Math.ceil(Math.max(pw/tw,ph/th))+3),cx=pw/2-tw/2+MK.pox*S,cy=ph/2-th/2+MK.poy*S;
+    const cx=pw/2-tw/2+MK.pox*S,cy=ph/2-th/2+MK.poy*S;
     const pad=0.6;let drawn=0;
-    for(let ix=-n;ix<=n&&drawn<2500;ix++)for(let iy=-n;iy<=n&&drawn<2500;iy++){
+    // every repeat that touches the print is worked out from where the pattern sits, so it tiles endlessly however far it has been dragged
+    const cells=[];
+    if(lay==='diamond'){const u0=Math.floor(-cx/(tw/2))-3,u1=Math.ceil((pw-cx)/(tw/2))+3,v0=Math.floor(-cy/(th/2))-3,v1=Math.ceil((ph-cy)/(th/2))+3;for(let u=u0;u<=u1;u++)for(let v=v0;v<=v1;v++)if(((u+v)&1)===0)cells.push([(u+v)/2,(u-v)/2]);}
+    else{const i0=Math.floor(-cx/tw)-2,i1=Math.ceil((pw-cx)/tw)+2,j0=Math.floor(-cy/th)-2,j1=Math.ceil((ph-cy)/th)+2;for(let ix=i0;ix<=i1;ix++)for(let iy=j0;iy<=j1;iy++)cells.push([ix,iy]);}
+    for(let ci=0;ci<cells.length&&drawn<6000;ci++){
+      const ix=cells[ci][0],iy=cells[ci][1];
       const q=tp(ix,iy),x=Math.round(cx+q[0]),y=Math.round(cy+q[1]);
       if(x>pw||y>ph||x+tw<0||y+th<0)continue;
       drawn++;
