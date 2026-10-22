@@ -1533,7 +1533,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v400'; // keep in step with CACHE in sw.js
+const APP_V='v401'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -1946,7 +1946,7 @@ let eraserDirtyLayerIds=new Set(),eraserTouchedIds=new Set();
 let selectedStrokeId=null;
 // Groups: members carry a `groupId` (strokes and placed pictures); `groups` holds each group's options. multiSel is the
 // current multi-object selection ({strokeIds,placedIds,groupId}); hidden* are members being dragged (drawn live instead).
-let motifsHidden=false;function pHid(p){return motifsHidden||hiddenPlacedIds.has(p.id);}
+let motifsHidden=false,motifsOpen=false;function pHid(p){return motifsHidden||p.hidden||hiddenPlacedIds.has(p.id);}
 const motifHi=new Map();let motifHiTimer=0;let groups={},multiSel=null,selAddArmed=false,groupInsideId=null,grpOv=null;const hiddenStrokeIds=new Set(),hiddenPlacedIds=new Set(),selOpts={lock:true,scale:true};
 let blendDraft=null,blendPickArmed=false,blendRaf=0; // Shape Blend (declared early: pushHist runs during boot)
 let copiedBrushStyle=null; // {brushId,settings} — session-only clipboard for Copy/Apply Brush Style
@@ -5991,15 +5991,46 @@ function renderLayersList(){
     if(pm.length||motifsHidden){
       const mr=document.createElement('div');
       mr.className='layer-row motif-row'+(motifsHidden?' hidden-l':'');
-      mr.innerHTML='<canvas class="layer-thumb" width="116" height="116" title="Your placed pictures"></canvas>'
-        +'<span class="layer-name" title="Placed pictures (motifs) sit above all layers">Motifs · '+pm.length+'</span>'
+      mr.innerHTML='<canvas class="layer-thumb" width="116" height="116" title="Tap for a larger preview of all motifs"></canvas>'
+        +'<span class="layer-name" title="Tap to list each motif. Motifs sit above all layers">'+(motifsOpen?'▾':'▸')+' Motifs · '+pm.length+'</span>'
         +'<button type="button" class="layer-vis'+(motifsHidden?'':' on')+'" title="Show/hide all motifs">'+(motifsHidden?'':'✓')+'</button>';
       const cv=mr.querySelector('canvas'),g=cv.getContext('2d'),k=116/TILE;
       g.fillStyle='#fff';g.fillRect(0,0,116,116);
-      try{pm.forEach(p=>{g.save();if(p.alpha!=null)g.globalAlpha=p.alpha;g.translate((p.x-CX)*k,(p.y-CY)*k);g.rotate(p.r*Math.PI/180);g.scale(p.s*(p.fx||1)*k,p.s*(p.fy||1)*k);g.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);g.restore();});}catch(e){}
+      try{pm.forEach(p=>{if(p.hidden)return;g.save();g.globalAlpha=p.alpha!=null?p.alpha:1;g.translate((p.x-CX)*k,(p.y-CY)*k);g.rotate(p.r*Math.PI/180);g.scale(p.s*(p.fx||1)*k,p.s*(p.fy||1)*k);g.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);g.restore();});}catch(e){}
+      cv.onclick=e=>{e.stopPropagation();try{layerPreviewOpen('__motifs');}catch(err){}};
       mr.querySelector('.layer-vis').onclick=e=>{e.stopPropagation();motifsHidden=!motifsHidden;compositeDirty=true;renderLayersList();pushHist();redraw();setStatus(motifsHidden?'Motifs hidden — tap ✓ to show them again.':'Motifs shown.');};
-      mr.onclick=()=>{};
+      mr.onclick=()=>{motifsOpen=!motifsOpen;renderLayersList();};
       host.appendChild(mr);
+      if(motifsOpen)pm.slice().reverse().forEach(p=>{
+        const mo=motifs.find(q=>q.id===p.motifId),nm=(mo&&mo.name)||'Motif';
+        const r=document.createElement('div');
+        r.className='layer-row motif-sub'+(p.hidden?' hidden-l':'')+(p.id===selected?' active':'');
+        r.style.marginLeft='14px';
+        const pa=Math.round((p.alpha!=null?p.alpha:1)*100);
+        r.innerHTML='<canvas class="layer-thumb" width="116" height="116"></canvas>'
+          +'<span class="layer-name">'+escapeHtml(nm)+'</span>'
+          +'<button type="button" class="layer-vis'+(p.hidden?'':' on')+'" title="Show/hide this motif">'+(p.hidden?'':'✓')+'</button>'
+          +'<div class="layer-tools"><button type="button" class="layer-icon-btn msel" title="Select on canvas">◎</button>'
+          +'<button type="button" class="layer-icon-btn mup" title="Bring forward">↑</button>'
+          +'<button type="button" class="layer-icon-btn mdn" title="Send back">↓</button>'
+          +'<button type="button" class="layer-icon-btn mdel" title="Delete this motif">✕</button></div>'
+          +'<div class="layer-opline"><span>Opacity</span><input type="range" class="mop" min="0" max="100" step="1" value="'+pa+'"><span class="mpct">'+pa+'%</span></div>';
+        const c2=r.querySelector('canvas').getContext('2d'),sc=Math.min(104/p.w,104/p.h);
+        c2.fillStyle='#fff';c2.fillRect(0,0,116,116);try{c2.drawImage(p.img,58-p.w*sc/2,58-p.h*sc/2,p.w*sc,p.h*sc);}catch(e){}
+        const pick=()=>{selected=p.id;selectedStrokeId=null;try{mode='edit';syncMode();}catch(e){}renderLayersList();redraw();};
+        r.onclick=pick;r.querySelector('canvas').onclick=e=>{e.stopPropagation();pick();};
+        r.querySelector('.msel').onclick=e=>{e.stopPropagation();pick();};
+        r.querySelector('.layer-vis').onclick=e=>{e.stopPropagation();p.hidden=!p.hidden;compositeDirty=true;renderLayersList();pushHist();redraw();};
+        const mv=(d)=>{const i=placed.indexOf(p),j=i+d;if(j<0||j>=placed.length)return;placed.splice(i,1);placed.splice(j,0,p);compositeDirty=true;renderLayersList();pushHist();redraw();};
+        r.querySelector('.mup').onclick=e=>{e.stopPropagation();mv(1);};
+        r.querySelector('.mdn').onclick=e=>{e.stopPropagation();mv(-1);};
+        r.querySelector('.mdel').onclick=e=>{e.stopPropagation();placed=placed.filter(q=>q!==p);if(selected===p.id)selected=null;compositeDirty=true;renderLayersList();pushHist();redraw();setStatus('Motif deleted — Undo brings it back.');};
+        const op=r.querySelector('.mop'),pc=r.querySelector('.mpct');
+        op.oninput=e=>{p.alpha=+e.target.value/100;pc.textContent=e.target.value+'%';redraw();};
+        op.onchange=()=>{compositeDirty=true;pushHist();};
+        r.querySelector('.layer-opline').addEventListener('click',e=>e.stopPropagation());
+        host.appendChild(r);
+      });
     }}catch(e){}
   layers.slice().reverse().forEach(layer=>{
     const row=document.createElement('div');
@@ -6125,7 +6156,7 @@ function drawLayerThumb(l,cv){
 // The small cached thumbnail is shown instantly, then one sharper picture replaces it. Only one big picture is ever kept, and it is freed on close.
 let lpBig=null;
 function layerPreviewOpen(id){
-  const l=layers.find(x=>x.id===id);if(!l)return;
+  const isM=id==='__motifs';const l=isM?null:layers.find(x=>x.id===id);if(!l&&!isM)return;
   let ov=document.getElementById('lpOv');
   if(!ov){
     ov=document.createElement('div');ov.id='lpOv';ov.className='lp-ov';
@@ -6135,6 +6166,7 @@ function layerPreviewOpen(id){
     window.addEventListener('keydown',e=>{if(e.key==='Escape'&&ov.classList.contains('show')){e.stopPropagation();layerPreviewClose();}},true);
   }
   const cv=document.getElementById('lpCv');
+  if(isM){motifPreviewDraw(ov,cv);return;}
   const vw=Math.max(200,innerWidth-56),vh=Math.max(200,innerHeight-120);
   // the area to show: this layer's artwork with a little margin, or the whole canvas when the layer is empty
   let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
@@ -6168,6 +6200,21 @@ function layerPreviewOpen(id){
       if(ov.classList.contains('show')){c.clearRect(0,0,pw,ph);c.drawImage(t,0,0);}
     }catch(e){}
   },30));
+}
+function motifPreviewDraw(ov,cv){
+  const vis=placed.filter(p=>p.img&&!p.hidden);
+  let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+  vis.forEach(p=>{const b=motifAABB(p);if(b){x0=Math.min(x0,b.x0);y0=Math.min(y0,b.y0);x1=Math.max(x1,b.x1);y1=Math.max(y1,b.y1);}});
+  if(!(x1>x0)){x0=CX;y0=CY;x1=CX+TW;y1=CY+TH;}
+  const mg=Math.max(8,0.04*Math.max(x1-x0,y1-y0));x0-=mg;y0-=mg;x1+=mg;y1+=mg;
+  const bw=x1-x0,bh=y1-y0,vw=Math.max(200,innerWidth-56),vh=Math.max(200,innerHeight-120);
+  const fit=Math.min(Math.min(vw,640)/bw,Math.min(vh,640)/bh),dpr=Math.min(2,window.devicePixelRatio||1);
+  const pw=Math.max(1,Math.round(bw*fit*dpr)),ph=Math.max(1,Math.round(bh*fit*dpr)),k=pw/bw;
+  cv.style.width=Math.round(bw*fit)+'px';cv.style.height=Math.round(bh*fit)+'px';cv.width=pw;cv.height=ph;
+  const c=cv.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,pw,ph);
+  vis.forEach(p=>{c.save();c.globalAlpha=p.alpha!=null?p.alpha:1;c.translate((p.x-x0)*k,(p.y-y0)*k);c.rotate(p.r*Math.PI/180);c.scale(p.s*(p.fx||1)*k,p.s*(p.fy||1)*k);c.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);c.restore();});
+  document.getElementById('lpCap').textContent='Motifs ('+vis.length+')'+(motifsHidden?' (hidden)':'')+'  ·  tap anywhere to close';
+  ov.classList.add('show');
 }
 function layerPreviewClose(){
   const ov=document.getElementById('lpOv');if(ov)ov.classList.remove('show');
