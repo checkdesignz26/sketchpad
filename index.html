@@ -1486,7 +1486,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v382'; // keep in step with CACHE in sw.js
+const APP_V='v383'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -3057,7 +3057,7 @@ function snapshot(){
 // so the oldest steps are dropped once they pass a size budget (always keeping the last few).
 function histSize(){let n=0;history.forEach(h=>{n+=(h.strokesJSON||'').length+(h.placed||'').length+(h.groupsJSON||'').length+(h.layersJSON||'').length;});return n;}
 function histTrim(){while(history.length>4&&histSize()>48e6)history.shift();}
-function pushHist(){try{tplArrowSync();}catch(e){}try{radialSync();}catch(e){console.warn('[sketchpad] radial sync failed',e);}try{fillSync();}catch(e){console.warn('[sketchpad] fill sync failed',e);}try{ctSync();}catch(e){console.warn('[sketchpad] contour sync failed',e);}crumb('pushHist '+strokes.length+' strokes');try{pruneGroups();}catch(e){}try{symSync();}catch(e){console.warn('[sketchpad] symmetry sync failed',e);}try{txRefresh();}catch(e){}try{if(window.SPTimelapse)SPTimelapse.onPush();}catch(e){}try{if(typeof refreshBlends==='function')refreshBlends();if(typeof refreshObjBlends==='function')refreshObjBlends();}catch(e){console.warn('[sketchpad] blend refresh failed',e);}history=history.slice(0,hIndex+1);history.push(snapshot());if(history.length>100)history.shift();histTrim();hIndex=history.length-1;try{layerThumbsSoon(900);}catch(_){}try{if(window.SPTimelapse)SPTimelapse.afterPush();}catch(e){}scheduleAutosave();}
+function pushHist(){try{tplArrowSync();}catch(e){}try{radialSync();}catch(e){console.warn('[sketchpad] radial sync failed',e);}try{fillSync();}catch(e){console.warn('[sketchpad] fill sync failed',e);}try{ctSync();}catch(e){console.warn('[sketchpad] contour sync failed',e);}crumb('pushHist '+strokes.length+' strokes');try{pruneGroups();}catch(e){}try{symSync();}catch(e){console.warn('[sketchpad] symmetry sync failed',e);}try{txRefresh();}catch(e){}try{if(window.SPTimelapse)SPTimelapse.onPush();}catch(e){}try{if(typeof refreshBlends==='function')refreshBlends();if(typeof refreshObjBlends==='function')refreshObjBlends();}catch(e){console.warn('[sketchpad] blend refresh failed',e);}history=history.slice(0,hIndex+1);history.push(snapshot());if(history.length>100)history.shift();histTrim();hIndex=history.length-1;try{layerThumbsSoon(250);}catch(_){}try{if(window.SPTimelapse)SPTimelapse.afterPush();}catch(e){}scheduleAutosave();}
 // Synchronous now (no more toDataURL()/Image round-trip for the drawing layer) — cheaper AND
 // simpler: JSON-serialised stroke points are far smaller than a full 1800x1800 PNG snapshot per
 // undo step, and replaying them is deterministic so this never has to wait on an image decode.
@@ -5981,6 +5981,7 @@ function renderLayersList(){
     host.appendChild(row);
   });
   syncAreaFillLayerSelect();
+  try{host.querySelectorAll('canvas.layer-thumb').forEach(cv=>{const l=layers.find(x=>x.id===cv.dataset.lid);if(l&&l._tn)cv.getContext('2d').drawImage(l._tn.cv,0,0);});}catch(e){} // keep the last picture on screen until the new one is ready
   try{layerThumbsSoon(0);}catch(e){}
 }
 // ---- Layer thumbnails: a small picture of what is on each layer, drawn lazily (one layer at a time), cached until that layer changes ----
@@ -6019,6 +6020,7 @@ function drawLayerThumb(l,cv){
     tc.save();tc.setTransform(k,0,0,k,ox,oy);
     const sk=BrushEngine.skipSmudge,was=sk&&sk.on;if(sk)sk.on=true;
     try{replayLayerInto(tc,l.id);}finally{if(sk)sk.on=was;tc.restore();}
+    tc.drawImage(t,0,0);tc.drawImage(t,0,0); // thicken the faint hairlines a small picture would otherwise lose
   }
   l._tn={sig,cv:t,live:!l.asleep};
   c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,TW,TW);c.drawImage(t,0,0);
