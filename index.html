@@ -1540,7 +1540,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v404'; // keep in step with CACHE in sw.js
+const APP_V='v405'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -3798,7 +3798,12 @@ function placeMotif(motifId,img,returnToDraw,at){
  }else if(at){
   placed.push({id:crypto.randomUUID(),motifId,img,x:at.x,y:at.y,w:at.w,h:at.h,s:1,r:0,fx:1,fy:1,layerId:(layers.find(l=>l.id===activeLayerId&&!l.tpl)||{}).id});selected=placed[placed.length-1].id;
  }else{
-  {const fit=Math.min(1,320/Math.max(img.width,img.height,1));placed.push({id:crypto.randomUUID(),motifId,img,x:W/2,y:H/2,w:img.width*fit,h:img.height*fit,s:1,r:0,fx:1,fy:1});}
+  { // a new motif comes in about the same size as the ones already on the canvas (never huge, whatever the file's own size), in the middle of what you are looking at
+    const sz=placed.filter(p=>p.img).map(p=>Math.max(p.w,p.h)*(p.s||1)).sort((a,b)=>a-b);
+    const target=sz.length?Math.max(60,Math.min(320,sz[sz.length>>1])):320;
+    const fit=Math.min(target/Math.max(img.width,img.height,1),img.width>0&&sz.length?4:1);
+    let cx=W/2,cy=H/2;try{const r=wrap.getBoundingClientRect(),q=screenToCanvas(r.left+r.width/2,r.top+r.height/2);if(q&&isFinite(q.x)&&isFinite(q.y)){cx=Math.max(CX,Math.min(CX+TW,q.x));cy=Math.max(CY,Math.min(CY+TH,q.y));}}catch(e){}
+    placed.push({id:crypto.randomUUID(),motifId,img,x:cx,y:cy,w:img.width*fit,h:img.height*fit,s:1,r:0,fx:1,fy:1,layerId:(layers.find(l=>l.id===activeLayerId&&!l.tpl)||{}).id});}
   selected=placed[placed.length-1].id;
  }
  // Placing a motif normally switches to Edit Mode so the just-placed instance can be dragged/
