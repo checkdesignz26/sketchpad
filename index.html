@@ -1533,7 +1533,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v399'; // keep in step with CACHE in sw.js
+const APP_V='v400'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -1946,6 +1946,7 @@ let eraserDirtyLayerIds=new Set(),eraserTouchedIds=new Set();
 let selectedStrokeId=null;
 // Groups: members carry a `groupId` (strokes and placed pictures); `groups` holds each group's options. multiSel is the
 // current multi-object selection ({strokeIds,placedIds,groupId}); hidden* are members being dragged (drawn live instead).
+let motifsHidden=false;function pHid(p){return motifsHidden||hiddenPlacedIds.has(p.id);}
 const motifHi=new Map();let motifHiTimer=0;let groups={},multiSel=null,selAddArmed=false,groupInsideId=null,grpOv=null;const hiddenStrokeIds=new Set(),hiddenPlacedIds=new Set(),selOpts={lock:true,scale:true};
 let blendDraft=null,blendPickArmed=false,blendRaf=0; // Shape Blend (declared early: pushHist runs during boot)
 let copiedBrushStyle=null; // {brushId,settings} — session-only clipboard for Copy/Apply Brush Style
@@ -3107,14 +3108,14 @@ function snapshot(){
     activeLayerId,
     placed:JSON.stringify(placed.map(p=>({...p,img:null}))),
     selected,selectedStrokeId,
-    groupsJSON:JSON.stringify(groups),
+    groupsJSON:JSON.stringify(groups),motifsHidden,
   };
 }
 // Undo steps keep a full copy of the drawing each; with very detailed drawings 100 of them add up to hundreds of MB of memory,
 // so the oldest steps are dropped once they pass a size budget (always keeping the last few).
 function histSize(){let n=0;history.forEach(h=>{n+=(h.strokesJSON||'').length+(h.placed||'').length+(h.groupsJSON||'').length+(h.layersJSON||'').length;});return n;}
 function histTrim(){while(history.length>4&&histSize()>48e6)history.shift();}
-function pushHist(){try{tplArrowSync();}catch(e){}try{radialSync();}catch(e){console.warn('[sketchpad] radial sync failed',e);}try{fillSync();}catch(e){console.warn('[sketchpad] fill sync failed',e);}try{ctSync();}catch(e){console.warn('[sketchpad] contour sync failed',e);}crumb('pushHist '+strokes.length+' strokes');try{pruneGroups();}catch(e){}try{symSync();}catch(e){console.warn('[sketchpad] symmetry sync failed',e);}try{txRefresh();}catch(e){}try{if(window.SPTimelapse)SPTimelapse.onPush();}catch(e){}try{if(typeof refreshBlends==='function')refreshBlends();if(typeof refreshObjBlends==='function')refreshObjBlends();}catch(e){console.warn('[sketchpad] blend refresh failed',e);}history=history.slice(0,hIndex+1);history.push(snapshot());if(history.length>100)history.shift();histTrim();hIndex=history.length-1;try{layerThumbsSoon(250);}catch(_){}try{if(window.SPTimelapse)SPTimelapse.afterPush();}catch(e){}scheduleAutosave();}
+function pushHist(){try{tplArrowSync();}catch(e){}try{radialSync();}catch(e){console.warn('[sketchpad] radial sync failed',e);}try{fillSync();}catch(e){console.warn('[sketchpad] fill sync failed',e);}try{ctSync();}catch(e){console.warn('[sketchpad] contour sync failed',e);}crumb('pushHist '+strokes.length+' strokes');try{pruneGroups();}catch(e){}try{symSync();}catch(e){console.warn('[sketchpad] symmetry sync failed',e);}try{txRefresh();}catch(e){}try{if(window.SPTimelapse)SPTimelapse.onPush();}catch(e){}try{if(typeof refreshBlends==='function')refreshBlends();if(typeof refreshObjBlends==='function')refreshObjBlends();}catch(e){console.warn('[sketchpad] blend refresh failed',e);}history=history.slice(0,hIndex+1);history.push(snapshot());try{const mc=placed.filter(p=>p.img).length;if(mc!==window._motifCnt){window._motifCnt=mc;renderLayersList();}}catch(e){}if(history.length>100)history.shift();histTrim();hIndex=history.length-1;try{layerThumbsSoon(250);}catch(_){}try{if(window.SPTimelapse)SPTimelapse.afterPush();}catch(e){}scheduleAutosave();}
 // Synchronous now (no more toDataURL()/Image round-trip for the drawing layer) — cheaper AND
 // simpler: JSON-serialised stroke points are far smaller than a full 1800x1800 PNG snapshot per
 // undo step, and replaying them is deterministic so this never has to wait on an image decode.
@@ -3127,7 +3128,7 @@ function restore(s){
   rebuildAllLayers();
   placed=JSON.parse(s.placed).map(p=>({...p,img:(motifs.find(x=>x.id===p.motifId)||{}).img||p.img}));
   selected=s.selected;selectedStrokeId=s.selectedStrokeId||null;
-  groups=JSON.parse(s.groupsJSON||'{}');multiSel=null;groupInsideId=null;hiddenStrokeIds.clear();hiddenPlacedIds.clear();
+  motifsHidden=!!s.motifsHidden;groups=JSON.parse(s.groupsJSON||'{}');multiSel=null;groupInsideId=null;hiddenStrokeIds.clear();hiddenPlacedIds.clear();
   exitEditPath(true);
   syncStrokeSelectionUI();renderLayersList();redraw();
 }
@@ -3635,7 +3636,7 @@ function drawStrokeSelection(){
     ctx.restore();return;
   }
 }
-function drawPlaced(){placed.forEach(p=>{if(hiddenPlacedIds.has(p.id))return;offsets().forEach(([ox,oy])=>{if(p.img)drawOne(p,ox,oy);else drawEmptySlot(p,ox,oy);});});}
+function drawPlaced(){placed.forEach(p=>{if(pHid(p))return;offsets().forEach(([ox,oy])=>{if(p.img)drawOne(p,ox,oy);else drawEmptySlot(p,ox,oy);});});}
 // Dashed highlight around every Multi-Select-picked motif (only on the primary, non-tiled
 // instance — offsets()[0] is always [0,0]) so it's obvious which motifs an Align/Distribute
 // action is about to affect, distinct from the single-selection box's solid outline.
@@ -5986,6 +5987,20 @@ function renderLayersList(){
   try{if(layers.length&&computeRenderScale()!==renderScale)applyTransform();}catch(e){}
   const host=$('layersList');if(!host)return;
   host.innerHTML='';
+  try{const pm=placed.filter(p=>p.img);
+    if(pm.length||motifsHidden){
+      const mr=document.createElement('div');
+      mr.className='layer-row motif-row'+(motifsHidden?' hidden-l':'');
+      mr.innerHTML='<canvas class="layer-thumb" width="116" height="116" title="Your placed pictures"></canvas>'
+        +'<span class="layer-name" title="Placed pictures (motifs) sit above all layers">Motifs · '+pm.length+'</span>'
+        +'<button type="button" class="layer-vis'+(motifsHidden?'':' on')+'" title="Show/hide all motifs">'+(motifsHidden?'':'✓')+'</button>';
+      const cv=mr.querySelector('canvas'),g=cv.getContext('2d'),k=116/TILE;
+      g.fillStyle='#fff';g.fillRect(0,0,116,116);
+      try{pm.forEach(p=>{g.save();if(p.alpha!=null)g.globalAlpha=p.alpha;g.translate((p.x-CX)*k,(p.y-CY)*k);g.rotate(p.r*Math.PI/180);g.scale(p.s*(p.fx||1)*k,p.s*(p.fy||1)*k);g.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);g.restore();});}catch(e){}
+      mr.querySelector('.layer-vis').onclick=e=>{e.stopPropagation();motifsHidden=!motifsHidden;compositeDirty=true;renderLayersList();pushHist();redraw();setStatus(motifsHidden?'Motifs hidden — tap ✓ to show them again.':'Motifs shown.');};
+      mr.onclick=()=>{};
+      host.appendChild(mr);
+    }}catch(e){}
   layers.slice().reverse().forEach(layer=>{
     const row=document.createElement('div');
     const li=layers.indexOf(layer),isClip=!!layer.clip&&li>0;
@@ -6218,7 +6233,7 @@ function mkFlatten(){
     else if(st==='clip'&&base){const t=document.createElement('canvas');t.width=fw;t.height=fh;const g=t.getContext('2d');g.drawImage(src,0,0);g.globalCompositeOperation='destination-in';g.drawImage(base,0,0);src=t;}
     o.save();o.globalAlpha=l.opacity/100;o.globalCompositeOperation=l.blend||'source-over';o.drawImage(src,0,0);o.restore();
   });
-  try{placed.forEach(p=>{if(!p.img||hiddenPlacedIds.has(p.id))return;o.save();if(p.alpha!=null)o.globalAlpha=p.alpha;o.translate(p.x*kf,p.y*kf);o.rotate(p.r*Math.PI/180);o.scale(p.s*p.fx*kf,p.s*p.fy*kf);o.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);o.restore();});}catch(e){}
+  try{placed.forEach(p=>{if(!p.img||pHid(p))return;o.save();if(p.alpha!=null)o.globalAlpha=p.alpha;o.translate(p.x*kf,p.y*kf);o.rotate(p.r*Math.PI/180);o.scale(p.s*p.fx*kf,p.s*p.fy*kf);o.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);o.restore();});}catch(e){}
   // one tile, with everything that wraps in from the neighbouring tiles (the project's own repeat layout)
   if(!MK.art||MK.art.width!==aw||MK.art.height!==ah){MK.art=document.createElement('canvas');MK.art.width=aw;MK.art.height=ah;}
   const a=MK.art,g=a.getContext('2d');g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='source-over';g.clearRect(0,0,aw,ah);
@@ -6229,9 +6244,9 @@ function mkFlatten(){
   });
 }
 function mkSig(){
-  let h=TW+'x'+TH+'|';
+  let h=TW+'x'+TH+'|'+(motifsHidden?'M0':'M1');
   layers.forEach(l=>{h+=l.id+(l.visible?'1':'0')+l.opacity+(l.blend||'')+(l.blur||0)+(l.clip?'c':'')+(l.asleep?'z':'a')+':'+layerThumbSig(l.id)+';';});
-  placed.forEach(p=>{h+=(hiddenPlacedIds.has(p.id)?'h':'p')+Math.round(p.x)+','+Math.round(p.y)+','+p.s+','+p.r+';';});
+  placed.forEach(p=>{h+=(pHid(p)?'h':'p')+Math.round(p.x)+','+Math.round(p.y)+','+p.s+','+p.r+';';});
   return h;
 }
 // Everything that does not change between updates (the scaled mug picture, shading and mask) is made once per size and reused.
@@ -6500,7 +6515,7 @@ function sgBegin(exStrokeIds,exPlacedIds){
       const l=layers.find(q=>q.id===s.layerId);if(!l||!l.visible)return;
       const b=sgBoxOfStroke(s);if(b)boxes.push(b);
     });
-    placed.forEach(p=>{if(boxes.length>700||exPlacedIds.has(p.id)||!p.img||hiddenPlacedIds.has(p.id))return;const b=motifAABB(p);if(b)boxes.push({x0:b.x0,y0:b.y0,x1:b.x1,y1:b.y1});});
+    placed.forEach(p=>{if(boxes.length>700||exPlacedIds.has(p.id)||!p.img||pHid(p))return;const b=motifAABB(p);if(b)boxes.push({x0:b.x0,y0:b.y0,x1:b.x1,y1:b.y1});});
     sgT={boxes};
   }catch(e){sgT=null;}
 }
@@ -10605,7 +10620,7 @@ setInterval(()=>{try{efRefresh();}catch(e){}},600);
     else if(rc.rows.length)parts.push(rc.nStrokes+' stroke'+(rc.nStrokes===1?'':'s')+' · '+rc.rows.length+' colour'+(rc.rows.length===1?'':'s')+'. The left swatch is a colour in your artwork; the right one is the colour it will become. Pick a palette to fill them in, or tap a right-hand swatch to choose one yourself.');
     g$('rcNote').textContent=parts.join(' ');
     const u=[],sk=rc.skip||{};
-    try{const np=(placed||[]).filter(p=>p.img&&!(typeof hiddenPlacedIds!=='undefined'&&hiddenPlacedIds.has(p.id))).length;if(np)u.push(np+' placed picture'+(np===1?'':'s'));}catch(e){}
+    try{const np=(placed||[]).filter(p=>p.img&&!pHid(p)).length;if(np)u.push(np+' placed picture'+(np===1?'':'s'));}catch(e){}
     try{if(bgImg&&bgShown)u.push('the background picture');}catch(e){}
     if(sk.stamp)u.push(sk.stamp+' picture-stamp stroke'+(sk.stamp===1?'':'s')+' (stamps that are not tinted)');
     if(sk.locked)u.push(sk.locked+' stroke'+(sk.locked===1?'':'s')+' on locked layers');
@@ -13271,7 +13286,7 @@ async function buildHiRes(long,transparent){
   }
   tmp.width=tmp.height=1;cp.free();
   placed.forEach(p=>{
-    if(!p.img||hiddenPlacedIds.has(p.id))return;
+    if(!p.img||pHid(p))return;
     const hi=p.motifId?motifHi.get(p.motifId):null;
     o.save();if(p.alpha!=null)o.globalAlpha=Math.max(0,Math.min(1,p.alpha));
     o.setTransform(k,0,0,k,-CX*k,-CY*k);o.translate(p.x,p.y);o.rotate(p.r*Math.PI/180);o.scale(p.s*(p.fx==null?1:p.fx),p.s*(p.fy==null?1:p.fy));
@@ -13319,7 +13334,7 @@ async function buildTileHi(k,transparent){
   }
   tmp.width=tmp.height=1;cp.free();
   placed.forEach(p=>{
-    if(!p.img||hiddenPlacedIds.has(p.id))return;
+    if(!p.img||pHid(p))return;
     offs.forEach(([ox,oy])=>{
       o.save();if(p.alpha!=null)o.globalAlpha=Math.max(0,Math.min(1,p.alpha));
       o.setTransform(k,0,0,k,(ox-CX)*k,(oy-CY)*k);o.translate(p.x,p.y);o.rotate(p.r*Math.PI/180);o.scale(p.s*(p.fx==null?1:p.fx),p.s*(p.fy==null?1:p.fy));
@@ -13820,7 +13835,7 @@ function buildDocObject(){
     layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock,blur:l.blur||0,clip:!!l.clip,tpl:l.tpl||0,arHide:l.arHide||0}))),
     activeLayerId,
     placedJSON:JSON.stringify(placed.map(p=>({...p,img:null}))),
-    groupsJSON:JSON.stringify(groups),
+    groupsJSON:JSON.stringify(groups),motifsHidden,
     motifs:motifs.map(m=>({id:m.id,src:m.src,name:m.name,source:m.source||null})),
     editingMotifId,
     editingMotifStash:editingMotifStash?JSON.stringify(editingMotifStash):null,
@@ -13885,7 +13900,7 @@ function makeThumb(){
     if(bgImg&&bgShown){o.save();o.globalAlpha=bgOpacity;o.drawImage(bgImg,0,0,SW,SH);o.restore();}
     const k=S/TILE;
     o.drawImage(compositeCanvas,CX,CY,TW,TH,0,0,SW,SH);
-    placed.forEach(p=>{if(!p.img)return;o.save();if(p.alpha!=null)o.globalAlpha=p.alpha;o.translate((p.x-CX)*k,(p.y-CY)*k);o.rotate(p.r*Math.PI/180);o.scale(p.s*p.fx*k,p.s*p.fy*k);o.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);o.restore();});
+    placed.forEach(p=>{if(!p.img||motifsHidden)return;o.save();if(p.alpha!=null)o.globalAlpha=p.alpha;o.translate((p.x-CX)*k,(p.y-CY)*k);o.rotate(p.r*Math.PI/180);o.scale(p.s*p.fx*k,p.s*p.fy*k);o.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);o.restore();});
     return c.toDataURL('image/jpeg',0.82);
   }catch(e){return null;}
 }
@@ -14563,7 +14578,7 @@ async function applyDocObject(doc,opts){
     applyLayerMeta(doc.layersJSON?JSON.parse(doc.layersJSON):[],doc.activeLayerId);
     rebuildAllLayers();
     renderLayersList();
-    groups=JSON.parse(doc.groupsJSON||'{}');multiSel=null;groupInsideId=null;
+    motifsHidden=!!doc.motifsHidden;groups=JSON.parse(doc.groupsJSON||'{}');multiSel=null;groupInsideId=null;
     placed=JSON.parse(doc.placedJSON||'[]').map(p=>{
       // Legacy instances reference motifs by array position (motifIndex); new ones by stable id.
       const motifId=p.motifId||((p.motifIndex!=null&&motifs[p.motifIndex])?motifs[p.motifIndex].id:null);
@@ -14630,7 +14645,7 @@ async function applyDocObject(doc,opts){
 // A project can hold several patterns (like a stack). The OPEN pattern lives in the normal app state (strokes, layers, undo history ...);
 // the others are stored as plain states in `coll` and swapped in through the same loader that opens a project. Each pattern keeps its own
 // layers, tile size/repeat, background, undo history (for the session) and timelapse. Shared across the collection: motifs, brushes, fonts, palettes.
-const PAT_KEYS=['tileW','tileH','tilePhys','repeatPreview','strokesJSON','layersJSON','activeLayerId','placedJSON','groupsJSON','bgSrc','bgOpacity','bgShown','tracesJSON','traceLocked','traceSource','layout','activeTemplate','canvasTiling'];
+const PAT_KEYS=['tileW','tileH','tilePhys','repeatPreview','strokesJSON','layersJSON','activeLayerId','placedJSON','groupsJSON','motifsHidden','bgSrc','bgOpacity','bgShown','tracesJSON','traceLocked','traceSource','layout','activeTemplate','canvasTiling'];
 const patHist=new Map();let patBusy=false,patThumbSig='',colFresh=null;
 function colFlag(id){colFresh=id;setTimeout(()=>{if(colFresh===id){colFresh=null;document.querySelectorAll('.col-card.fresh').forEach(c=>c.classList.remove('fresh'));}},2400);}
 function colOpen(){let v=null;try{v=localStorage.getItem('sp-colStrip');}catch(e){}if(v==='1')return true;if(v==='0')return false;return !!(coll&&coll.list.length>1);} // the designer's choice sticks; by default the strip is open once there is more than one pattern
