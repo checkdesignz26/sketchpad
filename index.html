@@ -541,6 +541,12 @@ html.in-suite .suite-only{display:block!important}
 .rc-pick input[type=color]{width:44px;height:40px;border:0;background:none;padding:0}
 .ef-seg{display:flex;gap:4px;flex:1}.ef-seg .btn{flex:1;padding:6px 4px}
 .pal-sw-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.cu-pin{position:sticky;top:-8px;z-index:6;background:var(--sideBg);margin:-8px -10px 0;padding:8px 10px 2px;border-bottom:1px solid var(--line)}
+.cu-pin .cu-cur{margin:8px 0 6px}
+.cu-pin .hint{margin:4px 0 0}
+.cu-mixrow{display:flex;align-items:center;gap:10px;margin-top:6px}
+.cu-mixprev{flex:1;height:44px;border-radius:12px;border:2px solid var(--btnBorder);display:block}
+.cu-mixtxt{font:700 12px monospace;min-width:150px;text-align:right}
 .cu-targets{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .cu-tg{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;border-radius:12px;border:2px solid var(--btnBorder);background:var(--btnBg);color:var(--text);font-weight:800;font-size:13px;cursor:pointer}
 .cu-tg .cu-dot{width:26px;height:26px;border-radius:50%;border:2px solid rgba(0,0,0,.25);display:block}
@@ -703,6 +709,7 @@ html.in-suite .suite-only{display:block!important}
     <section class="section"><div class="section-title">🖼️ Motif Tray</div><div id="motifTray" class="motif-tray"></div><div id="motifEmpty" class="hint">Captured drawings and uploaded motifs appear here.</div></section>
     <section class="section"><div class="section-title">📚 Trace Reference</div><button id="traceToVectorBtn" class="btn primary" style="width:100%;margin-bottom:8px;">✨ Trace Image to Vector</button><label class="upload accentTeal">➕ Trace Artwork<input id="traceInput" type="file" accept="image/*" multiple style="display:none"></label><div id="traceList" class="trace-list" style="margin-top:8px"></div><div class="slider-row"><label>Opacity</label><input id="traceOpacity" type="range" min="5" max="100" value="35"><span id="traceOpacityVal">35%</span></div><div class="slider-row"><label>Scale</label><input id="traceScale" type="range" min="20" max="400" value="100"><span id="traceScaleVal">100%</span></div><div class="row"><button id="traceFit" class="btn mini">Fit</button><button id="traceCentre" class="btn mini">Centre</button><button id="traceLock" class="btn mini active">🔒 Locked</button><button id="traceClear" class="btn mini danger">Clear</button></div></section>
     <section class="section" id="colourSection">
+      <div class="cu-pin" id="cuPin">
       <div class="cu-targets" id="cuTargets">
         <button type="button" class="cu-tg" data-cut="brush" title="The colour of your next strokes (and Paint Inside)"><span class="cu-dot"></span><span class="cu-nm">Brush</span></button>
         <button type="button" class="cu-tg" data-cut="stroke" title="The line colour of the selected shape or stroke"><span class="cu-dot"></span><span class="cu-nm">Stroke</span></button>
@@ -715,8 +722,9 @@ html.in-suite .suite-only{display:block!important}
         <input id="csNative" class="cu-native" type="color" aria-label="System colour picker" title="System colour picker">
         <button type="button" id="cuNone" class="btn mini" title="Make the selected stroke or fill transparent">∅ None</button>
       </div>
+      </div>
       <div id="palEditorHost"></div>
-      <details class="cu-det"><summary>🎚 Mix a colour (RGB / HSB)</summary><div class="cs-grid" id="csSliders"></div></details>
+      <details class="cu-det"><summary>🎚 Mix a colour (RGB / HSB)</summary><div class="cu-mixrow"><span id="csMixPrev" class="cu-mixprev" title="Live preview of the colour you are mixing"></span><span id="csMixTxt" class="cu-mixtxt"></span></div><div class="cs-grid" id="csSliders"></div></details>
       <details class="cu-det"><summary>✨ Generate a palette</summary>
 <div class="slider-row" style="margin-top:10px;"><label>Hero</label><input id="acHero" class="color" type="color" value="#9b6bff"></div>
       <div class="slider-row"><label>Vibe</label><select id="acMood" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);">
@@ -1509,7 +1517,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v391'; // keep in step with CACHE in sw.js
+const APP_V='v392'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -9625,7 +9633,7 @@ function colRefresh(force){
     if(!CS.keepHsb){setV('csH',hsb[0]);setV('csS',hsb[1]);setV('csV',hsb[2]);}
     setV('csR',rgb[0]);setV('csG',rgb[1]);setV('csB',rgb[2]);
     const hx=$('csHex');if(hx&&!CS.keepHex&&document.activeElement!==hx)hx.value=hex;
-    const nt=$('csNative');if(nt)nt.value=hex;const pv=$('csPrev');if(pv)pv.style.background=hex;
+    csPaintPrev(hex);
     try{markAcSwatchSelected();}catch(e){}
     document.querySelectorAll('#palEditorHost .pal-sw').forEach(d=>{const h=(palHex(d.title)||'').toLowerCase();d.classList.toggle('picked',!!h&&h===hex.toLowerCase());});
     document.querySelectorAll('.pal-pick').forEach(b=>b.classList.toggle('active',eyedropOn));
@@ -9640,8 +9648,14 @@ function colourOpen(target){
 }
 window.__colOnOpen=()=>{colAuto(true);colRefresh(true);};
 // the Custom (mix) controls
+function csPaintPrev(hex){
+  const nt=$('csNative');if(nt)nt.value=hex;const pv=$('csPrev');if(pv)pv.style.background=hex;
+  const mp=$('csMixPrev');if(mp)mp.style.background=hex;
+  const mt=$('csMixTxt');if(mt){const r=csRgb(hex),h=csHsb(r);mt.textContent=hex.toUpperCase()+'  RGB '+r.join(',')+'  HSB '+h.map(Math.round).join(',');}
+}
 function csSet(hex,commit,opt){
   hex=palHex(hex);if(!hex)return;
+  csPaintPrev(hex);
   CS.hex=hex;CS.keepHsb=!!(opt&&opt.keepHsb);CS.keepHex=!!(opt&&opt.keepHex);
   colApply(hex,commit);CS.keepHsb=false;CS.keepHex=false;
 }
