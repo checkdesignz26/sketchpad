@@ -379,14 +379,11 @@ html.in-suite .suite-only{display:block!important}
 .lp-card canvas{position:static!important;display:block;background:#fff;border-radius:10px}
 .lp-cap{font:800 13px system-ui;color:#4a4060;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lp-x{position:absolute;right:6px;top:6px;width:40px;height:40px;border-radius:50%;border:1px solid var(--btnBorder);background:#fff;color:#4a4060;font:800 18px system-ui;cursor:pointer;z-index:1}
-.mk-ov{position:fixed;inset:0;z-index:410;display:none;align-items:center;justify-content:center;background:rgba(40,32,58,.55);padding:12px;box-sizing:border-box}
-.mk-ov.show{display:flex}
-.mk-card{background:var(--sideBg,#fff);color:var(--text);border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.4);padding:10px;display:flex;flex-direction:column;gap:8px;align-items:center;max-width:100%;box-sizing:border-box;position:relative}
-.mk-card canvas{position:static!important;display:block;border-radius:12px;background:#fff;touch-action:none;cursor:grab}
+.mk-wrap{display:flex;flex-direction:column;gap:8px;align-items:center}
+.mk-wrap canvas{position:static!important;display:block;border-radius:12px;background:#fff;touch-action:none;cursor:grab;width:100%;height:auto}
 .mk-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;width:100%}
-.mk-bar .btn{padding:8px 12px}
-.mk-bar input[type=range]{width:150px;touch-action:none}
-.mk-note{font:700 12px system-ui;color:var(--muted,#6b6080);text-align:center}
+.mk-bar input[type=range]{width:110px;touch-action:none}
+.mk-note{font:700 11px system-ui;color:var(--muted,#6b6080);text-align:center}
 .layer-thumb{position:static;grid-column:1;grid-row:1;display:block;width:78px;height:78px;border-radius:13px;border:2px solid var(--btnBorder);background:rgba(255,255,255,.75);box-sizing:border-box;cursor:zoom-in}
 .layer-row.hidden-l .layer-thumb{opacity:.35}
 .layer-name{grid-column:2;grid-row:1;font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
@@ -928,7 +925,7 @@ html.in-suite .suite-only{display:block!important}
         <button id="duplicateLayerBtn" class="btn mini" style="flex:1">⧉ Duplicate</button>
         <button id="renameLayerBtn" class="btn mini" style="flex:1">✎ Rename</button>
       </div>
-      <div class="row" style="margin-top:6px;"><button id="mockupBtn" class="btn mini" style="flex:1" title="See ALL visible layers together on a mug (a quick preview — nothing in your artwork changes)">☕ Mock-up</button></div>
+      <div class="row" style="margin-top:6px;"><button id="mockupBtn" class="btn mini" style="flex:1" title="A live mug preview of ALL visible layers that stays open while you draw (nothing in your artwork changes)">☕ Mug preview</button></div>
       <div class="hint">New strokes go onto the active (highlighted) layer. Tap a row to make it active, tap its name (or ✎ Rename) to rename it. Every layer works the same way: the names are just labels.</div>
     </section>
     <section class="section"><div class="section-title">📐 Repeat Layouts</div><div id="tileShapeNote" class="hint" style="margin:-2px 0 8px;"></div><button id="tilePhysBtn" class="tool-btn" style="width:100%;margin-bottom:8px;" title="Give the tile a real size (inches, cm, mm or pixels) and a dpi">📏 Tile size &amp; dpi…</button><div class="grid"><button class="layout-btn active" data-layout="grid">Grid</button><button class="layout-btn" data-layout="halfDrop">Half Drop</button><button class="layout-btn" data-layout="halfBrick">Half Brick</button><button class="layout-btn" data-layout="diamond">Diamond</button><button class="layout-btn" data-layout="ogee">Ogee</button><button class="layout-btn" data-layout="tossed">Tossed</button></div><div style="margin:14px 0 4px;font-weight:850;font-size:14px;">🔲 Canvas Tiling</div><div class="hint" style="margin:0 0 6px;">Shrinks the pattern so it repeats 2×2, 3×3, 4×4 or a custom count (2–8) inside the tile frame. Your artwork is not changed; 1×1 puts it back exactly.</div><div class="row" id="cvtRow"><button class="tool-btn cvt-n active" data-n="1">1×1</button><button class="tool-btn cvt-n" data-n="2">2×2</button><button class="tool-btn cvt-n" data-n="3">3×3</button><button class="tool-btn cvt-n" data-n="4">4×4</button><button class="tool-btn" id="cvtCustomBtn">Custom…</button></div><div id="cvtNote" class="hint" style="margin:6px 0 6px;"></div><button id="cvtNewBtn" class="tool-btn primary" style="width:100%;margin-bottom:4px;" title="Turns the tiled arrangement into a new seamless repeat tile in the filmstrip, ready to edit">➕ Save as New Pattern</button><div class="hint" style="margin:4px 0 0;">Your original stays as it is. To export, use the normal <b>Export</b> menu.</div></section>
@@ -1532,7 +1529,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v396'; // keep in step with CACHE in sw.js
+const APP_V='v397'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -6159,10 +6156,10 @@ function layerPreviewClose(){
   const cv=document.getElementById('lpCv');if(cv){cv.width=cv.height=1;}
 }
 
-// ---- Mug mock-up preview (first experiment) ----------------------------------------------------------------------------
-// ALL visible layers flattened (the same flattening the project thumbnail uses, so hidden layers and editing controls stay out), laid on a
-// mug photo through its body mask. A preview only: nothing in the artwork, the layers, the zoom or the active layer is changed.
-const MK={photo:null,mask:null,P:null,shade:null,hl:null,art:null,s:1,ox:0,oy:0,drag:null,raf:0,loading:null,view:null};
+// ---- Live mug preview (a floating panel) -------------------------------------------------------------------------------
+// ALL visible layers flattened, laid on a mug photo through its body mask, kept up to date while you draw. It only ever READS the artwork:
+// nothing in the layers, the zoom, the pan or the active tool is changed by opening, moving, resizing or closing it.
+const MK={photo:null,mask:null,P:null,shade:null,hl:null,art:null,s:1,ox:0,oy:0,drag:null,raf:0,loading:null,open:false,timer:0,sig:'',N:0,base:null,sh:null,hlN:null,msk:null,tmp:null,sec:null,fresh:0};
 function mkLoad(){
   if(MK.loading)return MK.loading;
   const ld=src=>new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('missing '+src));i.src=src;});
@@ -6171,7 +6168,6 @@ function mkLoad(){
     x.drawImage(mk,0,0,N,N);const md=x.getImageData(0,0,N,N).data;
     let x0=N,y0=N,x1=0,y1=0;for(let y=0;y<N;y++)for(let xx=0;xx<N;xx++)if(md[(y*N+xx)*4+3]>128){if(xx<x0)x0=xx;if(xx>x1)x1=xx;if(y<y0)y0=y;if(y>y1)y1=y;}
     x.clearRect(0,0,N,N);x.drawImage(ph,0,0,N,N);const pd=x.getImageData(0,0,N,N).data;
-    // shading map: the photo's brightness relative to the mug's own white, plus a separate highlight map
     const lum=new Float32Array(N*N),hist=[];
     for(let i=0;i<N*N;i++){const l=0.3*pd[i*4]+0.59*pd[i*4+1]+0.11*pd[i*4+2];lum[i]=l;if(md[i*4+3]>200)hist.push(l);}
     hist.sort((a,b)=>a-b);const ref=hist[Math.floor(hist.length*0.9)]||230;
@@ -6188,82 +6184,135 @@ function mkLoad(){
   MK.loading.catch(()=>{MK.loading=null;});
   return MK.loading;
 }
-// The whole artboard, flattened: visible layers only (same as the project thumbnail), at a modest size to keep iPad memory low.
-function mkBuildArt(){
-  updateComposite();
-  const long=Math.max(TW,TH),k=Math.min(1,1100/long),aw=Math.max(1,Math.round(TW*k)),ah=Math.max(1,Math.round(TH*k));
-  const a=document.createElement('canvas');a.width=aw;a.height=ah;const o=a.getContext('2d');
-  o.drawImage(compositeCanvas,CX,CY,TW,TH,0,0,aw,ah);
-  try{const kk=aw/TW;placed.forEach(p=>{if(!p.img||hiddenPlacedIds.has(p.id))return;o.save();if(p.alpha!=null)o.globalAlpha=p.alpha;o.translate((p.x-CX)*kk,(p.y-CY)*kk);o.rotate(p.r*Math.PI/180);o.scale(p.s*p.fx*kk,p.s*p.fy*kk);o.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);o.restore();});}catch(e){}
-  return a;
+// A small flattened copy of the artboard (long side ~720 px, not the full export): awake layers are copied from their own bitmaps, and each
+// sleeping layer's small picture is cached, so a change normally re-draws just the layer you were working on.
+function mkFlatten(){
+  const long=Math.max(TW,TH),kk=Math.min(1,720/long),aw=Math.max(1,Math.round(TW*kk)),ah=Math.max(1,Math.round(TH*kk));
+  if(!MK.art||MK.art.width!==aw||MK.art.height!==ah){MK.art=document.createElement('canvas');MK.art.width=aw;MK.art.height=ah;}
+  const a=MK.art,o=a.getContext('2d');o.setTransform(1,0,0,1,0,0);o.globalAlpha=1;o.globalCompositeOperation='source-over';o.filter='none';o.clearRect(0,0,aw,ah);
+  const kf=aw/TW;
+  const bmp=l=>{ // this layer's picture, aw x ah
+    if(!l.asleep&&l.canvas&&l.canvas.width>1){const rs=l.canvas.width/W,c=document.createElement('canvas');c.width=aw;c.height=ah;c.getContext('2d').drawImage(l.canvas,CX*rs,CY*rs,TW*rs,TH*rs,0,0,aw,ah);return c;}
+    const sig=layerThumbSig(l.id)+'|'+aw+'x'+ah;
+    if(l._mk&&l._mk.sig===sig)return l._mk.cv;
+    const c=document.createElement('canvas');c.width=aw;c.height=ah;const g=c.getContext('2d');g.setTransform(kf,0,0,kf,-CX*kf,-CY*kf);
+    const sk=BrushEngine.skipSmudge,was=sk&&sk.on;if(sk)sk.on=true;
+    try{replayLayerInto(g,l.id);}finally{if(sk)sk.on=was;}
+    l._mk={sig,cv:c};return c;
+  };
+  let has=false,vis=true,base=null;
+  layers.forEach(l=>{
+    let st;if(l.clip&&has)st=(vis&&l.visible)?'clip':'skip';else{has=true;vis=l.visible;st=l.visible?'base':'skip';}
+    if(st==='skip')return;
+    let src=bmp(l);
+    if(l.blur>0){const t=document.createElement('canvas');t.width=aw;t.height=ah;const g=t.getContext('2d');try{g.filter='blur('+(l.blur*kf)+'px)';}catch(e){}g.drawImage(src,0,0);src=t;}
+    if(st==='base'){base=src;}
+    else if(st==='clip'&&base){const t=document.createElement('canvas');t.width=aw;t.height=ah;const g=t.getContext('2d');g.drawImage(src,0,0);g.globalCompositeOperation='destination-in';g.drawImage(base,0,0);src=t;}
+    o.save();o.globalAlpha=l.opacity/100;o.globalCompositeOperation=l.blend||'source-over';o.drawImage(src,0,0);o.restore();
+  });
+  try{placed.forEach(p=>{if(!p.img||hiddenPlacedIds.has(p.id))return;o.save();if(p.alpha!=null)o.globalAlpha=p.alpha;o.translate((p.x-CX)*kf,(p.y-CY)*kf);o.rotate(p.r*Math.PI/180);o.scale(p.s*p.fx*kf,p.s*p.fy*kf);o.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);o.restore();});}catch(e){}
+}
+function mkSig(){
+  let h=TW+'x'+TH+'|';
+  layers.forEach(l=>{h+=l.id+(l.visible?'1':'0')+l.opacity+(l.blend||'')+(l.blur||0)+(l.clip?'c':'')+(l.asleep?'z':'a')+':'+layerThumbSig(l.id)+';';});
+  placed.forEach(p=>{h+=(hiddenPlacedIds.has(p.id)?'h':'p')+Math.round(p.x)+','+Math.round(p.y)+','+p.s+','+p.r+';';});
+  return h;
+}
+// Everything that does not change between updates (the scaled mug picture, shading and mask) is made once per size and reused.
+function mkAssets(N,S){
+  if(MK.N===N&&MK.base)return;
+  const mk=(draw)=>{const c=document.createElement('canvas');c.width=c.height=N;const g=c.getContext('2d');g.imageSmoothingQuality='high';draw(g);return c;};
+  MK.base=mk(g=>g.drawImage(MK.photo,0,0,N,N));MK.sh=mk(g=>g.drawImage(MK.shade,0,0,N,N));MK.hlN=mk(g=>g.drawImage(MK.hl,0,0,N,N));MK.msk=mk(g=>g.drawImage(MK.mask,0,0,N,N));
+  MK.tmp={F:null,T:mk(()=>{}),U:mk(()=>{}),G:mk(()=>{})};MK.N=N;
 }
 function mkRender(){
   const cv=document.getElementById('mkCv');if(!cv||!MK.photo||!MK.art)return;
-  const S=2,N=512*S;if(cv.width!==N){cv.width=N;cv.height=N;}
+  const css=parseFloat(cv.style.width)||360,S=(css*(window.devicePixelRatio||1)>620)?2:1,N=512*S;
+  mkAssets(N,S);if(cv.width!==N){cv.width=N;cv.height=N;}
   const c=cv.getContext('2d');c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,N,N);c.imageSmoothingQuality='high';
-  c.drawImage(MK.photo,0,0,N,N);
-  const P=MK.P,px=P.x*S,py=P.y*S,pw=P.w*S,ph=P.h*S,A=MK.art;
-  // flat print: the artwork, contained in the printable area at scale 100% (so the whole composition shows, uncropped)
+  c.drawImage(MK.base,0,0);
+  const P=MK.P,px=P.x*S,py=P.y*S,pw=Math.round(P.w*S),ph=Math.round(P.h*S),A=MK.art;
+  // flat print: the artwork contained in the printable area at scale 100% (whole composition, uncropped), then the user's size and position
   const k0=Math.min(pw/A.width,ph/A.height)*MK.s,dw=A.width*k0,dh=A.height*k0;
-  const F=document.createElement('canvas');F.width=pw;F.height=ph;const f=F.getContext('2d');f.imageSmoothingQuality='high';
+  const F=MK.tmp.F||(MK.tmp.F=document.createElement('canvas'));if(F.width!==pw||F.height!==ph){F.width=pw;F.height=ph;}
+  const f=F.getContext('2d');f.clearRect(0,0,pw,ph);f.imageSmoothingQuality='high';
   f.drawImage(A,(pw-dw)/2+MK.ox*S,(ph-dh)/2+MK.oy*S,dw,dh);
-  // wrap it round the mug: columns near the edges are squeezed, as on a real cylinder
-  const T=1.15,sT=Math.sin(T),W2=Math.round(pw);
-  const T2=document.createElement('canvas');T2.width=N;T2.height=N;const t=T2.getContext('2d');
-  const fx=i=>{const u=i/W2*2-1;return (Math.asin(Math.max(-1,Math.min(1,u*sT)))/T*0.5+0.5)*pw;};
-  for(let i=0;i<W2;i++){const a=fx(i),b=fx(i+1),sw=Math.max(0.5,b-a);t.drawImage(F,a,0,sw,ph,px+i,py,1.02,ph);}
-  // light and shade: multiply by the photo's shading, keep only where the print exists, clip to the mug body
-  const U=document.createElement('canvas');U.width=N;U.height=N;const u=U.getContext('2d');
-  u.drawImage(T2,0,0);u.globalCompositeOperation='multiply';u.drawImage(MK.shade,0,0,N,N);
-  u.globalCompositeOperation='destination-in';u.drawImage(T2,0,0);
-  u.globalCompositeOperation='destination-in';u.drawImage(MK.mask,0,0,N,N);
+  // wrapped round the mug: columns near the edges are squeezed, as on a cylinder
+  const T=1.15,sT=Math.sin(T),T2=MK.tmp.T,t=T2.getContext('2d');t.clearRect(0,0,N,N);
+  const fx=i=>{const u=i/pw*2-1;return (Math.asin(Math.max(-1,Math.min(1,u*sT)))/T*0.5+0.5)*pw;};
+  for(let i=0;i<pw;i++){const a=fx(i),b=fx(i+1),sw=Math.max(0.5,b-a);t.drawImage(F,a,0,sw,ph,px+i,py,1.02,ph);}
+  // light and shade: multiply by the photo's shading, keep only where there is print, clip to the mug body
+  const U=MK.tmp.U,u=U.getContext('2d');u.globalCompositeOperation='source-over';u.clearRect(0,0,N,N);
+  u.drawImage(T2,0,0);u.globalCompositeOperation='multiply';u.drawImage(MK.sh,0,0);
+  u.globalCompositeOperation='destination-in';u.drawImage(T2,0,0);u.drawImage(MK.msk,0,0);u.globalCompositeOperation='source-over';
   c.drawImage(U,0,0);
-  // a touch of the photo's gloss over the print
-  const G=document.createElement('canvas');G.width=N;G.height=N;const g=G.getContext('2d');
-  g.drawImage(MK.hl,0,0,N,N);g.globalCompositeOperation='destination-in';g.drawImage(U,0,0);
+  const G=MK.tmp.G,g=G.getContext('2d');g.globalCompositeOperation='source-over';g.clearRect(0,0,N,N);
+  g.drawImage(MK.hlN,0,0);g.globalCompositeOperation='destination-in';g.drawImage(U,0,0);g.globalCompositeOperation='source-over';
   c.save();c.globalCompositeOperation='screen';c.globalAlpha=.55;c.drawImage(G,0,0);c.restore();
 }
 function mkSchedule(){if(MK.raf)return;MK.raf=requestAnimationFrame(()=>{MK.raf=0;try{mkRender();}catch(e){}});}
-async function mkOpen(){
-  let ov=document.getElementById('mkOv');
-  if(!ov){
-    ov=document.createElement('div');ov.id='mkOv';ov.className='mk-ov';
-    ov.innerHTML='<div class="mk-card"><canvas id="mkCv" width="1024" height="1024"></canvas>'
-      +'<div class="mk-bar"><label style="font:800 12px system-ui">Size <input type="range" id="mkScale" min="20" max="250" value="100"> <span id="mkScaleV">100%</span></label>'
-      +'<button type="button" class="btn mini" id="mkFit" title="Fit the whole artwork in the printable area again">⤢ Fit</button>'
-      +'<button type="button" class="btn mini" id="mkRefresh" title="Pick up your latest drawing changes">🔄 Refresh</button>'
-      +'<button type="button" class="btn mini primary" id="mkDone">✓ Done</button></div>'
-      +'<div class="mk-note" id="mkNote">Drag the artwork to move it · all visible layers combined · hidden layers are left out</div></div>';
-    document.body.appendChild(ov);
-    ov.addEventListener('pointerdown',e=>{if(e.target===ov)mkClose();});
-    window.addEventListener('keydown',e=>{if(e.key==='Escape'&&ov.classList.contains('show')){e.stopPropagation();mkClose();}},true);
-    const sc=document.getElementById('mkScale');
-    sc.oninput=()=>{MK.s=sc.value/100;document.getElementById('mkScaleV').textContent=sc.value+'%';mkSchedule();};
-    document.getElementById('mkFit').onclick=()=>{MK.s=1;MK.ox=MK.oy=0;sc.value=100;document.getElementById('mkScaleV').textContent='100%';mkSchedule();};
-    document.getElementById('mkDone').onclick=mkClose;
-    document.getElementById('mkRefresh').onclick=async()=>{const n=document.getElementById('mkNote');try{MK.art=mkBuildArt();mkRender();n.textContent='Refreshed with your latest drawing.';}catch(e){n.textContent='Could not refresh: '+e.message;}};
-    const cv=document.getElementById('mkCv');
-    cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);MK.drag={x:e.clientX,y:e.clientY,ox:MK.ox,oy:MK.oy};cv.style.cursor='grabbing';e.preventDefault();});
-    cv.addEventListener('pointermove',e=>{if(!MK.drag)return;const r=cv.getBoundingClientRect(),k=512/r.width;MK.ox=MK.drag.ox+(e.clientX-MK.drag.x)*k;MK.oy=MK.drag.oy+(e.clientY-MK.drag.y)*k;mkSchedule();});
-    const end=()=>{MK.drag=null;cv.style.cursor='grab';};cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);
-  }
-  // remember the view so closing puts everything back exactly as it was
-  MK.view={zoom,panX,panY,layer:activeLayerId};
-  MK.s=1;MK.ox=MK.oy=0;const sc=document.getElementById('mkScale');sc.value=100;document.getElementById('mkScaleV').textContent='100%';
-  const cv=document.getElementById('mkCv'),n=document.getElementById('mkNote');
-  const side=Math.max(220,Math.min(innerWidth-40,innerHeight-150,760));cv.style.width=cv.style.height=side+'px';
-  n.textContent='Drag the artwork to move it · all visible layers combined · hidden layers are left out';
-  ov.classList.add('show');
-  try{await mkLoad();MK.art=mkBuildArt();mkRender();}
-  catch(e){n.textContent='The mug picture could not be loaded ('+e.message+'). Open the app online once, then try again.';}
+// One update, however many changes arrive: wait until things go quiet, never while a stroke is being drawn, and skip it if nothing really changed.
+function mkNotify(force){
+  if(!MK.open)return;
+  clearTimeout(MK.timer);
+  MK.timer=setTimeout(()=>mkUpdate(force),force?0:380);
 }
-function mkClose(){
-  const ov=document.getElementById('mkOv');if(ov)ov.classList.remove('show');
-  MK.art=null;MK.drag=null;                                   // free the flattened artwork
-  const v=MK.view;MK.view=null;
-  try{if(v&&(zoom!==v.zoom||panX!==v.panX||panY!==v.panY)){zoom=v.zoom;panX=v.panX;panY=v.panY;redraw();}if(v&&v.layer&&activeLayerId!==v.layer&&layers.some(l=>l.id===v.layer)){activeLayerId=v.layer;renderLayersList();}}catch(e){}
+function mkUpdate(force){
+  if(!MK.open||!MK.photo)return;
+  if(drawing||liveActive){clearTimeout(MK.timer);MK.timer=setTimeout(()=>mkUpdate(force),300);return;}
+  const sig=mkSig();if(!force&&sig===MK.sig)return;
+  const idle=window.requestIdleCallback||(f=>setTimeout(f,0));
+  idle(()=>{
+    if(!MK.open||drawing||liveActive){mkNotify(force);return;}
+    try{MK.sig=mkSig();mkFlatten();mkRender();const n=document.getElementById('mkNote');if(n&&MK.fresh)n.textContent='Live: updates after each change. Drag to move, use Size to scale.';}catch(e){console.warn('[sketchpad] mug preview',e);}
+  },{timeout:800});
 }
-document.getElementById('mockupBtn').onclick=()=>{try{mkOpen();}catch(e){}};
+function mkSection(){
+  if(MK.sec)return MK.sec;
+  const sec=document.createElement('section');sec.className='section';sec.id='mugSection';
+  sec.innerHTML='<div class="mk-wrap"><canvas id="mkCv" width="512" height="512"></canvas>'
+    +'<div class="mk-bar"><label style="font:800 12px system-ui;display:flex;align-items:center;gap:6px">Size <input type="range" id="mkScale" min="20" max="250" value="100"> <span id="mkScaleV">100%</span></label>'
+    +'<button type="button" class="btn mini" id="mkFit" title="Fit the whole artwork in the printable area again">⤢ Fit</button>'
+    +'<button type="button" class="btn mini" id="mkRefresh" title="Update now (it also updates by itself)">🔄 Refresh</button></div>'
+    +'<div class="mk-note" id="mkNote">Live: updates after each change. Drag to move, use Size to scale.</div></div>';
+  MK.sec=sec;
+  const sc=sec.querySelector('#mkScale'),cv=sec.querySelector('#mkCv');
+  sc.oninput=()=>{MK.s=sc.value/100;sec.querySelector('#mkScaleV').textContent=sc.value+'%';mkSchedule();};
+  sec.querySelector('#mkFit').onclick=()=>{MK.s=1;MK.ox=MK.oy=0;sc.value=100;sec.querySelector('#mkScaleV').textContent='100%';mkSchedule();};
+  sec.querySelector('#mkRefresh').onclick=()=>{const n=sec.querySelector('#mkNote');MK.sig='';try{mkFlatten();mkRender();n.textContent='Refreshed.';}catch(e){n.textContent='Could not refresh: '+e.message;}};
+  cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);MK.drag={x:e.clientX,y:e.clientY,ox:MK.ox,oy:MK.oy};cv.style.cursor='grabbing';e.preventDefault();});
+  cv.addEventListener('pointermove',e=>{if(!MK.drag)return;const r=cv.getBoundingClientRect(),k=512/r.width;MK.ox=MK.drag.ox+(e.clientX-MK.drag.x)*k;MK.oy=MK.drag.oy+(e.clientY-MK.drag.y)*k;mkSchedule();});
+  const end=()=>{MK.drag=null;cv.style.cursor='grab';};cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);
+  return sec;
+}
+// Size the picture to the panel (it follows the panel when you resize it).
+function mkFit(){
+  const sec=MK.sec;if(!sec)return;const body=sec.closest('.fp-body');if(!body)return;
+  const cv=sec.querySelector('#mkCv'),bar=sec.querySelector('.mk-bar'),note=sec.querySelector('#mkNote');
+  const fp=body.closest('.fpanel'),explicitH=fp&&fp.style.height&&!fp.classList.contains('docked');   // only a panel you resized has a fixed height to fit into
+  const avail=explicitH?Math.min(body.clientWidth-24,body.clientHeight-(bar.offsetHeight+note.offsetHeight+34)):body.clientWidth-24;
+  const side=Math.max(140,Math.min(avail,760));
+  if(Math.abs((parseFloat(cv.style.width)||0)-side)>1){cv.style.width=cv.style.height=Math.round(side)+'px';mkSchedule();}
+}
+window.__mkSection=mkSection;
+window.__mugOnOpen=async()=>{
+  MK.open=true;MK.fresh=0;
+  const n=document.getElementById('mkNote');
+  if(!MK.ro){try{MK.ro=new ResizeObserver(()=>{if(MK.fitRaf)return;MK.fitRaf=requestAnimationFrame(()=>{MK.fitRaf=0;try{mkFit();}catch(e){}});});}catch(e){}}
+  try{const body=MK.sec.closest('.fp-body');if(MK.ro&&body)MK.ro.observe(body);}catch(e){}
+  mkFit();
+  try{await mkLoad();}catch(e){if(n)n.textContent='The mug picture could not be loaded ('+e.message+'). Open the app online once, then try again.';return;}
+  MK.sig='';MK.fresh=1;mkUpdate(true);
+};
+window.__mugOnClose=()=>{      // no more updates; free the flattened copy
+  MK.open=false;clearTimeout(MK.timer);MK.drag=null;
+  try{if(MK.ro)MK.ro.disconnect();}catch(e){}
+  MK.art=null;MK.base=MK.sh=MK.hlN=MK.msk=null;MK.tmp=null;MK.N=0;MK.sig='';
+  layers.forEach(l=>{if(l._mk)l._mk=null;});
+};
+// any finished change (stroke, erase, recolour, undo/redo, layer visibility…) ends up in scheduleAutosave
+{const _sa=scheduleAutosave;scheduleAutosave=function(){try{mkNotify();}catch(e){}return _sa.apply(this,arguments);};}
+document.getElementById('mockupBtn').onclick=()=>{try{window.__sketchpadPanels.open('mug');}catch(e){}};
 // Inline rename (no prompt() dialog, which iPad web-apps can suppress): swaps the row's name for a
 // text box; Return or tapping away saves, Escape cancels.
 function startLayerRename(id){
@@ -19093,6 +19142,7 @@ SPFonts.init().then(()=>{txRefreshMissing();});
     bool:'<circle cx="9" cy="10" r="5.5"/><circle cx="15" cy="14" r="5.5"/>',
     tpl:'<rect x="3.5" y="3.5" width="17" height="17" rx="2.5"/><circle cx="9" cy="9" r="2.6"/><rect x="13.5" y="12.5" width="4.5" height="4.5" rx="0.6"/><path d="M7 17.5l2.5-3 2.5 3z"/>',
     rotate:'<path d="M20 12a8 8 0 10-2.6 5.9"/><path d="M20 4.5V10h-5.5"/>',
+    mug:'<path d="M5 6.5h11v8.5a4 4 0 01-4 4H9a4 4 0 01-4-4z"/><path d="M16 8.5h1.8a2.2 2.2 0 010 4.4H16"/>',
     pin:'<path d="M9 3.5h6l-1 5.5 3 3.2H7l3-3.2z"/><path d="M12 12.5v8"/>',
     dock:'<rect x="3" y="4.5" width="18" height="15" rx="2"/><path d="M15 4.5v15"/>',
     undock:'<rect x="3" y="4.5" width="18" height="15" rx="2"/><rect x="6.5" y="8" width="7" height="8" rx="1"/>'
@@ -19117,7 +19167,8 @@ SPFonts.init().then(()=>{txRefreshMissing();});
     brushmaker:{title:'Pattern brush',icon:'pbrush',get:()=>[$('brushMakerSection'),$('brushSetSection')]},
     repeat:{title:'Repeat & tiling',icon:'repeat',get:()=>[secByTitle(/repeat layouts/i)]},
     templates:{title:'Pattern Templates',icon:'tpl',get:()=>[$('tplSection')]},
-    width:{title:'Width tool',icon:'width',get:()=>[$('widthSection')]}
+    width:{title:'Width tool',icon:'width',get:()=>[$('widthSection')]},
+    mug:{title:'Mug preview',icon:'mug',keep:true,get:()=>[window.__mkSection()]}
   };
   // ---- rail buttons: proxy = the existing top-bar button that actually selects the tool ----
   const TOOLS=[
@@ -19127,6 +19178,7 @@ SPFonts.init().then(()=>{txRefreshMissing();});
     {id:'blendbrush',label:'Blend brush (mix colours softly)',icon:'blendbrush',proxy:'tbBlendBrushBtn',panel:'brush'},
     {id:'colour',label:'Colour',icon:'palette',panel:'colour',swatch:1},
     {id:'layers',label:'Layers',icon:'layers',panel:'layers'},
+    {id:'mug',label:'Mug preview (live)',icon:'mug',panel:'mug'},
     {id:'repeat',label:'Repeat & tiling',icon:'repeat',panel:'repeat'},
     {id:'templates',label:'Pattern Templates (layout guides)',icon:'tpl',panel:'templates'},
     {sep:1},
@@ -19223,7 +19275,7 @@ SPFonts.init().then(()=>{txRefreshMissing();});
     opts=opts||{};
     // Only one unpinned panel at a time; pinned ones stay.
     let inheritDock=null;
-    Object.keys(P).forEach(k=>{const q=P[k];if(k!==id&&q.open&&!pref.pin[k]){if(q.el.classList.contains('docked')&&!pref.dock[id])inheritDock=pref.dock[k]||null;closePanel(k,true);}});
+    Object.keys(P).forEach(k=>{const q=P[k];if(k!==id&&q.open&&!pref.pin[k]&&!PANELS[k].keep){if(q.el.classList.contains('docked')&&!pref.dock[id])inheritDock=pref.dock[k]||null;closePanel(k,true);}});
     fill(p);
     const want=pref.dock[id]||inheritDock;
     p.open=true;p.el.classList.add('show');
@@ -19238,11 +19290,13 @@ SPFonts.init().then(()=>{txRefreshMissing();});
     try{const b=p.body;b.scrollTop=0;}catch(e){}
     if(id==='colour'){try{window.__colOnOpen&&window.__colOnOpen();}catch(e){}}
     if(id==='width'){try{window.__wpPanel(true);}catch(e){console.warn(e);}}
+    if(id==='mug'){try{window.__mugOnOpen&&window.__mugOnOpen();}catch(e){}}
   }
   function closePanel(id,quiet){
     const p=P[id];if(!p||!p.open)return;
     p.open=false;p.el.classList.remove('show');
     if(id==='width'){try{window.__wpPanel(false);}catch(e){}}
+    if(id==='mug'){try{window.__mugOnClose&&window.__mugOnClose();}catch(e){}}
     syncPanel(p);if(!quiet)refreshDocks();else{['dockL','dockR'].forEach(i=>{const h=$(i);if(h)h.classList.toggle('has',!!h.querySelector('.fpanel.show'));});}
   }
   function togglePanel(id){const p=P[id];if(p&&p.open)closePanel(id);else openPanel(id);}
