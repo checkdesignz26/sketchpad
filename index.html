@@ -353,16 +353,27 @@ html.in-suite .suite-only{display:block!important}
 .brush-swatch .fav-star{position:absolute;top:-7px;right:-7px;width:17px;height:17px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);font-size:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted)}
 .brush-swatch .fav-star.active{background:var(--orange);color:#3a2e26;border-color:var(--orange)}
 #eraserToggle.active{background:var(--dangerBg)!important;border:1px solid var(--dangerBorder)!important}
-.layer-row{display:flex;flex-wrap:wrap;align-items:center;gap:5px;padding:6px;border-radius:10px;border:1px solid var(--cardBorder);margin-bottom:6px;background:var(--btnBg);cursor:pointer}
+.layer-row{display:grid;grid-template-columns:62px minmax(0,1fr) 34px;column-gap:12px;row-gap:8px;align-items:center;padding:8px;border-radius:14px;border:1px solid var(--cardBorder);margin-bottom:8px;background:var(--btnBg);cursor:pointer}
 .layer-row.active{border-color:var(--pink);box-shadow:0 0 0 2px rgba(255,142,214,.3)}
+.layer-row.locked .layer-name::after{content:' 🔒';font-size:11px}
+.layer-row.alock .layer-name::after{content:' α';font-size:12px;color:var(--pink)}
+.layer-row.locked.alock .layer-name::after{content:' 🔒 α'}
+.layer-tools{grid-column:1/-1;display:none;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:2px}
+.layer-tools .layer-blend{max-width:92px;min-width:0;flex:1 1 70px}
+.layer-tools .layer-icon-btn{width:22px;flex:none}
+.layer-row.active .layer-tools{display:flex}
+.layer-row:not(.active) .layer-clipline,.layer-row:not(.active) .layer-opline{display:none}
+.layer-row>.layer-clipline,.layer-row>.layer-opline,.layer-row>.layer-patline{grid-column:1/-1}
+.layer-vis{grid-column:3;grid-row:1;width:30px;height:30px;padding:0;border-radius:9px;border:2px solid var(--btnBorder);background:rgba(255,255,255,.7);color:#fff;font-size:17px;font-weight:900;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.layer-vis.on{background:linear-gradient(135deg,#b79cf0,#e585b4);border-color:#b58ad8}
 .layer-row.locked{opacity:.7}
 .layer-name-input{flex:1;min-width:0;font-size:16px;padding:4px 6px;border-radius:8px;border:1px solid var(--pink);background:var(--btnBg);color:var(--text)}
 .layer-icon-btn{border:0;background:transparent;font-size:14px;cursor:pointer;padding:2px;width:22px;flex-shrink:0;color:var(--text)}
 .layer-alpha.on{background:var(--pink);color:#fff}
 .layer-blend{max-width:92px;font-size:12px;padding:4px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text)}
-.layer-thumb{position:static;display:block;width:46px;height:46px;flex:none;background:none;border:0}
+.layer-thumb{position:static;grid-column:1;grid-row:1;display:block;width:62px;height:62px;border-radius:12px;border:2px solid var(--btnBorder);background:rgba(255,255,255,.75);box-sizing:border-box}
 .layer-row.hidden-l .layer-thumb{opacity:.35}
-.layer-name{flex:1 1 96px;font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:96px}
+.layer-name{grid-column:2;grid-row:1;font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .layer-opacity{flex:1;min-width:0;height:36px;touch-action:none}
 .layer-opline{flex:1 0 100%;box-sizing:border-box;min-width:0;display:flex;align-items:center;gap:10px;padding:0 4px;font-size:12px;font-weight:800;color:var(--muted)}
 .layer-oppct{width:44px;text-align:right;flex-shrink:0;color:var(--text)}
@@ -1486,7 +1497,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v384'; // keep in step with CACHE in sw.js
+const APP_V='v385'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -5928,12 +5939,13 @@ function renderLayersList(){
   layers.slice().reverse().forEach(layer=>{
     const row=document.createElement('div');
     const li=layers.indexOf(layer),isClip=!!layer.clip&&li>0;
-    row.className='layer-row'+(layer.visible?'':' hidden-l')+(layer.id===activeLayerId?' active':'')+(layer.locked?' locked':'')+(isClip?' clipped':'');
+    row.className='layer-row'+(layer.visible?'':' hidden-l')+(layer.id===activeLayerId?' active':'')+(layer.locked?' locked':'')+(layer.alphaLock?' alock':'')+(isClip?' clipped':'');
     row.innerHTML=
       '<canvas class="layer-thumb" width="92" height="92" data-lid="'+layer.id+'" title="What is on this layer"></canvas>'
-      +'<button type="button" class="layer-icon-btn layer-vis" title="Show/hide">'+(layer.visible?'👁️':'🚫')+'</button>'
-      +'<button type="button" class="layer-icon-btn layer-lock" title="Lock/unlock">'+(layer.locked?'🔒':'🔓')+'</button>'
       +'<span class="layer-name" title="Tap to rename">'+escapeHtml(layer.name)+'</span>'
+      +'<button type="button" class="layer-vis'+(layer.visible?' on':'')+'" title="Show/hide">'+(layer.visible?'✓':'')+'</button>'
+      +'<div class="layer-tools">'
+      +'<button type="button" class="layer-icon-btn layer-lock" title="Lock/unlock">'+(layer.locked?'🔒':'🔓')+'</button>'
       +'<button type="button" class="layer-icon-btn layer-alpha'+(layer.alphaLock?' on':'')+'" title="Alpha lock: paint only where this layer already has paint">α</button>'
       +'<select class="layer-blend" title="Blend mode">'+LAYER_BLENDS.map(b=>'<option value="'+b[0]+'"'+((layer.blend||'source-over')===b[0]?' selected':'')+'>'+b[1]+'</option>').join('')+'</select>'
       +'<button type="button" class="layer-icon-btn layer-xform" title="Select this whole layer to resize, turn or move it">⤢</button>'
@@ -5941,6 +5953,7 @@ function renderLayersList(){
       +'<button type="button" class="layer-icon-btn layer-down" title="Move down">↓</button>'
       +'<button type="button" class="layer-icon-btn layer-clear" title="Clear this layer (empty it, keep the layer)">🧹</button>'
       +'<button type="button" class="layer-icon-btn layer-del" title="Delete this layer">✕</button>'
+      +'</div>'
       +'<div class="layer-clipline"><button type="button" class="layer-clip'+(isClip?' on':'')+'" title="Clipping mask: this layer only shows where the layer below it has paint">'+(isClip?'✂ Clipped to “'+escapeHtml(layers[li-1].name)+'” · tap to release':(li>0?'✂ Clip to layer below':'✂ Clip (needs a layer below)'))+'</button></div>'
       +'<div class="layer-opline"><span>Opacity</span><input type="range" class="layer-opacity" min="0" max="100" step="1" value="'+Math.round(layer.opacity)+'" title="Opacity"><span class="layer-oppct">'+Math.round(layer.opacity)+'%</span></div>';
     const patSts=strokes.filter(q=>q.layerId===layer.id&&q.patFill);
