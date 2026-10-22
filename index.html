@@ -383,6 +383,10 @@ html.in-suite .suite-only{display:block!important}
 .mk-wrap canvas{position:static!important;display:block;border-radius:12px;background:#fff;touch-action:none;cursor:grab;width:100%;height:auto}
 .mk-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;width:100%}
 .mk-bar input[type=range]{width:110px;touch-action:none}
+.mk-seg{display:inline-flex;border:1px solid var(--btnBorder);border-radius:10px;overflow:hidden}
+.mk-seg button{border:0;background:var(--btnBg);color:var(--text);font:800 12px system-ui;padding:8px 14px;cursor:pointer}
+.mk-seg button.on{background:linear-gradient(135deg,var(--purple),var(--pink));color:#fff}
+.mk-bar .btn:disabled,.mk-bar input:disabled{opacity:.45}
 .mk-note{font:700 11px system-ui;color:var(--muted,#6b6080);text-align:center}
 .layer-thumb{position:static;grid-column:1;grid-row:1;display:block;width:78px;height:78px;border-radius:13px;border:2px solid var(--btnBorder);background:rgba(255,255,255,.75);box-sizing:border-box;cursor:zoom-in}
 .layer-row.hidden-l .layer-thumb{opacity:.35}
@@ -1529,7 +1533,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v397'; // keep in step with CACHE in sw.js
+const APP_V='v398'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -6159,7 +6163,8 @@ function layerPreviewClose(){
 // ---- Live mug preview (a floating panel) -------------------------------------------------------------------------------
 // ALL visible layers flattened, laid on a mug photo through its body mask, kept up to date while you draw. It only ever READS the artwork:
 // nothing in the layers, the zoom, the pan or the active tool is changed by opening, moving, resizing or closing it.
-const MK={photo:null,mask:null,P:null,shade:null,hl:null,art:null,s:1,ox:0,oy:0,drag:null,raf:0,loading:null,open:false,timer:0,sig:'',N:0,base:null,sh:null,hlN:null,msk:null,tmp:null,sec:null,fresh:0};
+const MK={photo:null,mask:null,P:null,shade:null,hl:null,art:null,s:1,ox:0,oy:0,drag:null,raf:0,loading:null,open:false,timer:0,sig:'',N:0,base:null,sh:null,hlN:null,msk:null,tmp:null,sec:null,fresh:0,mode:'single',ps:1,pox:0,poy:0,locked:false};
+try{MK.locked=localStorage.getItem('sp-mugLock')==='1';}catch(e){}
 function mkLoad(){
   if(MK.loading)return MK.loading;
   const ld=src=>new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('missing '+src));i.src=src;});
@@ -6232,11 +6237,25 @@ function mkRender(){
   const c=cv.getContext('2d');c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,N,N);c.imageSmoothingQuality='high';
   c.drawImage(MK.base,0,0);
   const P=MK.P,px=P.x*S,py=P.y*S,pw=Math.round(P.w*S),ph=Math.round(P.h*S),A=MK.art;
-  // flat print: the artwork contained in the printable area at scale 100% (whole composition, uncropped), then the user's size and position
-  const k0=Math.min(pw/A.width,ph/A.height)*MK.s,dw=A.width*k0,dh=A.height*k0;
+  // flat print. Single: the artwork contained in the printable area at 100% (whole composition, uncropped), then the user's size and position.
+  // Repeat: the artwork tiled across the print in the project's own repeat layout; its size is set separately (about two repeats across at 100%).
   const F=MK.tmp.F||(MK.tmp.F=document.createElement('canvas'));if(F.width!==pw||F.height!==ph){F.width=pw;F.height=ph;}
   const f=F.getContext('2d');f.clearRect(0,0,pw,ph);f.imageSmoothingQuality='high';
-  f.drawImage(A,(pw-dw)/2+MK.ox*S,(ph-dh)/2+MK.oy*S,dw,dh);
+  if(MK.mode==='repeat'){
+    const tw=Math.max(8,pw*0.5*MK.ps),th=tw*A.height/A.width,lay=layout,tp=(ix,iy)=>{let ox=ix*tw,oy=iy*th;if(lay==='halfDrop'&&(ix&1))oy+=th/2;if(lay==='halfBrick'&&(iy&1))ox+=tw/2;if(lay==='diamond'){ox=(ix+iy)*tw/2;oy=(ix-iy)*th/2;}return [ox,oy];};
+    const n=Math.min(40,Math.ceil(Math.max(pw/tw,ph/th))+3),cx=pw/2-tw/2+MK.pox*S,cy=ph/2-th/2+MK.poy*S;
+    const pad=0.6;let drawn=0;
+    for(let ix=-n;ix<=n&&drawn<2500;ix++)for(let iy=-n;iy<=n&&drawn<2500;iy++){
+      const q=tp(ix,iy),x=Math.round(cx+q[0]),y=Math.round(cy+q[1]);
+      if(x>pw||y>ph||x+tw<0||y+th<0)continue;
+      drawn++;
+      if(lay==='diamond'){f.save();f.beginPath();f.moveTo(x+tw/2,y);f.lineTo(x+tw,y+th/2);f.lineTo(x+tw/2,y+th);f.lineTo(x,y+th/2);f.closePath();f.clip();f.drawImage(A,x-pad,y-pad,Math.ceil(tw)+2*pad,Math.ceil(th)+2*pad);f.restore();}
+      else f.drawImage(A,x-pad,y-pad,Math.ceil(tw)+2*pad,Math.ceil(th)+2*pad);
+    }
+  }else{
+    const k0=Math.min(pw/A.width,ph/A.height)*MK.s,dw=A.width*k0,dh=A.height*k0;
+    f.drawImage(A,(pw-dw)/2+MK.ox*S,(ph-dh)/2+MK.oy*S,dw,dh);
+  }
   // wrapped round the mug: columns near the edges are squeezed, as on a cylinder
   const T=1.15,sT=Math.sin(T),T2=MK.tmp.T,t=T2.getContext('2d');t.clearRect(0,0,N,N);
   const fx=i=>{const u=i/pw*2-1;return (Math.asin(Math.max(-1,Math.min(1,u*sT)))/T*0.5+0.5)*pw;};
@@ -6264,33 +6283,49 @@ function mkUpdate(force){
   const idle=window.requestIdleCallback||(f=>setTimeout(f,0));
   idle(()=>{
     if(!MK.open||drawing||liveActive){mkNotify(force);return;}
-    try{MK.sig=mkSig();mkFlatten();mkRender();const n=document.getElementById('mkNote');if(n&&MK.fresh)n.textContent='Live: updates after each change. Drag to move, use Size to scale.';}catch(e){console.warn('[sketchpad] mug preview',e);}
+    try{MK.sig=mkSig();mkFlatten();mkRender();const n=document.getElementById('mkNote');if(n&&MK.fresh){MK.fresh=0;MK.syncUI&&MK.syncUI();}}catch(e){console.warn('[sketchpad] mug preview',e);}
   },{timeout:800});
 }
 function mkSection(){
   if(MK.sec)return MK.sec;
   const sec=document.createElement('section');sec.className='section';sec.id='mugSection';
   sec.innerHTML='<div class="mk-wrap"><canvas id="mkCv" width="512" height="512"></canvas>'
-    +'<div class="mk-bar"><label style="font:800 12px system-ui;display:flex;align-items:center;gap:6px">Size <input type="range" id="mkScale" min="20" max="250" value="100"> <span id="mkScaleV">100%</span></label>'
+    +'<div class="mk-bar"><div class="mk-seg" role="group" aria-label="Single or repeat"><button type="button" id="mkSingle" title="Show the illustration once">Single</button><button type="button" id="mkRepeat" title="Tile the pattern across the mug using your repeat layout">Repeat</button></div>'
+    +'<button type="button" class="btn mini" id="mkLock" title="Lock the artwork\'s position and size so a stray touch cannot move it">🔓 Lock</button></div>'
+    +'<div class="mk-bar"><label style="font:800 12px system-ui;display:flex;align-items:center;gap:6px"><span id="mkScaleL">Size</span> <input type="range" id="mkScale" min="20" max="250" value="100"> <span id="mkScaleV">100%</span></label>'
     +'<button type="button" class="btn mini" id="mkFit" title="Fit the whole artwork in the printable area again">⤢ Fit</button>'
     +'<button type="button" class="btn mini" id="mkRefresh" title="Update now (it also updates by itself)">🔄 Refresh</button></div>'
     +'<div class="mk-note" id="mkNote">Live: updates after each change. Drag to move, use Size to scale.</div></div>';
   MK.sec=sec;
-  const sc=sec.querySelector('#mkScale'),cv=sec.querySelector('#mkCv');
-  sc.oninput=()=>{MK.s=sc.value/100;sec.querySelector('#mkScaleV').textContent=sc.value+'%';mkSchedule();};
-  sec.querySelector('#mkFit').onclick=()=>{MK.s=1;MK.ox=MK.oy=0;sc.value=100;sec.querySelector('#mkScaleV').textContent='100%';mkSchedule();};
-  sec.querySelector('#mkRefresh').onclick=()=>{const n=sec.querySelector('#mkNote');MK.sig='';try{mkFlatten();mkRender();n.textContent='Refreshed.';}catch(e){n.textContent='Could not refresh: '+e.message;}};
-  cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);MK.drag={x:e.clientX,y:e.clientY,ox:MK.ox,oy:MK.oy};cv.style.cursor='grabbing';e.preventDefault();});
-  cv.addEventListener('pointermove',e=>{if(!MK.drag)return;const r=cv.getBoundingClientRect(),k=512/r.width;MK.ox=MK.drag.ox+(e.clientX-MK.drag.x)*k;MK.oy=MK.drag.oy+(e.clientY-MK.drag.y)*k;mkSchedule();});
-  const end=()=>{MK.drag=null;cv.style.cursor='grab';};cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);
+  const sc=sec.querySelector('#mkScale'),cv=sec.querySelector('#mkCv'),q=id=>sec.querySelector(id);
+  const curS=()=>MK.mode==='repeat'?MK.ps:MK.s;
+  const syncUI=()=>{
+    q('#mkSingle').classList.toggle('on',MK.mode==='single');q('#mkRepeat').classList.toggle('on',MK.mode==='repeat');
+    q('#mkScaleL').textContent=MK.mode==='repeat'?'Repeat size':'Size';
+    sc.value=Math.round(curS()*100);q('#mkScaleV').textContent=sc.value+'%';
+    const lk=MK.locked;sc.disabled=lk;q('#mkFit').disabled=lk;q('#mkLock').textContent=lk?'🔒 Locked':'🔓 Lock';q('#mkLock').classList.toggle('primary',lk);
+    cv.style.cursor=lk?'default':'grab';
+    const n=q('#mkNote');if(n)n.textContent=lk?'Locked: position and size are fixed. Drawing still updates the mug live. Tap Lock to unlock.':(MK.mode==='repeat'?'Live: pattern repeats in your '+(layout==='grid'?'grid':layout)+' layout. Drag to shift it, use Repeat size to scale.':'Live: updates after each change. Drag to move, use Size to scale.');
+  };
+  MK.syncUI=syncUI;
+  q('#mkSingle').onclick=()=>{MK.mode='single';syncUI();mkSchedule();};
+  q('#mkRepeat').onclick=()=>{MK.mode='repeat';syncUI();mkSchedule();};
+  q('#mkLock').onclick=()=>{MK.locked=!MK.locked;MK.drag=null;try{localStorage.setItem('sp-mugLock',MK.locked?'1':'0');}catch(e){}syncUI();};
+  sc.oninput=()=>{if(MK.locked)return;if(MK.mode==='repeat')MK.ps=sc.value/100;else MK.s=sc.value/100;q('#mkScaleV').textContent=sc.value+'%';mkSchedule();};
+  q('#mkFit').onclick=()=>{if(MK.locked)return;if(MK.mode==='repeat'){MK.ps=1;MK.pox=MK.poy=0;}else{MK.s=1;MK.ox=MK.oy=0;}syncUI();mkSchedule();};
+  q('#mkRefresh').onclick=()=>{const n=q('#mkNote');MK.sig='';try{mkFlatten();mkRender();n.textContent='Refreshed.';setTimeout(syncUI,1500);}catch(e){n.textContent='Could not refresh: '+e.message;}};
+  cv.addEventListener('pointerdown',e=>{if(MK.locked)return;cv.setPointerCapture(e.pointerId);MK.drag={x:e.clientX,y:e.clientY,ox:MK.ox,oy:MK.oy,pox:MK.pox,poy:MK.poy};cv.style.cursor='grabbing';e.preventDefault();});
+  cv.addEventListener('pointermove',e=>{if(!MK.drag||MK.locked)return;const r=cv.getBoundingClientRect(),k=512/r.width,dx=(e.clientX-MK.drag.x)*k,dy=(e.clientY-MK.drag.y)*k;if(MK.mode==='repeat'){MK.pox=MK.drag.pox+dx;MK.poy=MK.drag.poy+dy;}else{MK.ox=MK.drag.ox+dx;MK.oy=MK.drag.oy+dy;}mkSchedule();});
+  const end=()=>{MK.drag=null;cv.style.cursor=MK.locked?'default':'grab';};cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);
+  syncUI();
   return sec;
 }
 // Size the picture to the panel (it follows the panel when you resize it).
 function mkFit(){
   const sec=MK.sec;if(!sec)return;const body=sec.closest('.fp-body');if(!body)return;
-  const cv=sec.querySelector('#mkCv'),bar=sec.querySelector('.mk-bar'),note=sec.querySelector('#mkNote');
+  const cv=sec.querySelector('#mkCv'),note=sec.querySelector('#mkNote'),barH=[...sec.querySelectorAll('.mk-bar')].reduce((a,b)=>a+b.offsetHeight+8,0);
   const fp=body.closest('.fpanel'),explicitH=fp&&fp.style.height&&!fp.classList.contains('docked');   // only a panel you resized has a fixed height to fit into
-  const avail=explicitH?Math.min(body.clientWidth-24,body.clientHeight-(bar.offsetHeight+note.offsetHeight+34)):body.clientWidth-24;
+  const avail=explicitH?Math.min(body.clientWidth-24,body.clientHeight-(barH+note.offsetHeight+34)):body.clientWidth-24;
   const side=Math.max(140,Math.min(avail,760));
   if(Math.abs((parseFloat(cv.style.width)||0)-side)>1){cv.style.width=cv.style.height=Math.round(side)+'px';mkSchedule();}
 }
@@ -6300,7 +6335,7 @@ window.__mugOnOpen=async()=>{
   const n=document.getElementById('mkNote');
   if(!MK.ro){try{MK.ro=new ResizeObserver(()=>{if(MK.fitRaf)return;MK.fitRaf=requestAnimationFrame(()=>{MK.fitRaf=0;try{mkFit();}catch(e){}});});}catch(e){}}
   try{const body=MK.sec.closest('.fp-body');if(MK.ro&&body)MK.ro.observe(body);}catch(e){}
-  mkFit();
+  mkFit();try{MK.syncUI&&MK.syncUI();}catch(e){}
   try{await mkLoad();}catch(e){if(n)n.textContent='The mug picture could not be loaded ('+e.message+'). Open the app online once, then try again.';return;}
   MK.sig='';MK.fresh=1;mkUpdate(true);
 };
