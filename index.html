@@ -694,9 +694,8 @@ html.in-suite .suite-only{display:block!important}
     <section class="section"><div class="section-title">📚 Trace Reference</div><button id="traceToVectorBtn" class="btn primary" style="width:100%;margin-bottom:8px;">✨ Trace Image to Vector</button><label class="upload accentTeal">➕ Trace Artwork<input id="traceInput" type="file" accept="image/*" multiple style="display:none"></label><div id="traceList" class="trace-list" style="margin-top:8px"></div><div class="slider-row"><label>Opacity</label><input id="traceOpacity" type="range" min="5" max="100" value="35"><span id="traceOpacityVal">35%</span></div><div class="slider-row"><label>Scale</label><input id="traceScale" type="range" min="20" max="400" value="100"><span id="traceScaleVal">100%</span></div><div class="row"><button id="traceFit" class="btn mini">Fit</button><button id="traceCentre" class="btn mini">Centre</button><button id="traceLock" class="btn mini active">🔒 Locked</button><button id="traceClear" class="btn mini danger">Clear</button></div></section>
     <section class="section" id="colourSection">
       <div class="section-title">🎨 Colour</div>
-      <div class="hint" style="margin-top:0;">Pick a target below, then tap any swatch to send that colour there. Adjusting hero/vibe/richness or an image upload only regenerates the swatches — it never recolours anything on its own.</div>
-      <div class="section-title" style="font-size:11px;margin:10px 0 6px;">Colour target</div>
-      <div class="grid" id="colourTargetRow">
+      <div class="hint" style="margin-top:0;">Tap any swatch to set your brush colour. To recolour a shape or stroke you have selected, use the Stroke and Fill colours in its own panel. Changing hero/vibe/richness or uploading an image only makes new swatches — it never recolours anything on its own.</div>
+      <div class="grid" id="colourTargetRow" style="display:none">
         <button class="btn mini colour-target-btn active" data-target="brush">✏️ Brush</button>
         <button class="btn mini colour-target-btn" data-target="stroke">🖊️ Stroke tools</button>
         <button class="btn mini colour-target-btn" data-target="fill">🎨 Fill</button>
@@ -1499,7 +1498,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v388'; // keep in step with CACHE in sw.js
+const APP_V='v389'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -9161,7 +9160,10 @@ function syncEngineUI(s){
   syncEraserStyleUI();
   const b=BrushEngine.getBrush(currentBrushIdForSettings());
   const ok=!eraserActive&&!b.stamp&&!b.nib&&!b.path&&!b.fx;
-  $('engineBox').style.display=ok?'block':'none';if(!ok)return;
+  $('engineBox').style.display=ok?'block':'none';
+  try{let w=$('engineWhy');if(!w){w=document.createElement('div');w.id='engineWhy';w.className='hint';w.style.cssText='margin-top:8px';$('engineBox').parentNode.insertBefore(w,$('engineBox').nextSibling);}
+    w.textContent=ok?'':(eraserActive?'':'Raster / Vector is not available for "'+(b.name||b.id)+'" because it is a '+(b.stamp?'stamp':b.nib?'nib':b.path?'monoline path':b.fx?'custom (Brush Maker) ':'special')+' brush'+(String(b.id).indexOf('custom:')===0?'':' (id: '+b.id+')')+'.');}catch(e){}
+  if(!ok)return;
   const ras=s.engine==='raster';
   $('engVecBtn').classList.toggle('active',!ras);$('engRasBtn').classList.toggle('active',ras);
   $('rasterOpts').style.display=ras?'block':'none';
@@ -9280,7 +9282,7 @@ function syncColourTargetUI(){
     fill:'Tap a swatch to set the colour the next Fill Shape uses.',
     areaFill:'Tap a swatch to set the colour the next Vector Area Fill uses.',
   };
-  $('colourTargetHint').textContent=msgs[colorTarget]||'';
+  $('colourTargetHint').textContent='';
   markAcSwatchSelected();
 }
 document.querySelectorAll('.colour-target-btn').forEach(btn=>{btn.onclick=()=>{colorTarget=btn.dataset.target;syncColourTargetUI();};});
@@ -9288,8 +9290,9 @@ document.querySelectorAll('.colour-target-btn').forEach(btn=>{btn.onclick=()=>{c
 // stroke — is deliberate and identical to using the Selected Stroke colour input by hand; every
 // other target just loads the colour into that tool's OWN input, ready for its next explicit use.
 function applyColorToTarget(hex){
+  colorTarget='brush'; // one simple rule: every swatch sets the brush colour
   if(colorTarget==='brush'){
-    currentColor=hex;$('brushColor').value=hex;rememberBrushColour();renderBrushPreview();
+    currentColor=hex;$('brushColor').value=hex;try{$('brushColor').dispatchEvent(new Event('input',{bubbles:true}));}catch(e){}rememberBrushColour();renderBrushPreview();
   }else if(colorTarget==='stroke'){
     const stroke=strokes.find(s=>s.id===selectedStrokeId);
     if(!stroke){setStatus('🎨 Select a stroke first to recolour it.');return;}
@@ -19143,7 +19146,7 @@ SPFonts.init().then(()=>{txRefreshMissing();});
   TOOLS.forEach(t=>{const pb=t.proxy&&$(t.proxy);if(pb)mo.observe(pb,{attributes:true,attributeFilter:['class']});});
   // colour swatch follows the current colour
   function syncSw(){const c=$('tbColor'),sw=$('railSw');if(c&&sw&&sw.dataset.c!==c.value){sw.dataset.c=c.value;sw.style.background=c.value;}}
-  setInterval(syncSw,700);['input','change'].forEach(ev=>document.addEventListener(ev,e=>{if(e.target&&e.target.type==='color')syncSw();},true));
+  setInterval(syncSw,250);['input','change'].forEach(ev=>document.addEventListener(ev,e=>{if(e.target&&e.target.type==='color')syncSw();},true));
   // selecting a stroke opens the Selection panel (the old sidebar showed it automatically)
   try{
     const ss=$('strokeSelectSection');
