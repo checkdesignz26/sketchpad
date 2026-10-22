@@ -464,7 +464,7 @@ html.in-suite .suite-only{display:block!important}
 #selMenuBtn{min-width:104px}
 #tbEditBtn.active{background:var(--accentTeal,#5cb8ab);color:#fff}
 .tb-row .tool-btn.active,.tb-row .tool-btn.sel-on{box-shadow:0 0 0 2px var(--pink)}
-#tbContBtn.active{background:linear-gradient(135deg,#3c82ff,#6aa5ff);color:#fff;border-color:#2563d9;box-shadow:0 0 0 3px rgba(60,130,255,.45),0 2px 8px rgba(0,0,0,.25);font-weight:800}
+#tbPaintBtn.active,#tbContBtn.active{background:linear-gradient(135deg,#3c82ff,#6aa5ff);color:#fff;border-color:#2563d9;box-shadow:0 0 0 3px rgba(60,130,255,.45),0 2px 8px rgba(0,0,0,.25);font-weight:800}
 .col-strip{position:fixed;left:92px;right:14px;bottom:46px;z-index:140;display:none;align-items:center;gap:8px;padding:8px 10px;background:var(--sideBg);color:var(--text);border:1px solid var(--line);border-radius:16px;box-shadow:0 10px 34px rgba(0,0,0,.34);max-width:calc(100vw - 106px)}
 .col-head,.col-add,.col-x{flex:0 0 auto;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:12px;padding:0 12px;min-height:44px;font:inherit;font-weight:700;cursor:pointer}
 .col-add{font-size:22px;min-width:48px}.col-x{opacity:.7;min-width:40px}
@@ -1348,6 +1348,7 @@ html.in-suite .suite-only{display:block!important}
         <button id="tbDupBtn" class="tool-btn" data-ovp="10" data-ovl="⧉ Duplicate" title="Duplicate the selected shape, stroke or picture (also: double-tap it)">⧉</button>
         <span class="tb-split"><button id="tbPencilBtn" class="tool-btn tb-fix" title="Freehand drawing with the current brush">✏️ Pencil</button><button id="tbPencilMenuBtn" class="tool-btn tb-fix" aria-haspopup="menu" aria-expanded="false" title="Choose a brush">▾</button></span>
         <button id="tbContBtn" class="tool-btn tb-fix" title="Continue a line: select a stroke, tap this, then start the Pencil on one of its two blue ＋ ends to draw on from it as the same stroke">↳ Continue</button>
+        <button id="tbPaintBtn" class="tool-btn tb-fix" title="Paint inside a shape: select a closed shape, tap this, then paint with any brush. Colour stays inside the outline, no white fill needed">🖌 Paint inside</button>
         <button id="strokePanelBtn" class="tool-btn tb-fix" title="Stroke tools: show or hide the Stroke panel (colour, width, Edit Path of the selected stroke)">🖊️</button>
         <span id="tbSize" class="size-combo tb-size tb-fix" title="Brush size"><input class="size-num" id="tbSizeNum" type="number" inputmode="decimal" min="0.05" step="0.05"><select class="size-pick" id="tbSizePick" title="Common sizes"></select></span>
         <label id="tbColorWrap" class="tb-color tb-fix" title="Current colour: tap to change"><input type="color" id="tbColor" value="#000000" aria-label="Current colour"></label>
@@ -1485,7 +1486,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v380'; // keep in step with CACHE in sw.js
+const APP_V='v381'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -8655,6 +8656,7 @@ $('editPathBtn').onclick=()=>{if(selectedStrokeId)enterEditPath(selectedStrokeId
 function syncPaintModePill(){
   const pill=$('paintModePill');if(!pill)return;
   pill.style.display=(paintMode==='inside')?'inline-block':'none';
+  const tb=$('tbPaintBtn');if(tb){const on=paintMode==='inside';tb.classList.toggle('active',on);tb.textContent=on?'✕ Exit Paint inside':'🖌 Paint inside';}
 }
 function startPaintInside(){
   const stroke=strokes.find(s=>s.id===selectedStrokeId);
@@ -8676,6 +8678,14 @@ function setFreePaintMode(){
   setStatus('✏️ Free Paint: painting anywhere again.');
 }
 $('paintInsideBtn').onclick=startPaintInside;
+$('tbPaintBtn').onclick=()=>{
+  if(paintMode==='inside'){setFreePaintMode();return;}
+  if(pathEditStrokeId){const id=pathEditStrokeId;try{commitEditPath();}catch(e){}selectedStrokeId=id;}
+  const st=strokes.find(x=>x.id===selectedStrokeId);
+  if(!st){setStatus('🖌 Paint inside: first switch to Edit mode and tap the closed shape (like your heart), then tap Paint inside.');return;}
+  if(!st.closed){setStatus('🖌 Only closed shapes can hold paint. Use Edit Path ▸ Close Shape first.');return;}
+  startPaintInside();
+};
 $('paintModePill').onclick=setFreePaintMode;
 // ---- Fill Shape: a one-tap solid fill, distinct from Paint Inside's freehand clipped scribble.
 // Reuses the selected closed shape's own path as a brand-new stroke (fillColor set, no brush) on
