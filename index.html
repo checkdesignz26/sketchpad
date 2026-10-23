@@ -1540,7 +1540,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v415'; // keep in step with CACHE in sw.js
+const APP_V='v416'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -12190,7 +12190,7 @@ function armJoinPick(){
   joinTargetId=null;
   if(joinPickHandler)viewportOuter.removeEventListener('pointerup',joinPickHandler,true);
   joinPickHandler=e=>{
-    if(!joinPendingStrokeId||!isPen(e)||e.target.closest&&e.target.closest('.path-node,#joinPickBar,.float-panel'))return;
+    if(!joinPendingStrokeId||!(isPen(e)||(e.pointerType==='touch'&&!multiTouchLock))||e.target.closest&&e.target.closest('.path-node,#joinPickBar,.float-panel'))return; // a finger can pick the line too (Finger Off only stops drawing)
     const A=strokes.find(x=>x.id===joinPendingStrokeId);if(!A)return;
     const p=screenToCanvas(e.clientX,e.clientY),r=34/(zoom*baseScale);let best=null,bd=r;
     strokes.forEach(s=>{
@@ -12198,7 +12198,12 @@ function armJoinPick(){
       const pts=s.nodes?nodesToPoints(s.nodes,false):s.points;if(!pts||pts.length<2)return;
       const d=distanceToPolyline(p.x,p.y,pts);if(d<=bd){bd=d;best=s;}
     });
-    if(!best){setStatus('⋈ Tap the line you want to join to (it needs an open end).');return;}
+    if(!best){
+      let why='it needs an open end';
+      strokes.forEach(s=>{if(why!=='it needs an open end')return;const pts=s.nodes?nodesToPoints(s.nodes,false):s.points;if(!pts||pts.length<2||s===A&&joinPendingFromEnd!=null)return;
+        if(distanceToPolyline(p.x,p.y,s.regions?s.points:pts)>r)return;
+        if(s.layerId!==A.layerId)why='that line is on a different layer, so it cannot be joined';else if(s.closed)why='that line is closed, so it has no ends';else if(s.fillColor||s.regions)why='that is a filled shape';else if(s.text)why='that is text';});
+      setStatus('⋈ Tap the line you want to join to ('+why+').');return;}
     joinTargetId=best.id;renderJoinTargets();
     setStatus('⋈ Tap one of its green ends to join, tap another line to switch, or Cancel.');
   };
@@ -12247,7 +12252,7 @@ function renderJoinTargets(){
       el.className='path-node join-target'+(isSelf?' self-endpoint':'');
       el.style.left=pos.x+'px';el.style.top=pos.y+'px';
       el.addEventListener('pointerup',e=>{
-        if(!isPen(e))return;
+        if(!(isPen(e)||e.pointerType==='touch'))return;
         e.stopPropagation();e.preventDefault();
         if(isSelf){
           endJoinPick();
