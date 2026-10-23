@@ -1545,7 +1545,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v428'; // keep in step with CACHE in sw.js
+const APP_V='v429'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -12862,9 +12862,14 @@ function enterEditMotif(){
  editingMotifFrame=null;editingMotifInst=m.id;
  {
   const b=entry.source.bounds;
-  if(b&&b.w>0&&b.h>0&&m.w>0&&(m.fx==null||m.fx===1)&&(m.fy==null||m.fy===1)&&Math.abs(m.w/b.w-m.h/b.h)<0.03*(m.w/b.w)){
-   const k=m.s*m.w/b.w,bcx=b.minX+b.w/2,bcy=b.minY+b.h/2;
-   const fwd={ax:bcx,ay:bcy,sx:k,sy:k,rot:m.r||0,dx:m.x-bcx,dy:m.y-bcy},inv={ax:m.x,ay:m.y,sx:1/k,sy:1/k,rot:-(m.r||0),dx:bcx-m.x,dy:bcy-m.y};
+  if(b&&b.w>0&&b.h>0&&m.w>0&&m.h>0){
+   // Frame the strokes exactly where this copy sits, however the copy was stretched or flipped. A uniform copy scales evenly; a stretched / flipped copy
+   // keeps its stretch when it is not turned (a turned, stretched copy is framed at its average size so the strokes always land on the picture).
+   const fxv=m.fx==null?1:m.fx,fyv=m.fy==null?1:m.fy,kx=m.s*m.w/b.w*fxv,ky=m.s*m.h/b.h*fyv,bcx=b.minX+b.w/2,bcy=b.minY+b.h/2;
+   const exact=Math.abs(Math.abs(kx)-Math.abs(ky))<0.03*Math.abs(kx)||!(m.r||0);
+   let sx=kx,sy=ky;if(!exact||Math.abs(kx)<1e-6||Math.abs(ky)<1e-6){const k0=Math.sqrt(Math.abs(kx*ky))||1;sx=Math.sign(kx||1)*k0;sy=Math.sign(ky||1)*k0;}
+   else if(Math.abs(Math.abs(kx)-Math.abs(ky))<0.03*Math.abs(kx)){const k0=Math.sqrt(Math.abs(kx*ky));sx=Math.sign(kx)*k0;sy=Math.sign(ky)*k0;}
+   const fwd={ax:bcx,ay:bcy,sx,sy,rot:m.r||0,dx:m.x-bcx,dy:m.y-bcy},inv={ax:m.x,ay:m.y,sx:1/sx,sy:1/sy,rot:-(m.r||0),dx:bcx-m.x,dy:bcy-m.y};
    try{grpApply(grpSnapshotOf(strokes,[]),fwd,true);editingMotifFrame={id:m.id,fwd,inv,b:{...b},rw:m.w/b.w,rh:m.h/b.h};}
    catch(e){strokes=JSON.parse(entry.source.strokesJSON);editingMotifFrame=null;}
   }
