@@ -799,6 +799,7 @@ html.in-suite .suite-only{display:block!important}
       <div id="brushPreviewWrap" style="margin:8px 0 4px;border:1px solid var(--line);border-radius:12px;overflow:hidden;"><canvas id="brushPreview" style="position:static;display:block;width:100%;height:76px;max-width:100%;transform:none;left:auto;top:auto;"></canvas></div>
       <div class="brush-quickbar">
         <div class="slider-row"><label>Size</label><input id="brushSize" type="range" min="0.05" step="0.05" max="120" value="6"><span id="brushSizeVal">6</span></div>
+        <div class="slider-row" id="autoFillRow" title="New closed shapes and loops come out with an outline AND a fill"><label style="flex:none"><input type="checkbox" id="autoFillOn"> 🎨 Auto-fill new shapes</label><input id="autoFillColor" class="color" type="color" value="#ffd166" style="width:36px;height:30px;padding:0;margin-left:auto"><label style="flex:none;font-size:12px"><input type="checkbox" id="autoFillSame"> same as outline</label></div>
         <div class="slider-row"><label>Opacity</label><input id="brushOpacity" type="range" min="1" max="100" value="100"><span id="brushOpacityVal">100%</span></div>
       </div>
       <div id="engineBox" style="margin-top:8px;">
@@ -1540,7 +1541,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v416'; // keep in step with CACHE in sw.js
+const APP_V='v417'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -4293,6 +4294,21 @@ canvas.addEventListener('pointermove',e=>{
   renderLivePreviewIncremental();redraw();
   if(!continueStrokeId)maybeArmHoldTimer(p); // Draw + Hold only applies to a plain freehand gesture, never Continue Path
 });
+// Auto-fill: a new closed shape, or a freehand loop that meets itself, is given a fill as it is drawn (outline stays editable on top)
+const autoFill={on:false,color:'#ffd166',same:false};
+try{Object.assign(autoFill,JSON.parse(localStorage.getItem('sp-autoFill')||'{}'));}catch(e){}
+function autoFillApply(stroke){
+  if(!autoFill.on||!stroke||stroke.brushId==='eraser'||stroke.brushId==='smudge'||stroke.tpl||stroke.text||stroke.fillColor)return;
+  const pts=stroke.points||[];let ok=!!(stroke.closed||(stroke.shape&&SHAPE_CLOSED[stroke.shape.type]));
+  if(!ok&&!stroke.shape&&pts.length>=8){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;pts.forEach(p=>{x0=Math.min(x0,p.x);y0=Math.min(y0,p.y);x1=Math.max(x1,p.x);y1=Math.max(y1,p.y);});const diag=Math.hypot(x1-x0,y1-y0),gap=Math.hypot(pts[0].x-pts[pts.length-1].x,pts[0].y-pts[pts.length-1].y);ok=diag>12&&gap<diag*0.12;}
+  if(!ok)return;
+  stroke.fill={on:true,same:!!autoFill.same,opacity:1,color:autoFill.same?stroke.color:autoFill.color};
+  try{fillSync();rebuildLayer(stroke.layerId);}catch(e){}
+}
+{const on=$('autoFillOn'),col=$('autoFillColor'),same=$('autoFillSame');
+  if(on){on.checked=!!autoFill.on;col.value=autoFill.color||'#ffd166';same.checked=!!autoFill.same;
+    const save=()=>{autoFill.on=on.checked;autoFill.color=col.value;autoFill.same=same.checked;try{localStorage.setItem('sp-autoFill',JSON.stringify(autoFill));}catch(e){}col.style.opacity=same.checked?.35:1;};
+    on.onchange=same.onchange=col.oninput=save;save();}}
 canvas.addEventListener('pointerup',e=>{
   if(!drawing)return;
   drawing=false;
@@ -4307,7 +4323,7 @@ canvas.addEventListener('pointerup',e=>{
       stroke.points=shapeToPoints(stroke.shape);
     }
     if(stroke.shape.type==='line'&&tileSnapLine(stroke.shape))stroke.points=shapeToPoints(stroke.shape);
-    strokes.push(stroke);appendStrokeToLayer(stroke);
+    strokes.push(stroke);appendStrokeToLayer(stroke);autoFillApply(stroke);
     selectedStrokeId=stroke.id;selected=null;
     shapeDrawStroke=null;shapeDrawStart=null;
     liveActive=false;lctx.clearRect(0,0,W,H);liveOvEnd(stroke.settings);
@@ -4374,7 +4390,7 @@ canvas.addEventListener('pointerup',e=>{
           stroke.wp=wpFrom(bw.pts);const pw=Math.max(0,Math.min(100,+settingsSnapshot.pressureWidth||0))/100;if(pw>0)stroke.wpP=pw;
         }else{const np=(typeof wpNewPts==='function')?wpNewPts():null;if(np){stroke.wp=wpFrom(np);if(wpPress==='both')stroke.wpP=1;}}
       }
-      strokes.push(stroke);appendStrokeToLayer(stroke);
+      strokes.push(stroke);appendStrokeToLayer(stroke);autoFillApply(stroke);
     });
     BrushEngine.touchRecent(activeBrushId);syncRecents();
   }
