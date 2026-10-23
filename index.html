@@ -1554,7 +1554,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v440'; // keep in step with CACHE in sw.js
+const APP_V='v441'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -18847,10 +18847,10 @@ async function txDownload(family){
 // ---- entry points ----
 function txToggleTool(){if(txToolOn){txStopTool();setStatus('Text tool off.');}else txStartTool();}
 txWire();makeFloatPanelDraggable('textPanel','textPanelHandle');
-$('txAddBtn').onclick=txToggleTool;
+$('txAddBtn').onclick=()=>{if(!txToolOn)txStartTool();};
 $('txFontsBtn').onclick=()=>txOpenPicker({});
 $('tbTextBtn').onclick=()=>{tbClose();txToggleTool();};
-$('qaText').onclick=()=>{txToggleTool();};
+$('qaText').onclick=()=>{if(!txToolOn)txStartTool();};
 SPFonts.onChange(()=>{txRefreshMissing();});
 SPFonts.init().then(()=>{txRefreshMissing();});
 
