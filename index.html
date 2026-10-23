@@ -1542,7 +1542,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v423'; // keep in step with CACHE in sw.js
+const APP_V='v424'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -2284,6 +2284,7 @@ const HOLD_MS=420,HOLD_MOVE_TOLERANCE=9;
 // Auto-straighten (tiled preview only): a stroke that runs the whole length of the tile, is nearly straight and is within a few degrees of
 // vertical / horizontal is snapped to an exactly vertical / horizontal line when the pen lifts. Without it, hand wobble makes the stroke
 // overlap itself with a small kink where the tile wraps. Can be switched off in the More menu.
+let holdSnap=true;try{holdSnap=localStorage.getItem('sp-holdSnap')!=='0';}catch(e){}
 let autoStraight=true;try{autoStraight=localStorage.getItem('sp-autoStraight')!=='0';}catch(e){}
 let holdTimer=null,holdAnchor=null,holdTriggered=false,holdCorrectedShape=null,holdPressureProfile=null,holdRecognitionSnapshot=null;
 let holdAdjustBaseHw=0,holdAdjustBaseHh=0,holdAdjustAnchorDist=1,holdAdjustAnchorPos=null,holdAdjustBaseX1=0,holdAdjustBaseY1=0;
@@ -11552,7 +11553,7 @@ function resetHoldState(){
 // as it stood the moment it actually finished, skews both the fitted size and occasionally the
 // shape classification itself — this snapshot is what recognition actually uses instead.
 function maybeArmHoldTimer(p){
-  if(holdTriggered)return;
+  if(holdTriggered||!holdSnap)return; // Hold-to-snap switched off: a pause never turns your drawing into a clean shape
   if(!holdAnchor||Math.hypot(p.x-holdAnchor.x,p.y-holdAnchor.y)>HOLD_MOVE_TOLERANCE){
     holdAnchor={x:p.x,y:p.y};
     holdRecognitionSnapshot=currentPoints.slice();
@@ -11561,7 +11562,7 @@ function maybeArmHoldTimer(p){
   }
 }
 function triggerHoldRecognition(){
-  if(!drawing||holdTriggered||eraserActive||shapeDrawStroke||continueStrokeId)return;
+  if(!holdSnap||!drawing||holdTriggered||eraserActive||shapeDrawStroke||continueStrokeId)return;
   const sourcePoints=(holdRecognitionSnapshot&&holdRecognitionSnapshot.length>=6)?holdRecognitionSnapshot:currentPoints;
   if(sourcePoints.length<6)return;
   const result=recognizeShape(sourcePoints);
@@ -16076,7 +16077,7 @@ function tbMoreMenu(btn){
     const lab=it.dataset.ovl||it.textContent.trim();
     items.push({label:lab,disabled:it.disabled,run:()=>{if(it.id==='zoomPill'||it.id==='viewToggleBtn'){it.classList.remove('tb-ov');it.click();it.classList.add('tb-ov');}else it.click();}});
   });
-  items.push({sep:1},{label:'📏 Auto-straighten long lines: '+(autoStraight?'On':'Off'),sub:'in tiled view, a long nearly straight upright or flat stroke snaps clean',run:()=>{autoStraight=!autoStraight;try{localStorage.setItem('sp-autoStraight',autoStraight?'1':'0');}catch(e){}setStatus('📏 Auto-straighten long lines is '+(autoStraight?'on':'off')+'.');}},{label:'📋 Copy selection',sub:'to paste in another project',run:()=>copySelectionToClipboard()},{label:'📥 Paste copied artwork',sub:'onto the active layer',run:()=>pasteFromClipboard()},{sep:1},{label:'⏱ Speed test',sub:'times the open project',run:()=>showBenchmark()},{label:'🧠 Memory check',sub:'what is using memory',run:()=>{try{projAsk({title:'🧠 Memory check',message:memoryReport(),ok:'OK',cancel:null});}catch(e){showErrToast('Memory check: '+(e&&e.message||e));}}});
+  items.push({sep:1},{label:'✨ Hold to snap shapes: '+(holdSnap?'On':'Off'),sub:holdSnap?'pausing the pencil at the end of a drawing turns it into a clean ellipse, square or line. Tap to turn off for leaf-like freehand shapes':'a pause at the end of a drawing keeps your freehand shape. Tap to turn clean shapes back on',run:()=>{holdSnap=!holdSnap;try{localStorage.setItem('sp-holdSnap',holdSnap?'1':'0');}catch(e){}setStatus('✨ Hold to snap shapes is '+(holdSnap?'on':'off')+'.');}},{sep:1},{label:'📏 Auto-straighten long lines: '+(autoStraight?'On':'Off'),sub:'in tiled view, a long nearly straight upright or flat stroke snaps clean',run:()=>{autoStraight=!autoStraight;try{localStorage.setItem('sp-autoStraight',autoStraight?'1':'0');}catch(e){}setStatus('📏 Auto-straighten long lines is '+(autoStraight?'on':'off')+'.');}},{label:'📋 Copy selection',sub:'to paste in another project',run:()=>copySelectionToClipboard()},{label:'📥 Paste copied artwork',sub:'onto the active layer',run:()=>pasteFromClipboard()},{sep:1},{label:'⏱ Speed test',sub:'times the open project',run:()=>showBenchmark()},{label:'🧠 Memory check',sub:'what is using memory',run:()=>{try{projAsk({title:'🧠 Memory check',message:memoryReport(),ok:'OK',cancel:null});}catch(e){showErrToast('Memory check: '+(e&&e.message||e));}}});
   items.push({label:drawLock?'🔒 Stay in Draw: ON (tap to turn off)':'🔓 Stay in Draw: off (tap to turn on)',sub:'stops accidental Edit',run:()=>{drawLock=!drawLock;try{localStorage.setItem('sp-drawLock',drawLock?'1':'0');}catch(e){}if(drawLock&&mode==='edit'){$('drawModeBtn').click();}setStatus(drawLock?'🔒 Stay in Draw is on. The app will not jump into Edit by itself, and the Edit button needs two taps.':'🔓 Stay in Draw is off.');}});
   if(btn.id==='tbMoreMain')items.push({sep:1},{head:'Autosave'},{label:$('saveStatusPill').textContent,disabled:true});
   tbMenu(btn,items);
