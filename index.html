@@ -1540,7 +1540,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v411'; // keep in step with CACHE in sw.js
+const APP_V='v412'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -4707,7 +4707,7 @@ function syncStrokeSelectionUI0(){
   }
   const strokeColorInput=$('strokeColorInput');
   if(strokeColorInput&&stroke)strokeColorInput.value=stroke.color||'#000000';
-  if(stroke)syncSelStrokeControls();else{try{tbSizeSync();}catch(e){}} // nothing / several selected: the size box must not keep the last stroke's number
+  if(stroke)syncSelStrokeControls();else{try{syncMultiSizeControls();}catch(e){}try{tbSizeSync();}catch(e){}} // nothing / several selected: the size box must not keep the last stroke's number
   syncShapeParamsUI(stroke);
   syncStrokeLayerSelect(stroke);
   // Paint Inside content is a freehand RASTER scribble clipped to a boundary, not a simple
@@ -8678,6 +8678,15 @@ function refreshSelStrokeView(stroke){
   else rebuildLayer(stroke.layerId);
   redraw();
 }
+// Several strokes selected (a grouped SVG piece, a box selection): the Stroke panel's size boxes show their common size, or blank with "mixed", instead of the last single stroke's number.
+function syncMultiSizeControls(){
+  const ms=tbMultiStrokes();if(!ms)return;
+  const sizes=ms.map(x=>strokeSettings(x).size),same=sizes.every(v=>Math.abs(v-sizes[0])<1e-6);
+  document.querySelectorAll('.sel-width').forEach(e=>{e.value=sizes[0];});
+  document.querySelectorAll('.sel-width-val').forEach(e=>{e.textContent=same?fmtSize(sizes[0]):'mixed';});
+  syncSizeNums(true);
+  if(!same)document.querySelectorAll('.size-combo').forEach(c=>{if(c._range&&c._range.classList.contains('sel-width')){const n=c.querySelector('.size-num'),p=c.querySelector('.size-pick');if(n){n.value='';n.placeholder='mixed';}if(p)p.value='';}});
+}
 let lastSelSizeSyncId=null;
 function syncSelStrokeControls(){
   const stroke=strokes.find(s=>s.id===(pathEditStrokeId||selectedStrokeId));if(!stroke)return;
@@ -8722,7 +8731,9 @@ document.querySelectorAll('.sel-brush').forEach(el=>{
 document.querySelectorAll('.sel-width').forEach(el=>{
   el.step='any'; // a 0.05 step rounded the shown size (9.34 appeared as 9.35)
   el.addEventListener('input',e=>{
-    const stroke=strokes.find(s=>s.id===(pathEditStrokeId||selectedStrokeId));if(!stroke)return; // the same stroke the readout shows (Edit Path included)
+    const stroke=strokes.find(s=>s.id===(pathEditStrokeId||selectedStrokeId));
+    if(!stroke){const ms=tbMultiStrokes();if(ms){const v=+e.target.value;ms.forEach(x=>{x.settings=Object.assign({},strokeSettings(x),{size:v});});new Set(ms.map(x=>x.layerId)).forEach(id=>rebuildLayer(id));redraw();try{document.querySelectorAll('.sel-width-val').forEach(q=>{q.textContent=fmtSize(v);});}catch(err){}}return;} // several selected: set them all
+    // the same stroke the readout shows (Edit Path included)
     if(!stroke.settings)stroke.settings=Object.assign({},BrushEngine.getSettings(stroke.brushId));
     stroke.settings.size=+e.target.value;
     syncSelStrokeControls();refreshSelStrokeView(stroke);
