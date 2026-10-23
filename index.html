@@ -1554,7 +1554,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v441'; // keep in step with CACHE in sw.js
+const APP_V='v442'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -3722,6 +3722,58 @@ async function resizeProjectFlow(){
   setStatus('📐 Resized to '+physLabel(tilePhys)+(mode==='keep'?'. The artwork was left as it was.':' — artwork scaled to '+(mode==='fit'?'fit':'fill')+' ('+Math.round(res.k*100)+'%).')+(r.save==='copy'?' This is the resized copy.':''));
 }
 
+// ---- Watermark grid -------------------------------------------------------------------------------------------------------------
+// Repeats a line of text in a neat grid over the whole pattern, on its own layer called "Watermark" (every copy is ordinary editable text).
+// Running it again replaces the earlier grid. Delete the layer to remove it.
+async function watermarkGridFlow(){
+  if(!activeProject){setStatus('Open a project first, then add a watermark grid.');return;}
+  if(editingMotifId){setStatus('Tap Done or Cancel on the motif you are editing first.');return;}
+  let last='';try{last=localStorage.getItem('sp-wmText')||'';}catch(e){}
+  const old=layers.find(l=>l.name==='Watermark'),ratio=TH/TW;
+  const r=await projAsk({title:'🔲 Watermark grid',fields:[
+    {key:'txt',label:'Watermark text',type:'text',value:last||'© Your shop name'},
+    {key:'cols',label:'Copies across',type:'number',value:'3',min:1},
+    {key:'rows',label:'Copies down',type:'number',value:String(Math.max(1,Math.round(3*ratio)))},
+    {key:'ang',label:'Angle (degrees)',type:'number',value:'-30',min:-180},
+    {key:'size',label:'Text size',type:'chips',value:'m',options:[['s','Small'],['m','Medium'],['l','Large']]},
+    {key:'op',label:'Strength',type:'chips',value:'.3',options:[['.15','Faint'],['.3','Medium'],['.5','Strong']]},
+    {key:'col',label:'Colour',type:'chips',value:'grey',options:[['grey','Grey'],['white','White'],['black','Black'],['cur','Current colour']]},
+    {key:'stag',label:'Rows',type:'chips',value:'yes',options:[['yes','Staggered'],['no','Straight']]}],
+    note:(old?'There is already a Watermark layer. Adding again replaces it. ':'')+'Each copy is normal text on a layer named Watermark, so you can still move, recolour or delete it. The grid fits inside the pattern area, so it repeats cleanly if the pattern tiles.',
+    ok:old?'Replace watermark':'Add watermark',
+    validate:v=>{if(!String(v.txt).trim())return 'Type the watermark text.';const c=+v.cols,rw=+v.rows;if(!(c>=1&&c<=12&&rw>=1&&rw<=12))return 'Use 1 to 12 copies across and down.';if(!isFinite(+v.ang))return 'Enter an angle such as -30.';return '';}});
+  if(!r)return;
+  const txt=String(r.txt).trim(),cols=Math.round(+r.cols),rows=Math.round(+r.rows),ang=(+r.ang||0)*Math.PI/180;
+  try{localStorage.setItem('sp-wmText',txt);}catch(e){}
+  const d=txDefaults();if(!SPFonts.has({src:d.font.src,family:d.font.family}))d.font={src:'bundled',family:'Lora'};
+  const base={str:txt,font:d.font,weight:d.weight,italic:d.italic,size:100,align:'center',ls:0,lh:1.2,opacity:+r.op,bw:1,bh:1,path:null};
+  await SPFonts.ensure(txFontOf(base));txStamp++;
+  const m0=txMeasure(base),cw=TW/cols,ch=TH/rows;
+  const frac={s:.45,m:.62,l:.8}[r.size]||.62,c=Math.abs(Math.cos(ang)),sn=Math.abs(Math.sin(ang));
+  // the turned text must still fit inside its own cell
+  const fit=Math.min(cw*frac/(m0.bw*c+m0.bh*sn),ch*frac/(m0.bw*sn+m0.bh*c));
+  base.size=Math.max(4,Math.round(100*fit*10)/10);
+  const m=txMeasure(base);base.bw=m.bw;base.bh=m.bh;
+  const color=r.col==='white'?'#ffffff':r.col==='black'?'#000000':r.col==='cur'?currentColor:'#8a8a8a';
+  let L=old;
+  if(L){strokes=strokes.filter(s=>s.layerId!==L.id);L.locked=false;}
+  else{L=makeLayer('Watermark');layers.push(L);}
+  activeLayerId=L.id;
+  const x0=W/2-TW/2,y0=H/2-TH/2,cs=Math.cos(ang),sv=Math.sin(ang);
+  for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){
+    const cx=x0+(i+.5+((r.stag==='yes'&&j%2)?.5:0))*cw,cy=y0+(j+.5)*ch;
+    if(r.stag==='yes'&&j%2&&i===cols-1&&cols>1){continue;} // keeps staggered rows inside the pattern area
+    const t=Object.assign({},base);
+    const st={id:crypto.randomUUID(),brushId:activeBrushId,layerId:L.id,atop:false,color,settings:Object.assign({},currentSettings()),points:[],nodes:null,closed:true,clipStrokeId:null,shape:null,text:t};
+    txSetFrame(st,[cs,sv,-sv,cs,cx-(cs*m.bw/2-sv*m.bh/2),cy-(sv*m.bw/2+cs*m.bh/2)],m.bw,m.bh);
+    strokes.push(st);
+  }
+  selectedStrokeId=null;
+  try{rebuildLayer(L.id);renderLayersList();}catch(e){}
+  try{syncStrokeSelectionUI();}catch(e){}
+  redraw();pushHist();try{txRefreshEmbeds();}catch(e){}try{scheduleAutosave();}catch(e){}
+  setStatus('🔲 Watermark grid added on the "Watermark" layer ('+strokes.filter(s=>s.layerId===L.id).length+' copies). Run it again to change it, or delete the layer to remove it.');
+}
 function offsets(){
   const arr=[[0,0]];if(!showTiling)return arr;
   if(layout==='diamond'){for(let ix=-1;ix<=1;ix++)for(let iy=-1;iy<=1;iy++){if(ix||iy)arr.push(tilePos(ix,iy));}arr.push(tilePos(2,0),tilePos(-2,0),tilePos(0,2),tilePos(0,-2));return arr;} // the 8 neighbours plus the 4 far corners, so the canvas margin is filled too
@@ -16223,6 +16275,7 @@ function tbProjectMenu(){
     {label:'✨ Trace Image to Vector…',sub:'picture → shapes',run:()=>openTraceImage()},
     {label:'🕘 Earlier Saves',disabled:!activeProject,run:pressLegacy('backupsBtn')},
     {label:'📐 Resize project…',disabled:!activeProject,run:()=>resizeProjectFlow()},
+    {label:'🔲 Watermark grid…',disabled:!activeProject,run:()=>watermarkGridFlow()},
     {label:'🔤 Give each text its own layer',disabled:!activeProject,run:()=>txTidyLayers()},
   ]);
 }
