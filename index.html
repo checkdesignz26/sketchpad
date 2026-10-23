@@ -1554,7 +1554,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v439'; // keep in step with CACHE in sw.js
+const APP_V='v440'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -4431,6 +4431,7 @@ canvas.addEventListener('pointerup',e=>{
       stroke.points=shapeToPoints(stroke.shape);
     }
     if(stroke.shape.type==='line'&&tileSnapLine(stroke.shape))stroke.points=shapeToPoints(stroke.shape);
+    {const al=autoLayerFor('shape',autoLayerShapeName(stroke.shape));if(al){stroke.layerId=al.id;stroke.atop=false;}}
     strokes.push(stroke);appendStrokeToLayer(stroke);autoFillApply(stroke);
     selectedStrokeId=stroke.id;selected=null;
     shapeDrawStroke=null;shapeDrawStart=null;
@@ -4488,9 +4489,10 @@ canvas.addEventListener('pointerup',e=>{
     const committedShape=holdTriggered?holdCorrectedShape:null;
     const committedClosed=committedShape?!!SHAPE_CLOSED[committedShape.type]:false;
     const symTfs=symmetryTransforms(),symGid=symTfs.length>1?crypto.randomUUID():null;
+    const autoL=committedShape?autoLayerFor('shape',autoLayerShapeName(committedShape)):autoLayerFor('stroke','Stroke');
     symTfs.forEach((tf,idx)=>{
       const pts=currentPoints.map(pt=>{const t=tf(pt);return{x:t.x,y:t.y,pressure:pt.pressure};});
-      const stroke={id:crypto.randomUUID(),brushId:activeBrushId,layerId:activeLayerId,atop:!!((layers.find(l=>l.id===activeLayerId)||{}).alphaLock),color:currentColor,settings:Object.assign({},settingsSnapshot),points:pts,nodes:null,closed:committedClosed,clipStrokeId,shape:(idx===0&&committedShape)?committedShape:null};
+      const stroke={id:crypto.randomUUID(),brushId:activeBrushId,layerId:autoL?autoL.id:activeLayerId,atop:autoL?false:!!((layers.find(l=>l.id===activeLayerId)||{}).alphaLock),color:currentColor,settings:Object.assign({},settingsSnapshot),points:pts,nodes:null,closed:committedClosed,clipStrokeId,shape:(idx===0&&committedShape)?committedShape:null};
       if(symGid){stroke.symId=symGid;stroke.symM=symMatrixOf(tf);}
       if(!committedClosed&&!committedShape&&activeBrushId!=='eraser'&&pts.length>=2){
         const bo=BrushEngine.getBrush(activeBrushId),bw=bo&&bo.custom&&bo.def&&bo.def.wprof;
@@ -16386,7 +16388,7 @@ function tbMoreMenu(btn){
     const lab=it.dataset.ovl||it.textContent.trim();
     items.push({label:lab,disabled:it.disabled,run:()=>{if(it.id==='zoomPill'||it.id==='viewToggleBtn'){it.classList.remove('tb-ov');it.click();it.classList.add('tb-ov');}else it.click();}});
   });
-  items.push({sep:1},{label:'✨ Hold to snap shapes: '+(holdSnap?'On':'Off'),sub:holdSnap?'pausing the pencil at the end of a drawing turns it into a clean ellipse, square or line. Tap to turn off for leaf-like freehand shapes':'a pause at the end of a drawing keeps your freehand shape. Tap to turn clean shapes back on',run:()=>{holdSnap=!holdSnap;try{localStorage.setItem('sp-holdSnap',holdSnap?'1':'0');}catch(e){}setStatus('✨ Hold to snap shapes is '+(holdSnap?'on':'off')+'.');}},{sep:1},{label:'📏 Auto-straighten long lines: '+(autoStraight?'On':'Off'),sub:'in tiled view, a long nearly straight upright or flat stroke snaps clean',run:()=>{autoStraight=!autoStraight;try{localStorage.setItem('sp-autoStraight',autoStraight?'1':'0');}catch(e){}setStatus('📏 Auto-straighten long lines is '+(autoStraight?'on':'off')+'.');}},{label:'📋 Copy selection',sub:'to paste in another project',run:()=>copySelectionToClipboard()},{label:'📥 Paste copied artwork',sub:'onto the active layer',run:()=>pasteFromClipboard()},{sep:1},{label:'⏱ Speed test',sub:'times the open project',run:()=>showBenchmark()},{label:'🧠 Memory check',sub:'what is using memory',run:()=>{try{projAsk({title:'🧠 Memory check',message:memoryReport(),ok:'OK',cancel:null});}catch(e){showErrToast('Memory check: '+(e&&e.message||e));}}});
+  items.push({sep:1},{label:'🗂 New layer for each object: '+({off:'Off',shapes:'Shapes & text',all:'Shapes, text & strokes'})[autoLayerMode],sub:'Like Affinity Designer: every new shape, stroke or piece of text gets a layer of its own. Tap to change. Add Layer still makes an empty layer by hand.',run:()=>{autoLayerMode=autoLayerMode==='all'?'shapes':autoLayerMode==='shapes'?'off':'all';try{localStorage.setItem('sp-autoLayer',autoLayerMode);}catch(e){}setStatus('🗂 New layer for each object: '+({off:'Off',shapes:'Shapes & text',all:'Shapes, text & strokes'})[autoLayerMode]+'.');}},{label:'✨ Hold to snap shapes: '+(holdSnap?'On':'Off'),sub:holdSnap?'pausing the pencil at the end of a drawing turns it into a clean ellipse, square or line. Tap to turn off for leaf-like freehand shapes':'a pause at the end of a drawing keeps your freehand shape. Tap to turn clean shapes back on',run:()=>{holdSnap=!holdSnap;try{localStorage.setItem('sp-holdSnap',holdSnap?'1':'0');}catch(e){}setStatus('✨ Hold to snap shapes is '+(holdSnap?'on':'off')+'.');}},{sep:1},{label:'📏 Auto-straighten long lines: '+(autoStraight?'On':'Off'),sub:'in tiled view, a long nearly straight upright or flat stroke snaps clean',run:()=>{autoStraight=!autoStraight;try{localStorage.setItem('sp-autoStraight',autoStraight?'1':'0');}catch(e){}setStatus('📏 Auto-straighten long lines is '+(autoStraight?'on':'off')+'.');}},{label:'📋 Copy selection',sub:'to paste in another project',run:()=>copySelectionToClipboard()},{label:'📥 Paste copied artwork',sub:'onto the active layer',run:()=>pasteFromClipboard()},{sep:1},{label:'⏱ Speed test',sub:'times the open project',run:()=>showBenchmark()},{label:'🧠 Memory check',sub:'what is using memory',run:()=>{try{projAsk({title:'🧠 Memory check',message:memoryReport(),ok:'OK',cancel:null});}catch(e){showErrToast('Memory check: '+(e&&e.message||e));}}});
   items.push({label:drawLock?'🔒 Stay in Draw: ON (tap to turn off)':'🔓 Stay in Draw: off (tap to turn on)',sub:'stops accidental Edit',run:()=>{drawLock=!drawLock;try{localStorage.setItem('sp-drawLock',drawLock?'1':'0');}catch(e){}if(drawLock&&mode==='edit'){$('drawModeBtn').click();}setStatus(drawLock?'🔒 Stay in Draw is on. The app will not jump into Edit by itself, and the Edit button needs two taps.':'🔓 Stay in Draw is off.');}});
   if(btn.id==='tbMoreMain')items.push({sep:1},{head:'Autosave'},{label:$('saveStatusPill').textContent,disabled:true});
   tbMenu(btn,items);
@@ -18355,6 +18357,33 @@ function txTextLayer(){
   let l=layers.find(x=>x.name.trim().toLowerCase()==='text'&&!x.locked);
   if(!l){l=makeLayer('Text');layers.push(l);try{renderLayersList();}catch(e){}}
   return l;
+}
+// ---- A layer for each new object (like Affinity Designer) ----------------------------------------------------------------------
+// New shapes and vector strokes each get a layer of their own (named after what they are); text already does. Turn it off, or limit it to shapes
+// and text, from the More menu. Add Layer still adds an empty layer by hand. Nothing is split when the active layer is locked, clipped, alpha-locked or a guide.
+let autoLayerMode=(function(){try{const v=localStorage.getItem('sp-autoLayer');return v==='off'||v==='shapes'||v==='all'?v:'all';}catch(e){return 'all';}})();
+function autoLayerFor(kind,label){
+  try{
+    if(autoLayerMode==='off'||(kind==='stroke'&&autoLayerMode!=='all'))return null;
+    if(editingMotifId||continueStrokeId||paintMode==='inside'||pathEditStrokeId)return null;
+    const a=layers.find(l=>l.id===activeLayerId);
+    if(!a||a.alphaLock||a.clip||a.locked||a.tpl||(a.kind&&a.kind!=='vector'))return null;
+    if(kind==='stroke'){
+      const br=BrushEngine.getBrush(activeBrushId),st=currentSettings();
+      if(!br||activeBrushId==='eraser'||br.renderMode!=='vector'||br.stamp||(st&&st.engine==='raster'))return null;
+    }
+    const n=layers.filter(l=>l.autoObj&&(l.name===label||l.name.indexOf(label+' ')===0)).length;
+    const l=makeLayer(n?label+' '+(n+1):label);l.autoObj=true;layers.push(l);
+    try{renderLayersList();}catch(e){}
+    return l;
+  }catch(e){return null;}
+}
+function autoLayerShapeName(sh){
+  if(!sh)return 'Shape';
+  const t=sh.type;
+  if(t==='ellipse'||t==='circle')return Math.abs(Math.abs(sh.x1-sh.x0)-Math.abs(sh.y1-sh.y0))<Math.max(4,.05*Math.abs(sh.x1-sh.x0))?'Circle':'Ellipse';
+  const N={rect:'Rectangle',rectangle:'Rectangle',roundrect:'Rounded rectangle',triangle:'Triangle',line:'Line',star:'Star',polygon:'Polygon',diamond:'Diamond',heart:'Heart',arrow:'Arrow'};
+  return N[t]||(t?t.charAt(0).toUpperCase()+t.slice(1):'Shape');
 }
 // Every piece of text lives on its own layer (named after the words). Motifs and drawings never go onto it by themselves.
 function txNewTextLayer(){
