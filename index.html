@@ -1204,7 +1204,7 @@ html.in-suite .suite-only{display:block!important}
       <div id="txPathNote" class="hint" style="color:#c0392b"></div>
     </details>
     <div class="tx-row"><button id="txOutlineBtn" type="button" class="btn mini" style="flex:1" title="Turns the letters into a plain shape that looks identical everywhere. The wording can no longer be edited (Undo brings it back).">🔳 Convert to outlines</button></div>
-    <div class="tx-row"><button id="txLayerBtn" type="button" class="btn mini" style="flex:1" title="Put this text on its own layer called Text">📚 Move to Text layer</button></div>
+    <div class="tx-row"><button id="txLayerBtn" type="button" class="btn mini" style="flex:1" title="Put this text on a layer of its own">📚 Give this text its own layer</button></div>
     <div class="tx-row"><button id="txDupBtn" type="button" class="btn mini" style="flex:1">⧉ Duplicate</button><button id="txDelBtn" type="button" class="btn mini danger" style="flex:1">✕ Delete</button></div>
   </div>
   <div class="float-panel" id="blendPanel" style="display:none;width:300px;">
@@ -1554,7 +1554,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v438'; // keep in step with CACHE in sw.js
+const APP_V='v439'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -4904,7 +4904,7 @@ function syncStrokeSelectionUI0(){
   try{
     let ids=[];if(multiSel&&multiSel.strokeIds&&multiSel.strokeIds.length)ids=multiSel.strokeIds;else if(selectedStrokeId)ids=[selectedStrokeId];
     const key=ids.join(',');
-    if(key&&key!==syncStrokeSelectionUI._selKey){
+    if(key&&key!==syncStrokeSelectionUI._selKey&&!ids.some(id=>{const q=strokes.find(x=>x.id===id);return q&&q.text;})){ // picking a piece of text leaves the active layer alone, so the next motif or line does not land on the text's layer
       const lids=new Set(ids.map(id=>{const q=strokes.find(x=>x.id===id);return q&&q.layerId;}).filter(Boolean));
       if(lids.size===1){const lid=[...lids][0];if(lid!==activeLayerId&&layers.some(l=>l.id===lid&&!l.locked)){activeLayerId=lid;try{renderLayersList();}catch(e){}setStatus('Switched to the layer this is on.');}}
     }
@@ -16221,6 +16221,7 @@ function tbProjectMenu(){
     {label:'✨ Trace Image to Vector…',sub:'picture → shapes',run:()=>openTraceImage()},
     {label:'🕘 Earlier Saves',disabled:!activeProject,run:pressLegacy('backupsBtn')},
     {label:'📐 Resize project…',disabled:!activeProject,run:()=>resizeProjectFlow()},
+    {label:'🔤 Give each text its own layer',disabled:!activeProject,run:()=>txTidyLayers()},
   ]);
 }
 function tbSelectMenu(anchor){
@@ -18355,6 +18356,37 @@ function txTextLayer(){
   if(!l){l=makeLayer('Text');layers.push(l);try{renderLayersList();}catch(e){}}
   return l;
 }
+// Every piece of text lives on its own layer (named after the words). Motifs and drawings never go onto it by themselves.
+function txNewTextLayer(){
+  const n=layers.filter(l=>l.txAutoName).length+1;
+  const l=makeLayer('Text '+n);l.txAutoName=l.name;
+  layers.push(l);return l;
+}
+function txAutoNameLayer(st){
+  try{
+    const l=st&&st.text&&layers.find(x=>x.id===st.layerId);
+    if(!l||!l.txAutoName||l.name!==l.txAutoName)return;
+    if(strokes.filter(q=>q.layerId===l.id).length!==1)return;
+    const nm=String(st.text.str||'').trim().replace(/\s+/g,' ').slice(0,24);
+    if(nm&&nm!==l.name){l.name=nm;l.txAutoName=nm;renderLayersList();}
+  }catch(e){}
+}
+// Tidy an existing project: every text goes on its own layer, away from motifs and drawings that share its layer.
+function txTidyLayers(){
+  let moved=0;
+  layers.slice().forEach(L=>{
+    const texts=strokes.filter(q=>q.layerId===L.id&&q.text);if(!texts.length)return;
+    const others=strokes.some(q=>q.layerId===L.id&&!q.text)||placed.some(p=>p.layerId===L.id&&p.img);
+    const move=others?texts:texts.slice(1);
+    let at=layers.indexOf(L);
+    move.forEach(st=>{const nl=makeLayer('Text');nl.txAutoName=nl.name;nl.visible=L.visible;nl.opacity=L.opacity;layers.splice(++at,0,nl);st.layerId=nl.id;txAutoNameLayer(st);moved++;});
+    if(others&&/^text$/i.test(L.name.trim()))L.name='Artwork';
+    else if(!others&&texts.length>=1){txAutoNameLayer(texts[0]);}
+  });
+  if(!moved){setStatus('🔤 Every text already has its own layer.');return;}
+  try{rebuildAllLayers();renderLayersList();pushHist();redraw();}catch(e){}
+  setStatus('🔤 Gave '+moved+' text'+(moved===1?'':'s')+' their own layer. Motifs and drawings stay where they were.');
+}
 async function txCreateAt(x,y){
   txStopTool();
   const d=txDefaults();
@@ -18362,7 +18394,7 @@ async function txCreateAt(x,y){
   const t={str:'Your text',font:d.font,weight:d.weight,italic:d.italic,size:d.size,align:d.align,ls:d.ls,lh:d.lh,opacity:d.opacity,bw:1,bh:1,path:null};
   await SPFonts.ensure(txFontOf(t));txStamp++;
   const m=txMeasure(t);t.bw=m.bw;t.bh=m.bh;
-  const st={id:crypto.randomUUID(),brushId:activeBrushId,layerId:txTextLayer().id,atop:false,color:currentColor,settings:Object.assign({},currentSettings()),points:[],nodes:null,closed:true,clipStrokeId:null,shape:null,text:t};
+  const st={id:crypto.randomUUID(),brushId:activeBrushId,layerId:txNewTextLayer().id,atop:false,color:currentColor,settings:Object.assign({},currentSettings()),points:[],nodes:null,closed:true,clipStrokeId:null,shape:null,text:t};
   txSetFrame(st,[1,0,0,1,x-m.bw/2,y-m.bh/2],m.bw,m.bh);
   strokes.push(st);rebuildLayer(st.layerId);
   if(mode!=='edit')$('editModeBtn').click();
@@ -18382,6 +18414,7 @@ function txApply(st,opts){
 }
 function txCommit(){
   if(!txCommitT)return;clearTimeout(txCommitT);txCommitT=0;
+  try{txAutoNameLayer(txSelected());}catch(e){}
   pushHist();txRefreshEmbeds();
 }
 function txDelete(st){
@@ -18601,10 +18634,12 @@ function txWire(){
   $('txFontBtn').addEventListener('click',edit(st=>txOpenPicker({target:st})));
   $('txOutlineBtn').addEventListener('click',edit(st=>{txCommit();txConvertOutlines(st);}));
   $('txLayerBtn').addEventListener('click',edit(st=>{
-    txCommit();const L=txTextLayer(),old=st.layerId;
-    if(old===L.id){setStatus('📚 This text is already on the Text layer.');return;}
-    st.layerId=L.id;rebuildLayer(old);rebuildLayer(L.id);renderLayersList();pushHist();redraw();
-    setStatus('📚 Text moved to the "Text" layer. New text goes there too.');
+    txCommit();const old=st.layerId;
+    const shared=strokes.some(q=>q!==st&&q.layerId===old)||placed.some(p=>p.layerId===old&&p.img);
+    if(!shared){setStatus('📚 This text already has a layer of its own.');return;}
+    const L=txNewTextLayer();
+    st.layerId=L.id;txAutoNameLayer(st);rebuildLayer(old);rebuildLayer(L.id);renderLayersList();pushHist();redraw();
+    setStatus('📚 This text now has its own layer.');
   }));
   $('txDupBtn').addEventListener('click',edit(st=>{txCommit();duplicateSelectedStroke();setStatus('🔤 Text duplicated. The copy is exactly on top — drag it where you want it.');}));
   $('txDelBtn').addEventListener('click',edit(st=>txDelete(st)));
