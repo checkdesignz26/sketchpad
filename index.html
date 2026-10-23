@@ -1550,7 +1550,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v433'; // keep in step with CACHE in sw.js
+const APP_V='v434'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -3206,7 +3206,7 @@ function snapshot(){
 // so the oldest steps are dropped once they pass a size budget (always keeping the last few).
 function histSize(){let n=0;history.forEach(h=>{n+=(h.strokesJSON||'').length+(h.placed||'').length+(h.groupsJSON||'').length+(h.layersJSON||'').length;});return n;}
 function histTrim(){while(history.length>4&&histSize()>48e6)history.shift();}
-function pushHist(){try{tplArrowSync();}catch(e){}try{radialSync();}catch(e){console.warn('[sketchpad] radial sync failed',e);}try{fillSync();}catch(e){console.warn('[sketchpad] fill sync failed',e);}try{ctSync();}catch(e){console.warn('[sketchpad] contour sync failed',e);}crumb('pushHist '+strokes.length+' strokes');try{pruneGroups();}catch(e){}try{symSync();}catch(e){console.warn('[sketchpad] symmetry sync failed',e);}try{txRefresh();}catch(e){}try{if(window.SPTimelapse)SPTimelapse.onPush();}catch(e){}try{if(typeof refreshBlends==='function')refreshBlends();if(typeof refreshObjBlends==='function')refreshObjBlends();}catch(e){console.warn('[sketchpad] blend refresh failed',e);}history=history.slice(0,hIndex+1);history.push(snapshot());try{const mc=placed.filter(p=>p.img).length;if(mc!==window._motifCnt){window._motifCnt=mc;renderLayersList();}}catch(e){}if(history.length>100)history.shift();histTrim();hIndex=history.length-1;try{layerThumbsSoon(250);}catch(_){}try{if(window.SPTimelapse)SPTimelapse.afterPush();}catch(e){}scheduleAutosave();}
+function pushHist(){try{tplArrowSync();}catch(e){}try{radialSync();}catch(e){console.warn('[sketchpad] radial sync failed',e);}try{fillSync();}catch(e){console.warn('[sketchpad] fill sync failed',e);}try{ctSync();}catch(e){console.warn('[sketchpad] contour sync failed',e);}crumb('pushHist '+strokes.length+' strokes');try{pruneGroups();}catch(e){}try{symSync();}catch(e){console.warn('[sketchpad] symmetry sync failed',e);}try{txRefresh();}catch(e){}try{if(window.SPTimelapse)SPTimelapse.onPush();}catch(e){}try{if(typeof refreshBlends==='function')refreshBlends();if(typeof refreshObjBlends==='function')refreshObjBlends();}catch(e){console.warn('[sketchpad] blend refresh failed',e);}history=history.slice(0,hIndex+1);history.push(snapshot());try{const mc=placed.filter(p=>p.img).length;if(mc!==window._motifCnt){window._motifCnt=mc;renderLayersList();}}catch(e){}if(history.length>100)history.shift();histTrim();hIndex=history.length-1;try{layerThumbsSoon(250);}catch(_){}try{if(window.SPTimelapse)SPTimelapse.afterPush();}catch(e){}try{motifLodSoon();}catch(e){}scheduleAutosave();}
 // Synchronous now (no more toDataURL()/Image round-trip for the drawing layer) — cheaper AND
 // simpler: JSON-serialised stroke points are far smaller than a full 1800x1800 PNG snapshot per
 // undo step, and replaying them is deterministic so this never has to wait on an image decode.
@@ -3298,7 +3298,7 @@ let brushPreviewRaf=0;
 function scheduleBrushPreview(){if(brushPreviewRaf)return;brushPreviewRaf=requestAnimationFrame(()=>{brushPreviewRaf=0;try{renderBrushPreview();}catch(e){}});}
 let sizeHintRaf=0;
 function applyTransform(){
-  if(!sizeHintRaf){sizeHintRaf=requestAnimationFrame(()=>{sizeHintRaf=0;sizeHintUpdate();});}
+  if(!sizeHintRaf){sizeHintRaf=requestAnimationFrame(()=>{sizeHintRaf=0;sizeHintUpdate();try{motifLodSoon();}catch(_){}});}
   constrainView();scheduleBrushPreview();scheduleMotifHi();
   if(liveOvShown){ // the overlay is fixed to the screen: if the view moves, hand over to the ordinary live layer
     const wasOn=liveOvOn;liveOvHide();
@@ -4531,8 +4531,118 @@ function addMotif(src,name,placeNow=false,source=null,returnToDraw=false,at=null
     motifs.push(entry);
     if(placeNow)placeMotif(entry.id,img,returnToDraw,at);
     renderTray();pushHist();redraw();
+    motifReduce(entry,motifWorkPx(entry.id)).then(ok=>{if(ok){try{renderTray();redraw();}catch(_){}}});
   };
   img.src=src;
+}
+// ---- Motif picture memory: working copies --------------------------------------------------------------------------------------
+// A motif's ORIGINAL picture (entry.src, saved with the project) can be far bigger than it is ever drawn: a 3600 x 3600 picture takes about 49 MB once
+// decoded. While you edit, each motif keeps a WORKING copy (entry.img) sized for the biggest copy of it on the canvas at the project's export scale
+// (never below 1024 px). The original is decoded again only when it is really needed (exports bigger than the working copy, or zooming far in on that
+// motif) and let go again afterwards. Saved artwork, sizes and positions never change: only the picture held in memory.
+const MOTIF_MIN_WORK=1024,MOTIF_MAX_FULL=3;
+const imgNW=im=>im?(im.naturalWidth||im.width||0):0;
+const motifIsReduced=e=>!!(e&&e.img&&e.img._lod==='work');
+function motifLoadImg(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('motif picture could not be decoded'));i.src=src;});}
+function motifSetImg(e,img){e.img=img;placed.forEach(p=>{if(p.motifId===e.id)p.img=img;});}
+function motifNeedUnits(id){let n=0;placed.forEach(p=>{if(p.motifId===id&&p.img)n=Math.max(n,Math.max(p.w,p.h)*Math.abs(p.s||1));});return n;}
+function motifExportScale(pw,tw){try{const a=pw||(tilePhys&&tilePhys.w),b=tw||TW;const k=(a&&b)?a/b:0;return k>=1?k:4;}catch(e){return 4;}}
+const MOTIF_HEADROOM=1.5; // working copy = 1.5 x the pixels the export needs, so the export looks the same as from the original
+function motifWorkPx(id,pw,tw){const need=motifNeedUnits(id);return Math.max(MOTIF_MIN_WORK,Math.ceil(need*motifExportScale(pw,tw)*MOTIF_HEADROOM/16)*16);}
+async function motifReduce(e,target){
+  if(!e||!e.img||e.pin||e._busy||e.loadFailed)return false;
+  const im=e.img,nw=imgNW(im),nh=im.naturalHeight||im.height;
+  if(!nw||!nh||im._lod||nw<=target*1.1)return false;
+  e._busy=true;
+  try{
+    const k=target/Math.max(nw,nh),w=Math.max(1,Math.round(nw*k)),h=Math.max(1,Math.round(nh*k));
+    let src=im,sw=nw,sh=nh;const temps=[];
+    while(sw/2>w){const c=document.createElement('canvas');c.width=Math.max(1,Math.round(sw/2));c.height=Math.max(1,Math.round(sh/2));const g=c.getContext('2d');g.imageSmoothingEnabled=true;try{g.imageSmoothingQuality='high';}catch(_){}g.drawImage(src,0,0,c.width,c.height);temps.push(c);src=c;sw=c.width;sh=c.height;}
+    const out=document.createElement('canvas');out.width=w;out.height=h;const og=out.getContext('2d');og.imageSmoothingEnabled=true;try{og.imageSmoothingQuality='high';}catch(_){}og.drawImage(src,0,0,w,h);
+    temps.forEach(c=>{c.width=c.height=1;});
+    const blob=await new Promise(r=>out.toBlob(r,'image/png'));out.width=out.height=1;
+    if(!blob)return false;
+    const url=URL.createObjectURL(blob);let img;
+    try{img=await motifLoadImg(url);}finally{URL.revokeObjectURL(url);}
+    if(e.img!==im)return false; // the motif was changed (edited / undone) while this was working: leave it alone
+    img._lod='work';img._fullW=nw;img._fullH=nh;
+    e._work=img;e._workSrc=e.src;motifSetImg(e,img);
+    return true;
+  }catch(err){console.warn('[sketchpad] motif working copy failed',err);return false;}
+  finally{e._busy=false;}
+}
+// Bring the original picture back (pattern fills, far zoom). pin=true keeps it for good (a pattern fill is sized from the picture's own pixels).
+async function motifUpgrade(e,pin){
+  if(!e)return;
+  if(pin)e.pin=true;
+  if(!motifIsReduced(e)||e._busy)return;
+  e._busy=true;const src=e.src;
+  try{const full=await motifLoadImg(src);if(e.src!==src||!motifIsReduced(e))return;motifSetImg(e,full);e._upAt=performance.now();try{redraw();}catch(_){}}
+  catch(err){console.warn('[sketchpad] motif original failed',err);}
+  finally{e._busy=false;}
+}
+function motifDowngrade(e){
+  if(!e||e.pin||motifIsReduced(e)||!e._work||e._workSrc!==e.src)return false;
+  motifSetImg(e,e._work);return true;
+}
+// Exports: any motif whose working copy is smaller than the export needs gets its original back for the length of the export.
+async function motifsForExport(k){
+  const swaps=[];
+  try{
+    for(const e of motifs){
+      if(!motifIsReduced(e))continue;
+      const need=motifNeedUnits(e.id)*k;if(!need||imgNW(e.img)>=need*(MOTIF_HEADROOM*0.83))continue;
+      try{const full=await motifLoadImg(e.src);swaps.push([e,e.img,full]);motifSetImg(e,full);}catch(err){console.warn('[sketchpad] export: original picture unavailable, using the working copy',err);}
+    }
+  }catch(err){console.warn(err);}
+  return ()=>{swaps.forEach(([e,prev,full])=>{if(e.img===full)motifSetImg(e,prev);});swaps.length=0;};
+}
+// Zoomed far into one motif, the original comes back for the few motifs on screen that need it, and goes again when you zoom out.
+let motifLodTimer=0,motifLodBusy=false;
+function motifLodSoon(){if(motifLodTimer||motifLodBusy)return;motifLodTimer=setTimeout(()=>{motifLodTimer=0;motifLodSync();},400);}
+async function motifLodSync(){
+  if(motifLodBusy)return;motifLodBusy=true;
+  try{
+    if(!motifs.some(e=>e&&(motifIsReduced(e)||e._work)))return;
+    const r=wrap.getBoundingClientRect();if(!r.width)return;
+    const cs=[screenToCanvasRaw(r.left,r.top),screenToCanvasRaw(r.right,r.top),screenToCanvasRaw(r.left,r.bottom),screenToCanvasRaw(r.right,r.bottom)];
+    const vx0=Math.min(...cs.map(c=>c.x)),vx1=Math.max(...cs.map(c=>c.x)),vy0=Math.min(...cs.map(c=>c.y)),vy1=Math.max(...cs.map(c=>c.y));
+    const scale=zoom*baseScale*(window.devicePixelRatio||1),offs=offsets();
+    const want=new Map();
+    placed.forEach(p=>{
+      if(!p.img||!p.motifId)return;
+      const bb=motifAABB(p);if(!bb)return;
+      if(!offs.some(([ox,oy])=>!(bb.x1+ox<vx0||bb.x0+ox>vx1||bb.y1+oy<vy0||bb.y0+oy>vy1)))return;
+      const px=Math.max(p.w,p.h)*Math.abs(p.s||1)*scale;
+      if(px>(want.get(p.motifId)||0))want.set(p.motifId,px);
+    });
+    let fullNow=motifs.filter(e=>e.img&&!motifIsReduced(e)&&e._work&&!e.pin).length;
+    const ups=[...want.entries()].map(([id,px])=>({e:motifs.find(x=>x.id===id),px})).filter(o=>o.e&&motifIsReduced(o.e)&&o.px>imgNW(o.e.img)*1.15).sort((a,b)=>b.px-a.px);
+    let changed=false;
+    // go back to the working copy first (frees memory), then bring up what is needed
+    motifs.forEach(e=>{
+      if(!e.img||motifIsReduced(e)||!e._work||e.pin)return;
+      const px=want.get(e.id)||0,age=performance.now()-(e._upAt||0);
+      if(age>4000&&px<imgNW(e._work)*0.7&&motifDowngrade(e)){fullNow--;changed=true;}
+    });
+    for(const o of ups){if(fullNow>=MOTIF_MAX_FULL)break;await motifUpgrade(o.e,false);fullNow++;changed=true;}
+    if(changed){try{renderTray();}catch(_){}try{redraw();}catch(_){}}
+    if(motifs.some(e=>e.img&&!motifIsReduced(e)&&e._work&&!e.pin))setTimeout(motifLodSoon,4500); // a full-size picture is still out: look again shortly so it goes back once you have zoomed out
+  }catch(err){console.warn('[sketchpad] motif LOD',err);}
+  finally{motifLodBusy=false;}
+}
+// Small pictures for the tray and pickers: the browser would otherwise decode the full-size original again just to show a thumbnail.
+function motifThumb(e){
+  try{
+    if(!e||!e.src)return '';
+    if(e._th&&e._thImg===e.img&&e._thSrc===e.src)return e._th;
+    const im=e.img,nw=imgNW(im),nh=im?(im.naturalHeight||im.height):0;
+    if(!im||!nw||!nh||(!im._lod&&nw<=320&&nh<=320))return e.src;
+    const kk=256/Math.max(nw,nh),c=document.createElement('canvas');c.width=Math.max(1,Math.round(nw*kk));c.height=Math.max(1,Math.round(nh*kk));
+    const g=c.getContext('2d');g.imageSmoothingEnabled=true;try{g.imageSmoothingQuality='high';}catch(_){}g.drawImage(im,0,0,c.width,c.height);
+    const u=c.toDataURL('image/png');c.width=c.height=1;
+    e._th=u;e._thImg=im;e._thSrc=e.src;return u;
+  }catch(err){return e&&e.src||'';}
 }
 // Sharp motif brush tips: a captured motif keeps its real strokes (entry.source), so when its brush is used bigger than the
 // small preview picture, the tip is redrawn from those strokes at a power-of-two size that fits the stamp (64..2048 px).
@@ -4574,7 +4684,7 @@ function renderTray(){
   $('motifEmpty').style.display=motifs.length?'none':'block';
   motifs.forEach(m=>{
     const card=document.createElement('div');card.className='motif-card';
-    card.innerHTML=`<img src="${m.src}" alt=""><button class="x">×</button><div class="small">${m.name}</div>`;
+    card.innerHTML=`<img src="${motifThumb(m)}" alt=""><button class="x">×</button><div class="small">${m.name}</div>`;
     card.querySelector('img').onclick=()=>placeMotif(m.id,m.img);
     card.querySelector('.x').onclick=()=>{
       const used=placed.filter(p=>p.motifId===m.id).length;
@@ -9712,7 +9822,7 @@ function afSyncUI(){
   $('afPatBox').style.display=afMode==='pattern'?'block':'none';
   const g=afGrad||afDefaultGrad(),stops=g.c2?[g.c0,g.c2,g.c1]:[g.c0,g.c1];
   const pv=$('afGradPrev');if(pv)pv.style.background=g.type==='radial'?'radial-gradient(circle,'+stops.join(',')+')':'linear-gradient('+(g.type==='linear'?((g.angle==null?90:g.angle)+90)+'deg':'90deg')+','+stops.join(',')+')';
-  const m=afPat&&motifs.find(x=>x.id===afPat),th=$('afPatThumb');if(th){if(m&&m.src){th.src=m.src;th.style.display='block';}else th.style.display='none';}
+  const m=afPat&&motifs.find(x=>x.id===afPat),th=$('afPatThumb');if(th){if(m&&m.src){th.src=motifThumb(m);th.style.display='block';}else th.style.display='none';}
 }
 function afSetMode(m){afMode=m;afPendingEdit=m==='gradient'&&afPendingEdit;afSyncUI();try{efRefresh();}catch(e){}}
 $('afModeColour').onclick=()=>afSetMode('colour');
@@ -10446,7 +10556,7 @@ function patPick(){
     const grid=ov.querySelector('#ppGrid');let done=false;
     const fin=v=>{if(done)return;done=true;ov.style.display='none';resolve(v);};
     const card=(src,label,fn)=>{const c=document.createElement('div');c.className='pp-card';c.innerHTML='<img alt=""><div></div>';c.querySelector('img').src=src;c.lastChild.textContent=label;c.onclick=fn;grid.appendChild(c);};
-    motifs.filter(m=>m.img&&m.src).forEach(m=>card(m.src,m.name||'Pattern',()=>fin(m)));
+    motifs.filter(m=>m.img&&m.src).forEach(m=>card(motifThumb(m),m.name||'Pattern',()=>fin(m)));
     if(bgImg&&bgImg.src)card(bgImg.src,'Background pattern',async()=>{
       let src=bgImg.src;
       if(!/^data:/.test(src)){try{const c=document.createElement('canvas');c.width=bgImg.naturalWidth;c.height=bgImg.naturalHeight;c.getContext('2d').drawImage(bgImg,0,0);src=c.toDataURL('image/png');}catch(e){fin(null);return;}}
@@ -10467,6 +10577,7 @@ function patClipAction(){
   patPick().then(m=>{if(m)patCreate(s.id,m);});
 }
 function patCreate(shapeId,motif,replaceStrokeId){
+  if(motif&&motif.src&&!motif.pin){motif.pin=true;if(motifIsReduced(motif)){setStatus('🧩 Loading the full-size picture…');motifUpgrade(motif,true).then(()=>patCreate(shapeId,motif,replaceStrokeId));return;}} // a pattern is sized from the picture's own pixels, so it always uses the original
   const t=strokes.find(x=>x.id===shapeId),polys=patTargetPolys(t);
   if(!t||!polys){setStatus('🧩 Select a closed shape first.');return;}
   const img=motif.img,iw=img.naturalWidth||img.width,ih=img.naturalHeight||img.height;if(!iw||!ih){setStatus('That picture could not be read.');return;}
@@ -13680,6 +13791,10 @@ async function pngWithDpi(blob,dpi){
   }catch(e){return blob;}
 }
 async function buildHiRes(long,transparent){
+  const _rel=await motifsForExport(hiDims(long)[0]/TW);
+  try{return await buildHiRes_(long,transparent);}finally{_rel();}
+}
+async function buildHiRes_(long,transparent){
   try{await txReady();}catch(e){}
   try{motifSync();}catch(e){}
   const [w,h]=hiDims(long),k=w/TW;
@@ -13718,6 +13833,10 @@ async function buildHiRes(long,transparent){
 // redrawn at the bigger size so their edges are crisp; layers with Liquify paint are pictures, so they are
 // enlarged smoothly instead (they can only be as sharp as they were painted).
 async function buildTileHi(k,transparent){
+  const _rel=await motifsForExport(k);
+  try{return await buildTileHi_(k,transparent);}finally{_rel();}
+}
+async function buildTileHi_(k,transparent){
   try{await txReady();}catch(e){}
   try{motifSync();}catch(e){}
   const w=Math.round(TW*k),h=Math.round(TH*k);
@@ -14986,7 +15105,8 @@ async function applyDocObject(doc,opts){
     // Legacy saves stored motifs as {src,name} only — no id, no editable source. Assign a fresh
     // id in load order so placed[] (below) has something stable to resolve against, but leave
     // source null rather than inventing vector data that was never actually captured.
-    for(const m of (doc.motifs||[])){await new Promise(res=>{const img=new Image();img.onload=()=>{motifs.push({id:m.id||crypto.randomUUID(),img,src:m.src,name:m.name,source:m.source||null});res();};img.onerror=()=>{/* keep the motif (and its saved picture) even if this device could not decode it just now, so the next autosave cannot drop it */motifs.push({id:m.id||crypto.randomUUID(),img:null,src:m.src,name:m.name,source:m.source||null,loadFailed:true});res();};img.src=m.src;});}
+    const sk=doc.strokesJSON||'';const loadNeed={};try{JSON.parse(doc.placedJSON||'[]').forEach(q=>{const id=q.motifId;if(id)loadNeed[id]=Math.max(loadNeed[id]||0,Math.max(q.w||0,q.h||0)*Math.abs(q.s||1));});}catch(_){}
+    for(const m of (doc.motifs||[])){await new Promise(res=>{const img=new Image();img.onload=async()=>{const ent={id:m.id||crypto.randomUUID(),img,src:m.src,name:m.name,source:m.source||null};motifs.push(ent);try{if(!sk.includes(ent.id)){const nd=loadNeed[ent.id]||0;await motifReduce(ent,Math.max(MOTIF_MIN_WORK,Math.ceil(nd*motifExportScale(doc.tilePhys&&doc.tilePhys.w,doc.tileW)*MOTIF_HEADROOM/16)*16));}else ent.pin=true;}catch(_){}res();};img.onerror=()=>{/* keep the motif (and its saved picture) even if this device could not decode it just now, so the next autosave cannot drop it */motifs.push({id:m.id||crypto.randomUUID(),img:null,src:m.src,name:m.name,source:m.source||null,loadFailed:true});res();};img.src=m.src;});}
     renderTray();
     // Strokes must be parsed BEFORE applyLayerMeta, since migrating strokes with no valid
     // layerId onto the fallback layer (old, pre-layers documents) happens inside it.
@@ -16180,11 +16300,11 @@ function memoryReport(){
   let lay=0;layers.forEach(l=>{lay+=mb(l.canvas)+(l.dcanvas!==l.canvas?mb(l.dcanvas):0);});
   const other=segCache.reduce((a,e)=>a+mb(e.cv),0)+mb(canvas)+mb(displayCanvas)+mb(compositeCanvas)+mb(liveLayer)+mb(detailCanvas)+mb(detailScratch);
   let pts=0;strokes.forEach(st=>{pts+=(st.points?st.points.length:0);});
-  let mpx=0,msrc=0,msrcStrokes=0;motifs.forEach(m=>{if(m.img)mpx+=(m.img.naturalWidth||m.img.width||0)*(m.img.naturalHeight||m.img.height||0)*4/1048576;msrc+=(m.src||'').length/1e6;if(m.source)msrcStrokes+=((m.source.strokesJSON||'').length)/1e6;});
+  let mpx=0,msrc=0,msrcStrokes=0,mred=0,mfull=0;motifs.forEach(m=>{if(m.img&&motifIsReduced(m)){mred++;mfull+=(m.img._fullW||0)*(m.img._fullH||0)*4/1048576;}if(m.img)mpx+=(m.img.naturalWidth||m.img.width||0)*(m.img.naturalHeight||m.img.height||0)*4/1048576;msrc+=(m.src||'').length/1e6;if(m.source)msrcStrokes+=((m.source.strokesJSON||'').length)/1e6;});
   let bg=0;try{if(bgImg)bg=(bgImg.naturalWidth||bgImg.width||0)*(bgImg.naturalHeight||bgImg.height||0)*4/1048576;}catch(e){}
   const f=n=>(Math.round(n*10)/10);
   const total=lay+other+mpx+bg+histSize()/1e6;
-  return 'Layer canvases: '+f(lay)+' MB ('+layers.length+' layers, '+layers.filter(l=>!l.asleep).length+' awake, view sharpness '+renderScale+')\nScreen canvases: '+f(other)+' MB\nMotif pictures: '+f(mpx)+' MB ('+motifs.length+' motifs), their drawings '+f(msrcStrokes)+' MB of data\nBackground picture: '+f(bg)+' MB\nUndo history: ~'+f(histSize()/1e6)+' M characters ('+history.length+' steps)\nStrokes: '+strokes.length+' ('+pts+' points)\n'+tlLine()+'\nEstimated total: about '+f(total)+' MB. iPad Safari usually stops around 400 MB of canvases.'+crumbsReport();
+  return 'Layer canvases: '+f(lay)+' MB ('+layers.length+' layers, '+layers.filter(l=>!l.asleep).length+' awake, view sharpness '+renderScale+')\nScreen canvases: '+f(other)+' MB\nMotif pictures: '+f(mpx)+' MB ('+motifs.length+' motifs'+(mred?', '+mred+' as smaller working copies instead of about '+f(mfull)+' MB of originals; the originals come back for exports':'')+'), their drawings '+f(msrcStrokes)+' MB of data\nBackground picture: '+f(bg)+' MB\nUndo history: ~'+f(histSize()/1e6)+' M characters ('+history.length+' steps)\nStrokes: '+strokes.length+' ('+pts+' points)\n'+tlLine()+'\nEstimated total: about '+f(total)+' MB. iPad Safari usually stops around 400 MB of canvases.'+crumbsReport();
 }
 function tbMoreMenu(btn){
   const items=[{head:'More'}];
