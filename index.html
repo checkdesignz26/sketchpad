@@ -1545,7 +1545,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v430'; // keep in step with CACHE in sw.js
+const APP_V='v431'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -12885,8 +12885,10 @@ function enterEditMotif(){
   const vis=layers.filter(l=>l.visible!==false).length,off=strokes.length&&(x1<-W||x0>2*W||y1<-H||y0>2*H);
   if(bad||off||!strokes.length||!vis){
    const info='strokes '+strokes.length+', layers shown '+vis+'/'+layers.length+', lines at x '+Math.round(x0)+'..'+Math.round(x1)+' y '+Math.round(y0)+'..'+Math.round(y1)+', frame '+(editingMotifFrame?'yes':'no')+', copy '+Math.round(m.w)+'x'+Math.round(m.h)+' s'+(+m.s).toFixed(2)+' r'+Math.round(m.r||0)+' fx'+m.fx+' fy'+m.fy+', bounds '+JSON.stringify(entry.source.bounds&&{x:Math.round(entry.source.bounds.minX),y:Math.round(entry.source.bounds.minY),w:Math.round(entry.source.bounds.w),h:Math.round(entry.source.bounds.h)});
+   const noLines=!strokes.length;
    try{cancelEditMotif();}catch(e){}
-   setStatus('⚠️ Could not open this motif for editing, so I left it as it was. Details for support: '+info);
+   if(noLines){setStatus('⚠️ This motif has no editable lines saved with it, only its picture, so there is nothing to edit as vector. The picture is untouched. To get editable lines, use ✨ Trace Image to Vector on it, or draw it again and Capture Motif. (Details: '+info+')');return;}
+   setStatus(strokes.length||!bad?'⚠️ Could not open this motif for editing, so I left it as it was. Details for support: '+info:'⚠️ Could not open this motif for editing, so I left it as it was. Details for support: '+info);
    return;
   }
  }
@@ -12921,7 +12923,7 @@ function finishEditMotif(){
  const stash=editingMotifStash,frame=editingMotifFrame;
  if(frame){try{grpApply(grpSnapshotOf(strokes,[]),frame.inv,true);rebuildAllLayers();}catch(e){}}
  rebuildAllLayers(); // always redraw every layer from the strokes that are left, so something deleted (text, a stroke) can never survive into the new motif picture
- const preview=renderCurrentArtworkPreview();
+ const preview=strokes.length?renderCurrentArtworkPreview():null; // no lines left at all: keep the old motif rather than saving an empty one
  const finish=()=>{
   strokes=JSON.parse(stash.strokesJSON||'[]');
   applyLayerMeta(stash.layersJSON?JSON.parse(stash.layersJSON):[],stash.activeLayerId);
