@@ -1540,7 +1540,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v410'; // keep in step with CACHE in sw.js
+const APP_V='v411'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -1860,6 +1860,7 @@ function renderDetail(){
     vis={x0:Math.min.apply(null,xs),y0:Math.min.apply(null,ys),x1:Math.max.apply(null,xs),y1:Math.max.apply(null,ys)};
   }catch(err){return;}
   const saved=ctx;
+  window.__dVisRaw=vis;window.__dScale=sCss*k;
   try{
     ctx=d;
     d.setTransform(1,0,0,1,0,0);d.clearRect(0,0,pw,ph);
@@ -1871,7 +1872,7 @@ function renderDetail(){
     // A layer that has them shows its own hi-res picture instead, which is already kept up to date.
     const pixLayers=new Set();strokes.forEach(s=>{if(s.brushId==='smudge')pixLayers.add(s.layerId);});
     offs.forEach(([ox,oy])=>{
-      const vx0=vis.x0-ox,vy0=vis.y0-oy,vx1=vis.x1-ox,vy1=vis.y1-oy;
+      const vx0=vis.x0-ox,vy0=vis.y0-oy,vx1=vis.x1-ox,vy1=vis.y1-oy;window.__dVis={x0:vx0,y0:vy0,x1:vx1,y1:vy1};
       if(vx1<0||vy1<0||vx0>W||vy0>H)return;
       const cp=clipPass();
       layers.forEach((l,li)=>{
@@ -1919,9 +1920,9 @@ function renderDetail(){
         d.save();d.setTransform(1,0,0,1,0,0);d.globalAlpha=l.opacity/100;d.globalCompositeOperation=l.blend||'source-over';d.drawImage(detailScratch,0,0);d.restore();
       });
     });
-    drawPlaced();drawMultiSelectHighlights();drawShapeToolsHighlights();drawStrokeSelection();drawContinueMarkers();drawTileBoundary();if(showGuides)drawGuides();
-  }catch(err){console.warn('[sketchpad] detail render failed',err);ctx=saved;hideDetail();if(liveOvShown&&!liveOvOn&&!drawing)requestAnimationFrame(liveOvHide);return;}
-  ctx=saved;
+    window.__dVis=null;drawPlaced();drawMultiSelectHighlights();drawShapeToolsHighlights();drawStrokeSelection();drawContinueMarkers();drawTileBoundary();if(showGuides)drawGuides();
+  }catch(err){console.warn('[sketchpad] detail render failed',err);window.__dVisRaw=window.__dVis=null;ctx=saved;hideDetail();if(liveOvShown&&!liveOvOn&&!drawing)requestAnimationFrame(liveOvHide);return;}
+  window.__dVisRaw=window.__dVis=null;ctx=saved;
   detailCanvas.style.transform='none';detailView={zoom:zoom,panX:panX,panY:panY,rot:rot,base:baseScale};
   detailCanvas.style.display='block';detailShown=true;
   try{canvas.style.opacity='0';}catch(e){}
@@ -1963,8 +1964,32 @@ function pBaked(p){return !!(p.img&&p.layerId&&layers.some(l=>l.id===p.layerId))
 function layerMotifs(id){return placed.filter(p=>p.layerId===id&&p.img&&!pHid(p));}
 function drawLayerMotifs(c,id){
   const list=layerMotifs(id);if(!list.length)return false;
-  list.forEach(p=>{c.save();if(p.alpha!=null)c.globalAlpha=Math.max(0,Math.min(1,p.alpha));c.translate(p.x,p.y);c.rotate(p.r*Math.PI/180);c.scale(p.s*(p.fx==null?1:p.fx),p.s*(p.fy==null?1:p.fy));try{c.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);}catch(e){}c.restore();});
+  list.forEach(p=>{if(window.__dVis&&motifSharp(c,p,window.__dVis,0,0))return;c.save();if(p.alpha!=null)c.globalAlpha=Math.max(0,Math.min(1,p.alpha));c.translate(p.x,p.y);c.rotate(p.r*Math.PI/180);c.scale(p.s*(p.fx==null?1:p.fx),p.s*(p.fy==null?1:p.fy));try{c.drawImage(p.img,-p.w/2,-p.h/2,p.w,p.h);}catch(e){}c.restore();});
   return true;
+}
+// Zoomed far in, a placed motif that still has its vector strokes is drawn straight from them, so it stays crisp at any zoom (the cached picture only goes so far).
+// Returns true when it drew the motif (or it is off screen); false means "use the picture". vis is the visible area in the drawing's own units, already shifted for the tile copy.
+function motifSharp(c,p,vis,ox,oy){
+  try{
+    if(!p.motifId||!window.__dScale)return false;
+    const e=motifs.find(x=>x.id===p.motifId);if(!e||!e.source||!e.source.bounds||e.img!==p.img)return false;
+    if(p.alpha!=null&&p.alpha<1)return false;
+    const iw=p.img.naturalWidth||p.img.width,ih=p.img.naturalHeight||p.img.height;if(!iw||!ih)return false;
+    if(Math.max(p.w/iw,p.h/ih)*Math.abs(p.s||1)*window.__dScale<=3.5)return false;   // the stored hi-res picture is good enough
+    const src=e.source;
+    if(!src._sk){src._sk=JSON.parse(src.strokesJSON);src._lm=src.layersJSON?JSON.parse(src.layersJSON):[];}
+    const sl=src._sk,lm=src._lm;
+    if(sl.some(s=>s.brushId==='eraser'||s.brushId==='smudge')||lm.some(l=>(l.opacity!=null&&l.opacity!==100)||(l.blend&&l.blend!=='source-over')||l.blur>0||l.clip))return false;
+    const bb=motifAABB(p);if(bb&&(bb.x1<vis.x0||bb.x0>vis.x1||bb.y1<vis.y0||bb.y0>vis.y1))return true;
+    const b=src.bounds,hid=new Set(lm.filter(l=>l.visible===false).map(l=>l.id));
+    const sv=strokes;strokes=sl;
+    c.save();
+    try{
+      c.translate(p.x+ox,p.y+oy);c.rotate(p.r*Math.PI/180);c.scale(p.s*(p.fx==null?1:p.fx),p.s*(p.fy==null?1:p.fy));c.scale(p.w/b.w,p.h/b.h);c.translate(-(b.minX+b.w/2),-(b.minY+b.h/2));
+      sl.forEach(s=>{if(lm.length&&hid.has(s.layerId))return;renderStrokeClipped(c,s,BrushEngine.getBrush(s.brushId),s.settings||BrushEngine.getSettings(s.brushId));});
+    }finally{c.restore();strokes=sv;}
+    return true;
+  }catch(err){return false;}
 }
 const _imgIds=new WeakMap();let _imgN=0;
 function imgKey(im){if(!im)return 0;let v=_imgIds.get(im);if(!v){v=++_imgN;_imgIds.set(im,v);}return v;}
@@ -3680,7 +3705,7 @@ function drawStrokeSelection(){
     ctx.restore();return;
   }
 }
-function drawPlaced(){placed.forEach(p=>{if(pHid(p)||pBaked(p))return;offsets().forEach(([ox,oy])=>{if(p.img)drawOne(p,ox,oy);else drawEmptySlot(p,ox,oy);});});}
+function drawPlaced(){const dv=window.__dVisRaw;placed.forEach(p=>{if(pHid(p)||pBaked(p))return;offsets().forEach(([ox,oy])=>{if(p.img){if(dv&&motifSharp(ctx,p,{x0:dv.x0-ox,y0:dv.y0-oy,x1:dv.x1-ox,y1:dv.y1-oy},ox,oy))return;drawOne(p,ox,oy);}else drawEmptySlot(p,ox,oy);});});}
 // Dashed highlight around every Multi-Select-picked motif (only on the primary, non-tiled
 // instance — offsets()[0] is always [0,0]) so it's obvious which motifs an Align/Distribute
 // action is about to affect, distinct from the single-selection box's solid outline.
