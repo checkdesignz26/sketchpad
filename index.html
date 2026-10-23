@@ -1542,7 +1542,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v424'; // keep in step with CACHE in sw.js
+const APP_V='v425'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -4195,6 +4195,7 @@ function flushEraserRebuild(){
 }
 canvas.addEventListener('pointerdown',e=>{
   if(!isPen(e))return;
+  if(captureAreaArmed&&pathEditStrokeId)offSelectArea();
   if(captureAreaArmed){e.preventDefault();captureRectStart(e);return;}
   
   if(areaFillArmed){e.preventDefault();if(!editingMotifId&&motifAreaFill(e.clientX,e.clientY))return;attemptAreaFillAt(e.clientX,e.clientY);return;}
@@ -11742,7 +11743,9 @@ function pathEditHistStep(dir){
   redraw();setStatus(dir<0?'\u21a9\ufe0f Undid the last node change':'\u21aa\ufe0f Redid the node change');
   return true;
 }
+function offSelectArea(){try{const sa=$('selectAreaBtn');if(sa&&sa.classList.contains('active'))sa.onclick();}catch(e){}} // a left-over Select Area box swallows taps meant for nodes
 function enterEditPath(strokeId){
+  offSelectArea();
   let stroke=strokes.find(s=>s.id===strokeId);if(!stroke)return;
   if(stroke.tpl){setStatus('📐 Template placeholders are fixed outlines: move, resize, rotate or replace them, but they have no nodes to edit.');return;}
   if(stroke.radialOf){ // a linked copy is rebuilt from its original, so edit the original (the copies follow) instead of silently losing the edit
