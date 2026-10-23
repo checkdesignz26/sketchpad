@@ -1183,7 +1183,7 @@ html.in-suite .suite-only{display:block!important}
     <textarea id="txStr" rows="2" placeholder="Type your text" spellcheck="false" style="width:100%;box-sizing:border-box;font-size:16px;padding:8px;border-radius:10px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);resize:vertical;"></textarea>
     <div id="txWarn" class="tx-warn" style="display:none"></div>
     <div class="tx-row"><button id="txFontBtn" type="button" class="btn tx-font" title="Choose a font">Font</button><select id="txStyle" title="Weight and style"></select></div>
-    <div class="tx-row"><label>Size</label><input id="txSize" type="range" min="8" max="600" step="1"><input id="txSizeNum" type="number" min="2" max="2000" step="1"></div>
+    <div class="tx-row"><label>Size</label><input id="txSize" type="range" min="0" max="1000" step="1" title="Small sizes get more of the slider"><button id="txSizeDn" type="button" class="btn mini" style="min-width:40px;padding:8px 0" title="Smaller">−</button><input id="txSizeNum" type="number" min="2" max="2000" step="1"><button id="txSizeUp" type="button" class="btn mini" style="min-width:40px;padding:8px 0" title="Bigger">+</button></div>
     <div class="tx-row"><input id="txColour" type="color" title="Text colour"><label>Opacity</label><input id="txOpacity" type="range" min="5" max="100" step="1"><span id="txOpacityVal" class="tx-val">100%</span></div>
     <div class="tx-row"><button id="txAlL" type="button" class="btn mini" title="Align left">⇤</button><button id="txAlC" type="button" class="btn mini" title="Centre">↔</button><button id="txAlR" type="button" class="btn mini" title="Align right">⇥</button></div>
     <details class="tx-det"><summary>Spacing</summary>
@@ -1554,7 +1554,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v437'; // keep in step with CACHE in sw.js
+const APP_V='v438'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -18370,6 +18370,9 @@ async function txCreateAt(x,y){
   syncStrokeSelectionUI();redraw();pushHist();txRefreshEmbeds();
   txOpenPanel(true);
 }
+// The size slider is logarithmic (2 to 600), so small sizes get as much room as big ones.
+const txPosToSize=v=>Math.round(2*Math.pow(300,Math.max(0,Math.min(1000,+v||0))/1000)*10)/10;
+const txSizeToPos=z=>Math.round(1000*Math.log(Math.max(2,Math.min(600,+z||2))/2)/Math.log(300));
 function txApply(st,opts){
   opts=opts||{};
   if(opts.relayout!==false)txRelayout(st,opts.anchor);
@@ -18551,7 +18554,7 @@ function txFillPanel(force){
   opts.forEach(o=>{const e=document.createElement('option');e.value=o.w+'|'+(o.i?1:0);e.textContent=SPFonts.styleLabel(o);sel.appendChild(e);});
   const pick=SPFonts.pickStyle(fam,t.weight||400,!!t.italic);
   sel.value=(pick?pick.w:(t.weight||400))+'|'+((pick?pick.i:t.italic)?1:0);if(sel.value===''&&sel.options.length)sel.selectedIndex=0;
-  $('txSize').value=Math.min(600,Math.round(t.size));$('txSizeNum').value=Math.round(t.size*10)/10;
+  $('txSize').value=txSizeToPos(t.size);$('txSizeNum').value=Math.round(t.size*10)/10;
   $('txColour').value=/^#[0-9a-f]{6}$/i.test(st.color)?st.color:'#000000';
   $('txOpacity').value=Math.round((t.opacity==null?1:t.opacity)*100);$('txOpacityVal').textContent=$('txOpacity').value+'%';
   [['txAlL','left'],['txAlC','center'],['txAlR','right']].forEach(a=>$(a[0]).classList.toggle('active',t.align===a[1]));
@@ -18585,8 +18588,10 @@ function txWire(){
   const edit=fn=>()=>{const st=txSelected();if(!st)return;fn(st);};
   $('txStr').addEventListener('input',edit(st=>{st.text.str=$('txStr').value;txApply(st);txFillPathUI(st);}));
   $('txStyle').addEventListener('change',edit(st=>{const [w,i]=$('txStyle').value.split('|');st.text.weight=+w;st.text.italic=i==='1';SPFonts.ensure(txFontOf(st.text)).then(()=>{txStamp++;txApply(st);});txApply(st);}));
-  const setSize=v=>edit(st=>{v=Math.max(2,Math.min(2000,+v||st.text.size));st.text.size=v;txApply(st);$('txSize').value=Math.min(600,Math.round(v));$('txSizeNum').value=Math.round(v*10)/10;})();
-  $('txSize').addEventListener('input',()=>setSize($('txSize').value));
+  const setSize=v=>edit(st=>{v=Math.max(2,Math.min(2000,+v||st.text.size));st.text.size=v;txApply(st);$('txSize').value=txSizeToPos(v);$('txSizeNum').value=Math.round(v*10)/10;})();
+  $('txSize').addEventListener('input',()=>setSize(txPosToSize($('txSize').value)));
+  const stepSize=d=>{const cur=+$('txSizeNum').value||12;setSize(Math.max(2,Math.round((cur+d*(cur>=100?10:cur>=30?2:1))*10)/10));};
+  $('txSizeDn').addEventListener('click',()=>stepSize(-1));$('txSizeUp').addEventListener('click',()=>stepSize(1));
   $('txSizeNum').addEventListener('change',()=>setSize($('txSizeNum').value));
   $('txColour').addEventListener('input',edit(st=>{st.color=$('txColour').value;txApply(st,{relayout:false});}));
   $('txOpacity').addEventListener('input',edit(st=>{st.text.opacity=$('txOpacity').value/100;$('txOpacityVal').textContent=$('txOpacity').value+'%';txApply(st,{relayout:false});}));
