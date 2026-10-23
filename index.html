@@ -1540,7 +1540,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v414'; // keep in step with CACHE in sw.js
+const APP_V='v415'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -9092,7 +9092,18 @@ $('wpUniformBtn').onclick=()=>{wpNewId0=null;wpSaveNew();wpRenderProfiles();wpSy
 const SIZE_PRESETS=[0.1,0.25,0.5,0.75,1,1.5,2,3,4,5,6,8,10,12,16,20,24,32,48,64,100,150,200,300,400];
 function fmtSize(v){v=+v;if(!isFinite(v))return'';return v>=10?String(Math.round(v)):String(Math.round(v*100)/100);}
 // The preset list tick must match the real size (it used to stay on the last size picked, e.g. 6, while the box said 8).
-function syncSizePick(sel,v){if(!sel)return;v=+v;const m=SIZE_PRESETS.find(x=>Math.abs(x-v)<1e-6);try{sel.value=m!=null?String(m):'';}catch(e){}}
+function syncSizePick(sel,v){
+  if(!sel)return;v=+v;
+  try{
+    sel.querySelectorAll('option[data-dyn]').forEach(o=>o.remove());
+    const m=SIZE_PRESETS.find(x=>Math.abs(x-v)<1e-6);
+    let want=m!=null?String(m):'';
+    // A size that is not on the preset list gets its own tick-marked row, so the list always shows the REAL size (iPad kept ticking the previous preset otherwise)
+    if(m==null&&isFinite(v)&&v>0){const o=document.createElement('option');o.dataset.dyn='1';o.value=String(Math.round(v*100)/100);o.textContent=fmtSize(v);const first=sel.options[1]||null;let at=null;for(const q of sel.options){if(q.value!==''&&+q.value>v){at=q;break;}}sel.insertBefore(o,at);want=o.value;}
+    for(const o of sel.options)o.selected=(o.value===want);
+    if(sel.value!==want)sel.value=want;
+  }catch(e){}
+}
 function syncSizeNums(force){
   document.querySelectorAll('.size-combo').forEach(c=>{
     const r=c._range,n=c.querySelector(".size-num");if(!r||!n)return;
