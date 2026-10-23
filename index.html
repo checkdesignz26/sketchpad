@@ -291,10 +291,11 @@ button.pill:active{transform:scale(.97)}
 .tpl-my canvas{width:48px;height:48px;border-radius:8px;background:#fff;flex:none}.tpl-my .nm{flex:1;font-weight:850;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .suite-only{display:none!important}
 html.in-suite .suite-only{display:block!important}
-.motif-tray{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.motif-tray{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;min-width:0}
+.motif-tray>.motif-card{min-width:0}
 .motif-card{position:relative;background:var(--cardBg);border-radius:15px;padding:8px;border:2px solid transparent}
 .motif-card.active{border-color:var(--pink)}
-.motif-card img{width:100%;aspect-ratio:1;object-fit:contain;background:#fff;border-radius:12px}
+.motif-card img{display:block;width:100%;max-width:100%;max-height:170px;aspect-ratio:1;object-fit:contain;background:#fff;border-radius:12px}
 .x{position:absolute;top:-8px;right:-8px;width:28px;height:28px;border:0;border-radius:50%;background:var(--dangerBg);border:1px solid var(--dangerBorder);color:var(--text)}
 .mode-switch{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .hint{font-size:12px;color:var(--muted);line-height:1.35;margin-top:8px}
@@ -1133,6 +1134,8 @@ html.in-suite .suite-only{display:block!important}
       <button id="qaMove" class="btn" title="Drag any shape, stroke or picture to move it — no need to select first">✥ Move</button>
       <button id="qaDup" class="btn" title="Duplicate the selection">⧉ Duplicate</button>
       <button id="qaDel" class="btn danger" title="Delete the selection (Undo brings it back)">🗑 Delete</button>
+      <button id="qaFlipH" class="btn" title="Mirror the selection left to right">⇋ Flip H</button>
+      <button id="qaFlipV" class="btn" title="Mirror the selection top to bottom">⇵ Flip V</button>
       <button id="qaErase" class="btn" title="Eraser on/off">🧹 Erase</button>
       <button id="qaDraw" class="btn" title="Back to drawing">✏️ Draw</button>
     </div>
@@ -1547,7 +1550,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v432'; // keep in step with CACHE in sw.js
+const APP_V='v433'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -4582,6 +4585,8 @@ function renderTray(){
     };
     tray.appendChild(card);
   });
+  if(motifs.length>(renderTray._n||0)&&renderTray._n!=null&&tray.lastElementChild){try{tray.lastElementChild.scrollIntoView({block:'nearest'});}catch(e){}} // a motif you just added is brought into view
+  renderTray._n=motifs.length;
 }
 // Locked layers are skipped entirely during hit-testing — you can't select (and so can't edit,
 // erase, reassign or path-edit) a stroke that lives on a layer you've locked, which is what
@@ -17793,6 +17798,25 @@ function qaToEdit(move){
   qaSync();
 }
 $('qaMode').onclick=()=>{quickMoveOn=false;if(mode==='edit')$('drawModeBtn').click();else $('editModeBtn').click();qaSync();};
+function qaFlip(axis){
+  try{
+    if(pathEditStrokeId){setStatus('Finish Edit Path first, then flip.');return;}
+    if(multiSel&&(multiSel.strokeIds.length||multiSel.placedIds.length)){
+      const base=grpSnapshot();if(!base.st.length&&!base.pl.length)return;
+      const bb=selBBox();if(!bb)return;
+      const op={ax:bb.cx,ay:bb.cy,sx:axis==='h'?-1:1,sy:axis==='v'?-1:1,rot:0,dx:0,dy:0};
+      grpApply(base,op,false);
+      base.pl.forEach(b=>{const q=b.p;if(axis==='h')q.fx=-(b.p.fx==null?1:b.p.fx);else q.fy=-(b.p.fy==null?1:b.p.fy);q.r=-(q.r||0);});
+      if(base.pl.length)rebuildAllLayers();else new Set(base.st.map(b=>b.s.layerId)).forEach(id=>rebuildLayer(id));
+      pushHist();redraw();setStatus(axis==='h'?'⇋ Flipped left to right.':'⇵ Flipped top to bottom.');return;
+    }
+    if(selected){const m=placed.find(p=>p.id===selected);if(m&&m.img){if(axis==='h')m.fx=-(m.fx==null?1:m.fx);else m.fy=-(m.fy==null?1:m.fy);pushHist();redraw();setStatus(axis==='h'?'⇋ Flipped left to right.':'⇵ Flipped top to bottom.');return;}}
+    if(selectedStrokeId&&strokes.find(x=>x.id===selectedStrokeId)){flipSelectedStroke(axis);setStatus(axis==='h'?'⇋ Flipped left to right.':'⇵ Flipped top to bottom.');return;}
+    setStatus('⇋ Nothing selected — tap a shape, stroke or picture first (Select or Move).');
+  }catch(err){setStatus('Could not flip that: '+(err&&err.message||err));}
+}
+$('qaFlipH').onclick=()=>{qaFlip('h');qaSync();};
+$('qaFlipV').onclick=()=>{qaFlip('v');qaSync();};
 $('qaSelect').onclick=()=>qaToEdit(false);
 $('qaMove').onclick=()=>qaToEdit(true);
 $('qaDup').onclick=()=>{quickDuplicate();qaSync();};
