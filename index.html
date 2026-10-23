@@ -1540,7 +1540,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v412'; // keep in step with CACHE in sw.js
+const APP_V='v413'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -12662,6 +12662,7 @@ function enterEditMotif(){
  // a motif's source can never corrupt or leak into the outer pattern's own undo stack.
  history=[];hIndex=-1;
  strokes=JSON.parse(entry.source.strokesJSON);
+ {const g0=strokes.find(s=>s.groupId);groupInsideId=g0?g0.groupId:null;if(g0&&!groups[g0.groupId])groups[g0.groupId]={lock:true,scale:true};} // inside Edit Motif every piece is picked on its own
  // Show the strokes where this instance currently sits (same position, size and turn), and hide the picture
  // of that instance while editing, so you edit in place instead of getting a second copy at the original spot.
  editingMotifFrame=null;editingMotifInst=m.id;
@@ -12987,6 +12988,9 @@ async function svgPlace(txt,name,addToTray){
     if(!r.added.length){setStatus('⚠️ Nothing to import: that SVG has no plain shapes or paths (text, pictures and gradients are not imported).');return;}
     if(r.added.length>4000){setStatus('⚠️ That SVG is very complex ('+r.added.length+' pieces). Simplify it in your vector app first.');return;}
     layers.push(r.layer);activeLayerId=r.layer.id;lastSvgName=String(name||'').replace(/\.(svg|ai|pdf)$/i,'').trim();
+    { // one imported drawing = one group, so it moves / resizes as a whole (strawberry seeds stay with the berry); double-tap a piece to edit just that piece
+      if(r.added.length>1){const gid=crypto.randomUUID();groups[gid]={lock:true,scale:true};r.added.forEach(s=>{s.groupId=gid;});}
+    }
     r.added.forEach(s=>strokes.push(s));
     rebuildLayer(r.layer.id);renderLayersList();pushHist();redraw();
     const sk=r.skipped,notes=[];
