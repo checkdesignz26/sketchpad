@@ -427,6 +427,9 @@ html.in-suite .suite-only{display:block!important}
 .snap-hi.e{width:20px;height:20px;border-radius:4px;border:3px solid #19c37d;background:rgba(25,195,125,.3);box-shadow:0 0 0 2px #fff;transform:translate(-50%,-50%) rotate(45deg)}
 .snap-hi span{position:absolute;left:34px;top:-6px;font:800 12px/1 system-ui,sans-serif;color:#fff;background:#19c37d;border-radius:6px;padding:3px 6px;white-space:nowrap}
 .snap-hi.e span{transform:rotate(-45deg);left:30px;top:-14px}
+.path-handle{position:absolute;width:36px;height:36px;margin-left:-18px;margin-top:-18px;pointer-events:auto;touch-action:none;cursor:grab;display:flex;align-items:center;justify-content:center;z-index:2}
+.path-handle::after{content:'';display:block;width:11px;height:11px;border-radius:50%;background:#fff;border:2px solid var(--blue,#5096ff);box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.path-hline{position:absolute;height:0;border-top:1.5px solid var(--blue,#5096ff);transform-origin:0 0;pointer-events:none;opacity:.9}
 .path-node{position:absolute;width:36px;height:36px;margin-left:-18px;margin-top:-18px;pointer-events:auto;touch-action:none;cursor:grab;display:flex;align-items:center;justify-content:center}
 .path-node::after{content:'';display:block;width:6px;height:6px;border-radius:50%;background:#fff;border:1.5px solid var(--pink);box-shadow:0 1px 3px rgba(0,0,0,.35)}
 .path-node.corner::after{border-radius:1.5px}
@@ -1542,7 +1545,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v425'; // keep in step with CACHE in sw.js
+const APP_V='v426'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -3885,7 +3888,7 @@ function symSync(){
       g.forEach(T=>{
         if(T===S)return;
         const G=symMul(T.symM,inv),mp=a=>a.map(p=>({...p,x:G[0]*p.x+G[2]*p.y+G[4],y:G[1]*p.x+G[3]*p.y+G[5]}));
-        T.points=mp(S.points);T.nodes=S.nodes?mp(S.nodes):null;T.regions=S.regions?S.regions.map(mp):T.regions;
+        T.points=mp(S.points);T.nodes=S.nodes?S.nodes.map(p=>{const o={...p,x:G[0]*p.x+G[2]*p.y+G[4],y:G[1]*p.x+G[3]*p.y+G[5]},lv=h=>({dx:G[0]*h.dx+G[2]*h.dy,dy:G[1]*h.dx+G[3]*h.dy});if(p.ho)o.ho=lv(p.ho);if(p.hi)o.hi=lv(p.hi);return o;}):null;T.regions=S.regions?S.regions.map(mp):T.regions;
         T.color=S.color;T.fillColor=S.fillColor;T.brushId=S.brushId;T.closed=S.closed;T.settings=S.settings?Object.assign({},S.settings):S.settings;
         T.shape=null;dirtyLayers.add(T.layerId);
       });
@@ -4883,7 +4886,7 @@ function dropStaleShape(stroke){if(stroke&&stroke.shape&&!shapeInSync(stroke))st
 function transformStrokePoints(stroke,fn){
   if(stroke.cuts)stroke.cuts=mapCuts(stroke.cuts,fn);
   stroke.points=stroke.points.map(p=>{const t=fn(p.x,p.y);return {...p,x:t.x,y:t.y};});
-  if(stroke.nodes)stroke.nodes=stroke.nodes.map(n=>{const t=fn(n.x,n.y);return {...n,x:t.x,y:t.y};});
+  if(stroke.nodes)stroke.nodes=stroke.nodes.map(n=>{const t=fn(n.x,n.y),o={...n,x:t.x,y:t.y};if(n.ho){const a=fn(n.x+n.ho.dx,n.y+n.ho.dy);o.ho={dx:a.x-t.x,dy:a.y-t.y};}if(n.hi){const a=fn(n.x+n.hi.dx,n.y+n.hi.dy);o.hi={dx:a.x-t.x,dy:a.y-t.y};}return o;});
   // Shape Tools multi-region results (a hole or several separate pieces from Subtract/Merge) keep
   // their structured per-region geometry in .regions, with .points holding the flat concatenation
   // of all of them purely so strokeBBox/legacy code that only reads .points still gets a correct
@@ -7271,7 +7274,7 @@ function grpApply(base,op,scaleStrokes){
   base.st.forEach(b=>{
     const s=b.s;
     s.cuts=b.cuts?mapCuts(b.cuts,f):null;if(!s.cuts)delete s.cuts;
-    s.points=mp(b.points);s.nodes=b.nodes?mp(b.nodes):null;s.regions=b.regions?b.regions.map(mp):null;
+    s.points=mp(b.points);s.nodes=b.nodes?b.nodes.map(p=>{const t=f(p.x,p.y),o={...p,x:t.x,y:t.y},lv=h=>{const u=h.dx*op.sx,v=h.dy*op.sy;return {dx:u*c-v*sn,dy:u*sn+v*c};};if(p.ho)o.ho=lv(p.ho);if(p.hi)o.hi=lv(p.hi);return o;}):null;s.regions=b.regions?b.regions.map(mp):null;
     if(b.shape){
       if(uniform){
         const sh={...b.shape},ocx=(sh.x0+sh.x1)/2,ocy=(sh.y0+sh.y1)/2,n=f(ocx,ocy);
@@ -11152,6 +11155,21 @@ function catmullRom(p0,p1,p2,p3,t){const t2=t*t,t3=t2*t;return 0.5*((2*p1)+(-p0+
 // the first, so a closed shape's curve is continuous all the way round rather than having a
 // visible straight "cut" where it should loop — Close Shape needs this to look like a real
 // closed outline, not a polygon with one flat edge.
+// ---- Bézier handles: a node may carry ho (outgoing) and hi (incoming) handle OFFSETS from the node. Without them the path is the same
+// automatic smooth curve as before; a segment with a handle at either end becomes a cubic Bézier (missing handles use the automatic ones).
+function nodeAutoOut(p,n,q){return n.type==='corner'?{x:(q.x-n.x)/3,y:(q.y-n.y)/3}:{x:(q.x-p.x)/6,y:(q.y-p.y)/6};}
+function nodeAutoIn(p,n,q){return n.type==='corner'?{x:(p.x-n.x)/3,y:(p.y-n.y)/3}:{x:-(q.x-p.x)/6,y:-(q.y-p.y)/6};}
+function nodeHandleVecs(nodes,i,closed){
+  const n=nodes.length,at=k=>closed?nodes[((k%n)+n)%n]:nodes[Math.max(0,Math.min(n-1,k))];
+  const p=at(i-1),c=nodes[i],q=at(i+1);
+  return {out:c.ho?{x:c.ho.dx,y:c.ho.dy}:nodeAutoOut(p,c,q),inn:c.hi?{x:c.hi.dx,y:c.hi.dy}:nodeAutoIn(p,c,q)};
+}
+function segHasHandles(n1,n2){return !!(n1.ho||n2.hi);}
+function segBezierPoint(n0,n1,n2,n3,t){
+  const o=n1.ho?{x:n1.ho.dx,y:n1.ho.dy}:nodeAutoOut(n0,n1,n2),i=n2.hi?{x:n2.hi.dx,y:n2.hi.dy}:nodeAutoIn(n1,n2,n3);
+  const x1=n1.x+o.x,y1=n1.y+o.y,x2=n2.x+i.x,y2=n2.y+i.y,u=1-t,a=u*u*u,b=3*u*u*t,c=3*u*t*t,d=t*t*t;
+  return {x:a*n1.x+b*x1+c*x2+d*n2.x,y:a*n1.y+b*y1+c*y2+d*n2.y,pressure:n1.pressure+(n2.pressure-n1.pressure)*t};
+}
 function nodesToPoints(nodes,closed=false,samplesPerSeg=14){
   if(!nodes||nodes.length===0)return [];
   if(nodes.length===1)return [{x:nodes[0].x,y:nodes[0].y,pressure:nodes[0].pressure}];
@@ -11161,11 +11179,12 @@ function nodesToPoints(nodes,closed=false,samplesPerSeg=14){
   const segCount=closed?n:n-1;
   for(let i=0;i<segCount;i++){
     const n0=at(i-1),n1=at(i),n2=at(i+1),n3=at(i+2);
-    const smoothSeg=n1.type==='smooth'&&n2.type==='smooth';
-    const steps=smoothSeg?samplesPerSeg:2;
+    const hSeg=segHasHandles(n1,n2),smoothSeg=n1.type==='smooth'&&n2.type==='smooth';
+    const steps=(smoothSeg||hSeg)?samplesPerSeg:2;
     for(let s=0;s<steps;s++){
       const t=s/steps;
-      if(smoothSeg){out.push({x:catmullRom(n0.x,n1.x,n2.x,n3.x,t),y:catmullRom(n0.y,n1.y,n2.y,n3.y,t),pressure:n1.pressure+(n2.pressure-n1.pressure)*t});}
+      if(hSeg){out.push(segBezierPoint(n0,n1,n2,n3,t));}
+      else if(smoothSeg){out.push({x:catmullRom(n0.x,n1.x,n2.x,n3.x,t),y:catmullRom(n0.y,n1.y,n2.y,n3.y,t),pressure:n1.pressure+(n2.pressure-n1.pressure)*t});}
       else{out.push({x:n1.x+(n2.x-n1.x)*t,y:n1.y+(n2.y-n1.y)*t,pressure:n1.pressure+(n2.pressure-n1.pressure)*t});}
       if(s===0&&n1.type==='corner')out[out.length-1].corner=true; // a corner node stays a sharp corner when drawn
     }
@@ -11187,12 +11206,12 @@ function findInsertionOnPath(px,py){
   let best=null;
   for(let i=0;i<segCount;i++){
     const n0=at(i-1),n1=at(i),n2=at(i+1),n3=at(i+2);
-    const smoothSeg=n1.type==='smooth'&&n2.type==='smooth';
-    const steps=smoothSeg?14:2;
+    const hSeg=segHasHandles(n1,n2),smoothSeg=n1.type==='smooth'&&n2.type==='smooth';
+    const steps=(smoothSeg||hSeg)?14:2;
     let prev={x:n1.x,y:n1.y,pressure:n1.pressure};
     for(let s=1;s<=steps;s++){
       const t=s/steps;
-      const cur=smoothSeg
+      const cur=hSeg?segBezierPoint(n0,n1,n2,n3,t):smoothSeg
         ?{x:catmullRom(n0.x,n1.x,n2.x,n3.x,t),y:catmullRom(n0.y,n1.y,n2.y,n3.y,t),pressure:n1.pressure+(n2.pressure-n1.pressure)*t}
         :{x:n1.x+(n2.x-n1.x)*t,y:n1.y+(n2.y-n1.y)*t,pressure:n1.pressure+(n2.pressure-n1.pressure)*t};
       const dx=cur.x-prev.x,dy=cur.y-prev.y,len2=dx*dx+dy*dy;
@@ -11200,7 +11219,7 @@ function findInsertionOnPath(px,py){
       tt=Math.max(0,Math.min(1,tt));
       const qx=prev.x+tt*dx,qy=prev.y+tt*dy,qp=prev.pressure+(cur.pressure-prev.pressure)*tt;
       const d=Math.hypot(px-qx,py-qy);
-      if(!best||d<best.dist)best={dist:d,x:qx,y:qy,pressure:qp,segIndex:i};
+      if(!best||d<best.dist)best={dist:d,x:qx,y:qy,pressure:qp,segIndex:i,t:((s-1)+tt)/steps};
       prev=cur;
     }
   }
@@ -11917,6 +11936,72 @@ function showSnapHi(host,sn){
   h.className='snap-hi '+sn.kind;h.firstChild.textContent=sn.kind==='v'?(sn.own?'Join':'Node'):'Path';
   const q=canvasToScreen(sn.x,sn.y);h.style.left=q.x+'px';h.style.top=q.y+'px';
 }
+// Bézier handles of the selected node: a handle each side (open ends only have one). Dragging one turns that node's curve into explicit
+// handles; on a Smooth node the other side stays in line (keeping its own length), on a Corner node the two sides move independently.
+function renderNodeHandles(host){
+  host=host||$('pathNodeOverlay');if(!host)return;
+  host.querySelectorAll('.path-handle,.path-hline').forEach(e=>e.remove());
+  if(selectedNodeIndex==null||!pathEditNodes)return;
+  const i=selectedNodeIndex,node=pathEditNodes[i];if(!node)return;
+  const nn=pathEditNodes.length,closed=pathEditClosed;
+  const sides=[];if(closed||i<nn-1)sides.push('out');if(closed||i>0)sides.push('in');
+  const els={};
+  const place=()=>{
+    const hv=nodeHandleVecs(pathEditNodes,i,closed),np=canvasToScreen(node.x,node.y);
+    sides.forEach(k=>{
+      const v=k==='out'?hv.out:hv.inn,hp=canvasToScreen(node.x+v.x,node.y+v.y),dx=hp.x-np.x,dy=hp.y-np.y;
+      const e=els[k];e.h.style.left=hp.x+'px';e.h.style.top=hp.y+'px';
+      e.l.style.left=np.x+'px';e.l.style.top=np.y+'px';e.l.style.width=Math.hypot(dx,dy)+'px';e.l.style.transform='rotate('+Math.atan2(dy,dx)+'rad)';
+    });
+  };
+  sides.forEach(k=>{
+    const l=document.createElement('div');l.className='path-hline';host.appendChild(l);
+    const h=document.createElement('div');h.className='path-handle';h.title='Drag to bend the curve';host.appendChild(h);
+    els[k]={h,l};
+    h.addEventListener('pointerdown',e=>{
+      if(!isPen(e))return;
+      e.stopPropagation();e.preventDefault();
+      try{h.setPointerCapture(e.pointerId);}catch(err){}
+      const cur=nodeHandleVecs(pathEditNodes,i,closed);
+      if(!node.ho)node.ho={dx:cur.out.x,dy:cur.out.y};
+      if(!node.hi)node.hi={dx:cur.inn.x,dy:cur.inn.y};
+      const start=k==='out'?node.ho:node.hi,g=screenToCanvas(e.clientX,e.clientY),gx=node.x+start.dx-g.x,gy=node.y+start.dy-g.y;
+      const onMove=ev=>{
+        const p=screenToCanvas(ev.clientX,ev.clientY);
+        if(multiTouchLock||!Number.isFinite(p.x)||!Number.isFinite(p.y))return;
+        const vx=p.x+gx-node.x,vy=p.y+gy-node.y,len=Math.hypot(vx,vy);
+        const mine=k==='out'?'ho':'hi',other=k==='out'?'hi':'ho';
+        node[mine]={dx:vx,dy:vy};
+        if(node.type!=='corner'&&len>1e-6){const ol=Math.hypot(node[other].dx,node[other].dy)||len;node[other]={dx:-vx/len*ol,dy:-vy/len*ol};}
+        place();schedulePathLivePreview();
+      };
+      const onUp=()=>{h.removeEventListener('pointermove',onMove);renderPathNodeOverlay();};
+      h.addEventListener('pointermove',onMove);
+      h.addEventListener('pointerup',onUp,{once:true});h.addEventListener('pointercancel',onUp,{once:true});
+    });
+  });
+  place();
+}
+// Insert a node where the path was tapped. On a curve that already has handles the curve is split exactly (de Casteljau), so it does not change shape.
+function pathInsertNode(hit){
+  const nodes=pathEditNodes,n=nodes.length,closed=pathEditClosed,i=hit.segIndex;
+  const at=k=>closed?nodes[((k%n)+n)%n]:nodes[Math.max(0,Math.min(n-1,k))];
+  const a=at(i),b=at(i+1),n0=at(i-1),n3=at(i+2),had=segHasHandles(a,b)&&hit.t!=null;
+  let P=null;
+  if(had){
+    const o=a.ho?{x:a.ho.dx,y:a.ho.dy}:nodeAutoOut(n0,a,b),inn=b.hi?{x:b.hi.dx,y:b.hi.dy}:nodeAutoIn(a,b,n3);
+    P=[{x:a.x,y:a.y},{x:a.x+o.x,y:a.y+o.y},{x:b.x+inn.x,y:b.y+inn.y},{x:b.x,y:b.y}];
+  }
+  const nn={x:hit.x,y:hit.y,pressure:hit.pressure,type:'smooth'};
+  nodes.splice(i+1,0,nn);
+  if(P){
+    const t=hit.t,L=(p,q)=>({x:p.x+(q.x-p.x)*t,y:p.y+(q.y-p.y)*t});
+    const q0=L(P[0],P[1]),q1=L(P[1],P[2]),q2=L(P[2],P[3]),r0=L(q0,q1),r1=L(q1,q2),m=L(r0,r1);
+    nn.x=m.x;nn.y=m.y;
+    a.ho={dx:q0.x-P[0].x,dy:q0.y-P[0].y};nn.hi={dx:r0.x-m.x,dy:r0.y-m.y};nn.ho={dx:r1.x-m.x,dy:r1.y-m.y};b.hi={dx:q2.x-P[3].x,dy:q2.y-P[3].y};
+  }
+  return i+1;
+}
 function renderPathNodeOverlay(){
   const host=$('pathNodeOverlay');if(!host)return;
   host.innerHTML='';
@@ -11940,6 +12025,7 @@ function renderPathNodeOverlay(){
         selectedNodeIndex=i;
         host.querySelectorAll('.path-node').forEach(n=>n.classList.remove('selected'));
         el.classList.add('selected');
+        renderNodeHandles(host);
         syncPathEditBarButtons();
       }
       try{el.setPointerCapture(e.pointerId);}catch(err){}
@@ -11963,6 +12049,7 @@ function renderPathNodeOverlay(){
         pathEditNodes[i].x=nx;pathEditNodes[i].y=ny;
         const np=canvasToScreen(pathEditNodes[i].x,pathEditNodes[i].y);
         el.style.left=np.x+'px';el.style.top=np.y+'px';
+        renderNodeHandles(host);
         schedulePathLivePreview();
       };
       const onUp=()=>{el.removeEventListener('pointermove',onMove);showSnapHi(host,null);renderPathNodeOverlay();};
@@ -11971,6 +12058,7 @@ function renderPathNodeOverlay(){
     });
     host.appendChild(el);
   });
+  renderNodeHandles(host);
   syncPathEditBarButtons();
 }
 // Edit Path's own tool toggle — 'select' (default) or 'addNode'. Switching tool never changes
@@ -12012,8 +12100,7 @@ function handlePathEditCanvasTap(e){
     try{
       const own=findInsertionOnPath(p.x,p.y);
       if(own&&own.dist<=14/s){
-        pathEditNodes.splice(own.segIndex+1,0,{x:own.x,y:own.y,pressure:own.pressure,type:'smooth'});
-        selectedNodeIndex=own.segIndex+1;
+        selectedNodeIndex=pathInsertNode(own);
         renderPathNodeOverlay();renderPathLivePreview();redraw();
         setStatus('➕ Node added — drag it to shape the path.');
         return;
@@ -12036,9 +12123,7 @@ function handlePathEditCanvasTap(e){
   const hit=findInsertionOnPath(p.x,p.y);
   const insertRadiusCanvas=22/s;
   if(!hit||hit.dist>insertRadiusCanvas)return; // tapped well away from the path — do nothing
-  const insertAt=hit.segIndex+1;
-  pathEditNodes.splice(insertAt,0,{x:hit.x,y:hit.y,pressure:hit.pressure,type:'smooth'});
-  selectedNodeIndex=insertAt;
+  selectedNodeIndex=pathInsertNode(hit);
   renderPathNodeOverlay();renderPathLivePreview();redraw();
   setStatus('➕ Node added.');
 }
@@ -12401,8 +12486,8 @@ function performJoin(strokeA,aFromEnd,strokeB,bFromEnd){
 // synthesis pipeline entirely, matching how every other custom-drag interaction in this file
 // (motif resize/rotate handles, node dragging itself) already works.
 function bindTapButton(el,handler){el.addEventListener('pointerup',e=>{if(el.disabled)return;e.preventDefault();handler();});}
-bindTapButton($('nodeSmoothBtn'),()=>{if(selectedNodeIndex==null||!pathEditNodes)return;pathEditNodes[selectedNodeIndex].type='smooth';renderPathNodeOverlay();renderPathLivePreview();redraw();});
-bindTapButton($('nodeCornerBtn'),()=>{if(selectedNodeIndex==null||!pathEditNodes)return;pathEditNodes[selectedNodeIndex].type='corner';renderPathNodeOverlay();renderPathLivePreview();redraw();});
+bindTapButton($('nodeSmoothBtn'),()=>{if(selectedNodeIndex==null||!pathEditNodes)return;{const nd=pathEditNodes[selectedNodeIndex];nd.type='smooth';delete nd.ho;delete nd.hi;}renderPathNodeOverlay();renderPathLivePreview();redraw();});
+bindTapButton($('nodeCornerBtn'),()=>{if(selectedNodeIndex==null||!pathEditNodes)return;{const nd=pathEditNodes[selectedNodeIndex];nd.type='corner';delete nd.ho;delete nd.hi;}renderPathNodeOverlay();renderPathLivePreview();redraw();});
 function deleteSelectedNode(){
   if(!pathEditNodes)return;
   if(selectedNodeIndex==null){setStatus('Tap a node on the path first (it turns highlighted), then press Delete Node.');return;}
