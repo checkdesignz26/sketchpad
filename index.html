@@ -1542,7 +1542,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v420'; // keep in step with CACHE in sw.js
+const APP_V='v421'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -9604,6 +9604,8 @@ function motifAreaFill(clientX,clientY){
     const entry=motifs.find(x=>x.id===m.motifId);if(!entry||!entry.source||!entry.source.strokesJSON)return false;
     if(strokes.some(s=>!s.fillColor&&!s.fillOf&&s.points&&s.points.length>1&&s.layerId&&layers.some(l=>l.id===s.layerId&&l.visible!==false)&&distanceToPolyline(p.x,p.y,s.points)<6))return false; // tapped right on a normal line: plain Area Fill reports it
     const armed=areaFillArmed;selected=m.id;selectedStrokeId=null;
+    let wasOpen=false;try{wasOpen=window.__sketchpadPanels.state().open.includes('fill');}catch(e){}
+    const keepPanel=()=>{if(!wasOpen)return;const re=()=>{try{if(!window.__sketchpadPanels.state().open.includes('fill'))window.__sketchpadPanels.open('fill');}catch(e){}};[0,120,500,1200].forEach(t=>setTimeout(re,t));}; // entering / leaving Edit Motif closes some panels: keep Area fill open
     enterEditMotif();
     if(!editingMotifId)return false;
     areaFillArmed=true;
@@ -9612,6 +9614,7 @@ function motifAreaFill(clientX,clientY){
     if(strokes.length>n){finishEditMotif();setStatus('🪣 Coloured inside the motif — every copy updated, still vector. Tap another area, or switch Area Fill off.');}
     else cancelEditMotif();
     areaFillArmed=armed;try{syncAreaFillUI();}catch(e){}
+    keepPanel();
     return true;
   }catch(err){try{if(editingMotifId)cancelEditMotif();}catch(e2){}return false;}
 }
