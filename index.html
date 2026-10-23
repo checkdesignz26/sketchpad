@@ -1554,7 +1554,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v436'; // keep in step with CACHE in sw.js
+const APP_V='v437'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -3668,6 +3668,60 @@ async function editTilePhys(){
   try{scheduleAutosave();}catch(e){}
   setStatus('📏 Tile is '+physLabel(tilePhys)+'.');
 }
+// ---- Resize project -------------------------------------------------------------------------------------------------------------
+// Changes the size (and shape) of the open pattern's canvas, and says what happens to the artwork: keep it as it is, scale it to fit inside the
+// new size, or scale it to fill the new size. Everything scales together (lines and their thickness, motifs, text, pattern fills, trace pictures).
+// "A resized copy" leaves the original project untouched.
+function applyProjectResize(phys,mode){
+  const oTW=TW,oTH=TH,tt=tileFromRatio(phys.w,phys.h),tw=tt[0],th=tt[1];
+  let k=1;if(mode==='fit')k=Math.min(tw/oTW,th/oTH);else if(mode==='fill')k=Math.max(tw/oTW,th/oTH);
+  if(!isFinite(k)||k<=0)k=1;
+  if(Math.abs(k-1)>1e-6){
+    const op={ax:W/2,ay:H/2,sx:k,sy:k,rot:0,dx:0,dy:0},f=(x,y)=>({x:W/2+(x-W/2)*k,y:H/2+(y-H/2)*k});
+    grpApply(grpSnapshotOf(strokes,placed),op,true);
+    strokes.forEach(c=>{
+      if(c.patFill){const q=f(c.patFill.x,c.patFill.y);c.patFill=Object.assign({},c.patFill,{x:q.x,y:q.y,s:(c.patFill.s||1)*k});}
+      if(c.contour){c.contour=Object.assign({},c.contour,{gap:c.contour.gap*k,size:c.contour.size*k,sig:null});}
+    });
+    try{traces.forEach(t=>{const q=f(t.x,t.y);t.x=q.x;t.y=q.y;t.scale*=k;});}catch(e){}
+  }
+  tilePhys={w:phys.w,h:phys.h,unit:phys.unit,dpi:phys.dpi};
+  setTileShape(tw,th,true);
+  try{rebuildAllLayers();}catch(e){}
+  try{viewFit();}catch(e){}
+  try{pushHist();}catch(e){}
+  try{redraw();}catch(e){}
+  try{scheduleAutosave();}catch(e){}
+  return {k,tw,th};
+}
+async function resizeProjectFlow(){
+  if(!activeProject){setStatus('Open a project first, then resize it.');return;}
+  if(editingMotifId){setStatus('Tap Done or Cancel on the motif you are editing first, then resize.');return;}
+  const t=tilePhys||{w:3600,h:Math.round(3600*TH/TW),unit:'px',dpi:300};
+  const r=await projAsk({title:'📐 Resize project',fields:[
+    {key:'cw',label:'New width',type:'number',value:String(t.w)},{key:'ch',label:'New height',type:'number',value:String(t.h)},
+    {key:'unit',label:'Units',type:'chips',value:t.unit,options:[['px','Pixels'],['in','Inches'],['cm','cm']]},
+    {key:'dpi',label:'DPI',type:'number',value:String(t.dpi)},
+    {key:'art',label:'Artwork',type:'chips',value:'fit',options:[['fit','Scale to fit'],['fill','Scale to fill'],['keep','Keep as is']]},
+    {key:'save',label:'Save as',type:'chips',value:'copy',options:[['copy','A resized copy'],['here','This project']]}],
+    note:'Scale to fit shrinks or grows everything (lines, motifs, text) so all of it stays inside the new size. Scale to fill makes it cover the new size, so the edges can be cut off. Keep as is changes only the canvas. A resized copy leaves this project untouched. Example for a listing picture: 2700 × 2025 px.',
+    ok:'Resize',
+    validate:v=>{const w=+v.cw,h=+v.ch,d=+v.dpi;if(!(w>0&&h>0))return 'Enter a width and a height above zero.';if(!(d>=1&&d<=2400))return 'Enter a DPI between 1 and 2400.';const q=w/h;if(q>5||q<.2)return 'That shape is very long and thin. Keep the long side under 5 times the short side.';return '';}});
+  if(!r)return;
+  const phys={w:+r.cw,h:+r.ch,unit:r.unit||'px',dpi:+r.dpi||300},mode=r.art||'fit';
+  if(r.save==='copy'){
+    if(!(await flushBeforeSwitch()))return;
+    const srcId=activeProject.id,srcMeta=await dbGet(PROJ_STORE,srcId);
+    const nid=await duplicateProject(srcId);
+    if(!nid){setStatus('⚠️ Could not make the copy, so nothing was resized.');return;}
+    try{const metas=await dbAll(PROJ_STORE);await updateMeta(nid,{name:uniqueName(cleanName((srcMeta&&srcMeta.name||'Project')+' '+Math.round(phys.w)+'×'+Math.round(phys.h),'Resized'),metas.filter(x=>x.id!==nid))});}catch(e){}
+    const meta=await dbGet(PROJ_STORE,nid),doc=await dbGet(PDOC_STORE,nid);
+    if(!meta||!doc||!(await loadProject(meta,doc))){setStatus('⚠️ The copy was made but could not be opened. Find it in Projects.');return;}
+  }
+  const res=applyProjectResize(phys,mode);
+  setStatus('📐 Resized to '+physLabel(tilePhys)+(mode==='keep'?'. The artwork was left as it was.':' — artwork scaled to '+(mode==='fit'?'fit':'fill')+' ('+Math.round(res.k*100)+'%).')+(r.save==='copy'?' This is the resized copy.':''));
+}
+
 function offsets(){
   const arr=[[0,0]];if(!showTiling)return arr;
   if(layout==='diamond'){for(let ix=-1;ix<=1;ix++)for(let iy=-1;iy<=1;iy++){if(ix||iy)arr.push(tilePos(ix,iy));}arr.push(tilePos(2,0),tilePos(-2,0),tilePos(0,2),tilePos(0,-2));return arr;} // the 8 neighbours plus the 4 far corners, so the canvas margin is filled too
@@ -14695,7 +14749,8 @@ async function duplicateProject(id){
   if(activeProject&&activeProject.id===id){if(!(await flushBeforeSwitch()))return;}
   const [m,doc,metas]=await Promise.all([dbGet(PROJ_STORE,id),dbGet(PDOC_STORE,id),dbAll(PROJ_STORE)]);
   if(!m||!doc)return;
-  try{const nm=await createProjectRecord({name:uniqueName(m.name+' copy',metas),folderId:m.folderId,doc:JSON.parse(JSON.stringify(doc))});
+  let newId=null;
+  try{const nm=await createProjectRecord({name:uniqueName(m.name+' copy',metas),folderId:m.folderId,doc:JSON.parse(JSON.stringify(doc))});newId=nm.id;
     try{if(window.SPTimelapse)await SPTimelapse.copyFor(id,nm.id);}catch(e){}
     // every pattern of the copy gets its own timelapse recording too, so nothing is shared with the original project
     try{const nd=await dbGet(PDOC_STORE,nm.id);
@@ -14708,6 +14763,7 @@ async function duplicateProject(id){
   catch(e){await projAsk({title:'⚠️ Couldn’t duplicate',message:'Storage refused the copy (it may be full).',ok:'OK',cancel:null});return;}
   setStatus('⧉ Duplicated “'+m.name+'” — the copy is fully independent.');
   renderProjects();
+  return newId;
 }
 async function moveProject(id){
   const [m,folders]=await Promise.all([dbGet(PROJ_STORE,id),dbAll(FOLD_STORE)]);if(!m)return;
@@ -16164,6 +16220,7 @@ function tbProjectMenu(){
     {sep:1},
     {label:'✨ Trace Image to Vector…',sub:'picture → shapes',run:()=>openTraceImage()},
     {label:'🕘 Earlier Saves',disabled:!activeProject,run:pressLegacy('backupsBtn')},
+    {label:'📐 Resize project…',disabled:!activeProject,run:()=>resizeProjectFlow()},
   ]);
 }
 function tbSelectMenu(anchor){
