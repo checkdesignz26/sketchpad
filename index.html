@@ -802,6 +802,7 @@ html.in-suite .suite-only{display:block!important}
       <div id="brushPreviewWrap" style="margin:8px 0 4px;border:1px solid var(--line);border-radius:12px;overflow:hidden;"><canvas id="brushPreview" style="position:static;display:block;width:100%;height:76px;max-width:100%;transform:none;left:auto;top:auto;"></canvas></div>
       <div class="brush-quickbar">
         <div class="slider-row"><label>Size</label><input id="brushSize" type="range" min="0.05" step="0.05" max="120" value="6"><span id="brushSizeVal">6</span></div>
+        <div class="hint sizeHint" style="margin:-2px 0 8px;font-size:12px;opacity:.75;line-height:1.35;"></div>
         <div class="slider-row" id="autoFillRow" title="New closed shapes and loops come out with an outline AND a fill"><label style="flex:none"><input type="checkbox" id="autoFillOn"> 🎨 Auto-fill new shapes</label><input id="autoFillColor" class="color" type="color" value="#ffd166" style="width:36px;height:30px;padding:0;margin-left:auto"><label style="flex:none;font-size:12px"><input type="checkbox" id="autoFillSame"> same as outline</label></div>
         <div class="slider-row"><label>Opacity</label><input id="brushOpacity" type="range" min="1" max="100" value="100"><span id="brushOpacityVal">100%</span></div>
       </div>
@@ -974,6 +975,7 @@ html.in-suite .suite-only{display:block!important}
       <div class="efHost"></div>
       <div class="slider-row"><label>Layer</label><select id="strokeLayerSelect" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></select></div>
       <div class="slider-row"><label>Width</label><input id="strokeWidthCtl" class="sel-width" type="range" min="0.05" step="0.05" max="120" value="6"><span id="strokeWidthVal" class="sel-width-val">6</span></div>
+      <div class="hint sizeHint" style="margin:-2px 0 8px;font-size:12px;opacity:.75;line-height:1.35;"></div>
       <div class="capRow" style="margin:8px 0 2px;">
         <div class="slider-row" style="margin:0 0 4px;"><label>Start</label><div style="display:flex;gap:6px;flex:1;"><button type="button" class="btn mini cap-btn" data-cap="capS" data-v="round" style="flex:1;">● Round</button><button type="button" class="btn mini cap-btn" data-cap="capS" data-v="flat" style="flex:1;">■ Square</button></div></div>
         <div class="slider-row" style="margin:0;"><label>End</label><div style="display:flex;gap:6px;flex:1;"><button type="button" class="btn mini cap-btn" data-cap="capE" data-v="round" style="flex:1;">● Round</button><button type="button" class="btn mini cap-btn" data-cap="capE" data-v="flat" style="flex:1;">■ Square</button></div></div>
@@ -1545,7 +1547,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v431'; // keep in step with CACHE in sw.js
+const APP_V='v432'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -3291,7 +3293,9 @@ function commitRenderScale(newScale){
 }
 let brushPreviewRaf=0;
 function scheduleBrushPreview(){if(brushPreviewRaf)return;brushPreviewRaf=requestAnimationFrame(()=>{brushPreviewRaf=0;try{renderBrushPreview();}catch(e){}});}
+let sizeHintRaf=0;
 function applyTransform(){
+  if(!sizeHintRaf){sizeHintRaf=requestAnimationFrame(()=>{sizeHintRaf=0;sizeHintUpdate();});}
   constrainView();scheduleBrushPreview();scheduleMotifHi();
   if(liveOvShown){ // the overlay is fixed to the screen: if the view moves, hand over to the ordinary live layer
     const wasOn=liveOvOn;liveOvHide();
@@ -13547,7 +13551,7 @@ function svgStrokeOutline(stroke,settings,brush){
     const wm=BrushEngine.pressureFactor(pt.pressure,settings.pressureWidth);
     opSum+=BrushEngine.pressureFactor(pt.pressure,settings.pressureOpacity);
     const tm=BrushEngine.taperAt?BrushEngine.taperAt(brush,i,n):1;
-    return Math.max(.3,(settings.size/2)*wm*tm);
+    return Math.max(.02,(settings.size/2)*wm*tm); // (a floor of .3 made fine lines export about twice as thick as drawn)
   });
   const opacity=Math.max(0,Math.min(1,(settings.opacity/100)*(opSum/n)));
   if(n===1)return {d:'M'+svgNum(pts[0].x-rs[0])+' '+svgNum(pts[0].y)+'a'+svgNum(rs[0])+' '+svgNum(rs[0])+' 0 1 0 '+svgNum(rs[0]*2)+' 0a'+svgNum(rs[0])+' '+svgNum(rs[0])+' 0 1 0 '+svgNum(-rs[0]*2)+' 0Z',opacity};
@@ -16476,7 +16480,23 @@ function tbMultiStrokes(){
   const st=selMembers().st.filter(x=>x.points&&x.points.length&&!x.fillColor);
   return st.length>1?st:null;
 }
+function sizeHintUpdate(){
+  try{
+    const hs=document.querySelectorAll('.sizeHint');if(!hs.length)return;
+    let sz=null;
+    const ms=tbMultiStrokes?tbMultiStrokes():null,st=ms?null:tbTargetStroke();
+    if(ms){const v=ms.map(x=>strokeSettings(x).size);sz=v.every(q=>Math.abs(q-v[0])<1e-6)?v[0]:null;}
+    else if(st){if(isFillOnly(st)){hs.forEach(h=>{h.textContent='A solid shape has no outline width.';});return;}sz=strokeSettings(st).size;}
+    else sz=currentSettings().size;
+    if(sz==null){hs.forEach(h=>{h.textContent='These lines have different widths (sizes are in canvas pixels).';});return;}
+    const scr=sz*zoom*baseScale,pct=Math.round(zoom*100);
+    let t='Size is in canvas pixels, so it never changes when you zoom. This line is '+fmtSize(sz)+' px on the canvas: it looks like '+fmtSize(+scr.toFixed(2))+' px on screen at this zoom ('+pct+'%), and '+fmtSize(+(sz*baseScale).toFixed(2))+' px at 100%.';
+    if(editingMotifId&&editingMotifFrame&&editingMotifFrame.fwd&&st){const k=Math.abs(editingMotifFrame.fwd.sx)||1;t+=' Inside Edit Motif the size includes this copy\'s scale (×'+(+k.toFixed(3))+'); in the original motif it is '+fmtSize(+(sz/k).toFixed(2))+' px.';}
+    hs.forEach(h=>{h.textContent=t;});
+  }catch(e){}
+}
 function tbSizeSync(){
+  sizeHintUpdate();
   const n=$('tbSizeNum');if(!n)return;
   const ms=tbMultiStrokes();
   if(ms){ // a mixed selection says so instead of showing the drawing tool's number as if it were theirs
