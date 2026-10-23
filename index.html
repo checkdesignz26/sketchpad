@@ -1554,7 +1554,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v435'; // keep in step with CACHE in sw.js
+const APP_V='v436'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -4491,7 +4491,18 @@ function copyTouches(t){return Array.from(t).map(v=>({x:v.clientX,y:v.clientY}))
 // Renders the CURRENT strokes (all visible layers, flattened) to a cropped PNG data URL — shared
 // by Capture Motif and by finishing an Edit Motif session, so a motif's preview is generated the
 // exact same way whichever path produced it. Returns null when there's nothing to capture.
+// The picture of a motif is made from ITS OWN lines only. Other motifs placed on the canvas are drawn into the same layers, so they are hidden while the picture is made;
+// otherwise editing (or area-filling) one motif baked every neighbouring motif into its picture.
 function renderCurrentArtworkPreview(){
+  const before=new Set(hiddenPlacedIds);let swapped=false;
+  try{
+    if(placed.some(p=>p.img&&!before.has(p.id)&&pBaked(p))){placed.forEach(p=>hiddenPlacedIds.add(p.id));rebuildAllLayers();swapped=true;}
+    return renderCurrentArtworkPreview_();
+  }finally{
+    if(swapped){hiddenPlacedIds.clear();before.forEach(x=>hiddenPlacedIds.add(x));try{rebuildAllLayers();}catch(e){}compositeDirty=true;}
+  }
+}
+function renderCurrentArtworkPreview_(){
   updateComposite();
   const imgData=compositeCtx.getImageData(0,0,W,H).data;
   let minX=W,minY=H,maxX=0,maxY=0,found=false;
