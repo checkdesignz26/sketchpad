@@ -879,3 +879,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v478 — Shadow/highlight on their own layers
 - Add shadow now creates a "Shadow" layer directly above the fill's layer (own opacity, blur, blend), made of normal editable closed paths (nodes). New ✨ Add highlight does the same on a "Highlight" layer on the light side (lightened fill colour). Remove clears both.
+
+## v479 — Layer tap steps through pieces
+- Tapping a layer selects its biggest shape first; tapping the same layer again selects the next piece (status shows "Piece n of m"). Lets you reach each part of a multi-piece Shadow/Highlight layer.
