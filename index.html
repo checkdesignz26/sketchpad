@@ -1144,7 +1144,7 @@ html.in-suite .suite-only{display:block!important}
       <button id="qaDup" class="btn" title="Duplicate the selection">⧉ Duplicate</button>
       <button id="qaDel" class="btn danger" title="Delete the selection (Undo brings it back)">🗑 Delete</button>
       <button id="qaCopy" class="btn" title="Copy the selection (strokes, shapes, text and pictures)">📋 Copy</button>
-      <button id="qaPaste" class="btn" title="Paste what you copied. It also works in another project (strokes, shapes and text)">📥 Paste</button>
+      <button id="qaPaste" class="btn" title="Paste what you copied. It also works in another project (strokes, shapes, text and pictures)">📥 Paste</button>
       <button id="qaFlipH" class="btn" title="Mirror the selection left to right">⇋ Flip H</button>
       <button id="qaFlipV" class="btn" title="Mirror the selection top to bottom">⇵ Flip V</button>
       <button id="qaErase" class="btn" title="Eraser on/off">🧹 Erase</button>
@@ -1562,7 +1562,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v444'; // keep in step with CACHE in sw.js
+const APP_V='v445'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -18105,36 +18105,61 @@ function qaFlip(axis){
     setStatus('⇋ Nothing selected — tap a shape, stroke or picture first (Select or Move).');
   }catch(err){setStatus('Could not flip that: '+(err&&err.message||err));}
 }
-// Copy / Paste in Quick actions: strokes, shapes and text go through the same saved clipboard as "Copy to another project"; pictures (motifs) are copied inside this project.
-let qaPlacedClip=[];
-function qaCopy(){
+// Copy / Paste in Quick actions: strokes, shapes, text and pictures (motifs) can all be pasted into another project.
+// Pictures (motifs) are kept in a small database of their own (not localStorage: the pictures can be big), so they survive switching projects and reopening the app.
+const qaClipDB={db:null,open(){return new Promise((res,rej)=>{if(this.db)return res(this.db);try{const rq=indexedDB.open('sp-clipdb',1);rq.onupgradeneeded=()=>{rq.result.createObjectStore('clip');};rq.onsuccess=()=>{this.db=rq.result;res(this.db);};rq.onerror=()=>rej(rq.error);}catch(e){rej(e);}});},
+  async put(v){const db=await this.open();return new Promise((res,rej)=>{const t=db.transaction('clip','readwrite');t.objectStore('clip').put(v,'motifs');t.oncomplete=()=>res();t.onerror=()=>rej(t.error);});},
+  async get(){const db=await this.open();return new Promise((res,rej)=>{const r=db.transaction('clip').objectStore('clip').get('motifs');r.onsuccess=()=>res(r.result||null);r.onerror=()=>rej(r.error);});},
+  async clear(){const db=await this.open();return new Promise(res=>{const t=db.transaction('clip','readwrite');t.objectStore('clip').delete('motifs');t.oncomplete=()=>res();t.onerror=()=>res();});}};
+function qaImgSrc(e){
+  if(e.src)return e.src;
+  const im=e.img,c=document.createElement('canvas');c.width=imgNW(im)||1;c.height=im.naturalHeight||im.height||1;c.getContext('2d').drawImage(im,0,0);const u=c.toDataURL('image/png');c.width=c.height=1;return u;
+}
+async function qaCopy(){
   try{
     const pids=(multiSel&&multiSel.placedIds&&multiSel.placedIds.length)?multiSel.placedIds.slice():(selected?[selected]:[]);
     const pl=placed.filter(p=>pids.includes(p.id)&&p.img);
     const hasStrokes=!!((multiSel&&multiSel.strokeIds&&multiSel.strokeIds.length)||(selectedStrokeId&&strokes.find(x=>x.id===selectedStrokeId&&x.brushId!=='eraser')));
     if(!pl.length&&!hasStrokes){setStatus('📋 Nothing selected to copy. Tap Select, then tap a shape, stroke, text or picture.');return;}
-    qaPlacedClip=pl.map(p=>{const c=Object.assign({},p);delete c.id;delete c.groupId;return c;});
-    if(hasStrokes)copySelectionToClipboard();
-    else{try{localStorage.removeItem('sp-clip');}catch(e){}setStatus('📋 Copied '+pl.length+' picture'+(pl.length===1?'':'s')+'. Tap Paste to add a copy.');}
+    if(hasStrokes)copySelectionToClipboard();else{try{localStorage.removeItem('sp-clip');}catch(e){}}
+    if(pl.length){
+      const ids=[...new Set(pl.map(p=>p.motifId))],ms=[];
+      for(const id of ids){const e=motifs.find(m=>m.id===id);if(e)ms.push({id:e.id,name:e.name,src:qaImgSrc(e),source:e.source||null});}
+      const items=pl.filter(p=>ms.some(m=>m.id===p.motifId)).map(p=>{const c=Object.assign({},p);delete c.id;delete c.img;delete c.groupId;delete c.layerId;return c;});
+      await qaClipDB.put({v:1,from:(activeProject&&activeProject.id)||'',fromName:(activeProject&&activeProject.name)||'',motifs:ms,placed:items});
+      setStatus('📋 Copied '+items.length+' picture'+(items.length===1?'':'s')+(hasStrokes?' and the strokes':'')+'. Open any project and tap Paste.');
+    }else{try{await qaClipDB.clear();}catch(e){}}
   }catch(e){setStatus('⚠️ Could not copy: '+(e&&e.message||e));}
 }
-function qaPaste(){
+async function qaPaste(){
   try{
     let hasStrokeClip=false;try{const d=JSON.parse(localStorage.getItem('sp-clip')||'null');hasStrokeClip=!!(d&&d.strokes&&d.strokes.length);}catch(e){}
-    const okPl=qaPlacedClip.filter(c=>motifs.some(m=>m.id===c.motifId));
-    if(!hasStrokeClip&&!okPl.length){setStatus('📥 Nothing copied yet. Select something, then tap Copy.');return;}
-    if(okPl.length){
-      const lay=(layers.find(l=>l.id===activeLayerId&&!l.tpl&&!l.locked)||{}).id;
-      const ids=[];
-      okPl.forEach(c=>{const e=motifs.find(m=>m.id===c.motifId),n=Object.assign({},c,{id:crypto.randomUUID(),img:e.img||c.img,layerId:lay||c.layerId,x:c.x+30,y:c.y+30});placed.push(n);ids.push(n.id);});
-      qaPlacedClip=qaPlacedClip.map(c=>Object.assign({},c,{x:c.x+30,y:c.y+30}));
+    let clip=null;try{clip=await qaClipDB.get();}catch(e){}
+    if(!(clip&&clip.placed&&clip.placed.length))clip=null;
+    if(!hasStrokeClip&&!clip){setStatus('📥 Nothing copied yet. Select something, then tap Copy.');return;}
+    if(clip){
+      const same=!!(activeProject&&clip.from===activeProject.id),idMap=new Map(),added=[];
+      for(const m of clip.motifs){
+        let e=motifs.find(x=>x.id===m.id&&(same||x.src===m.src))||motifs.find(x=>x.src&&x.src===m.src);
+        if(!e){
+          const img=await motifLoadImg(m.src);
+          e={id:crypto.randomUUID(),img,src:m.src,name:m.name,source:m.source||null};motifs.push(e);added.push(e);
+        }
+        idMap.set(m.id,e);
+      }
+      const lay=(layers.find(l=>l.id===activeLayerId&&!l.tpl&&!l.locked)||{}).id,ids=[];
+      clip.placed.forEach(c=>{const e=idMap.get(c.motifId);if(!e)return;const d=same?30:0,n=Object.assign({},c,{id:crypto.randomUUID(),motifId:e.id,img:e.img,layerId:lay,x:c.x+d,y:c.y+d});placed.push(n);ids.push(n.id);});
+      if(same)clip.placed=clip.placed.map(c=>Object.assign({},c,{x:c.x+30,y:c.y+30}));
+      if(same)try{await qaClipDB.put(clip);}catch(e){}
+      try{renderTray();}catch(e){}
+      added.forEach(e=>motifReduce(e,motifWorkPx(e.id)).then(ok=>{if(ok){try{redraw();}catch(_){}}}));
       if(hasStrokeClip)pasteFromClipboard();
       else{
         try{setMulti([],ids,null);}catch(e){selected=ids[ids.length-1];}
         if(mode!=='edit'){try{$('editModeBtn').click();}catch(e){}}
         try{rebuildAllLayers();}catch(e){}
         pushHist();redraw();try{scheduleAutosave();}catch(e){}
-        setStatus('📥 Pasted '+ids.length+' picture'+(ids.length===1?'':'s')+'. Drag to move it. Undo removes it.');
+        setStatus('📥 Pasted '+ids.length+' picture'+(ids.length===1?'':'s')+(clip.fromName&&!same?' from "'+clip.fromName+'"':'')+'. Drag to move it. Undo removes it.');
       }
     }else pasteFromClipboard();
   }catch(e){setStatus('⚠️ Could not paste: '+(e&&e.message||e));}
