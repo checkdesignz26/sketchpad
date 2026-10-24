@@ -1596,7 +1596,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v478'; // keep in step with CACHE in sw.js
+const APP_V='v479'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -6738,7 +6738,10 @@ function renderLayersList(){
     row.onclick=()=>{activeLayerId=layer.id;
       try{ // tapping a layer also selects the shape on it (the topmost one), which opens the Stroke panel
         if(!layerSelMode&&!layer.locked){const q=strokes.filter(x=>x.layerId===layer.id&&!x.text&&x.brushId!=='smudge'&&x.brushId!=='eraser'&&!x.fillOf&&!hiddenStrokeIds.has(x.id));
-          const t=q[q.length-1];if(t){selectedStrokeId=t.id;selected=null;multiSel=null;mode='edit';try{syncMode();}catch(e){}try{syncStrokeSelectionUI();updateSelectedControls();}catch(e){}}}
+          const ba=st=>{let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;(st.points||[]).forEach(v=>{x0=Math.min(x0,v.x);y0=Math.min(y0,v.y);x1=Math.max(x1,v.x);y1=Math.max(y1,v.y);});return (x1-x0)*(y1-y0)||0;};
+          q.sort((u,v)=>ba(v)-ba(u)); // biggest piece first; tapping the layer again steps to the next piece
+          const cur=q.findIndex(x=>x.id===selectedStrokeId),t=q.length?q[(cur+1)%q.length]:null;
+          if(t){selectedStrokeId=t.id;selected=null;multiSel=null;mode='edit';try{syncMode();}catch(e){}try{syncStrokeSelectionUI();updateSelectedControls();}catch(e){}if(q.length>1)setStatus('Piece '+(q.indexOf(t)+1)+' of '+q.length+' on this layer. Tap the layer again for the next piece.');}}
       }catch(e){}
       renderLayersList();compositeDirty=true;redraw();};
     if(layerSelMode)row.addEventListener('click',e=>{e.stopPropagation();e.preventDefault();if(layerSel.has(layer.id))layerSel.delete(layer.id);else layerSel.add(layer.id);renderLayersList();},true);
