@@ -1583,7 +1583,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v471'; // keep in step with CACHE in sw.js
+const APP_V='v472'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -4515,11 +4515,12 @@ canvas.addEventListener('pointermove',e=>{
 const autoFill={on:false,color:'#ffd166',same:false};
 try{Object.assign(autoFill,JSON.parse(localStorage.getItem('sp-autoFill')||'{}'));}catch(e){}
 function autoFillApply(stroke){
-  if(!autoFill.on||!stroke||stroke.brushId==='eraser'||stroke.brushId==='smudge'||stroke.tpl||stroke.text||stroke.fillColor)return;
+  const sameCol=!autoFill.on&&!!(stroke&&stroke.closed&&palHex(autoFill.color)&&palHex(autoFill.color)===palHex(stroke.color)); // fill colour = stroke colour: a closed shape fills itself
+  if((!autoFill.on&&!sameCol)||!stroke||stroke.brushId==='eraser'||stroke.brushId==='smudge'||stroke.tpl||stroke.text||stroke.fillColor)return;
   const pts=stroke.points||[];let ok=!!(stroke.closed||(stroke.shape&&SHAPE_CLOSED[stroke.shape.type]));
   if(!ok&&!stroke.shape&&pts.length>=8){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;pts.forEach(p=>{x0=Math.min(x0,p.x);y0=Math.min(y0,p.y);x1=Math.max(x1,p.x);y1=Math.max(y1,p.y);});const diag=Math.hypot(x1-x0,y1-y0),gap=Math.hypot(pts[0].x-pts[pts.length-1].x,pts[0].y-pts[pts.length-1].y);ok=diag>12&&gap<diag*0.12;}
   if(!ok)return;
-  stroke.fill={on:true,same:!!autoFill.same,opacity:1,color:autoFill.same?stroke.color:autoFill.color};
+  stroke.fill={on:true,same:!!autoFill.same||sameCol,opacity:1,color:(autoFill.same||sameCol)?stroke.color:autoFill.color};
   try{fillSync();rebuildLayer(stroke.layerId);}catch(e){}
 }
 {const on=$('autoFillOn'),col=$('autoFillColor'),same=$('autoFillSame');
@@ -16947,28 +16948,27 @@ function penOverlayRender(){
   c.lineCap='round';c.lineJoin='round';
   if(flat.length>1){
     const size=(()=>{try{return currentSettings().size;}catch(e){return 4;}})();
-    c.globalAlpha=.55;c.strokeStyle=currentColor;c.lineWidth=Math.max(1,Math.min(40,size*s));
+    c.globalAlpha=.28;c.strokeStyle=currentColor;c.lineWidth=Math.max(1,Math.min(40,size*s)); // faint ghost of the real stroke width
     c.beginPath();flat.forEach((q,i)=>i?c.lineTo(q.x,q.y):c.moveTo(q.x,q.y));c.stroke();
-    c.globalAlpha=.9;c.strokeStyle='#8f6bd8';c.lineWidth=1.2;
-    c.beginPath();flat.forEach((q,i)=>i?c.lineTo(q.x,q.y):c.moveTo(q.x,q.y));c.stroke();
+    c.globalAlpha=1;c.strokeStyle='#1d6fe0';c.lineWidth=1.25;c.lineCap='butt';c.lineJoin='miter'; // the path itself: a thin precise line
+    c.beginPath();flat.forEach((q,i)=>i?c.lineTo(q.x,q.y):c.moveTo(q.x,q.y));c.stroke();c.lineCap='round';c.lineJoin='round';
   }
   c.globalAlpha=1;
   penA.forEach((a,i)=>{
     const q=S(a);
     ['hi','ho'].forEach(k=>{if(!a[k])return;const hq=S(a[k]);
-      c.strokeStyle='#9a8fb0';c.lineWidth=1.2;c.beginPath();c.moveTo(q.x,q.y);c.lineTo(hq.x,hq.y);c.stroke();
-      c.fillStyle='#fff';c.strokeStyle='#8f6bd8';c.lineWidth=2;c.beginPath();c.arc(hq.x,hq.y,6,0,Math.PI*2);c.fill();c.stroke();});
+      c.strokeStyle='#1d6fe0';c.lineWidth=1;c.beginPath();c.moveTo(q.x,q.y);c.lineTo(hq.x,hq.y);c.stroke();
+      c.fillStyle='#fff';c.strokeStyle='#1d6fe0';c.lineWidth=1.25;c.beginPath();c.arc(hq.x,hq.y,3.6,0,Math.PI*2);c.fill();c.stroke();});
     const first=i===0&&penA.length>=2&&!penClosed,sel=i===penSel||i===penA.length-1;
-    c.fillStyle=first?'#f08fb0':(sel?'#8f6bd8':'#fff');c.strokeStyle=first?'#c2417a':'#8f6bd8';c.lineWidth=2.2;
-    const rr=first?9:7;c.beginPath();
-    if(penCorner(a))c.rect(q.x-rr,q.y-rr,rr*2,rr*2);else c.arc(q.x,q.y,rr,0,Math.PI*2);
-    c.fill();c.stroke();
+    if(first){c.strokeStyle='#1d6fe0';c.lineWidth=1.25;c.beginPath();c.arc(q.x,q.y,10,0,Math.PI*2);c.stroke();} // ring = tap here to close the shape
+    c.fillStyle=sel?'#1d6fe0':'#fff';c.strokeStyle='#1d6fe0';c.lineWidth=1.5;
+    const rr=4.5;c.beginPath();c.rect(q.x-rr,q.y-rr,rr*2,rr*2);c.fill();c.stroke();
   });
 }
 function penBarSync(){
   $('penBar').style.display=(penOn&&(penA.length||penEdit))?'flex':'none'; // only in the way while a path is actually being drawn
   $('tbPenBtn').classList.toggle('active',penOn);try{tbToolSync();}catch(e){}
-  $('penHint').textContent=penA.length?(penA.length+' point'+(penA.length>1?'s':'')+' · drag a point to move · double-tap = smooth/corner'):'Tap to place a point · drag to curve · tap the pink first point to close';
+  $('penHint').textContent=penA.length?(penA.length+' point'+(penA.length>1?'s':'')+' · drag a point to move · double-tap = smooth/corner'):'Tap to place a point · drag to curve · tap the ringed first point to close';
   $('penDoneBtn').disabled=penA.length<2;$('penCloseBtn').disabled=penA.length<2||penClosed;$('penUndoBtn').disabled=!penA.length;
 }
 function penHit(sx,sy){
@@ -17039,7 +17039,7 @@ function penFinish(){
   }else{
     const settings=Object.assign({},currentSettings());
     const stroke={id:crypto.randomUUID(),brushId:activeBrushId,layerId:activeLayerId,atop:!!((layers.find(l=>l.id===activeLayerId)||{}).alphaLock),color:currentColor,settings,points:pts,nodes:null,closed:penClosed,cornerAuto:true,clipStrokeId:(paintMode==='inside')?paintInsideTargetId:null,shape:null,bez};
-    strokes.push(stroke);appendStrokeToLayer(stroke);
+    strokes.push(stroke);appendStrokeToLayer(stroke);autoFillApply(stroke);
     BrushEngine.touchRecent(activeBrushId);try{syncRecents();}catch(e){}
   }
   penReset();pushHist();redraw();setStatus('🖋️ Pen path placed. Tap it in Edit mode, then 🖋️ Edit Curve, to reshape it.');
@@ -17058,7 +17058,7 @@ function penSet(on){
     if(eraserActive){eraserActive=false;syncControlsFromSettings();syncActiveSwatches();}
     armedShapeType=null;try{syncShapeToolUI();disarmAreaFill();}catch(e){}
     penOn=true;penBarSync();penOverlayRender();
-    setStatus('🖋️ Pen: tap to add points, drag to curve. Tap Done (or the pink first point to close).');
+    setStatus('🖋️ Pen: tap to add points, drag to curve. Tap Done (or the ringed first point to close).');
   }else{
     if(penA.length>=2)penFinish();else penCancel();
     penOn=false;penBarSync();penOverlayRender();
