@@ -885,3 +885,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v480 — One layer per shadow/highlight piece
 - If a shadow or highlight comes out as several separate pieces, each piece now gets its own layer (Shadow, Shadow 2…; biggest first), stacked above the fill's layer.
+
+## v481 — Pick the colour to shade
+- Inner shadow section: "🎯 Pick the colour to shade". Next canvas tap selects the colour fill under the finger (skips outlines/face lines on top), then Add shadow / Add highlight.
