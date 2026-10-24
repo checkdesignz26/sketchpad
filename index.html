@@ -1573,7 +1573,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v464'; // keep in step with CACHE in sw.js
+const APP_V='v465'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -9956,7 +9956,7 @@ function afWallMask(inkStrokes,ox,oy,cw,ch,sc,gap,butt,minW){
   const view={x0:ox-60,y0:oy-60,x1:ox+cw/sc+60,y1:oy+ch/sc+60};
   inkStrokes.forEach(s=>{
     const bx=afStrokeBox(s,gap);if(!bx||bx.x1<view.x0||bx.x0>view.x1||bx.y1<view.y0||bx.y0>view.y1)return;
-    const w=Math.max(1,(s.settings&&s.settings.size)||BrushEngine.getSettings(s.brushId).size||4);
+    const w=(s.settings&&s.settings.size)||BrushEngine.getSettings(s.brushId).size||4;
     cx.lineWidth=Math.max(w+gap*2,minW||0);
     if(afInkPath(cx,s))cx.stroke();
   });
@@ -9994,7 +9994,7 @@ function computeAreaFillPolygon(px,py,gapTolerance){
   let c=Math.min(1,1000/Math.max(W,H)),A=null;
   for(let attempt=0;attempt<2;attempt++){
     const cw=Math.ceil(W*c),ch=Math.ceil(H*c),sx=Math.min(cw-1,Math.round(px*c)),sy=Math.min(ch-1,Math.round(py*c));
-    const wall=afWallMask(inkStrokes,0,0,cw,ch,c,gapTolerance,false,2/c); // at least 2 coarse pixels thick, so thin lines never leak
+    const wall=afWallMask(inkStrokes,0,0,cw,ch,c,gapTolerance,false,1.3/c); // at least 2 coarse pixels thick, so thin lines never leak
     if(wall[sy*cw+sx]){A={ok:false,reason:'onLine'};}
     else{
       const f=afFlood(wall,cw,ch,sx,sy);
@@ -10004,7 +10004,18 @@ function computeAreaFillPolygon(px,py,gapTolerance){
     if(c<1&&(A.reason==='onLine'||(A.ok&&A.small)))c=1; // a tiny area or a tap beside a hairline: look again at full detail
     else break;
   }
-  if(!A.ok)return A;
+  // ---- pass 2: this region only, at a resolution that fits its size
+  if(A.ok)return afRegion(inkStrokes,px,py,gapTolerance,A);
+  if(A.reason!=='onLine')return A;
+  // A tap that the coarse look calls "on a line" can still be inside a very small area (a tiny heart whose lines nearly touch at that scale):
+  // look again, close up, in windows of growing size around the tap.
+  for(const R of [16,48,160]){
+    const r=afRegion(inkStrokes,px,py,gapTolerance,{x0:px-R,y0:py-R,x1:px+R,y1:py+R});
+    if(r.ok||r.reason==='onLine')return r;
+  }
+  return A;
+}
+function afRegion(inkStrokes,px,py,gapTolerance,A){
   // ---- pass 2: this region only, at a resolution that fits its size
   let maxW=4;inkStrokes.forEach(s=>{const w=(s.settings&&s.settings.size)||BrushEngine.getSettings(s.brushId).size||4;if(w>maxW)maxW=w;});
   const margin=Math.min(70,Math.ceil(maxW*2+gapTolerance+8));
@@ -10013,8 +10024,8 @@ function computeAreaFillPolygon(px,py,gapTolerance){
   const regW=ex-ox,regH=ey-oy;
   const S=Math.max(1,Math.min(8,1400/Math.max(regW,regH)));
   const cw=Math.ceil(regW*S),ch=Math.ceil(regH*S);
-  const wall=afWallMask(inkStrokes,ox,oy,cw,ch,S,gapTolerance,false,1);
-  const grown=afWallMask(inkStrokes,ox,oy,cw,ch,S,gapTolerance,true,1); // flat-ended walls: the fill only grows back into these, so it never bulges out of a bridged gap
+  const wall=afWallMask(inkStrokes,ox,oy,cw,ch,S,gapTolerance,false,1.5/S); // never thinner than 1.5 raster pixels, but never fatter than that either: a tiny, finely drawn motif must keep its gaps
+  const grown=afWallMask(inkStrokes,ox,oy,cw,ch,S,gapTolerance,true,1.5/S); // flat-ended walls: the fill only grows back into these, so it never bulges out of a bridged gap
   const sx=Math.round((px-ox)*S),sy=Math.round((py-oy)*S);
   if(sx<1||sy<1||sx>=cw-1||sy>=ch-1)return {ok:false,reason:'traceFailed'};
   if(wall[sy*cw+sx])return {ok:false,reason:'onLine'};
@@ -10172,6 +10183,11 @@ function attemptAreaFillAt(clientX,clientY){
   let result=safeCompute(p.x,p.y,gapTolerance),autoGap=0;
   // Not closed? Try bridging bigger gaps automatically, so outlines that only nearly meet (or meet other paths) still fill.
   if(!result.ok&&result.reason==='open'){for(const g of [4,8,12,20,30,40]){if(g<=gapTolerance)continue;const r2=safeCompute(p.x,p.y,g);if(r2.ok){result=r2;autoGap=g;break;}if(r2.reason!=='open')break;}}
+  // A tap that lands exactly on a thin line: nudge it a few screen pixels to either side and use the first enclosed area found there.
+  if(!result.ok&&result.reason==='onLine'){
+    const ps=Math.max(1e-6,zoom*baseScale);
+    outer:for(const rpx of [4,8,14]){for(let k=0;k<8;k++){const an=k*Math.PI/4,r2=safeCompute(p.x+Math.cos(an)*rpx/ps,p.y+Math.sin(an)*rpx/ps,gapTolerance);if(r2.ok){result=r2;break outer;}}}
+  }
   if(!result.ok){
     let onLineMsg='🪣 That\'s right on a line — tap inside an enclosed area instead.';
     if(result.reason==='onLine'){try{const cu=areaFillCulprit(p.x,p.y,gapTolerance);if(cu)onLineMsg='🪣 That\'s right on '+areaFillStrokeDesc(cu.s,cu.layer)+(gapTolerance>0?' (gap tolerance '+gapTolerance+'px widens every line by that much, so lower it to tap closer to a line)':'')+'. Tap somewhere else, or hide/delete that line.';}catch(e){}}
