@@ -898,3 +898,7 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 ## v483 — Separate delete buttons, Stroke panel reliability
 - Inner shadow section: "✖ Delete shadow" and "✖ Delete highlight" are separate buttons.
 - Tapping a layer row while Edit Path is open now finishes Edit Path first, so the Stroke panel is not left hidden.
+
+## v484 — Shadow & highlight panel
+- Own panel "Shadow & highlight" (rail icon with sliders, also a "🌓 Shadow & highlight…" button in the Stroke panel's Fill box). Bigger sliders and buttons.
+- Sliders update the shadow and highlight live; pieces are updated in place so their layers keep their opacity/blur/blend.
