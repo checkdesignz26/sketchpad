@@ -446,10 +446,10 @@ html.in-suite .suite-only{display:block!important}
 .snap-hi.e{width:20px;height:20px;border-radius:4px;border:3px solid #19c37d;background:rgba(25,195,125,.3);box-shadow:0 0 0 2px #fff;transform:translate(-50%,-50%) rotate(45deg)}
 .snap-hi span{position:absolute;left:34px;top:-6px;font:800 12px/1 system-ui,sans-serif;color:#fff;background:#19c37d;border-radius:6px;padding:3px 6px;white-space:nowrap}
 .snap-hi.e span{transform:rotate(-45deg);left:30px;top:-14px}
-.path-handle{position:absolute;width:36px;height:36px;margin-left:-18px;margin-top:-18px;pointer-events:auto;touch-action:none;cursor:grab;display:flex;align-items:center;justify-content:center;z-index:2}
+.path-handle{position:absolute;width:30px;height:30px;margin-left:-15px;margin-top:-15px;pointer-events:auto;touch-action:none;cursor:grab;display:flex;align-items:center;justify-content:center;z-index:2}
 .path-handle::after{content:'';display:block;width:11px;height:11px;border-radius:50%;background:#fff;border:2px solid var(--blue,#5096ff);box-shadow:0 1px 3px rgba(0,0,0,.4)}
 .path-hline{position:absolute;height:0;border-top:1.5px solid var(--blue,#5096ff);transform-origin:0 0;pointer-events:none;opacity:.9}
-.path-node{position:absolute;width:36px;height:36px;margin-left:-18px;margin-top:-18px;pointer-events:auto;touch-action:none;cursor:grab;display:flex;align-items:center;justify-content:center}
+.path-node{position:absolute;width:30px;height:30px;margin-left:-15px;margin-top:-15px;pointer-events:auto;touch-action:none;cursor:grab;display:flex;align-items:center;justify-content:center;z-index:3} /* above the curve handles, so a node can always be grabbed and dragged on its own */
 .path-node::after{content:'';display:block;width:6px;height:6px;border-radius:50%;background:#fff;border:1.5px solid var(--pink);box-shadow:0 1px 3px rgba(0,0,0,.35)}
 .path-node.corner::after{border-radius:1.5px}
 .path-node.selected::after{width:11px;height:11px;background:var(--pink);border-color:var(--pink);box-shadow:0 0 0 4px rgba(255,142,214,.35),0 1px 3px rgba(0,0,0,.35)}
@@ -1573,7 +1573,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v459'; // keep in step with CACHE in sw.js
+const APP_V='v460'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
