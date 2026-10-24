@@ -873,3 +873,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v476 — Tap a layer to select its shape
 - Tapping a layer row (outside the name, thumbnail and buttons) now also selects the topmost shape on that layer, which opens the Stroke panel (works inside Edit Motif, so Fill layers can be picked for Inner shadow).
+
+## v477 — Inner shadow works from the outline
+- With a plain outline selected (Fill off), Add shadow finds the largest colour fill around the outline's centre and shades that, placed above the fill and under the outline.
