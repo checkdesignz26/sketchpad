@@ -845,3 +845,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v467 — Watermark logo grid is one row
 - In Layers → Motifs, the watermark logo copies show as a single row ("Watermark logo · N copies") with show/hide, one opacity slider and delete for the whole grid, instead of one row per copy. (The copies were already all on the one "Watermark" layer.)
+
+## v468 — Bigger Mix a colour swatch
+- The live preview in Colour → Mix a colour is now a full-width 104 px swatch (was a thin strip) with the code under it, and stays at the top while you drag the sliders.
