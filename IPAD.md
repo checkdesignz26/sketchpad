@@ -870,3 +870,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v475 — Inner shadow guard
 - Add shadow on a plain outline (no fill) now explains to pick the coloured fill shape instead of painting a black blob.
+
+## v476 — Tap a layer to select its shape
+- Tapping a layer row (outside the name, thumbnail and buttons) now also selects the topmost shape on that layer, which opens the Stroke panel (works inside Edit Motif, so Fill layers can be picked for Inner shadow).
