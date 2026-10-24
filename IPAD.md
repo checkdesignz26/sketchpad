@@ -852,3 +852,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 ## v469 — Shadows & highlights from extracted colours
 - Colour → Palette from an image has a new **🌗 Shadows & highlights** panel: pick how many darker (shadow) and lighter (highlight) tones, the strength, and an optional natural look (shadows lean cooler, highlights lean warmer). Each extracted colour (only the ones you chose, if any) becomes a column from lightest to darkest; tap a shade to use it.
 - **Add shades to palette** adds just the new shades to the chosen saved palette; **New palette from all** saves the colours plus their shades.
+
+## v470 — Simpler shades panel
+- Shadows & highlights now defaults to 1 highlight + 1 shadow and shows just two tidy rows (lighter, darker), one swatch per extracted colour, instead of a full column per colour. Up to 3 of each if wanted.
