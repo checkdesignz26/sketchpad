@@ -925,7 +925,7 @@ html.in-suite .suite-only{display:block!important}
         <div class="hint">The picture is placed inside the tapped area on its own layer. Select the area afterwards and tap “Edit pattern inside” to move, size or turn it.</div>
       </div>
       <div class="slider-row"><label>Opacity</label><input id="areaFillOpacityCtl" type="range" min="5" max="100" value="100"><span id="areaFillOpacityVal">100%</span></div>
-      <div class="slider-row"><label>Gap tol.</label><input id="areaFillGapCtl" type="range" min="0" max="40" value="6"><span id="areaFillGapVal">6px</span></div>
+      <div class="slider-row"><label>Gap tol.</label><input id="areaFillGapCtl" type="range" min="0" max="40" value="0"><span id="areaFillGapVal">0px</span></div>
       <div class="slider-row"><label>Into</label><select id="areaFillLayerSelect" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></select></div>
       <div id="areaFillHint" class="hint">Tap the Area Fill button, then tap inside any enclosed region (even one bounded by several separate strokes) to fill just that region as its own editable vector shape. Gap tolerance bridges small unintentional gaps in the outline.</div>
     </section>
@@ -1573,7 +1573,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v462'; // keep in step with CACHE in sw.js
+const APP_V='v463'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -9927,152 +9927,170 @@ function traceMaskContour(mask,maskW,maskH){
 // exactly on a boundary), 'open' (the flood reached the edge of the canvas, i.e. the region isn't
 // actually enclosed), or 'empty'/'traceFailed' for degenerate cases — so the caller can show a
 // precise, helpful message instead of ever silently flooding the whole canvas.
+// Area Fill, in two passes so it is both accurate and light on memory.
+//  1. A coarse look at the whole canvas (at most about 1000 px across) finds which region was tapped and how big it is, and whether it is closed.
+//  2. That region alone (plus a margin for the lines around it) is redone at a resolution matched to its size: a small heart is traced at up to 8x, so
+//     its curves and dip survive, while a big area is traced at 1x. The old version always worked at 1 pixel of canvas, which turned small shapes into
+//     a few straight facets, bridged narrow dips and left white slivers once you zoomed in.
+function afInkPath(ctx,s){
+  const pts=s.nodes?nodesToPoints(s.nodes,s.closed):s.points;
+  if(!pts||pts.length<2)return false;
+  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
+  for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);
+  if(s.closed)ctx.closePath();
+  return true;
+}
+function afStrokeBox(s,pad){
+  const pts=s.nodes?nodesToPoints(s.nodes,s.closed):s.points;if(!pts||pts.length<2)return null;
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  for(let i=0;i<pts.length;i++){const q=pts[i];if(q.x<x0)x0=q.x;if(q.x>x1)x1=q.x;if(q.y<y0)y0=q.y;if(q.y>y1)y1=q.y;}
+  const w=Math.max(1,(s.settings&&s.settings.size)||BrushEngine.getSettings(s.brushId).size||4);
+  const g=w*1.5+pad;return {x0:x0-g,y0:y0-g,x1:x1+g,y1:y1+g};
+}
+// Draws the walls (every ink line, widened by the gap tolerance) at scale sc over the crop starting at (ox,oy); returns a Uint8Array of 0/1.
+function afWallMask(inkStrokes,ox,oy,cw,ch,sc,gap,butt,minW){
+  const cv=document.createElement('canvas');cv.width=cw;cv.height=ch;
+  const cx=cv.getContext('2d',{willReadFrequently:true});
+  cx.setTransform(sc,0,0,sc,-ox*sc,-oy*sc);
+  cx.lineCap=butt?'butt':'round';cx.lineJoin='round';cx.strokeStyle='#000';
+  const view={x0:ox-60,y0:oy-60,x1:ox+cw/sc+60,y1:oy+ch/sc+60};
+  inkStrokes.forEach(s=>{
+    const bx=afStrokeBox(s,gap);if(!bx||bx.x1<view.x0||bx.x0>view.x1||bx.y1<view.y0||bx.y0>view.y1)return;
+    const w=Math.max(1,(s.settings&&s.settings.size)||BrushEngine.getSettings(s.brushId).size||4);
+    cx.lineWidth=Math.max(w+gap*2,minW||0);
+    if(afInkPath(cx,s))cx.stroke();
+  });
+  const d=cx.getImageData(0,0,cw,ch).data,m=new Uint8Array(cw*ch);
+  for(let i=0;i<m.length;i++)if(d[i*4+3]>40)m[i]=1;
+  cv.width=cv.height=1;
+  return m;
+}
+function afFlood(wall,cw,ch,sx,sy){
+  const vis=new Uint8Array(cw*ch),q=new Int32Array(cw*ch);
+  let qh=0,qt=0,minX=sx,maxX=sx,minY=sy,maxY=sy,edge=false;
+  q[qt++]=sy*cw+sx;vis[sy*cw+sx]=1;
+  while(qh<qt){
+    const i=q[qh++],x=i%cw,y=(i-x)/cw;
+    if(x===0||y===0||x===cw-1||y===ch-1){edge=true;break;}
+    if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y;
+    let n=i+1;if(!vis[n]&&!wall[n]){vis[n]=1;q[qt++]=n;}
+    n=i-1;if(!vis[n]&&!wall[n]){vis[n]=1;q[qt++]=n;}
+    n=i+cw;if(!vis[n]&&!wall[n]){vis[n]=1;q[qt++]=n;}
+    n=i-cw;if(!vis[n]&&!wall[n]){vis[n]=1;q[qt++]=n;}
+  }
+  return {vis,edge,minX,maxX,minY,maxY,count:qt};
+}
 function computeAreaFillPolygon(px,py,gapTolerance){
-  const mw=W,mh=H;
-  const off=document.createElement('canvas');off.width=mw;off.height=mh;
-  const octx=off.getContext('2d');
-  octx.lineCap='round';octx.lineJoin='round';octx.strokeStyle='#000';
-  // A second copy of the walls with flat (butt) ends: the fill is only grown back into THIS one, so across a bridged gap it
-  // stops at the ends of the lines instead of bulging out through the opening.
-  const off2=document.createElement('canvas');off2.width=mw;off2.height=mh;
-  const octx2=off2.getContext('2d');octx2.lineCap='butt';octx2.lineJoin='round';octx2.strokeStyle='#000';
-  // Boundaries come from visible ink strokes only — a fillColor stroke is painted content (not a
-  // line to wall off against) and a Paint Inside raster scribble is clipped content, not a drawn
-  // edge, so both are excluded; only the vector linework the user actually drew counts as a wall.
+  // Boundaries come from visible ink strokes only — a fillColor stroke is painted content (not a line to wall off against) and a Paint Inside raster
+  // scribble is clipped content, so both are excluded; an invisible outline (e.g. the shape behind a pattern fill) draws no ink, so it is no wall either.
   const inkStrokes=strokes.filter(s=>{
-    if(s.fillColor||s.clipStrokeId)return false;
-    if(s.noStroke||s.fillOf)return false; // an invisible outline (e.g. the shape behind a pattern fill) draws no ink, so it is no wall either
+    if(s.fillColor||s.clipStrokeId||s.noStroke||s.fillOf)return false;
     const layer=layers.find(l=>l.id===s.layerId);
     return layer&&layer.visible&&!(layer.opacity<=0);
   });
   if(!inkStrokes.length)return {ok:false,reason:'empty'};
-  // The flood fill below naturally stops at the OUTER edge of each wall (the fully-padded line
-  // width it was rasterised with), which would otherwise leave a visible paper-white gap between
-  // the fill and the ink's visual centreline — maxHalfWidth tracks how far to later dilate the
-  // filled mask back out to close that gap (see the dilate step after the flood fill).
-  let maxHalfWidth=0;
-  inkStrokes.forEach(s=>{
-    const pts=s.nodes?nodesToPoints(s.nodes,s.closed):s.points;
-    if(!pts||pts.length<2)return;
-    const baseWidth=Math.max(1,(s.settings&&s.settings.size)||BrushEngine.getSettings(s.brushId).size||4);
-    if(baseWidth/2>maxHalfWidth)maxHalfWidth=baseWidth/2;
-    octx.lineWidth=baseWidth+gapTolerance*2;
-    octx.beginPath();
-    octx.moveTo(pts[0].x,pts[0].y);
-    for(let i=1;i<pts.length;i++)octx.lineTo(pts[i].x,pts[i].y);
-    if(s.closed)octx.closePath();
-    octx.stroke();
-    octx2.lineWidth=baseWidth+gapTolerance*2;octx2.beginPath();octx2.moveTo(pts[0].x,pts[0].y);
-    for(let i=1;i<pts.length;i++)octx2.lineTo(pts[i].x,pts[i].y);
-    if(s.closed)octx2.closePath();
-    octx2.stroke();
-  });
-  const data=octx.getImageData(0,0,mw,mh).data;
-  const data2=octx2.getImageData(0,0,mw,mh).data;
-  const isGrow=(x,y)=>data2[(y*mw+x)*4+3]>40;
-  const isWall=(x,y)=>data[(y*mw+x)*4+3]>40;
-  const startX=Math.round(px),startY=Math.round(py);
-  if(startX<0||startY<0||startX>=mw||startY>=mh)return {ok:false,reason:'offcanvas'};
-  if(isWall(startX,startY))return {ok:false,reason:'onLine'};
-  const visited=new Uint8Array(mw*mh);
-  const qx=new Int32Array(mw*mh),qy=new Int32Array(mw*mh);
-  let qh=0,qt=0;
-  qx[qt]=startX;qy[qt]=startY;qt++;
-  visited[startY*mw+startX]=1;
-  let touchedEdge=false,minX=startX,maxX=startX,minY=startY,maxY=startY;
-  while(qh<qt){
-    const x=qx[qh],y=qy[qh];qh++;
-    if(x===0||y===0||x===mw-1||y===mh-1){touchedEdge=true;break;} // open region — stop early, no need to flood the rest
-    if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y;
-    const cand=[[x+1,y],[x-1,y],[x,y+1],[x,y-1]];
-    for(let i=0;i<4;i++){
-      const nx=cand[i][0],ny=cand[i][1];
-      if(nx<0||ny<0||nx>=mw||ny>=mh)continue;
-      const idx=ny*mw+nx;
-      if(visited[idx]||isWall(nx,ny))continue;
-      visited[idx]=1;qx[qt]=nx;qy[qt]=ny;qt++;
+  if(px<0||py<0||px>=W||py>=H)return {ok:false,reason:'offcanvas'};
+  // ---- pass 1: coarse, whole canvas
+  let c=Math.min(1,1000/Math.max(W,H)),A=null;
+  for(let attempt=0;attempt<2;attempt++){
+    const cw=Math.ceil(W*c),ch=Math.ceil(H*c),sx=Math.min(cw-1,Math.round(px*c)),sy=Math.min(ch-1,Math.round(py*c));
+    const wall=afWallMask(inkStrokes,0,0,cw,ch,c,gapTolerance,false,2/c); // at least 2 coarse pixels thick, so thin lines never leak
+    if(wall[sy*cw+sx]){A={ok:false,reason:'onLine'};}
+    else{
+      const f=afFlood(wall,cw,ch,sx,sy);
+      if(f.edge)A={ok:false,reason:'open'};
+      else A={ok:true,x0:f.minX/c,y0:f.minY/c,x1:(f.maxX+1)/c,y1:(f.maxY+1)/c,small:Math.min(f.maxX-f.minX,f.maxY-f.minY)<6};
     }
+    if(c<1&&(A.reason==='onLine'||(A.ok&&A.small)))c=1; // a tiny area or a tap beside a hairline: look again at full detail
+    else break;
   }
-  if(touchedEdge)return {ok:false,reason:'open'};
-  // Expand the crop box by the dilation radius on every side (clamped to the canvas) so growing
-  // the mask outward below has somewhere to grow INTO — otherwise the dilation would just get cut
-  // off at the original flood-fill bounding box and the gap would never actually close.
-  // The flood stopped at the OUTER edge of each wall, which is the ink's edge plus the gap tolerance, so the fill is short of
-  // the line's centre by half the line width PLUS the gap tolerance. Grow it back by exactly that much (so it ends up just
-  // under the ink) — but only through pixels that belong to the padded wall, so it can never creep out across open paper.
-  // The walls above are drawn from each line's nominal size, but the ink you actually see is often thicker (pressure, brush shape), which left a
-  // white gap between the fill and the visible line. So the real ink is drawn once more inside this area, and the fill is grown to the far edge of it.
-  const expand=80;
-  const ex0=Math.max(0,minX-expand),ey0=Math.max(0,minY-expand);
-  const ex1=Math.min(mw-1,maxX+expand),ey1=Math.min(mh-1,maxY+expand);
-  const bw=ex1-ex0+1,bh=ey1-ey0+1;
-  const mask=new Uint8Array(bw*bh);
-  for(let y=minY;y<=maxY;y++)for(let x=minX;x<=maxX;x++)if(visited[y*mw+x])mask[(y-ey0)*bw+(x-ex0)]=1;
-  let realInk=null;
+  if(!A.ok)return A;
+  // ---- pass 2: this region only, at a resolution that fits its size
+  let maxW=4;inkStrokes.forEach(s=>{const w=(s.settings&&s.settings.size)||BrushEngine.getSettings(s.brushId).size||4;if(w>maxW)maxW=w;});
+  const margin=Math.min(70,Math.ceil(maxW*2+gapTolerance+8));
+  const ox=Math.floor(Math.max(0,A.x0-margin)),oy=Math.floor(Math.max(0,A.y0-margin));
+  const ex=Math.ceil(Math.min(W,A.x1+margin)),ey=Math.ceil(Math.min(H,A.y1+margin));
+  const regW=ex-ox,regH=ey-oy;
+  const S=Math.max(1,Math.min(8,1400/Math.max(regW,regH)));
+  const cw=Math.ceil(regW*S),ch=Math.ceil(regH*S);
+  const wall=afWallMask(inkStrokes,ox,oy,cw,ch,S,gapTolerance,false,1);
+  const grown=afWallMask(inkStrokes,ox,oy,cw,ch,S,gapTolerance,true,1); // flat-ended walls: the fill only grows back into these, so it never bulges out of a bridged gap
+  const sx=Math.round((px-ox)*S),sy=Math.round((py-oy)*S);
+  if(sx<1||sy<1||sx>=cw-1||sy>=ch-1)return {ok:false,reason:'traceFailed'};
+  if(wall[sy*cw+sx])return {ok:false,reason:'onLine'};
+  const f=afFlood(wall,cw,ch,sx,sy);
+  if(f.edge)return {ok:false,reason:'open'};
+  // The flood stops at the OUTER edge of each (widened) wall, so it falls short of the line. Draw the ink as it really looks and grow the fill back
+  // through it to the far side of the line: the fill then tucks fully under the outline and no white sliver can show between them.
+  let ink=null;
   try{
-    const ic=document.createElement('canvas');ic.width=bw;ic.height=bh;const ix=ic.getContext('2d',{willReadFrequently:true});
-    ix.setTransform(1,0,0,1,-ex0,-ey0);
+    const ic=document.createElement('canvas');ic.width=cw;ic.height=ch;const ix=ic.getContext('2d',{willReadFrequently:true});
+    ix.setTransform(S,0,0,S,-ox*S,-oy*S);
     const sk=BrushEngine.skipSmudge,was=sk&&sk.on;if(sk)sk.on=true;
-    try{inkStrokes.forEach(st=>{try{ix.save();renderStrokeClipped(ix,st,BrushEngine.getBrush(st.brushId),st.settings||BrushEngine.getSettings(st.brushId));ix.restore();}catch(e){try{ix.restore();}catch(e2){}}});}finally{if(sk)sk.on=was;}
-    const id=ix.getImageData(0,0,bw,bh).data;realInk=new Uint8Array(bw*bh);
-    for(let i=0;i<realInk.length;i++)if(id[i*4+3]>128)realInk[i]=1; // solid ink only: a brush's soft, faint edge is not a wall to fill under
+    try{inkStrokes.forEach(st=>{const bx=afStrokeBox(st,gapTolerance);if(!bx||bx.x1<ox||bx.x0>ex||bx.y1<oy||bx.y0>ey)return;try{ix.save();renderStrokeClipped(ix,st,BrushEngine.getBrush(st.brushId),st.settings||BrushEngine.getSettings(st.brushId));ix.restore();}catch(e){try{ix.restore();}catch(e2){}}});}finally{if(sk)sk.on=was;}
+    const id=ix.getImageData(0,0,cw,ch).data;ink=new Uint8Array(cw*ch);
+    for(let i=0;i<ink.length;i++)if(id[i*4+3]>128)ink[i]=1; // solid ink only: a brush's faint soft edge is not a wall to fill under
     ic.width=ic.height=1;
-  }catch(e){realInk=null;}
-  // how thick is the line the fill is up against? march outward from the edge of the flooded area through ink and see how far it goes
-  let grow=Math.ceil(maxHalfWidth+gapTolerance);
-  if(realInk){
+  }catch(e){ink=null;}
+  const vis=f.vis,bx0=Math.max(0,f.minX-2),by0=Math.max(0,f.minY-2),bx1=Math.min(cw-1,f.maxX+2),by1=Math.min(ch-1,f.maxY+2);
+  // how thick is the line the fill is up against? march outward from the edge of the flooded area through ink
+  let growPx=Math.ceil((maxW/2+gapTolerance)*S);
+  if(ink){
     const th=[],dirs=[[1,0],[-1,0],[0,1],[0,-1]];let cnt=0;
-    for(let y=1;y<bh-1;y++)for(let x=1;x<bw-1;x++){
-      if(!mask[y*bw+x])continue;
-      for(let d=0;d<4;d++){const nx=x+dirs[d][0],ny=y+dirs[d][1];if(mask[ny*bw+nx])continue;
+    for(let y=by0+1;y<by1;y++)for(let x=bx0+1;x<bx1;x++){
+      if(!vis[y*cw+x])continue;
+      for(let d=0;d<4;d++){const nx=x+dirs[d][0],ny=y+dirs[d][1];if(vis[ny*cw+nx])continue;
         if(((++cnt)&7)!==0)continue;
-        let t=0,cx=nx,cy=ny,sk=0;while(sk<gapTolerance+3&&cx>=0&&cy>=0&&cx<bw&&cy<bh&&!realInk[cy*bw+cx]&&isGrow(cx+ex0,cy+ey0)){sk++;cx+=dirs[d][0];cy+=dirs[d][1];}
-        while(t<120&&cx>=0&&cy>=0&&cx<bw&&cy<bh&&realInk[cy*bw+cx]){t++;cx+=dirs[d][0];cy+=dirs[d][1];}
-        if(t>0)th.push(t);}
+        let t=0,qx=nx,qy=ny,sk2=0;
+        while(sk2<gapTolerance*S+3&&qx>=0&&qy>=0&&qx<cw&&qy<ch&&!ink[qy*cw+qx]&&grown[qy*cw+qx]){sk2++;qx+=dirs[d][0];qy+=dirs[d][1];}
+        while(t<400&&qx>=0&&qy>=0&&qx<cw&&qy<ch&&ink[qy*cw+qx]){t++;qx+=dirs[d][0];qy+=dirs[d][1];}
+        if(t>0)th.push(t+sk2);}
     }
-    if(th.length){th.sort((a,b)=>a-b);const q=th[Math.min(th.length-1,Math.floor(th.length*0.85))];grow=Math.min(90,q+Math.ceil(gapTolerance)+2);}
+    if(th.length){th.sort((a,b)=>a-b);growPx=Math.ceil(th[Math.min(th.length-1,Math.floor(th.length*0.85))]+2);}
   }
-  grow=Math.min(90,grow);
-  // Distance (3x3 chamfer, about 4% accurate) from the flooded area, then take every padded-wall pixel within the growth
-  // radius. Because only wall pixels are added, the fill can never creep out across open paper.
-  const INF=1e9,dist=new Float32Array(bw*bh),A=0.9619,B=1.3604;
-  for(let i=0;i<dist.length;i++)dist[i]=mask[i]?0:INF;
+  growPx=Math.min(growPx,Math.ceil(margin*S)-2);
+  // grow: take every wall pixel within growPx of the flooded area (3x3 chamfer distance), only ever INTO ink, never out across open paper
+  const ex0=Math.max(0,f.minX-growPx-1),ey0=Math.max(0,f.minY-growPx-1),ex1=Math.min(cw-1,f.maxX+growPx+1),ey1=Math.min(ch-1,f.maxY+growPx+1);
+  const bw=ex1-ex0+1,bh=ey1-ey0+1,INF=1e9,dist=new Float32Array(bw*bh),A1=0.9619,B1=1.3604;
+  for(let y=0;y<bh;y++)for(let x=0;x<bw;x++)dist[y*bw+x]=vis[(y+ey0)*cw+x+ex0]?0:INF;
   for(let y=0;y<bh;y++)for(let x=0;x<bw;x++){
     const i=y*bw+x;let d=dist[i];if(!d)continue;
-    if(x>0&&dist[i-1]+A<d)d=dist[i-1]+A;
-    if(y>0){const u=i-bw;if(dist[u]+A<d)d=dist[u]+A;if(x>0&&dist[u-1]+B<d)d=dist[u-1]+B;if(x<bw-1&&dist[u+1]+B<d)d=dist[u+1]+B;}
+    if(x>0&&dist[i-1]+A1<d)d=dist[i-1]+A1;
+    if(y>0){const u=i-bw;if(dist[u]+A1<d)d=dist[u]+A1;if(x>0&&dist[u-1]+B1<d)d=dist[u-1]+B1;if(x<bw-1&&dist[u+1]+B1<d)d=dist[u+1]+B1;}
     dist[i]=d;
   }
   for(let y=bh-1;y>=0;y--)for(let x=bw-1;x>=0;x--){
     const i=y*bw+x;let d=dist[i];if(!d)continue;
-    if(x<bw-1&&dist[i+1]+A<d)d=dist[i+1]+A;
-    if(y<bh-1){const u=i+bw;if(dist[u]+A<d)d=dist[u]+A;if(x<bw-1&&dist[u+1]+B<d)d=dist[u+1]+B;if(x>0&&dist[u-1]+B<d)d=dist[u-1]+B;}
+    if(x<bw-1&&dist[i+1]+A1<d)d=dist[i+1]+A1;
+    if(y<bh-1){const u=i+bw;if(dist[u]+A1<d)d=dist[u]+A1;if(x<bw-1&&dist[u+1]+B1<d)d=dist[u+1]+B1;if(x>0&&dist[u-1]+B1<d)d=dist[u-1]+B1;}
     dist[i]=d;
   }
-  for(let y=0;y<bh;y++)for(let x=0;x<bw;x++){const i=y*bw+x;if(!mask[i]&&dist[i]<=grow&&(realInk?(realInk[i]||(dist[i]<=gapTolerance+1.5&&isGrow(x+ex0,y+ey0))):isGrow(x+ex0,y+ey0)))mask[i]=1;}
+  const mask=new Uint8Array(bw*bh),near=gapTolerance*S+1.5;
+  for(let y=0;y<bh;y++)for(let x=0;x<bw;x++){
+    const i=y*bw+x,g=(y+ey0)*cw+x+ex0;
+    if(vis[g]){mask[i]=1;continue;}
+    if(dist[i]>growPx)continue;
+    if(ink?(ink[g]||(dist[i]<=near&&grown[g])):grown[g])mask[i]=1;
+  }
   const loop=traceMaskContour(mask,bw,bh);
   if(!loop||loop.length<4)return {ok:false,reason:'traceFailed'};
-  let pts=loop.map(v=>({x:v.x+ex0,y:v.y+ey0}));
-  if(pts.length>4000){ // cap before the O(n^2) closed-loop RDP below, however large the raw trace was
-    const stride=Math.ceil(pts.length/4000);
-    pts=pts.filter((_,i)=>i%stride===0);
-  }
-  // The traced edge is a staircase of single pixels; round it off so a zoomed-in fill follows the line smoothly instead of looking blocky.
-  if(pts.length>12){for(let pass=0;pass<8;pass++){const n=pts.length,o=new Array(n);for(let i=0;i<n;i++){const a=pts[(i+n-1)%n],b=pts[i],c=pts[(i+1)%n];o[i]={x:(a.x+2*b.x+c.x)/4,y:(a.y+2*b.y+c.y)/4};}pts=o;}}
-  const diag=Math.hypot(bw,bh);
-  const epsilon=Math.max(0.5,Math.min(diag*0.0025,0.9)); // was up to several pixels on a big shape, which showed as a blocky staircase edge when zoomed in
-  pts=rdpSimplifyClosedLoop(pts,epsilon);
+  let rp=loop;
+  if(rp.length>6000){const stride=Math.ceil(rp.length/6000);rp=rp.filter((_,i)=>i%stride===0);}
+  // the traced edge is a staircase of single raster pixels: round it off (in raster space, so it is always a fraction of a screen pixel)
+  if(rp.length>12){for(let pass=0;pass<6;pass++){const n=rp.length,o=new Array(n);for(let i=0;i<n;i++){const a=rp[(i+n-1)%n],b2=rp[i],c2=rp[(i+1)%n];o[i]={x:(a.x+2*b2.x+c2.x)/4,y:(a.y+2*b2.y+c2.y)/4};}rp=o;}}
+  let pts=rp.map(v=>({x:ox+(v.x+ex0)/S,y:oy+(v.y+ey0)/S}));
+  pts=rdpSimplifyClosedLoop(pts,0.5/S); // half a raster pixel: curves and the dip keep their detail, long straight runs still collapse
   if(pts.length<3)return {ok:false,reason:'traceFailed'};
   // Lines that sit INSIDE the filled area (rather than bounding it) wall off parts of it and leave unfilled patches: report them.
   const inner=[];
   try{
-    const inside=(x,y)=>{let c=false;for(let i=0,j=pts.length-1;i<pts.length;j=i++){const a=pts[i],b=pts[j];if((a.y>y)!==(b.y>y)&&x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x)c=!c;}return c;};
-    const edgeDist=(x,y)=>{let m=1e9;for(let i=0,j=pts.length-1;i<pts.length;j=i++){const a=pts[i],b=pts[j],dx=b.x-a.x,dy=b.y-a.y,L=dx*dx+dy*dy;let t=L?((x-a.x)*dx+(y-a.y)*dy)/L:0;t=Math.max(0,Math.min(1,t));const d=Math.hypot(x-(a.x+t*dx),y-(a.y+t*dy));if(d<m)m=d;}return m;};
+    const inside=(x,y)=>{let cc=false;for(let i=0,j=pts.length-1;i<pts.length;j=i++){const a=pts[i],b2=pts[j];if((a.y>y)!==(b2.y>y)&&x<(b2.x-a.x)*(y-a.y)/(b2.y-a.y)+a.x)cc=!cc;}return cc;};
+    const edgeDist=(x,y)=>{let m=1e9;for(let i=0,j=pts.length-1;i<pts.length;j=i++){const a=pts[i],b2=pts[j],dx=b2.x-a.x,dy=b2.y-a.y,L=dx*dx+dy*dy;let t=L?((x-a.x)*dx+(y-a.y)*dy)/L:0;t=Math.max(0,Math.min(1,t));const d=Math.hypot(x-a.x-t*dx,y-a.y-t*dy);if(d<m)m=d;}return m;};
     inkStrokes.forEach(s=>{
       const q=s.nodes?nodesToPoints(s.nodes,s.closed):s.points;if(!q||q.length<2)return;
       const bw0=Math.max(1,(s.settings&&s.settings.size)||BrushEngine.getSettings(s.brushId).size||4);
-      let n=0,tot=0;const step=Math.max(1,Math.floor(q.length/10));
-      for(let i=0;i<q.length;i+=step){tot++;if(inside(q[i].x,q[i].y)&&edgeDist(q[i].x,q[i].y)>bw0/2+gapTolerance+4)n++;}
+      let n=0;const step=Math.max(1,Math.floor(q.length/10));
+      for(let i=0;i<q.length;i+=step){if(inside(q[i].x,q[i].y)&&edgeDist(q[i].x,q[i].y)>bw0/2+gapTolerance+4)n++;}
       if(n>=2)inner.push(s);
     });
   }catch(e){}
@@ -10152,7 +10170,7 @@ function attemptAreaFillAt(clientX,clientY){
   const gapTolerance=+$('areaFillGapCtl').value;
   let result=computeAreaFillPolygon(p.x,p.y,gapTolerance),autoGap=0;
   // Not closed? Try bridging bigger gaps automatically, so outlines that only nearly meet (or meet other paths) still fill.
-  if(!result.ok&&result.reason==='open'){for(const g of [12,24,40]){if(g<=gapTolerance)continue;const r2=computeAreaFillPolygon(p.x,p.y,g);if(r2.ok){result=r2;autoGap=g;break;}if(r2.reason!=='open')break;}}
+  if(!result.ok&&result.reason==='open'){for(const g of [4,8,12,20,30,40]){if(g<=gapTolerance)continue;const r2=computeAreaFillPolygon(p.x,p.y,g);if(r2.ok){result=r2;autoGap=g;break;}if(r2.reason!=='open')break;}}
   if(!result.ok){
     let onLineMsg='🪣 That\'s right on a line — tap inside an enclosed area instead.';
     if(result.reason==='onLine'){try{const cu=areaFillCulprit(p.x,p.y,gapTolerance);if(cu)onLineMsg='🪣 That\'s right on '+areaFillStrokeDesc(cu.s,cu.layer)+(gapTolerance>0?' (gap tolerance '+gapTolerance+'px widens every line by that much, so lower it to tap closer to a line)':'')+'. Tap somewhere else, or hide/delete that line.';}catch(e){}}
