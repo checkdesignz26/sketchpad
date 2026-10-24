@@ -925,7 +925,7 @@ html.in-suite .suite-only{display:block!important}
         <div class="hint">The picture is placed inside the tapped area on its own layer. Select the area afterwards and tap “Edit pattern inside” to move, size or turn it.</div>
       </div>
       <div class="slider-row"><label>Opacity</label><input id="areaFillOpacityCtl" type="range" min="5" max="100" value="100"><span id="areaFillOpacityVal">100%</span></div>
-      <div class="slider-row"><label>Gap tol.</label><input id="areaFillGapCtl" type="range" min="0" max="20" value="4"><span id="areaFillGapVal">4px</span></div>
+      <div class="slider-row"><label>Gap tol.</label><input id="areaFillGapCtl" type="range" min="0" max="40" value="6"><span id="areaFillGapVal">6px</span></div>
       <div class="slider-row"><label>Into</label><select id="areaFillLayerSelect" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--btnBorder);background:var(--btnBg);color:var(--text);"></select></div>
       <div id="areaFillHint" class="hint">Tap the Area Fill button, then tap inside any enclosed region (even one bounded by several separate strokes) to fill just that region as its own editable vector shape. Gap tolerance bridges small unintentional gaps in the outline.</div>
     </section>
@@ -1573,7 +1573,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v458'; // keep in step with CACHE in sw.js
+const APP_V='v459'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -9826,14 +9826,15 @@ function syncAreaFillLayerSelect(){
   const prev=sel.value;
   sel.innerHTML='';
   const def=document.createElement('option');
-  def.value='__default__';def.textContent='Fills layer (default)';
+  const nu=document.createElement('option');nu.value='__under__';nu.textContent='New layer under the lines (recommended)';sel.appendChild(nu);
+  def.value='__default__';def.textContent='Shared Fills layer';
   sel.appendChild(def);
   layers.slice().reverse().forEach(l=>{
     const opt=document.createElement('option');
     opt.value=l.id;opt.textContent=l.name+(l.locked?' 🔒':'');
     sel.appendChild(opt);
   });
-  sel.value=[...sel.options].some(o=>o.value===prev)?prev:'__default__';
+  sel.value=[...sel.options].some(o=>o.value===prev)?prev:'__under__';
 }
 // Creates the default "Fills" layer the first time it's needed, at the BOTTOM of the stack (index
 // 0 renders first = beneath every other layer) so area fills sit under outlines automatically
@@ -9999,13 +10000,39 @@ function computeAreaFillPolygon(px,py,gapTolerance){
   // The flood stopped at the OUTER edge of each wall, which is the ink's edge plus the gap tolerance, so the fill is short of
   // the line's centre by half the line width PLUS the gap tolerance. Grow it back by exactly that much (so it ends up just
   // under the ink) — but only through pixels that belong to the padded wall, so it can never creep out across open paper.
-  const grow=Math.min(60,Math.ceil(maxHalfWidth+gapTolerance));
-  const expand=Math.min(60,grow+1);
+  // The walls above are drawn from each line's nominal size, but the ink you actually see is often thicker (pressure, brush shape), which left a
+  // white gap between the fill and the visible line. So the real ink is drawn once more inside this area, and the fill is grown to the far edge of it.
+  const expand=80;
   const ex0=Math.max(0,minX-expand),ey0=Math.max(0,minY-expand);
   const ex1=Math.min(mw-1,maxX+expand),ey1=Math.min(mh-1,maxY+expand);
   const bw=ex1-ex0+1,bh=ey1-ey0+1;
   const mask=new Uint8Array(bw*bh);
   for(let y=minY;y<=maxY;y++)for(let x=minX;x<=maxX;x++)if(visited[y*mw+x])mask[(y-ey0)*bw+(x-ex0)]=1;
+  let realInk=null;
+  try{
+    const ic=document.createElement('canvas');ic.width=bw;ic.height=bh;const ix=ic.getContext('2d',{willReadFrequently:true});
+    ix.setTransform(1,0,0,1,-ex0,-ey0);
+    const sk=BrushEngine.skipSmudge,was=sk&&sk.on;if(sk)sk.on=true;
+    try{inkStrokes.forEach(st=>{try{ix.save();renderStrokeClipped(ix,st,BrushEngine.getBrush(st.brushId),st.settings||BrushEngine.getSettings(st.brushId));ix.restore();}catch(e){try{ix.restore();}catch(e2){}}});}finally{if(sk)sk.on=was;}
+    const id=ix.getImageData(0,0,bw,bh).data;realInk=new Uint8Array(bw*bh);
+    for(let i=0;i<realInk.length;i++)if(id[i*4+3]>24)realInk[i]=1;
+    ic.width=ic.height=1;
+  }catch(e){realInk=null;}
+  // how thick is the line the fill is up against? march outward from the edge of the flooded area through ink and see how far it goes
+  let grow=Math.ceil(maxHalfWidth+gapTolerance);
+  if(realInk){
+    const th=[],dirs=[[1,0],[-1,0],[0,1],[0,-1]];let cnt=0;
+    for(let y=1;y<bh-1;y++)for(let x=1;x<bw-1;x++){
+      if(!mask[y*bw+x])continue;
+      for(let d=0;d<4;d++){const nx=x+dirs[d][0],ny=y+dirs[d][1];if(mask[ny*bw+nx])continue;
+        if(((++cnt)&7)!==0)continue;
+        let t=0,cx=nx,cy=ny,sk=0;while(sk<gapTolerance+3&&cx>=0&&cy>=0&&cx<bw&&cy<bh&&!realInk[cy*bw+cx]&&isGrow(cx+ex0,cy+ey0)){sk++;cx+=dirs[d][0];cy+=dirs[d][1];}
+        while(t<120&&cx>=0&&cy>=0&&cx<bw&&cy<bh&&realInk[cy*bw+cx]){t++;cx+=dirs[d][0];cy+=dirs[d][1];}
+        if(t>0)th.push(t);}
+    }
+    if(th.length){th.sort((a,b)=>a-b);const q=th[Math.min(th.length-1,Math.floor(th.length*0.85))];grow=Math.min(90,q+Math.ceil(gapTolerance)+2);}
+  }
+  grow=Math.min(90,grow);
   // Distance (3x3 chamfer, about 4% accurate) from the flooded area, then take every padded-wall pixel within the growth
   // radius. Because only wall pixels are added, the fill can never creep out across open paper.
   const INF=1e9,dist=new Float32Array(bw*bh),A=0.9619,B=1.3604;
@@ -10022,7 +10049,7 @@ function computeAreaFillPolygon(px,py,gapTolerance){
     if(y<bh-1){const u=i+bw;if(dist[u]+A<d)d=dist[u]+A;if(x<bw-1&&dist[u+1]+B<d)d=dist[u+1]+B;if(x>0&&dist[u-1]+B<d)d=dist[u-1]+B;}
     dist[i]=d;
   }
-  for(let y=0;y<bh;y++)for(let x=0;x<bw;x++){const i=y*bw+x;if(!mask[i]&&dist[i]<=grow&&isGrow(x+ex0,y+ey0))mask[i]=1;}
+  for(let y=0;y<bh;y++)for(let x=0;x<bw;x++){const i=y*bw+x;if(!mask[i]&&dist[i]<=grow&&(realInk?(realInk[i]||(dist[i]<=gapTolerance+1.5&&isGrow(x+ex0,y+ey0))):isGrow(x+ex0,y+ey0)))mask[i]=1;}
   const loop=traceMaskContour(mask,bw,bh);
   if(!loop||loop.length<4)return {ok:false,reason:'traceFailed'};
   let pts=loop.map(v=>({x:v.x+ex0,y:v.y+ey0}));
@@ -10099,10 +10126,31 @@ function motifAreaFill(clientX,clientY){
     return true;
   }catch(err){try{if(editingMotifId)cancelEditMotif();}catch(e2){}return false;}
 }
+// Each area fill gets a layer of its own, placed directly beneath the layer holding the lines around it (so the colour never covers the outline).
+function areaFillNewLayerUnder(pts,gap){
+  const near=new Map();
+  const dist=(x,y)=>{let m=1e9;for(let i=0,j=pts.length-1;i<pts.length;j=i++){const a=pts[i],b=pts[j],dx=b.x-a.x,dy=b.y-a.y,L=dx*dx+dy*dy;let t=L?((x-a.x)*dx+(y-a.y)*dy)/L:0;t=Math.max(0,Math.min(1,t));const d=Math.hypot(x-a.x-t*dx,y-a.y-t*dy);if(d<m)m=d;}return m;};
+  strokes.forEach(s=>{
+    if(s.fillColor||s.clipStrokeId||s.noStroke||s.fillOf)return;
+    const l=layers.find(x=>x.id===s.layerId);if(!l||l.visible===false||l.locked)return;
+    const q=s.nodes?nodesToPoints(s.nodes,s.closed):s.points;if(!q||q.length<2)return;
+    const w=Math.max(1,(s.settings&&s.settings.size)||4),step=Math.max(1,Math.floor(q.length/12));let hit=0;
+    for(let i=0;i<q.length;i+=step){if(dist(q[i].x,q[i].y)<=w+gap+6)hit++;}
+    if(hit)near.set(l.id,(near.get(l.id)||0)+hit);
+  });
+  if(!near.size)return null;
+  let best=null;near.forEach((n,id)=>{const i=layers.findIndex(l=>l.id===id);if(best===null||i>best.i)best={id,i};}); // the highest layer with lines around the area
+  const top=layers[best.i];let name='Fill 1',n=1;while(layers.some(l=>l.name===name))name='Fill '+(++n);
+  const nl=makeLayer(name);nl.lg=top.lg||null;nl.lgn=top.lgn||'';nl.lgc=false;
+  layers.splice(best.i,0,nl);
+  return nl;
+}
 function attemptAreaFillAt(clientX,clientY){
   const p=screenToCanvas(clientX,clientY);
   const gapTolerance=+$('areaFillGapCtl').value;
-  const result=computeAreaFillPolygon(p.x,p.y,gapTolerance);
+  let result=computeAreaFillPolygon(p.x,p.y,gapTolerance),autoGap=0;
+  // Not closed? Try bridging bigger gaps automatically, so outlines that only nearly meet (or meet other paths) still fill.
+  if(!result.ok&&result.reason==='open'){for(const g of [12,24,40]){if(g<=gapTolerance)continue;const r2=computeAreaFillPolygon(p.x,p.y,g);if(r2.ok){result=r2;autoGap=g;break;}if(r2.reason!=='open')break;}}
   if(!result.ok){
     let onLineMsg='🪣 That\'s right on a line — tap inside an enclosed area instead.';
     if(result.reason==='onLine'){try{const cu=areaFillCulprit(p.x,p.y,gapTolerance);if(cu)onLineMsg='🪣 That\'s right on '+areaFillStrokeDesc(cu.s,cu.layer)+(gapTolerance>0?' (gap tolerance '+gapTolerance+'px widens every line by that much, so lower it to tap closer to a line)':'')+'. Tap somewhere else, or hide/delete that line.';}catch(e){}}
@@ -10116,7 +10164,8 @@ function attemptAreaFillAt(clientX,clientY){
     setStatus(messages[result.reason]||'🪣 Couldn\'t fill that area.');
     return;
   }
-  const targetLayerId=getAreaFillTargetLayerId();
+  let targetLayerId=getAreaFillTargetLayerId();
+  try{if($('areaFillLayerSelect').value==='__under__'&&!editingMotifId){const nl=areaFillNewLayerUnder(result.points,gapTolerance);if(nl)targetLayerId=nl.id;}}catch(e){console.warn('[areafill layer]',e);}
   const fillColor=$('areaFillColorInput').value;
   const fillOpacity=(+$('areaFillOpacityCtl').value)/100;
   if(afMode==='pattern'){
@@ -10141,7 +10190,7 @@ function attemptAreaFillAt(clientX,clientY){
   rebuildLayer(targetLayerId);
   renderLayersList();
   pushHist();redraw();
-  {let msg='🪣 Filled area on "'+(layers.find(l=>l.id===targetLayerId)||{}).name+'".';
+  {let msg='🪣 Filled area on "'+(layers.find(l=>l.id===targetLayerId)||{}).name+'".'+(autoGap?' The outline had a gap, so it was bridged automatically ('+autoGap+'px).':'');
     if(result.inner&&result.inner.length){const f=result.inner[0],fl=layers.find(l=>l.id===f.layerId);msg+=' Heads up: '+result.inner.length+' line'+(result.inner.length>1?'s':'')+' inside the area (e.g. '+areaFillStrokeDesc(f,fl)+') act as walls, so parts stay unfilled.';}
     setStatus(msg);}
 }
