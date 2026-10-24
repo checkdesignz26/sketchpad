@@ -1596,7 +1596,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v479'; // keep in step with CACHE in sw.js
+const APP_V='v480'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -8819,13 +8819,18 @@ function shadowAdd(o,opt){
   const col=hl?shLight(b.col,Math.min(.85,opt.dark*1.6)):shShade(b.col,opt.dark);
   const fl=layers.find(q=>q.id===fillS.layerId);let at=fl?layers.indexOf(fl):layers.length-1;
   const keepActive=activeLayerId;
-  // a layer of its own, directly above the fill's layer (so it is still under the outline), so it can have its own opacity and blur
-  const L=makeLayer(hl?'Highlight':'Shadow');L.shadowLayer=true;layers.splice(at+1,0,L);
-  const made=regs.map(r=>{const nodes=pointsToNodes(r.map(p=>({x:p.x,y:p.y,pressure:.5})),true);
-    const st={id:crypto.randomUUID(),brushId:out.brushId,layerId:L.id,color:col,fillColor:col,settings:null,points:nodesToPoints(nodes,true),nodes,closed:true,clipStrokeId:null,shape:null,shadowOf:out.id,shKind:hl?'highlight':'shadow',fillOpacity:1};if(out.groupId)st.groupId=out.groupId;return st;});
+  // every piece gets a layer of its own, directly above the fill's layer (so it is still under the outline): own opacity, blur and blend
+  const nm=hl?'Highlight':'Shadow',ra=r=>polygonArea(r);
+  const ordered=regs.slice().sort((u,v)=>ra(v)-ra(u));
+  const made=[],newL=[];
+  ordered.forEach((r,k)=>{
+    const L=makeLayer(k?nm+' '+(k+1):nm);L.shadowLayer=true;layers.splice(at+1+k,0,L);newL.push(L);
+    const nodes=pointsToNodes(r.map(p=>({x:p.x,y:p.y,pressure:.5})),true);
+    const st={id:crypto.randomUUID(),brushId:out.brushId,layerId:L.id,color:col,fillColor:col,settings:null,points:nodesToPoints(nodes,true),nodes,closed:true,clipStrokeId:null,shape:null,shadowOf:out.id,shKind:hl?'highlight':'shadow',fillOpacity:1};
+    if(out.groupId)st.groupId=out.groupId;made.push(st);});
   strokes.splice(Math.max(strokes.indexOf(fillS),0)+1,0,...made);
   activeLayerId=keepActive;
-  rebuildLayer(L.id);rebuildLayer(fillS.layerId);
+  newL.forEach(L=>rebuildLayer(L.id));rebuildLayer(fillS.layerId);
   selectedStrokeId=made[0].id;
   try{renderLayersList();}catch(e){}
   return null;
