@@ -842,3 +842,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 ## v466 — Motif boxes fit the artwork
 - Capture Motif ignores stray specks and faint ghost pixels when working out the box (alpha above 24, tiny far-away clusters dropped).
 - New **✂ Trim box to artwork** (selected motif) and **All motifs** in Selected Motif: crops the motif picture and adjusts every placed copy so nothing moves; undoable. Repairs old projects whose motif boxes were much bigger than the art.
+
+## v467 — Watermark logo grid is one row
+- In Layers → Motifs, the watermark logo copies show as a single row ("Watermark logo · N copies") with show/hide, one opacity slider and delete for the whole grid, instead of one row per copy. (The copies were already all on the one "Watermark" layer.)
