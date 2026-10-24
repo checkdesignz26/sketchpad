@@ -908,3 +908,7 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v486 — Edit shadow/highlight points from the panel
 - Shadow & highlight panel: "✏️ Edit shadow points" / "✏️ Edit highlight points" open Edit Path on the piece (tap again for the next piece). Hand-edited pieces keep their shape when sliders move; Add shadow/highlight resets to automatic.
+
+## v487 — Shadow panel robustness
+- Panel controls fall back to the last shape you worked on when nothing is selected; Delete shadow/highlight works when a shadow piece itself is selected; the panel message moved to the top and is mirrored to the status bar.
+- Test hooks `__sketchpadSelect`, `__sketchpadShadow`.
