@@ -1573,7 +1573,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v460'; // keep in step with CACHE in sw.js
+const APP_V='v461'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -10015,7 +10015,7 @@ function computeAreaFillPolygon(px,py,gapTolerance){
     const sk=BrushEngine.skipSmudge,was=sk&&sk.on;if(sk)sk.on=true;
     try{inkStrokes.forEach(st=>{try{ix.save();renderStrokeClipped(ix,st,BrushEngine.getBrush(st.brushId),st.settings||BrushEngine.getSettings(st.brushId));ix.restore();}catch(e){try{ix.restore();}catch(e2){}}});}finally{if(sk)sk.on=was;}
     const id=ix.getImageData(0,0,bw,bh).data;realInk=new Uint8Array(bw*bh);
-    for(let i=0;i<realInk.length;i++)if(id[i*4+3]>24)realInk[i]=1;
+    for(let i=0;i<realInk.length;i++)if(id[i*4+3]>128)realInk[i]=1; // solid ink only: a brush's soft, faint edge is not a wall to fill under
     ic.width=ic.height=1;
   }catch(e){realInk=null;}
   // how thick is the line the fill is up against? march outward from the edge of the flooded area through ink and see how far it goes
@@ -10057,6 +10057,8 @@ function computeAreaFillPolygon(px,py,gapTolerance){
     const stride=Math.ceil(pts.length/4000);
     pts=pts.filter((_,i)=>i%stride===0);
   }
+  // The traced edge is a staircase of single pixels; round it off so a zoomed-in fill follows the line smoothly instead of looking blocky.
+  if(pts.length>12){for(let pass=0;pass<8;pass++){const n=pts.length,o=new Array(n);for(let i=0;i<n;i++){const a=pts[(i+n-1)%n],b=pts[i],c=pts[(i+1)%n];o[i]={x:(a.x+2*b.x+c.x)/4,y:(a.y+2*b.y+c.y)/4};}pts=o;}}
   const diag=Math.hypot(bw,bh);
   const epsilon=Math.max(0.5,Math.min(diag*0.0025,0.9)); // was up to several pixels on a big shape, which showed as a blocky staircase edge when zoomed in
   pts=rdpSimplifyClosedLoop(pts,epsilon);
