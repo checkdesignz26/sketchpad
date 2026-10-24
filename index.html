@@ -1078,7 +1078,8 @@ html.in-suite .suite-only{display:block!important}
       <div class="slider-row"><label>Darkness</label><input id="shDark" type="range" min="5" max="80" value="30"><span id="shDarkV">30%</span></div>
       <div class="grid" style="margin-top:8px;grid-template-columns:1fr 1fr;gap:6px;">
         <button id="shAdd" class="btn primary">🌓 Add shadow</button>
-        <button id="shRemove" class="btn">✖ Remove</button>
+        <button id="shHi" class="btn">✨ Add highlight</button>
+        <button id="shRemove" class="btn">✖ Remove both</button>
       </div>
       <div id="shMsg" class="hint"></div>
     </section>
@@ -1595,7 +1596,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v477'; // keep in step with CACHE in sw.js
+const APP_V='v478'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -6736,7 +6737,7 @@ function renderLayersList(){
     row.querySelector('.layer-mergedn').onclick=e=>{e.stopPropagation();if(li<=0){setStatus('⤵ This is the bottom layer: there is nothing below it to merge into.');return;}mergeLayerIds(new Set([layer.id,layers[li-1].id]));};
     row.onclick=()=>{activeLayerId=layer.id;
       try{ // tapping a layer also selects the shape on it (the topmost one), which opens the Stroke panel
-        if(!layerSelMode&&!layer.locked){const q=strokes.filter(x=>x.layerId===layer.id&&!x.text&&x.brushId!=='smudge'&&x.brushId!=='eraser'&&!x.fillOf&&!x.shadowOf&&!hiddenStrokeIds.has(x.id));
+        if(!layerSelMode&&!layer.locked){const q=strokes.filter(x=>x.layerId===layer.id&&!x.text&&x.brushId!=='smudge'&&x.brushId!=='eraser'&&!x.fillOf&&!hiddenStrokeIds.has(x.id));
           const t=q[q.length-1];if(t){selectedStrokeId=t.id;selected=null;multiSel=null;mode='edit';try{syncMode();}catch(e){}try{syncStrokeSelectionUI();updateSelectedControls();}catch(e){}}}
       }catch(e){}
       renderLayersList();compositeDirty=true;redraw();};
@@ -8770,6 +8771,7 @@ function runBoolean(op){
 
 // ---- inner shadow: fill shape minus itself nudged toward the light = a crescent that can never leave the shape ----
 function shArrow(a){return ['→','↗','↑','↖','←','↙','↓','↘'][Math.round((((a%360)+360)%360)/45)%8];}
+function shLight(hex,k){const m=/^#?([0-9a-f]{6})$/i.exec(palHex(hex)||'');if(!m)return '#ffffff';const n=parseInt(m[1],16);const c=[n>>16,(n>>8)&255,n&255].map(v=>Math.round(v+(255-v)*k));return '#'+c.map(v=>Math.max(0,Math.min(255,v)).toString(16).padStart(2,'0')).join('');}
 function shShade(hex,k){const m=/^#?([0-9a-f]{6})$/i.exec(palHex(hex)||'');if(!m)return '#000000';const n=parseInt(m[1],16);let r=n>>16,g=(n>>8)&255,b=n&255;
   r=Math.round(r*(1-k)*0.92);g=Math.round(g*(1-k)*0.85);b=Math.round(b*(1-k)*0.95); // cooler, richer shade than plain black
   return '#'+[r,g,b].map(v=>Math.max(0,Math.min(255,v)).toString(16).padStart(2,'0')).join('');}
@@ -8794,24 +8796,35 @@ function shBase(o){ // {stroke to get geometry from, fill colour}
     if(best)return {geo:best,col:best.fillColor,outline:o,auto:true};}}catch(e){}
   return {geo:o,col:o.color,outline:o};
 }
-function shRemoveFor(id){const n=strokes.length;const lay=new Set();strokes=strokes.filter(x=>{if(x.shadowOf===id){lay.add(x.layerId);return false;}return true;});lay.forEach(l=>rebuildLayer(l));return n-strokes.length;}
+function shRemoveFor(id,kind){const n=strokes.length;const lay=new Set();strokes=strokes.filter(x=>{if(x.shadowOf===id&&(!kind||(x.shKind||'shadow')===kind)){lay.add(x.layerId);return false;}return true;});
+  lay.forEach(l=>{const L=layers.find(q=>q.id===l);if(L&&L.shadowLayer&&!strokes.some(x=>x.layerId===l)){const i=layers.indexOf(L);if(i>=0&&layers.length>1){layers.splice(i,1);if(activeLayerId===l)activeLayerId=(layers[Math.max(0,i-1)]||layers[0]).id;}}else rebuildLayer(l);});
+  try{renderLayersList();}catch(e){}
+  return n-strokes.length;}
 function shadowAdd(o,opt){
   const b=shBase(o);
   if(!(b.geo.fillColor||b.geo.fillOf||(o.fill&&o.fill.on)))return 'This is only an outline, with no colour inside. Tap inside the coloured area (the red part) to select the fill shape, then tap Add shadow.';
   const A=strokeToPolyBoolPoly(b.geo);if(!A)return 'That shape has no area to shade.';
   const a=opt.angle*Math.PI/180,dx=Math.cos(a)*opt.size,dy=-Math.sin(a)*opt.size; // angle measured like a clock-less compass: 0 = right, 90 = up
-  const B={regions:A.regions.map(r=>r.map(([x,y])=>[x+dx,y+dy])),inverted:false};
+  const hl=opt.kind==='highlight',sg=hl?-1:1; // a highlight is the crescent on the light side, so the copy slides away from the light
+  const B={regions:A.regions.map(r=>r.map(([x,y])=>[x+sg*dx,y+sg*dy])),inverted:false};
   let res;try{res=ctTry(()=>PolyBool.difference(A,B));}catch(e){res=null;}
   if(!res)return 'Could not work out the shadow for that shape.';
   const regs=polyBoolRegionsToStrokeRegions(res.regions,1).filter(r=>polygonArea(r)>=2);
   if(!regs.length)return 'No shadow fits. Try a smaller size.';
   const out=b.auto?b.geo:b.outline,fillS=b.geo;
-  shRemoveFor(out.id);
-  const col=shShade(b.col,opt.dark),made=regs.map(r=>{const st={id:crypto.randomUUID(),brushId:out.brushId,layerId:fillS.layerId,color:col,fillColor:col,settings:null,points:r.map(p=>({x:p.x,y:p.y,pressure:.5})),nodes:null,closed:true,clipStrokeId:null,shape:null,shadowOf:out.id,fillOpacity:1};if(out.groupId)st.groupId=out.groupId;return st;});
-  strokes=strokes.filter(x=>x.shadowOf!==out.id);
-  const at=Math.max(strokes.indexOf(fillS),0)+1; // straight above the fill, still under the outline line
-  strokes.splice(at,0,...made);
-  rebuildLayer(fillS.layerId);
+  shRemoveFor(out.id,hl?'highlight':'shadow');
+  const col=hl?shLight(b.col,Math.min(.85,opt.dark*1.6)):shShade(b.col,opt.dark);
+  const fl=layers.find(q=>q.id===fillS.layerId);let at=fl?layers.indexOf(fl):layers.length-1;
+  const keepActive=activeLayerId;
+  // a layer of its own, directly above the fill's layer (so it is still under the outline), so it can have its own opacity and blur
+  const L=makeLayer(hl?'Highlight':'Shadow');L.shadowLayer=true;layers.splice(at+1,0,L);
+  const made=regs.map(r=>{const nodes=pointsToNodes(r.map(p=>({x:p.x,y:p.y,pressure:.5})),true);
+    const st={id:crypto.randomUUID(),brushId:out.brushId,layerId:L.id,color:col,fillColor:col,settings:null,points:nodesToPoints(nodes,true),nodes,closed:true,clipStrokeId:null,shape:null,shadowOf:out.id,shKind:hl?'highlight':'shadow',fillOpacity:1};if(out.groupId)st.groupId=out.groupId;return st;});
+  strokes.splice(Math.max(strokes.indexOf(fillS),0)+1,0,...made);
+  activeLayerId=keepActive;
+  rebuildLayer(L.id);rebuildLayer(fillS.layerId);
+  selectedStrokeId=made[0].id;
+  try{renderLayersList();}catch(e){}
   return null;
 }
 (function(){
@@ -8820,11 +8833,14 @@ function shadowAdd(o,opt){
   ['shLight','shSize','shDark'].forEach(id=>{g(id).oninput=()=>{upd();if(g('shAdd')._live)g('shAdd').click();};});upd();
   g('shAdd').onclick=()=>{
     const o=shTarget();if(!o||!o.points){g('shMsg').textContent='Select a filled shape first.';return;}
-    const err=shadowAdd(o,{angle:+g('shLight').value,size:+g('shSize').value,dark:+g('shDark').value/100});
+    const err=shadowAdd(o,{angle:+g('shLight').value,size:+g('shSize').value,dark:+g('shDark').value/100,kind:'shadow'});
     if(err){g('shMsg').textContent=err;return;}
     g('shMsg').textContent='Shadow added. Change the sliders and tap Add again to redo it.';
     pushHist();redraw();
   };
+  g('shHi').onclick=()=>{const o=shTarget();if(!o||!o.points){g('shMsg').textContent='Select a filled shape first.';return;}
+    const err=shadowAdd(o,{angle:+g('shLight').value,size:+g('shSize').value,dark:+g('shDark').value/100,kind:'highlight'});
+    if(err){g('shMsg').textContent=err;return;}g('shMsg').textContent='Highlight added on its own layer.';pushHist();redraw();};
   g('shRemove').onclick=()=>{const o=shTarget();if(!o)return;let n=shRemoveFor(o.fillOf||o.id);try{const bb=shBase(o);if(bb.auto)n+=shRemoveFor(bb.geo.id);}catch(e){}g('shMsg').textContent=n?'Shadow removed.':'No shadow on this shape.';if(n){pushHist();redraw();}};
 })();
 function syncBooleanUI(){
