@@ -237,6 +237,30 @@
     settingsStore[brushId] = Object.assign({}, getSettings(brushId), patch);
     saveJSON(LS_SETTINGS, settingsStore);
   }
+  // Back to the brush's own factory settings (size, opacity, smoothing, watercolour effects...).
+  // Before any reset the current settings are copied aside, so a reset tapped by mistake can be undone (restoreSettingsBackup).
+  const LS_SETTINGS_BAK = 'pkmBrushSettingsBackupV1';
+  function backupSettings() { try { if (Object.keys(settingsStore).length) localStorage.setItem(LS_SETTINGS_BAK, JSON.stringify({ at: Date.now(), store: settingsStore })); } catch (err) {} }
+  function resetSettings(brushId) { backupSettings(); delete settingsStore[brushId]; saveJSON(LS_SETTINGS, settingsStore); }
+  function resetAllSettings() { backupSettings(); settingsStore = {}; saveJSON(LS_SETTINGS, settingsStore); }
+  function restoreSettingsBackup() {
+    const b = loadJSON(LS_SETTINGS_BAK, null); if (!b || !b.store) return 0;
+    let n = 0; Object.keys(b.store).forEach((id) => { if (byId.has(id)) { settingsStore[id] = b.store[id]; n++; } });
+    saveJSON(LS_SETTINGS, settingsStore); return n;
+  }
+  // Settings travel with the project file too, so clearing the browser's storage cannot lose them for good.
+  function exportSettings() { try { return JSON.parse(JSON.stringify(settingsStore)); } catch (err) { return {}; } }
+  function mergeSettings(o) { // only fills brushes that have no saved settings here; never overwrites
+    if (!o || typeof o !== 'object') return 0; let n = 0;
+    Object.keys(o).forEach((id) => { if (!settingsStore[id] && byId.has(id) && o[id] && typeof o[id] === 'object') { settingsStore[id] = o[id]; n++; } });
+    if (n) saveJSON(LS_SETTINGS, settingsStore); return n;
+  }
+  // Rebuild brush settings from a drawing: each brush gets the settings of the last stroke drawn with it.
+  function settingsFromStrokes(list) {
+    const last = {}; (list || []).forEach((s) => { if (s && s.brushId && s.brushId !== 'smudge' && s.settings && byId.has(s.brushId)) last[s.brushId] = s.settings; });
+    let n = 0; Object.keys(last).forEach((id) => { const st = Object.assign({}, last[id]); Object.keys(st).forEach((k) => { if (k.charAt(0) === '_') delete st[k]; }); settingsStore[id] = st; n++; });
+    if (n) saveJSON(LS_SETTINGS, settingsStore); return n;
+  }
   function touchRecent(brushId) {
     recents = [brushId].concat(recents.filter((id) => id !== brushId)).slice(0, RECENTS_MAX);
     saveJSON(LS_RECENTS, recents);
@@ -344,6 +368,27 @@
     out.push(points[points.length - 1]);
     return out;
   }
+  // Like resample(), but the gap to the next dab is stepAt(pressure) so a thin part of a width-profiled stroke
+  // gets closely spaced dabs (a fixed gap sized for the full-width brush breaks thin tips into separate dots).
+  function resampleVar(points, stepAt) {
+    if (points.length < 2) return points.slice();
+    const out = [points[0]];
+    let need = stepAt(points[0].pressure);
+    for (let i = 1; i < points.length; i++) {
+      const a = points[i - 1], b = points[i];
+      const segLen = Math.hypot(b.x - a.x, b.y - a.y);
+      if (segLen <= 0) continue;
+      let dist = need;
+      while (dist < segLen) {
+        const t = dist / segLen, pr = a.pressure + (b.pressure - a.pressure) * t;
+        out.push({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, pressure: pr });
+        dist += stepAt(pr);
+      }
+      need = dist - segLen;
+    }
+    out.push(points[points.length - 1]);
+    return out;
+  }
   // Shape outlines and node-edited paths have deliberate corners. The "curve through the midpoints"
   // smoothing below used to round every one of them (a rectangle came out as a blob with one sharp
   // corner at the seam, i.e. a teardrop). Corners are now kept sharp: a point flagged corner:true
@@ -419,6 +464,8 @@
     let closed = !!stroke.closed && (stroke.shape || stroke.nodes || stroke.cornerAuto) && pts.length > 3;
     if (closed && Math.hypot(pts[0].x - pts[pts.length - 1].x, pts[0].y - pts[pts.length - 1].y) < 0.5) pts.pop();
     else closed = false;
+    // Corner shapes (rectangle, triangle, diamond, polygon, star) get true pointed corners, not round ones.
+    if (stroke.shape && SHARP_SHAPES[stroke.shape.type] && stroke.shape.type !== 'line') { ctx.lineJoin = 'miter'; ctx.miterLimit = 12; }
     if (pts.length < 2) {
       ctx.beginPath(); ctx.arc(pts[0].x, pts[0].y, settings.size / 2, 0, Math.PI * 2); ctx.fill();
     } else {
@@ -489,7 +536,9 @@
     if (settings.tint) img = tintedTip(brush, src, stroke.color || '#000000');
     const pts0 = stroke.points; if (!pts0 || !pts0.length) return;
     const spacingPx = Math.max(2, (settings.spacing / 100) * settings.size);
-    let pts = pts0.length < 2 ? pts0.slice() : resample(pts0, spacingPx);
+    let pts = pts0.length < 2 ? pts0.slice() : (settings._wpFine
+      ? resampleVar(pts0, pr => Math.max(0.3, Math.min(spacingPx, settings.size * pressureFactor(pr, settings.pressureWidth) * Math.max(0.05, (settings.spacing || 8) / 100))))
+      : resample(pts0, spacingPx));
     if (pts.length > 2) {
       const a = pts[pts.length - 1], b = pts[pts.length - 2];
       if (Math.hypot(a.x - b.x, a.y - b.y) < spacingPx * 0.5) pts.pop();
@@ -612,14 +661,27 @@
     const narrow = Math.max(0.35, 1 - settings.pressureWidth / 100);
     spacingPx = Math.max(0.2, Math.min(spacingPx, settings.size * narrow * 0.6));
     spacingPx = Math.max(spacingPx, Math.min(settings.size * 0.25, 6)); // the scratch buffer saturates anyway, so fewer dabs look the same
-    const pts = resample(stroke.points, spacingPx);
+    let pts = resample(stroke.points, spacingPx);
     const rand = seededRandom(stroke.id || 'live');
-    const n = pts.length, dabs = [];
+    const n = pts.length, dabs = []; let tmulR = null;
+    if (!(brush.jitter > 0) && !(brush.streaky > 0) && n > 1) { // keep the line joined where a taper or light pressure shrinks the dab below the dab spacing
+      const P2 = [], T2 = [];
+      for (let i = 0; i < n; i++) {
+        const pt = pts[i], tm = taperAt(brush, i, n), r = (settings.size / 2) * pressureFactor(pt.pressure, settings.pressureWidth) * tm;
+        if (i > 0) {
+          const q = pts[i - 1], qm = T2[T2.length - 1], rq = (settings.size / 2) * pressureFactor(q.pressure, settings.pressureWidth) * qm;
+          const gap = Math.hypot(pt.x - q.x, pt.y - q.y), need = Math.max(0.15, 0.35 * Math.min(r, rq));
+          if (gap > need) { const k = Math.min(60, Math.ceil(gap / need)); for (let j = 1; j < k; j++) { const f = j / k; P2.push({ x: q.x + (pt.x - q.x) * f, y: q.y + (pt.y - q.y) * f, pressure: q.pressure + (pt.pressure - q.pressure) * f }); T2.push(qm + (tm - qm) * f); } }
+        }
+        P2.push(pt); T2.push(tm);
+      }
+      pts = P2; tmulR = T2;
+    }
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity, pSum = 0;
     pts.forEach((pt, i) => {
       const widthMul = pressureFactor(pt.pressure, settings.pressureWidth);
       const opMul = pressureFactor(pt.pressure, settings.pressureOpacity);
-      let radius = (settings.size / 2) * widthMul * taperAt(brush, i, n);
+      let radius = (settings.size / 2) * widthMul * (tmulR ? tmulR[i] : taperAt(brush, i, n));
       let op = opMul;
       if (brush.jitter > 0) { radius *= (1 - brush.jitter * 0.3) + rand() * brush.jitter * 0.6; op *= (1 - brush.jitter * 0.2) + rand() * brush.jitter * 0.4; }
       if (brush.streaky > 0 && rand() < brush.streaky) return;
@@ -754,6 +816,7 @@
   // dabs and refreshes the small rectangle around them, so a long stroke costs the same per move as a
   // short one. A saved stroke is built the same way in one go, so the live look and the final look match.
   const _wcSets = { live: null, doc: null }, _wcLive = { key: null };
+  const _wcCache = new Map(); let _wcTrimT = 0;
   function wcSet(which, pw, ph) {
     let st = _wcSets[which];
     if (!st) { st = _wcSets[which] = { M: document.createElement('canvas'), I: document.createElement('canvas'), I2: document.createElement('canvas'), B: document.createElement('canvas'), O: document.createElement('canvas'), T: document.createElement('canvas') }; st.M.width = st.M.height = 1; ['I', 'I2', 'B', 'O', 'T'].forEach((k) => { st[k].width = st[k].height = 1; }); }
@@ -778,6 +841,7 @@
     const pts = resample(stroke.points, spacing);
     if (!pts.length) return;
     const rand = live ? null : seededRandom(stroke.id || 'wc');
+    const drHint = !live && global.BrushEngine ? global.BrushEngine.drawRegion : null;
     // region the buffers cover (user space)
     let bx, by, bx1, by1;
     if (live) { bx = 0; by = 0; bx1 = Math.ceil(U.canvas.width / (U.sx || 1)); by1 = Math.ceil(U.canvas.height / (U.sy || 1)); }
@@ -794,6 +858,8 @@
           bx1 = Math.min(bx1, Math.ceil(Math.max.apply(null, xs)) + 2); by1 = Math.min(by1, Math.ceil(Math.max.apply(null, ys)) + 2);
         }
       } catch (e) {}
+      const DR = drHint; // set by a caller that only repaints a small rectangle (the eraser): build just that part of the stroke
+      if (DR) { const pad = Math.ceil(size * 0.1) + 8; bx = Math.max(bx, Math.floor(DR.x0 - pad)); by = Math.max(by, Math.floor(DR.y0 - pad)); bx1 = Math.min(bx1, Math.ceil(DR.x1 + pad)); by1 = Math.min(by1, Math.ceil(DR.y1 + pad)); }
     }
     const bw = bx1 - bx, bh = by1 - by;
     if (bw < 1 || bh < 1) return;
@@ -802,12 +868,26 @@
     const pw = Math.max(1, Math.ceil(bw * se)), ph = Math.max(1, Math.ceil(bh * se));
     const color = stroke.color || '#000000';
     const sig = [size, color, edge, soft, settings.pressureWidth, settings.pressureOpacity, bx, by, bw, bh, se.toFixed(3), spacing.toFixed(2)].join('|');
+    // A saved stroke that is drawn again unchanged (the eraser rebuilds every stroke it touches, on every frame) is served from a small cache
+    // of finished results instead of being rebuilt from scratch: that rebuild is what made erasing near watercolour slow and memory hungry.
+    let ckey = null;
+    if (!live && stroke.id && stroke.id !== 'brush-preview') { // (only real, saved strokes are cached: the brush preview and other throwaway renders would just churn canvases)
+      let h = 0; for (let i = 0; i < pts.length; i++) h = (h * 31 + Math.round(pts[i].x * 8) * 7 + Math.round(pts[i].y * 8) + Math.round((pts[i].pressure || 0) * 50)) | 0;
+      ckey = sig + '|' + gran + '|' + pts.length + '|' + h;
+      const hit = _wcCache.get(ckey);
+      if (hit) {
+        _wcCache.delete(ckey); _wcCache.set(ckey, hit);
+        ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, (settings.opacity / 100) * alphaMul)); ctx.globalCompositeOperation = 'multiply';
+        ctx.drawImage(hit.c, 0, 0, pw, ph, bx, by, pw / se, ph / se); ctx.restore();
+        return;
+      }
+    }
     let S = null, firstDab = 0;
     const st = wcSet(live ? 'live' : 'doc', pw, ph);
     if (live) {
       const L = _wcLive;
       const same = L.key === stroke.liveKey && L.sig === sig && L.n <= pts.length + 1 && L.p0 && pts[0].x === L.p0.x && pts[0].y === L.p0.y;
-      if (!same) { L.key = stroke.liveKey; L.sig = sig; L.n = 0; L.p0 = { x: pts[0].x, y: pts[0].y }; L.rand = seededRandom(String(stroke.liveKey)); L.bb = null; L.cleared = false; }
+      if (!same) { L.key = stroke.liveKey; L.sig = sig; L.n = 0; L.p0 = { x: pts[0].x, y: pts[0].y }; L.rand = seededRandom(String(stroke.liveKey)); L.bb = null; L.cleared = false; L.rs = null; L.pp = null; }
       S = L; firstDab = L.n;
     }
     const ctxs = {};
@@ -822,45 +902,77 @@
     const rgb = parseRgb(color), solid = 'rgb(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ')', clear0 = 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',0)';
     const hard = 1 - soft * 0.25; // only the outer part of the wash feathers; the middle stays an even tone
     let vv = live ? (S.v == null ? 1 : S.v) : 1; // slow wander in how much pigment the brush carries
+    // The OUTLINE (M = outer shape, I / I2 = slightly smaller copies used for the pooled rim) is one continuous chain of round-capped segments
+    // with a smoothly eased radius, not a stack of separate discs with their own random sizes. Separate discs gave a scalloped edge and made
+    // the rim follow every dab; a chain has a single smooth boundary, so pooling follows the overall stroke shape. The wash (B) keeps its
+    // per-dab size and pigment variation, and draws the random numbers in the same order as before.
+    let rs = live ? S.rs : null, pp = live ? S.pp : null; // eased outline radius, and the previous point of the chain
+    const chain = (g, x, y, rad) => {
+      if (rad <= 0) return;
+      g.fillStyle = '#fff'; g.strokeStyle = '#fff';
+      if (pp) { g.lineWidth = rad * 2; g.lineCap = 'round'; g.lineJoin = 'round'; g.beginPath(); g.moveTo(pp.x, pp.y); g.lineTo(x, y); g.stroke(); }
+      else { g.beginPath(); g.arc(x, y, rad, 0, 6.2832); g.fill(); }
+    };
     for (let i = firstDab; i < lastIdx; i++) {
       const pt = pts[i];
-      const r = (size / 2) * pressureFactor(pt.pressure, settings.pressureWidth) * (1 - 0.04 + R() * 0.08);
+      const rraw = (size / 2) * pressureFactor(pt.pressure, settings.pressureWidth);
+      const r = rraw * (1 - 0.04 + R() * 0.08); // wash dab radius (varies a little, as before)
       vv = Math.max(0.78, Math.min(1.12, vv + (R() - 0.5) * 0.07));
       const op = Math.max(0.05, pressureFactor(pt.pressure, settings.pressureOpacity)) * vv;
-      if (r <= 0.3) continue;
-      const x = pt.x, y = pt.y, ri = Math.max(0, r - Math.max(1.4, r * 0.24)), ri2 = Math.max(0, r - Math.max(0.7, r * 0.08));
+      if (r <= 0.3) { pp = null; continue; }
+      rs = rs == null ? rraw : rs + (rraw - rs) * 0.35;
+      const x = pt.x, y = pt.y, ro = rs, ri = Math.max(0, rs - Math.max(1.4, rs * 0.22)), ri2 = Math.max(0, rs - Math.max(0.7, rs * 0.07));
       ctxs.M.setTransform(se, 0, 0, se, -bx * se, -by * se); ctxs.I.setTransform(se, 0, 0, se, -bx * se, -by * se); ctxs.I2.setTransform(se, 0, 0, se, -bx * se, -by * se); ctxs.B.setTransform(se, 0, 0, se, -bx * se, -by * se);
-      ctxs.M.fillStyle = '#fff'; ctxs.M.beginPath(); ctxs.M.arc(x, y, r, 0, 6.2832); ctxs.M.fill();
-      ctxs.I.fillStyle = '#fff'; ctxs.I.beginPath(); ctxs.I.arc(x, y, ri, 0, 6.2832); ctxs.I.fill();
-      ctxs.I2.fillStyle = '#fff'; ctxs.I2.beginPath(); ctxs.I2.arc(x, y, ri2, 0, 6.2832); ctxs.I2.fill();
+      chain(ctxs.M, x, y, ro); chain(ctxs.I, x, y, ri); chain(ctxs.I2, x, y, ri2);
       const g = ctxs.B.createRadialGradient(x, y, r * hard * 0.9, x, y, r);
       g.addColorStop(0, solid); g.addColorStop(1, clear0);
       ctxs.B.globalAlpha = Math.min(1, op * 0.4); ctxs.B.fillStyle = g; ctxs.B.beginPath(); ctxs.B.arc(x, y, r, 0, 6.2832); ctxs.B.fill(); ctxs.B.globalAlpha = 1;
-      if (x - r < dx0) dx0 = x - r; if (x + r > dx1) dx1 = x + r; if (y - r < dy0) dy0 = y - r; if (y + r > dy1) dy1 = y + r;
+      const qx = pp ? pp.x : x, qy = pp ? pp.y : y, rr = Math.max(r, ro) + 1;
+      if (Math.min(x, qx) - rr < dx0) dx0 = Math.min(x, qx) - rr; if (Math.max(x, qx) + rr > dx1) dx1 = Math.max(x, qx) + rr;
+      if (Math.min(y, qy) - rr < dy0) dy0 = Math.min(y, qy) - rr; if (Math.max(y, qy) + rr > dy1) dy1 = Math.max(y, qy) + rr;
+      pp = { x, y };
     }
-    if (live) { S.n = Math.max(firstDab, lastIdx); S.v = vv; }
+    if (live) { S.n = Math.max(firstDab, lastIdx); S.v = vv; S.rs = rs; S.pp = pp; }
     // refresh the result O inside the rectangle that changed
     if (isFinite(dx0)) {
-      let rx0 = Math.max(0, Math.floor((dx0 - bx) * se) - 2), ry0 = Math.max(0, Math.floor((dy0 - by) * se) - 2);
-      let rx1 = Math.min(pw, Math.ceil((dx1 - bx) * se) + 2), ry1 = Math.min(ph, Math.ceil((dy1 - by) * se) + 2);
+      // The pooled rim is softened (see below), which spreads it a little past the new dabs, so the refreshed rectangle is padded by that much.
+      const nom = Math.max(0.6, size / 2);
+      const rho1 = Math.max(0.7, 0.45 * Math.max(1.4, nom * 0.22) * se), rho2 = Math.max(0.5, 0.45 * Math.max(0.7, nom * 0.07) * se);
+      const mg = Math.ceil(Math.max(rho1, rho2)) + 1;
+      let rx0 = Math.max(0, Math.floor((dx0 - bx) * se) - 2 - mg), ry0 = Math.max(0, Math.floor((dy0 - by) * se) - 2 - mg);
+      let rx1 = Math.min(pw, Math.ceil((dx1 - bx) * se) + 2 + mg), ry1 = Math.min(ph, Math.ceil((dy1 - by) * se) + 2 + mg);
       const rw = rx1 - rx0, rh = ry1 - ry0;
       if (rw > 0 && rh > 0) {
-        if (st.T.width < rw || st.T.height < rh) { st.T.width = Math.max(st.T.width, rw); st.T.height = Math.max(st.T.height, rh); }
+        // T holds a ring over the refreshed rectangle plus a margin, so the softened copies at the rectangle's edge still see the ring just outside it
+        const tx0 = Math.max(0, rx0 - mg), ty0 = Math.max(0, ry0 - mg), tw = Math.min(pw, rx1 + mg) - tx0, th = Math.min(ph, ry1 + mg) - ty0;
+        if (st.T.width < tw || st.T.height < th) { st.T.width = Math.max(st.T.width, tw); st.T.height = Math.max(st.T.height, th); }
         const T = st.T.getContext('2d'), O = ctxs.O;
-        const ring = (inner) => { // M minus a smaller disc set = a ring round the outline, tinted
-          T.setTransform(1, 0, 0, 1, 0, 0); T.globalCompositeOperation = 'source-over'; T.clearRect(0, 0, rw, rh);
-          T.drawImage(st.M, rx0, ry0, rw, rh, 0, 0, rw, rh);
-          T.globalCompositeOperation = 'destination-out'; T.drawImage(inner, rx0, ry0, rw, rh, 0, 0, rw, rh);
-          T.globalCompositeOperation = 'source-in'; T.fillStyle = solid; T.fillRect(0, 0, rw, rh);
+        const ring = (inner) => { // M minus a smaller shape = a ring round the OVERALL outline, tinted
+          T.setTransform(1, 0, 0, 1, 0, 0); T.globalCompositeOperation = 'source-over'; T.clearRect(0, 0, tw, th);
+          T.drawImage(st.M, tx0, ty0, tw, th, 0, 0, tw, th);
+          T.globalCompositeOperation = 'destination-out'; T.drawImage(inner, tx0, ty0, tw, th, 0, 0, tw, th);
+          T.globalCompositeOperation = 'source-in'; T.fillStyle = solid; T.fillRect(0, 0, tw, th);
           T.globalCompositeOperation = 'source-over';
         };
-        O.setTransform(1, 0, 0, 1, 0, 0); O.globalCompositeOperation = 'source-over'; O.clearRect(rx0, ry0, rw, rh);
+        // the ring laid down as several slightly shifted copies: its inner edge fades smoothly instead of ending in a hard step (no banding)
+        const softRing = (alpha, rho) => {
+          O.save(); O.beginPath(); O.rect(rx0, ry0, rw, rh); O.clip();
+          O.globalAlpha = Math.min(1, alpha) / 8;
+          for (let k = 0; k < 8; k++) { const a = k * 0.7853982; O.drawImage(st.T, 0, 0, tw, th, tx0 + Math.cos(a) * rho, ty0 + Math.sin(a) * rho, tw, th); }
+          O.restore();
+        };
+        O.setTransform(1, 0, 0, 1, 0, 0); O.globalCompositeOperation = 'source-over'; O.globalAlpha = 1; O.clearRect(rx0, ry0, rw, rh);
         O.globalAlpha = 0.6; O.drawImage(st.B, rx0, ry0, rw, rh, rx0, ry0, rw, rh);
         if (edge > 0) {
-          ring(st.I); O.globalAlpha = 0.06 + 0.3 * edge; O.drawImage(st.T, 0, 0, rw, rh, rx0, ry0, rw, rh);
-          ring(st.I2); O.globalAlpha = 0.08 + 0.45 * edge; O.drawImage(st.T, 0, 0, rw, rh, rx0, ry0, rw, rh);
+          ring(st.I); softRing((0.06 + 0.3 * edge) * 1.35, rho1);
+          ring(st.I2); softRing((0.08 + 0.45 * edge) * 1.35, rho2);
         }
         O.globalAlpha = 1;
+        // keep everything inside the overall stroke shape, so the outer edge stays one clean line
+        // destination-in acts on the WHOLE canvas, not just the drawn rectangle, so without the clip every earlier part of a live stroke was wiped
+        O.save(); O.beginPath(); O.rect(rx0, ry0, rw, rh); O.clip();
+        O.globalCompositeOperation = 'destination-in'; O.drawImage(st.M, rx0, ry0, rw, rh, rx0, ry0, rw, rh); O.globalCompositeOperation = 'source-over';
+        O.restore();
         if (gran > 0) {
           O.save(); O.beginPath(); O.rect(rx0, ry0, rw, rh); O.clip();
           O.setTransform(se, 0, 0, se, -bx * se, -by * se);
@@ -870,6 +982,25 @@
         }
         if (S) { S.bb = S.bb ? { x0: Math.min(S.bb.x0, rx0), y0: Math.min(S.bb.y0, ry0), x1: Math.max(S.bb.x1, rx1), y1: Math.max(S.bb.y1, ry1) } : { x0: rx0, y0: ry0, x1: rx1, y1: ry1 }; }
       }
+    }
+    if (!live) {
+      try {
+        if (ckey && pw * ph <= 2500000 && !drHint) { // (a result built for a small repaint rectangle is not the whole stroke, so it is not kept)
+          // A bounded set of canvases is reused for ever: iPad Safari does not give canvases back when they are dropped, and creating a fresh one for
+          // every result eventually used up its canvas memory (the whole canvas then drew black).
+          let tot = 0; _wcCache.forEach((v) => { tot += v.c.width * v.c.height; });
+          let ent = null;
+          if (_wcCache.size >= 24 || tot + pw * ph > 12000000) { const k0 = _wcCache.keys().next().value; ent = _wcCache.get(k0); _wcCache.delete(k0); }
+          while ((_wcCache.size >= 24 || tot + pw * ph > 12000000) && _wcCache.size > 0) { const k1 = _wcCache.keys().next().value, v1 = _wcCache.get(k1); tot -= v1.c.width * v1.c.height; v1.c.width = 1; v1.c.height = 1; _wcCache.delete(k1); }
+          if (!ent) ent = { c: document.createElement('canvas') };
+          if (ent.c.width < pw || ent.c.height < ph) { ent.c.width = Math.max(ent.c.width, pw); ent.c.height = Math.max(ent.c.height, ph); }
+          const cg2 = ent.c.getContext('2d'); cg2.setTransform(1, 0, 0, 1, 0, 0); cg2.globalCompositeOperation = 'source-over'; cg2.globalAlpha = 1; cg2.clearRect(0, 0, ent.c.width, ent.c.height);
+          cg2.drawImage(st.O, 0, 0, pw, ph, 0, 0, pw, ph);
+          _wcCache.set(ckey, ent);
+        }
+      } catch (e) {}
+      // the big working buffers are only needed while strokes are being built: give the memory back once drawing has been idle for a moment
+      clearTimeout(_wcTrimT); _wcTrimT = setTimeout(() => { const d = _wcSets.doc; if (d) ['M', 'I', 'I2', 'B', 'O', 'T'].forEach((k) => { d[k].width = 1; d[k].height = 1; }); }, 1500);
     }
     // lay the result on the target at the stroke opacity (multiply, like real transparent paint)
     let sx0 = 0, sy0 = 0, sx1 = pw, sy1 = ph;
@@ -887,19 +1018,21 @@
   // the canvas at the new spot. No pixel read-backs, only canvas-to-canvas copies, so it stays fast.
   // iPad Safari keeps every canvas it has ever been given until memory runs out (then canvases go black),
   // so the four small working canvases are reused between strokes instead of created fresh each time.
-  const BrushEngine_skipSmudge = { on: false };
-  let _smPool = null, _smBusy = false;
-  function makeSmudger(ctx, radius, strength, brush) {
+  const BrushEngine_skipSmudge = { on: false, until: 0, hit: false }; // until: a time limit (performance.now) for replaying smudge / liquify strokes while a project opens
+  let _smPool = null, _smBusy = false, _smBl = null;
+  function makeSmudger(ctx, radius, strength, brush, mode) {
     const m = ctx.getTransform ? ctx.getTransform() : { a: 1, d: 1, e: 0, f: 0 };
     const sc = Math.max(0.05, Math.abs(m.a));
     let R = Math.max(1, radius * sc);
     const MAXR = 300; // a finger bigger than this just becomes slow and memory hungry
     const shrink = R > MAXR ? MAXR / R : 1; R *= shrink;
     const D = Math.max(4, Math.ceil(R * 2) + 2);
-    const pooled = !_smBusy; if (pooled) { _smBusy = true; if (!_smPool) _smPool = [0, 1, 2, 3].map(() => document.createElement('canvas')); }
+    const isBlend = mode === 'blend';
+    // Blend works on the pixels directly (see to()), so it only needs the footprint mask, and only for a moment: no working canvases are kept.
+    const pooled = !isBlend && !_smBusy; if (pooled) { _smBusy = true; if (!_smPool) _smPool = [0, 1, 2, 3].map(() => document.createElement('canvas')); }
     const mk = (w, h, i) => { const c = pooled ? _smPool[i] : document.createElement('canvas'); c.width = w; c.height = h; return c; }; // setting the size also clears it
-    const carry = mk(D, D, 0), pick = mk(D, D, 1), laid = mk(D, D, 2), mask = mk(D, D, 3);
-    const cg = carry.getContext('2d'), pg = pick.getContext('2d'), lg = laid.getContext('2d'), mg = mask.getContext('2d');
+    const carry = isBlend ? null : mk(D, D, 0), pick = isBlend ? null : mk(D, D, 1), laid = isBlend ? null : mk(D, D, 2), mask = mk(D, D, 3);
+    const cg = carry && carry.getContext('2d'), pg = pick && pick.getContext('2d'), lg = laid && laid.getContext('2d'), mg = mask.getContext('2d');
     // The footprint of the finger comes from the chosen brush: its tip picture (stamp brushes), its edge
     // softness (a hard brush smudges with a hard edge) and its texture (a dry or grainy brush smears in streaks).
     const tip = brush && brush.stamp ? (brush.stampCanvas || brush.stampImg) : null;
@@ -921,14 +1054,76 @@
         mg.fillStyle = mg.createPattern(grainTile(), 'repeat'); mg.fillRect(0, 0, D / Math.max(0.6, sc), D / Math.max(0.6, sc)); mg.restore();
       }
     }
+    if (mode === 'blend') { // a blender always has a soft round footprint, whatever brush shape is chosen
+      mg.setTransform(1, 0, 0, 1, 0, 0); mg.globalCompositeOperation = 'source-over'; mg.globalAlpha = 1; mg.clearRect(0, 0, D, D);
+      const sg = mg.createRadialGradient(D / 2, D / 2, 0, D / 2, D / 2, R);
+      sg.addColorStop(0, 'rgba(0,0,0,1)'); sg.addColorStop(0.5, 'rgba(0,0,0,0.6)'); sg.addColorStop(1, 'rgba(0,0,0,0)');
+      mg.fillStyle = sg; mg.fillRect(0, 0, D, D);
+    }
+    let maskA = null; // blend: the footprint's alpha as plain numbers, read once per stroke instead of once per step
+    if (isBlend) { try { const md = mg.getImageData(0, 0, D, D).data; maskA = new Uint8Array(D * D); for (let q = 0; q < maskA.length; q++) maskA[q] = md[q * 4 + 3]; } catch (e) { maskA = null; } mask.width = mask.height = 1; }
     const s01 = Math.max(0.05, Math.min(1, strength));
     const lay = Math.min(1, 0.3 + 0.45 * s01), keep = 0.45 + 0.5 * s01;
     let has = false;
+    // BLEND, one step. The colours under the brush are mixed with a soft blur of their neighbours (a weighted average, worked out per pixel),
+    // only where paint already is, and only through the brush footprint; going over a spot again blends it more. Everything happens on one
+    // small patch: ONE read of the patch from the layer, a blur on a handful of block averages, and ONE write of just the rectangle that changed.
+    // No canvas is created, drawn on or resized per step, and the mask is not read again.
+    const bLev = Math.max(1, Math.min(4, Math.floor(Math.log2(D / 6)))), bF = 1 << bLev, bN = Math.ceil(D / bF);
+    const bS = isBlend ? new Float32Array(bN * bN * 4) : null; // block sums of premultiplied colour (r,g,b,a)
+    const bK = Math.min(1, 0.1 + 0.4 * s01);
+    const cw = ctx.canvas.width, chh = ctx.canvas.height;
+    function blendStep(sx, sy) {
+      if (!maskA || sx >= cw || sy >= chh || sx + D <= 0 || sy + D <= 0) return;
+      let pd; try { pd = ctx.getImageData(sx, sy, D, D); } catch (e) { return; } // a patch that cannot be read is simply skipped
+      const o = pd.data; bS.fill(0);
+      for (let py = 0; py < D; py++) {
+        const rowB = ((py / bF) | 0) * bN;
+        for (let px = 0, q = py * D * 4; px < D; px++, q += 4) {
+          const a = o[q + 3]; if (!a) continue;
+          const bi = (rowB + ((px / bF) | 0)) * 4, af = a / 255;
+          bS[bi] += o[q] * af; bS[bi + 1] += o[q + 1] * af; bS[bi + 2] += o[q + 2] * af; bS[bi + 3] += af;
+        }
+      }
+      // soften the block grid with a [1 2 1] pass each way: the block averages alone blur a little less than the two-stage shrink/enlarge this replaces
+      if (bN > 2) {
+        for (let pass = 0; pass < 2; pass++) {
+          for (let j = 0; j < bN; j++) for (let ch = 0; ch < 4; ch++) {
+            let prev = bS[(j * bN) * 4 + ch], cur = prev;
+            for (let i = 0; i < bN; i++) { const nx = i + 1 < bN ? bS[(j * bN + i + 1) * 4 + ch] : cur; bS[(j * bN + i) * 4 + ch] = (prev + 2 * cur + nx) * 0.25; prev = cur; cur = nx; }
+          }
+          for (let i = 0; i < bN; i++) for (let ch = 0; ch < 4; ch++) {
+            let prev = bS[i * 4 + ch], cur = prev;
+            for (let j = 0; j < bN; j++) { const nx = j + 1 < bN ? bS[((j + 1) * bN + i) * 4 + ch] : cur; bS[(j * bN + i) * 4 + ch] = (prev + 2 * cur + nx) * 0.25; prev = cur; cur = nx; }
+          }
+        }
+      }
+      const inv = 1 / (bF * bF); let x0 = D, y0 = D, x1 = -1, y1 = -1;
+      for (let py = 0; py < D; py++) {
+        const fy = (py + 0.5) / bF - 0.5, j0 = Math.max(0, Math.floor(fy)), j1 = Math.min(bN - 1, j0 + 1), ty = Math.min(1, Math.max(0, fy - j0));
+        for (let px = 0; px < D; px++) {
+          const mi = py * D + px, q = mi * 4, mw = maskA[mi]; if (!mw || !o[q + 3]) continue;
+          const w = (mw / 255) * bK; if (w < 0.01) continue;
+          const fx = (px + 0.5) / bF - 0.5, i0 = Math.max(0, Math.floor(fx)), i1 = Math.min(bN - 1, i0 + 1), tx = Math.min(1, Math.max(0, fx - i0));
+          const b00 = (j0 * bN + i0) * 4, b10 = (j0 * bN + i1) * 4, b01 = (j1 * bN + i0) * 4, b11 = (j1 * bN + i1) * 4;
+          const w00 = (1 - tx) * (1 - ty), w10 = tx * (1 - ty), w01 = (1 - tx) * ty, w11 = tx * ty;
+          const pa = (bS[b00 + 3] * w00 + bS[b10 + 3] * w10 + bS[b01 + 3] * w01 + bS[b11 + 3] * w11) * inv;
+          if (pa * 255 < 8) continue;
+          const k = 1 / (pa * bF * bF);
+          const pr = (bS[b00] * w00 + bS[b10] * w10 + bS[b01] * w01 + bS[b11] * w11) * k, pg2 = (bS[b00 + 1] * w00 + bS[b10 + 1] * w10 + bS[b01 + 1] * w01 + bS[b11 + 1] * w11) * k, pb = (bS[b00 + 2] * w00 + bS[b10 + 2] * w10 + bS[b01 + 2] * w01 + bS[b11 + 2] * w11) * k;
+          o[q] = Math.round(o[q] + (pr - o[q]) * w); o[q + 1] = Math.round(o[q + 1] + (pg2 - o[q + 1]) * w); o[q + 2] = Math.round(o[q + 2] + (pb - o[q + 2]) * w);
+          if (px < x0) x0 = px; if (px > x1) x1 = px; if (py < y0) y0 = py; if (py > y1) y1 = py;
+        }
+      }
+      if (x1 < 0) return;
+      try { ctx.putImageData(pd, sx, sy, x0, y0, x1 - x0 + 1, y1 - y0 + 1); } catch (e) { }
+    }
     return {
       done() { if (pooled) { _smBusy = false; _smPool.forEach((c) => { c.width = c.height = 1; }); } },
-      step: Math.max(1.2 / sc, radius * 0.22),
+      step: Math.max(1.2 / sc, radius * (mode === 'blend' ? 0.14 : 0.22)),
       to(x, y) {
         const cx = m.a * x + m.e, cy = m.d * y + m.f, sx = Math.round(cx - D / 2), sy = Math.round(cy - D / 2);
+        if (isBlend) { blendStep(sx, sy); return; }
         pg.setTransform(1, 0, 0, 1, 0, 0); pg.globalCompositeOperation = 'source-over'; pg.globalAlpha = 1; pg.clearRect(0, 0, D, D);
         try { pg.drawImage(ctx.canvas, sx, sy, D, D, 0, 0, D, D); } catch (e) { return; }
         if (!has) { cg.setTransform(1, 0, 0, 1, 0, 0); cg.clearRect(0, 0, D, D); cg.drawImage(pick, 0, 0); has = true; return; }
@@ -989,65 +1184,447 @@
   // Liquify on real paint: moves the pixels around the brush (push / pinch / bloat / twirl), so neighbouring colours smear and
   // swirl into each other like marbling. One call = one small step; holding the pen makes many steps. Steps are stored on the
   // stroke and replayed in order, so undo, saving and hi-res export see exactly the same result.
-  function liquifyStep(ctx, x, y, mode, strength, radius, dx, dy) {
+  // ---- Liquify on the GPU ----
+  // The pixel warp is the same maths as the CPU loop below, run as a WebGL fragment shader. Reading the layer back with getImageData and
+  // pushing it up again with putImageData is what made big brushes lag; here the pixels only move GPU to GPU. If WebGL is not
+  // available (or ever fails) the CPU path below is used instead.
+  // The GPU is only used if it measures faster than the CPU on this device: the first big steps are timed both ways (alternating, results
+  // are identical either way) and the winner is remembered. On a device where WebGL is slow or missing the CPU path stays in charge.
+  const _lq = { on: true, bad: false, gl: null, cv: null, prog: null, u: null, tex: null, src: null, sctx: null, pick: 'auto', samples: { gl: [], cpu: [] } };
+  // Off by default: the GPU path is only tried when sp-lqgl-try is set to 1 (it needs extra graphics memory, which is tight on an iPad).
+  _lq.pick = 'cpu'; try { if (localStorage.getItem('sp-lqgl-try') === '1') _lq.pick = 'auto'; } catch (e) { }
+  function lqRecord(kind, ms, area) {
+    const a = _lq.samples[kind]; a.push(ms / area); if (a.length > 4) a.shift();
+    if (_lq.pick !== 'auto' || _lq.samples.gl.length < 3 || _lq.samples.cpu.length < 3) return;
+    const med = q => q.slice().sort((x, y) => x - y)[q.length >> 1];
+    _lq.pick = med(_lq.samples.gl) < med(_lq.samples.cpu) * 0.85 ? 'gl' : 'cpu';
+  }
+  const LQ_VS = 'attribute vec2 aPos;varying vec2 vUv;void main(){vUv=vec2(aPos.x*0.5+0.5,0.5-aPos.y*0.5);gl_Position=vec4(aPos,0.0,1.0);}';
+  const LQ_FS = 'precision highp float;varying vec2 vUv;uniform sampler2D uTex;uniform vec2 uRes;uniform vec2 uC;uniform vec2 uPd;uniform float uR;uniform float uS;uniform float uAng;uniform float uPf;uniform float uReps;uniform int uMode;' +
+    'void main(){vec2 g=vUv*uRes-uC;float R2=uR*uR;float d2=dot(g,g);if(d2>=R2){gl_FragColor=texture2D(uTex,vUv);return;}' +
+    'float u=1.0-d2/R2;float u2=u*u;float k=u2*uS;vec2 s;' +
+    'if(uMode==0){s=g-uPd*k;}' +
+    'else if(uMode==1){vec2 q=g;float rem=uReps;for(int i=0;i<400;i++){if(rem<=0.0)break;float part=min(rem,1.0);rem-=part;float dd=dot(q,q);if(dd>=R2)break;float uu=1.0-dd/R2;q*=1.0+uPf*uu*uu*uS*part*0.042;}s=q;}' +
+    'else{float a=uAng*u2;float c=cos(a);float sn=-sin(a);s=vec2(g.x*c-g.y*sn,g.x*sn+g.y*c);}' +
+    'vec2 t=(s+uC)/uRes;if(t.x<0.0||t.y<0.0||t.x>1.0||t.y>1.0){gl_FragColor=vec4(0.0);return;}gl_FragColor=texture2D(uTex,t);}';
+  function lqInitGL() {
+    if (_lq.gl) return true; if (_lq.bad) return false;
+    try {
+      const cv = document.createElement('canvas'); cv.width = cv.height = 256;
+      const gl = cv.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: false, depth: false, stencil: false, preserveDrawingBuffer: true });
+      if (!gl) throw new Error('no webgl');
+      const sh = (type, src) => { const o = gl.createShader(type); gl.shaderSource(o, src); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; };
+      const pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, LQ_VS)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, LQ_FS)); gl.linkProgram(pr);
+      if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(pr));
+      gl.useProgram(pr);
+      const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+      const ap = gl.getAttribLocation(pr, 'aPos'); gl.enableVertexAttribArray(ap); gl.vertexAttribPointer(ap, 2, gl.FLOAT, false, 0, 0);
+      const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.disable(gl.BLEND); gl.disable(gl.DEPTH_TEST);
+      const u = {}; ['uTex', 'uRes', 'uC', 'uPd', 'uR', 'uS', 'uAng', 'uPf', 'uReps', 'uMode'].forEach(n => { u[n] = gl.getUniformLocation(pr, n); });
+      cv.addEventListener('webglcontextlost', e => { e.preventDefault(); _lq.gl = null; _lq.bad = true; });
+      _lq.cv = cv; _lq.gl = gl; _lq.prog = pr; _lq.u = u; _lq.tex = tex;
+      _lq.src = document.createElement('canvas'); _lq.sctx = _lq.src.getContext('2d');
+      return true;
+    } catch (e) { _lq.bad = true; _lq.gl = null; return false; }
+  }
+  function lqGL(ctx, x0, y0, w, h, cx, cy, R, mode, strength, ang, pdx, pdy, reps) {
+    if (!_lq.on || !lqInitGL()) return false;
+    try {
+      const gl = _lq.gl, cv = _lq.cv, u = _lq.u;
+      if (_lq.src.width !== w || _lq.src.height !== h) { _lq.src.width = w; _lq.src.height = h; }
+      const sc = _lq.sctx; sc.setTransform(1, 0, 0, 1, 0, 0); sc.globalCompositeOperation = 'copy'; sc.globalAlpha = 1;
+      sc.drawImage(ctx.canvas, x0, y0, w, h, 0, 0, w, h);
+      if (cv.width < w || cv.height < h) { cv.width = Math.max(cv.width, Math.ceil(w / 64) * 64); cv.height = Math.max(cv.height, Math.ceil(h / 64) * 64); }
+      gl.viewport(0, cv.height - h, w, h);
+      gl.bindTexture(gl.TEXTURE_2D, _lq.tex);
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, _lq.src);
+      gl.uniform1i(u.uTex, 0); gl.uniform2f(u.uRes, w, h); gl.uniform2f(u.uC, cx - x0, cy - y0); gl.uniform2f(u.uPd, pdx, pdy);
+      gl.uniform1f(u.uR, R); gl.uniform1f(u.uS, strength); gl.uniform1f(u.uAng, ang);
+      const pf = mode === 'pinch' ? 1 : mode === 'bloat' ? -1 : 0;
+      gl.uniform1f(u.uPf, pf); gl.uniform1f(u.uReps, reps > 1 ? Math.min(reps, 400) : 1);
+      gl.uniform1i(u.uMode, mode === 'push' ? 0 : pf ? 1 : 2);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      ctx.save();
+      try {
+        ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.beginPath(); ctx.rect(x0, y0, w, h); ctx.clip();
+        ctx.globalCompositeOperation = 'copy'; ctx.globalAlpha = 1; try { ctx.filter = 'none'; ctx.shadowColor = 'transparent'; } catch (e2) { }
+        ctx.drawImage(cv, 0, 0, w, h, x0, y0, w, h);
+      } finally { ctx.restore(); }
+      return true;
+    } catch (e) { _lq.bad = true; _lq.gl = null; return false; }
+  }
+  // The app keeps one nearly invisible pixel in the top-left corner of every layer to notice when the iPad wipes a canvas (and then redraws the whole layer).
+  // Liquify writes pixels there too, so it has to put the marker back or the app thinks the layer was wiped and replays everything.
+  function lqSentinel(ctx) { try { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; ctx.fillStyle = 'rgba(255,255,255,0.004)'; ctx.fillRect(0, 0, 1, 1); ctx.restore(); } catch (e) { } }
+  let _lqOut = null; // scratch buffer reused between steps (a fresh multi-MB array per step was what made big brushes lag and crash)
+  // The warp itself, on a plain pixel buffer: id covers canvas pixels (x0,y0)..(x0+w,y0+h), the brush centre is (cx,cy) in the same pixels.
+  function lqApply(id, w, h, x0, y0, cx, cy, R, sc, mode, strength, dx, dy, reps) {
+    const src = id.data, n = src.length;
+    if (!_lqOut || _lqOut.length < n) _lqOut = new Uint8ClampedArray(n);
+    const out = _lqOut; out.set(src);
+    const W4 = w * 4, R2 = R * R;
+    const ang = (mode === 'twirlR' ? 1 : mode === 'twirlL' ? -1 : 0) * 0.075 * strength;
+    const pf = mode === 'pinch' ? 1 : mode === 'bloat' ? -1 : 0;
+    // Repeated pinch / bloat (a long hold, merged on replay) turns the same radial mapping into a loop per pixel; it only depends on the distance from the centre, so work it out once per step
+    let tbl = null; const TN = 192;
+    if (pf && reps > 1) {
+      tbl = new Float32Array(TN + 1);
+      for (let i = 0; i <= TN; i++) {
+        const r = Math.max(R * 0.002, i / TN * R); let q = r, rem = Math.min(reps, 400);
+        while (rem > 0) { const part = rem >= 1 ? 1 : rem; rem -= part; const dd = q * q; if (dd >= R2) break; const uu = 1 - dd / R2; q *= 1 + pf * uu * uu * strength * part * 0.042; }
+        tbl[i] = q / r;
+      }
+    }
+    const isPush = mode === 'push', pdx = dx * sc, pdy = dy * sc, bigAng = Math.abs(ang) > 0.3; // merged steps can twirl a long way, so they use real cos/sin
+    for (let py = 0; py < h; py++) {
+      const gy = y0 + py + 0.5 - cy, gy2 = gy * gy;
+      if (gy2 >= R2) continue;
+      const half = Math.sqrt(R2 - gy2); // only visit the pixels inside the circle on this row
+      const pxs = Math.max(0, Math.ceil(cx - half - x0 - 0.5)), pxe = Math.min(w - 1, Math.floor(cx + half - x0 - 0.5));
+      for (let px = pxs; px <= pxe; px++) {
+        const gx = x0 + px + 0.5 - cx, d2 = gx * gx + gy2;
+        if (d2 >= R2) continue;
+        const u = 1 - d2 / R2, u2 = u * u, k = u2 * strength;
+        let sx, sy; // where this pixel's new colour comes from
+        if (isPush) { sx = gx - pdx * k; sy = gy - pdy * k; }
+        else if (tbl) { const f = Math.sqrt(d2) / R * TN, i0 = f | 0, i1 = i0 < TN ? i0 + 1 : TN, k2 = tbl[i0] + (tbl[i1] - tbl[i0]) * (f - i0); sx = gx * k2; sy = gy * k2; }
+        else if (pf) {
+          let qx = gx, qy = gy, rem = reps > 1 ? Math.min(reps, 400) : 1; // reps > 1 = several merged steps: repeat the same pinch / bloat mapping that many times
+          while (rem > 0) { const part = rem >= 1 ? 1 : rem; rem -= part; const dd = qx * qx + qy * qy; if (dd >= R2) break; const uu = 1 - dd / R2; qx *= 1 + pf * uu * uu * strength * part * 0.042; qy *= 1 + pf * uu * uu * strength * part * 0.042; }
+          sx = qx; sy = qy;
+        }
+        else if (bigAng) { const a2 = ang * u2, c2 = Math.cos(a2), s2 = -Math.sin(a2); sx = gx * c2 - gy * s2; sy = gx * s2 + gy * c2; }
+        else { const a2 = ang * u2, c2 = 1 - a2 * a2 * 0.5, s2 = -(a2 - a2 * a2 * a2 / 6); sx = gx * c2 - gy * s2; sy = gx * s2 + gy * c2; } // angle is at most 0.075 rad, so this is exact enough and skips cos/sin per pixel
+        // bilinear sample with premultiplied alpha (so transparent pixels do not darken the colours)
+        const fx = sx + cx - x0 - 0.5, fy = sy + cy - y0 - 0.5, ix = Math.floor(fx), iy = Math.floor(fy), ux = fx - ix, uy = fy - iy;
+        let r = 0, g = 0, b = 0, a = 0;
+        const ix1 = ix + 1, iy1 = iy + 1;
+        const okx0 = ix >= 0 && ix < w, okx1 = ix1 >= 0 && ix1 < w, oky0 = iy >= 0 && iy < h, oky1 = iy1 >= 0 && iy1 < h;
+        if (oky0) {
+          const row = iy * W4;
+          if (okx0) { const o = row + ix * 4, al = src[o + 3] / 255 * (1 - ux) * (1 - uy); r += src[o] * al; g += src[o + 1] * al; b += src[o + 2] * al; a += al; }
+          if (okx1) { const o = row + ix1 * 4, al = src[o + 3] / 255 * ux * (1 - uy); r += src[o] * al; g += src[o + 1] * al; b += src[o + 2] * al; a += al; }
+        }
+        if (oky1) {
+          const row = iy1 * W4;
+          if (okx0) { const o = row + ix * 4, al = src[o + 3] / 255 * (1 - ux) * uy; r += src[o] * al; g += src[o + 1] * al; b += src[o + 2] * al; a += al; }
+          if (okx1) { const o = row + ix1 * 4, al = src[o + 3] / 255 * ux * uy; r += src[o] * al; g += src[o + 1] * al; b += src[o + 2] * al; a += al; }
+        }
+        const o = py * W4 + px * 4;
+        if (a > 0.002) { out[o] = r / a; out[o + 1] = g / a; out[o + 2] = b / a; out[o + 3] = a * 255; } else { out[o] = out[o + 1] = out[o + 2] = out[o + 3] = 0; }
+      }
+    }
+    id.data.set(n === out.length ? out : out.subarray(0, n));
+  }
+  function liquifyCore(ctx, x, y, mode, strength, radius, dx, dy, reps) {
     const m = ctx.getTransform ? ctx.getTransform() : { a: 1, d: 1, e: 0, f: 0 };
     const sc = Math.max(0.05, Math.abs(m.a));
     const R = Math.max(2, radius * sc), cx = m.a * x + m.e, cy = m.d * y + m.f;
     const x0 = Math.max(0, Math.floor(cx - R) - 1), y0 = Math.max(0, Math.floor(cy - R) - 1);
     const x1 = Math.min(ctx.canvas.width, Math.ceil(cx + R) + 1), y1 = Math.min(ctx.canvas.height, Math.ceil(cy + R) + 1);
     const w = x1 - x0, h = y1 - y0; if (w < 2 || h < 2) return;
+    const area = w * h;
+    let tryGL = false, timed = false;
+    if (_lq.on && !_lq.bad && _lq.pick !== 'cpu') {
+      if (_lq.pick === 'gl') tryGL = true;
+      else if (area >= 40000) { timed = true; tryGL = _lq.samples.gl.length <= _lq.samples.cpu.length; }
+    }
+    const tStart = timed ? performance.now() : 0;
+    if (tryGL) {
+      if (lqGL(ctx, x0, y0, w, h, cx, cy, R, mode, strength, (mode === 'twirlR' ? 1 : mode === 'twirlL' ? -1 : 0) * 0.075 * strength, dx * sc, dy * sc, reps)) {
+        if (timed) { try { ctx.getImageData(x0, y0, 1, 1); } catch (e) { } lqRecord('gl', performance.now() - tStart, area); } // reading a pixel makes the GPU finish, so the timing is honest
+        return;
+      }
+      timed = false; _lq.pick = 'cpu'; // WebGL failed: stay on the CPU path
+    }
     let id; try { id = ctx.getImageData(x0, y0, w, h); } catch (e) { return; }
-    const src = id.data, out = new Uint8ClampedArray(src), W4 = w * 4;
-    const ang = (mode === 'twirlR' ? 1 : mode === 'twirlL' ? -1 : 0) * 0.075 * strength, co = Math.cos(-ang), si = Math.sin(-ang);
-    const pf = mode === 'pinch' ? 1 : mode === 'bloat' ? -1 : 0;
-    const pdx = dx * sc, pdy = dy * sc;
-    for (let py = 0; py < h; py++) {
-      for (let px = 0; px < w; px++) {
-        const gx = x0 + px + 0.5 - cx, gy = y0 + py + 0.5 - cy, d = Math.hypot(gx, gy);
-        if (d >= R) continue;
-        const t = d / R, k = (1 - t * t) * (1 - t * t) * strength;
-        let sx, sy; // where this pixel's new colour comes from
-        if (mode === 'push') { sx = gx - pdx * k; sy = gy - pdy * k; }
-        else if (pf) { const f = 1 + pf * k * 0.042; sx = gx * f; sy = gy * f; }
-        else { const a2 = ang * (1 - t * t) * (1 - t * t); const c2 = Math.cos(-a2), s2 = Math.sin(-a2); sx = gx * c2 - gy * s2; sy = gx * s2 + gy * c2; }
-        // bilinear sample with premultiplied alpha (so transparent pixels do not darken the colours)
-        const fx = sx + cx - x0 - 0.5, fy = sy + cy - y0 - 0.5, ix = Math.floor(fx), iy = Math.floor(fy), ux = fx - ix, uy = fy - iy;
-        let r = 0, g = 0, b = 0, a = 0;
-        for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) {
-          const qx = ix + i, qy = iy + j; if (qx < 0 || qy < 0 || qx >= w || qy >= h) continue;
-          const wt = (i ? ux : 1 - ux) * (j ? uy : 1 - uy), o = qy * W4 + qx * 4, al = src[o + 3] / 255 * wt;
-          r += src[o] * al; g += src[o + 1] * al; b += src[o + 2] * al; a += al;
-        }
-        const o = py * W4 + px * 4;
-        if (a > 0.002) { out[o] = r / a; out[o + 1] = g / a; out[o + 2] = b / a; out[o + 3] = a * 255; } else { out[o] = out[o + 1] = out[o + 2] = out[o + 3] = 0; }
+    lqApply(id, w, h, x0, y0, cx, cy, R, sc, mode, strength, dx, dy, reps);
+    ctx.putImageData(id, x0, y0);
+    if (x0 === 0 && y0 === 0) lqSentinel(ctx);
+    if (timed) { try { ctx.getImageData(x0, y0, 1, 1); } catch (e) { } lqRecord('cpu', performance.now() - tStart, area); }
+  }
+  // Seamless tiling. The app shows a layer by laying its canvas over itself at every neighbouring tile position, so what you see is the SUM of those shifted copies.
+  // To warp that picture correctly (paint that leaves one side of the tile re-enters on the other side) the layer is first reduced to "just the tile cell"
+  // (the sum of all copies, cropped to the tile), then every step reads the tile as if it repeated forever and writes the result back into the cell only.
+  const BrushEngine_wrap = { get: null }; // set by the app: () => {x,y,w,h, lat:[[ox,oy]..], offs:[[ox,oy]..]} (tile rectangle, repeat vectors, the 8 neighbour offsets)
+  let _lqTmp = null, _lqBuf = null;
+  function lqNormalize(ctx, wrap, m) {
+    const cv = ctx.canvas;
+    if (!_lqTmp) _lqTmp = document.createElement('canvas');
+    if (_lqTmp.width !== cv.width || _lqTmp.height !== cv.height) { _lqTmp.width = cv.width; _lqTmp.height = cv.height; }
+    const t = _lqTmp.getContext('2d');
+    t.setTransform(1, 0, 0, 1, 0, 0); t.clearRect(0, 0, cv.width, cv.height);
+    t.drawImage(cv, 0, 0);
+    for (let k = 0; k < wrap.offs.length; k++) t.drawImage(cv, Math.round(wrap.offs[k][0] * m.a), Math.round(wrap.offs[k][1] * m.d));
+    const tx = Math.max(0, Math.round(m.a * wrap.x + m.e)), ty = Math.max(0, Math.round(m.d * wrap.y + m.f));
+    const tw = Math.min(cv.width - tx, Math.round(m.a * wrap.w)), th = Math.min(cv.height - ty, Math.round(m.d * wrap.h));
+    ctx.save();
+    try { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'copy'; ctx.globalAlpha = 1; ctx.clearRect(0, 0, cv.width, cv.height); ctx.drawImage(_lqTmp, tx, ty, tw, th, tx, ty, tw, th); } finally { ctx.restore(); }
+    t.setTransform(1, 0, 0, 1, 0, 0); t.clearRect(0, 0, cv.width, cv.height);
+    cv._lqNorm = true;
+  }
+  function liquifyStep(ctx, x, y, mode, strength, radius, dx, dy, reps, wrap) {
+    if (!wrap) return liquifyCore(ctx, x, y, mode, strength, radius, dx, dy, reps);
+    const m = ctx.getTransform ? ctx.getTransform() : { a: 1, d: 1, e: 0, f: 0 }, cv = ctx.canvas;
+    const sc = Math.max(0.05, Math.abs(m.a)), R = Math.max(2, radius * sc);
+    const tx = Math.round(m.a * wrap.x + m.e), ty = Math.round(m.d * wrap.y + m.f), tw = Math.round(m.a * wrap.w), th = Math.round(m.d * wrap.h);
+    const lat = wrap.lat.map(v => [Math.round(v[0] * m.a), Math.round(v[1] * m.d)]);
+    let cx = m.a * x + m.e, cy = m.d * y + m.f, home = null;
+    for (let i = 0; i < lat.length; i++) { const px = cx + lat[i][0], py = cy + lat[i][1]; if (px >= tx && px < tx + tw && py >= ty && py < ty + th) { home = lat[i]; break; } }
+    if (!home || tw < 4 || th < 4) return liquifyCore(ctx, x, y, mode, strength, radius, dx, dy, reps); // brush is outside the repeating area: plain warp
+    cx += home[0]; cy += home[1];
+    if (!cv._lqNorm) lqNormalize(ctx, wrap, m);
+    const rx0 = Math.floor(cx - R) - 1, ry0 = Math.floor(cy - R) - 1, w = Math.ceil(cx + R) + 1 - rx0, h = Math.ceil(cy + R) + 1 - ry0;
+    if (w < 2 || h < 2 || w * h > 4e6) return;
+    // the part of the repeating picture around the brush, assembled from the tile cell
+    const need = w * h * 4;
+    if (!_lqBuf || _lqBuf.length < need) _lqBuf = new Uint8ClampedArray(need);
+    const buf = _lqBuf; buf.fill(0, 0, need);
+    const pieces = [];
+    for (let i = 0; i < lat.length; i++) {
+      const cx0 = tx + lat[i][0], cy0 = ty + lat[i][1];
+      const ax = Math.max(rx0, cx0), ay = Math.max(ry0, cy0), bx = Math.min(rx0 + w, cx0 + tw), by = Math.min(ry0 + h, cy0 + th);
+      if (bx <= ax || by <= ay) continue;
+      pieces.push([lat[i][0], lat[i][1], ax, ay, bx - ax, by - ay]);
+    }
+    for (let k = 0; k < pieces.length; k++) {
+      const pc = pieces[k]; let src;
+      const sx = pc[2] - pc[0], sy = pc[3] - pc[1], sw = pc[4], sh = pc[5];
+      if (sx < 0 || sy < 0 || sx + sw > cv.width || sy + sh > cv.height) continue;
+      try { src = ctx.getImageData(sx, sy, sw, sh).data; } catch (e) { return; }
+      for (let r = 0; r < sh; r++) {
+        const from = r * sw * 4, to = ((pc[3] - ry0 + r) * w + (pc[2] - rx0)) * 4;
+        buf.set(src.subarray(from, from + sw * 4), to);
       }
     }
-    id.data.set(out); ctx.putImageData(id, x0, y0);
+    const id = new ImageData(buf.subarray(0, need), w, h);
+    lqApply(id, w, h, rx0, ry0, cx, cy, R, sc, mode, strength, dx, dy, reps);
+    for (let k = 0; k < pieces.length; k++) {
+      const pc = pieces[k];
+      const sx = pc[2] - pc[0], sy = pc[3] - pc[1];
+      if (sx < 0 || sy < 0 || sx + pc[4] > cv.width || sy + pc[5] > cv.height) continue;
+      ctx.putImageData(id, rx0 - pc[0], ry0 - pc[1], pc[2] - rx0, pc[3] - ry0, pc[4], pc[5]);
+    }
+    lqSentinel(ctx);
+  }
+  // ---- Liquify session: one resample, not one per step ----
+  // Warping the picture step by step (each step resamples pixels that an earlier step had already resampled) softens every colour boundary a
+  // little more with each step: after a few strokes a crisp edge is several pixels wide. A session keeps the picture as it was when the stroke
+  // began (I0) plus a displacement field D ("this pixel now shows what used to be at p + D(p)"). Every step only updates D inside the brush circle
+  // and redraws those pixels with ONE sample of I0, so the blur no longer builds up with the number of steps. Used for the live stroke and for the
+  // replay of saved strokes; very large or unusual (half-drop / brick) layouts fall back to the old step-by-step warp.
+  let _lqSOut = null, _lqSD = null, _lqSRow = null;
+  function liquifyBegin(ctx, wrap) {
+    const S = { ctx, wrap, init: false, fallback: false };
+    return {
+      step(x, y, mode, strength, radius, dx, dy, reps) {
+        if (!S.init) lqSessInit(S);
+        if (!S.fallback && (ctx.canvas.width !== S.cw || ctx.canvas.height !== S.ch)) S.fallback = true;
+        if (!S.fallback) { try { if (lqSessStep(S, x, y, mode, strength, radius, dx, dy, reps)) return; } catch (e) { S.fallback = true; } S.fallback = true; }
+        return liquifyStep(ctx, x, y, mode, strength, radius, dx, dy, reps, wrap);
+      },
+      end() { S.I0 = S.D = S.cur = S.curImg = null; }
+    };
+  }
+  function lqSessInit(S) {
+    S.init = true;
+    const ctx = S.ctx, cv = ctx.canvas, wrap = S.wrap;
+    S.cw = cv.width; S.ch = cv.height;
+    if (!ctx.getTransform) { S.fallback = true; return; }
+    const m = ctx.getTransform(); S.m = m; S.sc = Math.max(0.05, Math.abs(m.a));
+    try {
+      let ox = 0, oy = 0, dw = cv.width, dh = cv.height;
+      if (wrap) {
+        const tx = Math.round(m.a * wrap.x + m.e), ty = Math.round(m.d * wrap.y + m.f), tw = Math.round(m.a * wrap.w), th = Math.round(m.d * wrap.h);
+        const lat = wrap.lat.map(v => [Math.round(v[0] * m.a), Math.round(v[1] * m.d)]);
+        const near = (v, u) => Math.abs(v - Math.round(v / u) * u) <= 2;
+        if (!(tw >= 4 && th >= 4 && tx >= 0 && ty >= 0 && tx + tw <= cv.width && ty + th <= cv.height && lat.every(v => near(v[0], tw) && near(v[1], th)))) { S.fallback = true; return; }
+        if (!cv._lqNorm) lqNormalize(ctx, wrap, m);
+        ox = tx; oy = ty; dw = tw; dh = th; S.lat = lat;
+      }
+      if (dw * dh > 8e6) { S.fallback = true; return; }
+      const img = ctx.getImageData(ox, oy, dw, dh);
+      S.I0 = new Uint8ClampedArray(img.data); // the picture as it was when the stroke began
+      S.cur = img.data; S.curImg = img; // the live copy of the picture is kept here, so a step never has to read pixels back from the canvas (slow on iPad)
+      S.D = new Float32Array(dw * dh * 2);
+      S.ox = ox; S.oy = oy; S.dw = dw; S.dh = dh;
+    } catch (e) { S.fallback = true; }
+  }
+  function lqSessStep(S, x, y, mode, strength, radius, dx, dy, reps) {
+    const ctx = S.ctx, cv = ctx.canvas, m = S.m, sc = S.sc, wrap = S.wrap, dw = S.dw, dh = S.dh, I0 = S.I0, D = S.D;
+    const R = Math.max(2, radius * sc), R2 = R * R;
+    let cx = m.a * x + m.e - S.ox, cy = m.d * y + m.f - S.oy;
+    if (wrap) { cx = ((cx % dw) + dw) % dw; cy = ((cy % dh) + dh) % dh; }
+    let x0 = Math.floor(cx - R) - 1, y0 = Math.floor(cy - R) - 1, x1 = Math.ceil(cx + R) + 1, y1 = Math.ceil(cy + R) + 1;
+    if (!wrap) { x0 = Math.max(0, x0); y0 = Math.max(0, y0); x1 = Math.min(dw, x1); y1 = Math.min(dh, y1); }
+    const w = x1 - x0, h = y1 - y0;
+    if (w < 2 || h < 2) return true;
+    if (w * h > 4e6 || (wrap && (w > dw || h > dh))) return false;
+    const n4 = w * h * 4;
+    // where the new colours go: the tile cell itself when wrapping, else the pixels of the canvas under the brush
+    let dst, patch = null;
+    dst = S.cur;
+    if (!_lqSD || _lqSD.length < w * h * 2) _lqSD = new Float32Array(w * h * 2);
+    if (!_lqSRow || _lqSRow.length < h * 2) _lqSRow = new Int32Array(h * 2);
+    const nD = _lqSD, rows = _lqSRow;
+    const W4 = dw * 4;
+    const ang = (mode === 'twirlR' ? 1 : mode === 'twirlL' ? -1 : 0) * 0.075 * strength;
+    const pf = mode === 'pinch' ? 1 : mode === 'bloat' ? -1 : 0;
+    let tbl = null; const TN = 192;
+    if (pf && reps > 1) {
+      tbl = new Float32Array(TN + 1);
+      for (let i = 0; i <= TN; i++) {
+        const r = Math.max(R * 0.002, i / TN * R); let q = r, rem = Math.min(reps, 400);
+        while (rem > 0) { const part = rem >= 1 ? 1 : rem; rem -= part; const dd = q * q; if (dd >= R2) break; const uu = 1 - dd / R2; q *= 1 + pf * uu * uu * strength * part * 0.042; }
+        tbl[i] = q / r;
+      }
+    }
+    const isPush = mode === 'push', pdx = dx * sc, pdy = dy * sc, bigAng = Math.abs(ang) > 0.3;
+    const md = (v, k) => ((v % k) + k) % k;
+    for (let py = 0; py < h; py++) {
+      rows[py * 2] = 1; rows[py * 2 + 1] = 0; // empty
+      const gy = y0 + py + 0.5 - cy, gy2 = gy * gy;
+      if (gy2 >= R2) continue;
+      const half = Math.sqrt(R2 - gy2);
+      const pxs = Math.max(0, Math.ceil(cx - half - x0 - 0.5)), pxe = Math.min(w - 1, Math.floor(cx + half - x0 - 0.5));
+      rows[py * 2] = pxs; rows[py * 2 + 1] = pxe;
+      const Y = y0 + py;
+      for (let px = pxs; px <= pxe; px++) {
+        const gx = x0 + px + 0.5 - cx, d2 = gx * gx + gy2;
+        const o4 = ((wrap ? md(Y, dh) : Y) * dw + (wrap ? md(x0 + px, dw) : x0 + px)) * 4;
+        if (d2 >= R2) { nD[(py * w + px) * 2] = NaN; continue; }
+        const u = 1 - d2 / R2, u2 = u * u, k = u2 * strength;
+        let sx, sy;
+        if (isPush) { sx = gx - pdx * k; sy = gy - pdy * k; }
+        else if (tbl) { const f = Math.sqrt(d2) / R * TN, i0 = f | 0, i1 = i0 < TN ? i0 + 1 : TN, k2 = tbl[i0] + (tbl[i1] - tbl[i0]) * (f - i0); sx = gx * k2; sy = gy * k2; }
+        else if (pf) {
+          let qx = gx, qy = gy, rem = reps > 1 ? Math.min(reps, 400) : 1;
+          while (rem > 0) { const part = rem >= 1 ? 1 : rem; rem -= part; const dd = qx * qx + qy * qy; if (dd >= R2) break; const uu = 1 - dd / R2; qx *= 1 + pf * uu * uu * strength * part * 0.042; qy *= 1 + pf * uu * uu * strength * part * 0.042; }
+          sx = qx; sy = qy;
+        }
+        else if (bigAng) { const a2 = ang * u2, c2 = Math.cos(a2), s2 = -Math.sin(a2); sx = gx * c2 - gy * s2; sy = gx * s2 + gy * c2; }
+        else { const a2 = ang * u2, c2 = 1 - a2 * a2 * 0.5, s2 = -(a2 - a2 * a2 * a2 / 6); sx = gx * c2 - gy * s2; sy = gx * s2 + gy * c2; }
+        // q: where this step takes the colour from (in the picture as it is now); D(q) says where that colour really lives in I0
+        const qx = sx + cx - 0.5, qy = sy + cy - 0.5;
+        let ix = Math.floor(qx), iy = Math.floor(qy), ux = qx - ix, uy = qy - iy, ddx = 0, ddy = 0;
+        {
+          let xa = ix, xb = ix + 1, ya = iy, yb = iy + 1, ok = true;
+          if (wrap) { xa = md(xa, dw); xb = md(xb, dw); ya = md(ya, dh); yb = md(yb, dh); }
+          else if (xa < 0 || ya < 0 || xb >= dw || yb >= dh) { // the edge of the canvas: treat what lies outside as "not moved"
+            ok = false;
+            const gxa = Math.min(dw - 1, Math.max(0, xa)), gxb = Math.min(dw - 1, Math.max(0, xb)), gya = Math.min(dh - 1, Math.max(0, ya)), gyb = Math.min(dh - 1, Math.max(0, yb));
+            const i00 = (gya * dw + gxa) * 2, i10 = (gya * dw + gxb) * 2, i01 = (gyb * dw + gxa) * 2, i11 = (gyb * dw + gxb) * 2;
+            const w00 = (1 - ux) * (1 - uy), w10 = ux * (1 - uy), w01 = (1 - ux) * uy, w11 = ux * uy;
+            ddx = D[i00] * w00 + D[i10] * w10 + D[i01] * w01 + D[i11] * w11; ddy = D[i00 + 1] * w00 + D[i10 + 1] * w10 + D[i01 + 1] * w01 + D[i11 + 1] * w11;
+          }
+          if (ok) {
+            const i00 = (ya * dw + xa) * 2, i10 = (ya * dw + xb) * 2, i01 = (yb * dw + xa) * 2, i11 = (yb * dw + xb) * 2;
+            const w00 = (1 - ux) * (1 - uy), w10 = ux * (1 - uy), w01 = (1 - ux) * uy, w11 = ux * uy;
+            ddx = D[i00] * w00 + D[i10] * w10 + D[i01] * w01 + D[i11] * w11; ddy = D[i00 + 1] * w00 + D[i10 + 1] * w10 + D[i01 + 1] * w01 + D[i11 + 1] * w11;
+          }
+        }
+        const tx = qx + ddx, ty = qy + ddy;
+        nD[(py * w + px) * 2] = tx - (x0 + px); nD[(py * w + px) * 2 + 1] = ty - Y;
+        // one bilinear sample of the ORIGINAL picture (premultiplied alpha, so transparent pixels do not darken the colours)
+        const fx = Math.floor(tx), fy = Math.floor(ty), vx = tx - fx, vy = ty - fy;
+        let r = 0, g = 0, b = 0, a = 0;
+        for (let t = 0; t < 4; t++) {
+          let sxi = fx + (t & 1), syi = fy + (t >> 1);
+          if (wrap) { sxi = md(sxi, dw); syi = md(syi, dh); } else if (sxi < 0 || syi < 0 || sxi >= dw || syi >= dh) continue;
+          const wt = ((t & 1) ? vx : 1 - vx) * ((t >> 1) ? vy : 1 - vy);
+          if (wt <= 0) continue;
+          const o = syi * W4 + sxi * 4, al = I0[o + 3] / 255 * wt;
+          r += I0[o] * al; g += I0[o + 1] * al; b += I0[o + 2] * al; a += al;
+        }
+        if (a > 0.002) { dst[o4] = r / a; dst[o4 + 1] = g / a; dst[o4 + 2] = b / a; dst[o4 + 3] = a * 255; } else { dst[o4] = dst[o4 + 1] = dst[o4 + 2] = dst[o4 + 3] = 0; }
+      }
+    }
+    // commit the new displacement for the pixels that were redrawn
+    for (let py = 0; py < h; py++) {
+      const a0 = rows[py * 2], a1 = rows[py * 2 + 1], Y = wrap ? md(y0 + py, dh) : y0 + py;
+      for (let px = a0; px <= a1; px++) {
+        const v = nD[(py * w + px) * 2]; if (v !== v) continue; // NaN: outside the circle
+        const di = (Y * dw + (wrap ? md(x0 + px, dw) : x0 + px)) * 2;
+        D[di] = v; D[di + 1] = nD[(py * w + px) * 2 + 1];
+      }
+    }
+    if (!wrap) { ctx.putImageData(S.curImg, 0, 0, x0, y0, w, h); if (x0 === 0 && y0 === 0) lqSentinel(ctx); return true; }
+    // wrapping: only the tile cell holds the picture (the app repeats it on screen), so write the changed part of the cell back
+    const xa = md(x0, dw), ya = md(y0, dh);
+    const xr = xa + w <= dw ? [[xa, w]] : [[xa, dw - xa], [0, w - (dw - xa)]];
+    const yr = ya + h <= dh ? [[ya, h]] : [[ya, dh - ya], [0, h - (dh - ya)]];
+    for (const [rx, rw] of xr) for (const [ry, rh] of yr) ctx.putImageData(S.curImg, S.ox, S.oy, rx, ry, rw, rh);
+    lqSentinel(ctx);
+    return true;
+  }
+  // A long hold (twirl / pinch / bloat) is stored as hundreds of tiny steps at almost the same spot, and a long push drag as hundreds
+  // of tiny moves. Replaying all of them on every project open / layer rebuild is what made big projects unusable. Neighbouring steps
+  // are merged here: for a hold the result is the same (rotation and scaling about one centre simply add up), for a push it is
+  // within a hair of the original.
+  function liquifyMerge(pts, size) {
+    const out = [], lim = Math.max(2, size * 0.06), plim = Math.max(4, size * 0.22);
+    let run = null;
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i], m = p.m || 'push', s = p.s || 1, pdx = p.dx || 0, pdy = p.dy || 0, last = out[out.length - 1];
+      if (last && last.m === m) {
+        if (m !== 'push') {
+          if (Math.hypot(p.x - last.x, p.y - last.y) < lim) { const tot = last.s + s; last.x = (last.x * last.s + p.x * s) / tot; last.y = (last.y * last.s + p.y * s) / tot; last.s = tot; continue; }
+        } else {
+          const l = Math.hypot(pdx, pdy);
+          if (run.len + l <= plim) { last.dx += pdx; last.dy += pdy; last.x = (last.x * run.n + p.x) / (run.n + 1); last.y = (last.y * run.n + p.y) / (run.n + 1); run.n++; run.len += l; continue; }
+        }
+      }
+      out.push({ x: p.x, y: p.y, m: m, dx: pdx, dy: pdy, s: s }); run = { n: 1, len: Math.hypot(pdx, pdy) };
+    }
+    return out;
+  }
+  // Stored form of a liquify stroke: the same merged steps the replay uses, with only the fields that matter (a long hold used to be thousands of steps, which every undo step, save and timelapse copied again)
+  function liquifyCompact(pts, size) {
+    const r1 = v => Math.round(v * 10) / 10, r2 = v => Math.round(v * 100) / 100;
+    return liquifyMerge(pts || [], size || 80).map(p => {
+      const o = { x: r1(p.x), y: r1(p.y), m: p.m, pressure: 0.5 };
+      if (p.m === 'push') { o.dx = r2(p.dx); o.dy = r2(p.dy); } else if (p.s && Math.abs(p.s - 1) > 0.001) o.s = r2(p.s);
+      return o;
+    });
   }
   function liquifyStroke(ctx, stroke) {
     const st = stroke.settings || {}, lq = st.liquify || {};
-    const pts = stroke.points || [];
-    for (let i = 0; i < pts.length; i++) {
-      const p = pts[i];
-      liquifyStep(ctx, p.x, p.y, p.m || lq.mode || 'push', lq.strength == null ? 0.8 : lq.strength, lq.size || 80, p.dx || 0, p.dy || 0);
-    }
+    const size = lq.size || 80, base = lq.strength == null ? 0.8 : lq.strength;
+    const pts = liquifyMerge(stroke.points || [], size);
+    let wrap = null; if (lq.wrap !== 0 && BrushEngine_wrap.get) { try { wrap = BrushEngine_wrap.get(); } catch (e) { wrap = null; } }
+    const sess = liquifyBegin(ctx, wrap);
+    try {
+      for (let i = 0; i < pts.length; i++) {
+        const p = pts[i];
+        const m = p.m || lq.mode || 'push', sv = p.s || 1, hold = m === 'pinch' || m === 'bloat';
+        sess.step(p.x, p.y, m, hold ? base : base * sv, size, p.dx || 0, p.dy || 0, hold ? sv : 1);
+      }
+    } finally { sess.end(); }
   }
   function smudgeStroke(ctx, stroke) {
     const st = stroke.settings || {};
     if (st.clone) return cloneStroke(ctx, stroke);
     if (st.liquify) return liquifyStroke(ctx, stroke);
     const sb = st.sb ? byId.get(st.sb) : null;
-    const sm = makeSmudger(ctx, Math.max(1, (st.size || 30) / 2), (st.opacity == null ? 70 : st.opacity) / 100, sb && sb.id !== 'eraser' ? sb : null);
-    let pts = resample(stroke.points, sm.step * 1.5);
-    if (pts.length > 500) { const k = pts.length / 500; pts = Array.from({ length: 500 }, (_, i) => pts[Math.min(pts.length - 1, Math.floor(i * k))]); }
+    const sm = makeSmudger(ctx, Math.max(1, (st.size || 30) / 2), (st.opacity == null ? 70 : st.opacity) / 100, sb && sb.id !== 'eraser' ? sb : null, st.blend ? 'blend' : null);
+    let pts = resample(stroke.points, st.blend ? sm.step : sm.step * 1.5); // blend is replayed at the spacing it was drawn with, so it looks the same after lifting
+    if (pts.length > (st.blend ? 4000 : 500)) { const cap = st.blend ? 4000 : 500; const k = pts.length / cap; pts = Array.from({ length: cap }, (_, i) => pts[Math.min(pts.length - 1, Math.floor(i * k))]); }
     try { for (let i = 0; i < pts.length; i++) sm.to(pts[i].x, pts[i].y); } finally { sm.done(); }
   }
   function renderStroke(ctx, stroke, brush, settings, alphaMul) {
     if (!stroke.points || stroke.points.length === 0) return;
-    if (stroke.brushId === 'smudge') { if (BrushEngine_skipSmudge.on) return; try { smudgeStroke(ctx, stroke); } catch (e) {} return; }
+    if (stroke.brushId === 'smudge') { if (BrushEngine_skipSmudge.on) return; if (BrushEngine_skipSmudge.until && performance.now() > BrushEngine_skipSmudge.until) { BrushEngine_skipSmudge.hit = true; return; } try { smudgeStroke(ctx, stroke); } catch (e) {} return; }
+    try { ctx.canvas._lqNorm = false; } catch (e) { }
     if (alphaMul === undefined) alphaMul = 1;
     if (alphaMul <= 0) return; // fully hidden — skip dabs entirely rather than stamp at opacity 0
     if (brush.id === 'watercolour' && settings && settings.engine === 'raster') { try { renderWatercolour(ctx, stroke, brush, settings, alphaMul); } catch (e) { try { renderBase(ctx, stroke, brush, settings, alphaMul); } catch (e2) {} } return; }
+    // Raster solid ink with no dryness and no wet mix is just a solid line: Raster paints dabs into a buffer that saturates to one flat colour, so the continuous
+    // outline gives the identical result (same size, taper and Pencil-pressure width) without the bead edges and broken tips that spaced dabs leave.
+    if (settings && settings.engine === 'raster' && !(settings.dryness > 0) && !(settings.wetMix > 0) && brush.id !== 'eraser' && brush.id !== 'watercolour' && outlineInk(brush, Object.assign({}, settings, { pressureOpacity: 0 }))) { renderBase(ctx, stroke, brush, Object.assign({}, settings, { pressureOpacity: 0 }), alphaMul); return; }
     if (settings && settings.engine === 'raster' && !brush.stamp && !brush.nib && !brush.path && !brush.fx && brush.id !== 'eraser') { try { renderRaster(ctx, stroke, brush, settings, alphaMul); } catch (e) { try { renderBase(ctx, stroke, brush, settings, alphaMul); } catch (e2) {} } return; }
     if (brush.fx && fxActive(brush)) { renderWithFx(ctx, stroke, brush, settings, alphaMul); return; }
     renderBase(ctx, stroke, brush, settings, alphaMul);
@@ -1061,18 +1638,38 @@
     // when light pressure shrinks it), so the stroke breaks into visible dots, worst when zoomed in.
     // Cap the gap to a fraction of the dab's narrowest width; sizes of ~3.5+ are unchanged.
     const narrow = Math.max(0.35, 1 - settings.pressureWidth / 100);
-    spacingPx = Math.max(0.2, Math.min(spacingPx, settings.size * narrow * 0.6));
-    const pts = resample(stroke.points, spacingPx);
+    const solidInk = brush.family === 'inking' && brush.hardness >= 0.98 && !(brush.jitter > 0) && !(brush.streaky > 0) && !hasCdyn(brush);
+    spacingPx = Math.max(0.2, Math.min(spacingPx, settings.size * narrow * (solidInk ? 0.3 : 0.6)));
+    // A width-profiled stroke (settings._wpFine): spacing follows the dab's own width, so tapered tips stay solid lines.
+    const pts = settings._wpFine
+      ? resampleVar(stroke.points, pr => Math.max(0.12, Math.min(spacingPx, settings.size * pressureFactor(pr, settings.pressureWidth) * 0.22)))
+      : resample(stroke.points, spacingPx);
+    if (outlineInk(brush, settings)) { renderOutlineInk(ctx, pts, stroke, brush, settings, alphaMul); return; }
     const rand = seededRandom(stroke.id || 'live');
     const baseHsl = hasCdyn(brush) ? hexToHsl(stroke.color || '#000000') : null;
     const cdyn = !!baseHsl, rand2 = cdyn ? seededRandom((stroke.id || 'live') + 'c') : null;
     const n = pts.length;
     const hold = Math.max(1, Math.round(settings.size * 0.2 / spacingPx));
     let curCol = stroke.color || '#000000';
-    pts.forEach((pt, i) => {
+    // Solid ink: where a taper or light pressure shrinks the dab, the fixed spacing leaves it wider than the dab itself and the line breaks into separate dots.
+    // Add in-between dabs (position, pressure and taper all blended) so the line stays joined down to its finest point.
+    let dabs = pts, tmul = null;
+    if (solidInk) {
+      dabs = []; tmul = [];
+      for (let i = 0; i < n; i++) {
+        const pt = pts[i], tm = taperAt(brush, i, n), r = (settings.size / 2) * pressureFactor(pt.pressure, settings.pressureWidth) * tm;
+        if (i > 0) {
+          const q = pts[i - 1], qm = tmul[tmul.length - 1], rq = (settings.size / 2) * pressureFactor(q.pressure, settings.pressureWidth) * qm;
+          const gap = Math.hypot(pt.x - q.x, pt.y - q.y), need = Math.max(0.15, 0.35 * Math.min(r, rq));
+          if (gap > need) { const k = Math.min(60, Math.ceil(gap / need)); for (let j = 1; j < k; j++) { const f = j / k; dabs.push({ x: q.x + (pt.x - q.x) * f, y: q.y + (pt.y - q.y) * f, pressure: q.pressure + (pt.pressure - q.pressure) * f }); tmul.push(qm + (tm - qm) * f); } }
+        }
+        dabs.push(pt); tmul.push(tm);
+      }
+    }
+    dabs.forEach((pt, i) => {
       const widthMul = pressureFactor(pt.pressure, settings.pressureWidth);
       const opMul = pressureFactor(pt.pressure, settings.pressureOpacity);
-      const taperMul = taperAt(brush, i, n);
+      const taperMul = tmul ? tmul[i] : taperAt(brush, i, n);
       let radius = (settings.size / 2) * widthMul * taperMul;
       let opacity = (settings.opacity / 100) * opMul * alphaMul;
       if (brush.jitter > 0) {
@@ -1088,6 +1685,56 @@
       }
       stampDab(ctx, x, y, radius, opacity, (cdyn && i % hold === 0 ? (curCol = dynColor(baseHsl, brush.cdyn, rand2)) : curCol), brush.hardness);
     });
+  }
+
+  // ---- Solid ink as ONE continuous outline ----
+  // Tapered Ink (and Technical Pen) used to be built from hundreds of overlapping round dabs, each painted at the stroke's opacity. Where dabs overlap the
+  // opacity piles up, so a 57% navy stroke came out as full-strength navy (nearly black), and at high zoom the edge showed a row of beads. The same dabs are
+  // now joined into a single outline (a circle at every sample plus the smooth shape joining each neighbouring pair) and filled once, so the opacity is
+  // exactly what was chosen, the edge is smooth at any zoom, and the shape is the same one the dabs covered.
+  function outlineInk(brush, settings) {
+    return brush.family === 'inking' && !brush.stamp && !brush.nib && !brush.path && !brush.fx && brush.hardness >= 0.98 && !(brush.jitter > 0) && !(brush.streaky > 0) && !hasCdyn(brush) && !(settings.pressureOpacity > 20); // a light Pencil-pressure→opacity setting (up to 20%) is applied as the stroke's average
+  }
+  function renderOutlineInk(ctx, pts, stroke, brush, settings, alphaMul) {
+    let opM = 1;
+    if (settings.pressureOpacity > 0 && pts.length) { let t = 0; for (let i = 0; i < pts.length; i++) t += pressureFactor(pts[i].pressure, settings.pressureOpacity); opM = t / pts.length; }
+    const op = Math.max(0, Math.min(1, (settings.opacity / 100) * alphaMul * opM));
+    if (!pts.length || op <= 0) return;
+    // The dabs were laid ~0.6 px apart, far closer than a joined outline needs. Keep a sample only once it is about 0.3 of a dab radius from the last
+    // kept one (always keeping the ends, and every sample where the stroke is tightly curved), so the path stays small and fast.
+    const n0 = pts.length, R0 = new Array(n0);
+    for (let i = 0; i < n0; i++) R0[i] = (settings.size / 2) * pressureFactor(pts[i].pressure, settings.pressureWidth) * taperAt(brush, i, n0);
+    const keep = [0]; let lh = null; // lh: heading of the last kept step
+    for (let i = 1; i < n0 - 1; i++) {
+      const k = keep[keep.length - 1], l = pts[k], dx = pts[i].x - l.x, dy = pts[i].y - l.y, dd = Math.hypot(dx, dy);
+      if (dd < Math.max(0.4, 0.2 * R0[i])) continue;
+      let turn = 0; if (lh !== null) { turn = Math.abs(Math.atan2(dy, dx) - lh); if (turn > Math.PI) turn = 2 * Math.PI - turn; }
+      if (dd >= Math.max(0.4, 0.6 * R0[i]) || turn > 0.06 || Math.abs(R0[i] - R0[k]) > 0.08 * R0[i]) { keep.push(i); lh = Math.atan2(dy, dx); }
+    }
+    if (n0 > 1) keep.push(n0 - 1);
+    const n = keep.length, R = keep.map((i) => R0[i]); pts = keep.map((i) => pts[i]);
+    ctx.save();
+    ctx.globalAlpha = op; ctx.fillStyle = stroke.color || '#000000';
+    ctx.beginPath();
+    // A round cap at every kept sample. Leaving them out along "nearly straight" runs looked fine at normal zoom, but two joined pieces meeting at even a tiny
+    // angle leave a thin wedge uncovered on the outside of the turn, which showed as pale seams across the stroke and a stepped edge once zoomed in.
+    for (let i = 0; i < n; i++) {
+      if (!(R[i] > 0)) continue;
+      ctx.moveTo(pts[i].x + R[i], pts[i].y); ctx.arc(pts[i].x, pts[i].y, R[i], 0, Math.PI * 2);
+    }
+    for (let i = 0; i < n - 1; i++) {
+      const r0 = R[i], r1 = R[i + 1]; if (!(r0 > 0) || !(r1 > 0)) continue;
+      const x0 = pts[i].x, y0 = pts[i].y, dx = pts[i + 1].x - x0, dy = pts[i + 1].y - y0, d = Math.hypot(dx, dy);
+      if (d <= Math.abs(r0 - r1) + 1e-6) continue; // one dab sits inside the next: nothing to join
+      const a = Math.atan2(dy, dx), phi = Math.acos((r0 - r1) / d), t1 = a + phi, t2 = a - phi, c1 = Math.cos(t1), s1 = Math.sin(t1), c2 = Math.cos(t2), s2 = Math.sin(t2);
+      const ax = x0 + r0 * c1, ay = y0 + r0 * s1, bx = pts[i + 1].x + r1 * c1, by = pts[i + 1].y + r1 * s1, cx = pts[i + 1].x + r1 * c2, cy = pts[i + 1].y + r1 * s2, ex = x0 + r0 * c2, ey = y0 + r0 * s2;
+      const area = (ax * by - bx * ay) + (bx * cy - cx * by) + (cx * ey - ex * cy) + (ex * ay - ax * ey); // every piece is wound the same way, so one fill adds them up (union)
+      ctx.moveTo(ax, ay);
+      if (area >= 0) { ctx.lineTo(bx, by); ctx.lineTo(cx, cy); ctx.lineTo(ex, ey); } else { ctx.lineTo(ex, ey); ctx.lineTo(cx, cy); ctx.lineTo(bx, by); }
+      ctx.closePath();
+    }
+    ctx.fill('nonzero');
+    ctx.restore();
   }
 
   // ---- Taper (separate start / end lengths, as a fraction of the stroke) ----
@@ -1257,9 +1904,9 @@
   global.BrushEngine = {
     BRUSHES, FAMILY_ORDER, FAMILY_LABEL, ERASER,
     getBrush, isVector, taperAt, registerStampBrush, unregisterStampBrush, makeCustomBrush, registerCustomBrush,
-    getSettings, setSettings,
+    getSettings, setSettings, resetSettings, resetAllSettings, restoreSettingsBackup, exportSettings, mergeSettings, settingsFromStrokes,
     touchRecent, getRecents,
     isFavorite, toggleFavorite, getFavorites,
-    underlay: null, skipSmudge: BrushEngine_skipSmudge, liveEnd, makeSmudger, makeCloner, liquifyStep, pressureFactor, stampDab, colorWithAlpha, resample, renderStroke, smoothPoints, seededRandom,
+    underlay: null, outlineInk, skipSmudge: BrushEngine_skipSmudge, wrap: BrushEngine_wrap, liveEnd, makeSmudger, makeCloner, liquifyStep, liquifyBegin, liquifyCompact, liquifyGL: _lq, pressureFactor, stampDab, colorWithAlpha, resample, renderStroke, smoothPoints, seededRandom,
   };
 })(window);

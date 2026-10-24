@@ -12,7 +12,8 @@ const out = path.join(root, 'www');
 const files = [
   'index.html', 'vendor/pdf.min.mjs', 'vendor/pdf.worker.min.mjs', 'brush-engine.js', 'fonts.js', 'polybool.min.js', 'native-bridge.js',
   'manifest.webmanifest', 'sw.js',
-  'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png'
+  'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
+  'mockups/mug-photo.jpg', 'mockups/mug-mask.png'
 ];
 
 fs.rmSync(out, { recursive: true, force: true });
