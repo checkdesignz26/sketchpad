@@ -888,3 +888,9 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v481 — Pick the colour to shade
 - Inner shadow section: "🎯 Pick the colour to shade". Next canvas tap selects the colour fill under the finger (skips outlines/face lines on top), then Add shadow / Add highlight.
+
+## v482 — Tidy fills and layers
+- Empty Fill / Shadow / Highlight layers are removed automatically when their last shape is deleted (Area Fill layers are now auto layers).
+- Layers panel: "🧹 Remove duplicate fills" deletes identical stacked colour fills and the empty layers they leave.
+- Selecting a shape scrolls its layer into view in the Layers panel.
+- Test hook `__sketchpadShadow`.
