@@ -838,3 +838,7 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 ## v251 — Liquify Paint (marbling) + fill on open lines
 - Liquify has a **Paint / Lines** switch (Paint is the default). **Paint** moves the actual pixels of the active layer, so neighbouring colours smear and swirl into each other like marbling (Push, Pinch, Bloat, Twirl). Stored as a replayed raster step like Smudge: undo, save and hi-res export match. **Lines** is the old vector behaviour (sharp, editable).
 - Fill now works on open lines too (filled as if the ends were joined); the "only closed shapes" block is gone.
+
+## v252 — Motif boxes fit the artwork
+- Capturing a motif no longer lets stray specks or faint ghost pixels stretch its box (robust bounds: ignores alpha<=24 and tiny far-away clusters).
+- New **✂ Trim box to artwork** (selected motif) and **All motifs** buttons in Selected Motif: crops the motif picture and adjusts every placed copy so nothing moves visually; undoable.
