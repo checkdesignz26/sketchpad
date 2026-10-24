@@ -864,6 +864,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 - Closed pen shapes now fill automatically when fill colour = stroke colour (or Auto-fill is on).
 - Pen overlay restyled: thin blue 1.25px path with faint width ghost, small square anchors, hollow ring on the first point, slim handles.
 
-## v473 — Inner shadow
+## v473/v474 — Inner shadow (v474 moves it into the Stroke panel Fill box)
 - New "🌓 Inner shadow" section (above Shape builder): select a filled shape, choose light direction, size, darkness, tap Add shadow.
 - Shadow = fill shape minus itself nudged toward the light (PolyBool), so it stays inside the fill; inserted straight above the fill and under the outline line. Strokes carry `shadowOf`; deleted with their shape, Remove button clears it.

@@ -1595,7 +1595,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v473'; // keep in step with CACHE in sw.js
+const APP_V='v474'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -11310,6 +11310,7 @@ function mountEasyFill(host){
   patBtn.title='Put a pattern or image inside the selected closed shape, on its own layer';
   patBtn.onclick=()=>patClipAction();
   host.appendChild(r1);host.appendChild(hint);host.appendChild(patBtn);
+  try{const sh=document.getElementById('shadowSection');if(sh){sh.style.margin='8px 0 0';host.appendChild(sh);}}catch(e){} // inner shadow lives right in the Fill box
   tg.onclick=()=>{
     const s=efOutline();if(!s)return;
     if(s.fill&&s.fill.on){s.fill.on=false;}
