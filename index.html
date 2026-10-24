@@ -1562,7 +1562,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v445'; // keep in step with CACHE in sw.js
+const APP_V='v446'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -3733,6 +3733,8 @@ async function resizeProjectFlow(){
 // ---- Watermark grid -------------------------------------------------------------------------------------------------------------
 // Repeats a line of text in a neat grid over the whole pattern, on its own layer called "Watermark" (every copy is ordinary editable text).
 // Running it again replaces the earlier grid. Delete the layer to remove it.
+// The watermark logo is a motif only so it is saved with the project: it stays out of the tray, the pattern brush list and the Procreate brush set.
+function isWmMotif(e){return !!(e&&e.name==='Watermark logo');}
 async function watermarkLogoGrid(r,old){
   const cols=Math.round(+r.cols),rows=Math.round(+r.rows),ang=(+r.ang||0),rad=ang*Math.PI/180;
   let src;
@@ -4833,7 +4835,7 @@ function motifTipFor(entry,px){
 // the motif is stamped along it. Kept in step with the motif list from renderTray.
 function syncStampBrushes(){
   let changed=false;
-  const want=new Map(motifs.filter(m=>m.img&&(m.img.naturalWidth||m.img.width)).map(m=>['stamp:'+m.id,m]));
+  const want=new Map(motifs.filter(m=>!isWmMotif(m)&&m.img&&(m.img.naturalWidth||m.img.width)).map(m=>['stamp:'+m.id,m]));
   BrushEngine.BRUSHES.filter(b=>b.stamp&&String(b.id).startsWith('stamp:')&&!want.has(b.id)).map(b=>b.id).forEach(id=>{BrushEngine.unregisterStampBrush(id);changed=true;if(activeBrushId===id){activeBrushId='smoothPen';}});
   want.forEach((m,id)=>{const b=BrushEngine.BRUSHES.find(x=>x.id===id);if(!b||b.stampImg!==m.img||b.name!==m.name){const nb=BrushEngine.registerStampBrush(id,m.name,m.img);if(nb)nb.tipFn=px=>motifTipFor(m,px);changed=true;}});
   if(changed){
@@ -4845,8 +4847,9 @@ function renderTray(){
   syncStampBrushes();
   renderBrushSetList();
   const tray=$('motifTray');tray.innerHTML='';
-  $('motifEmpty').style.display=motifs.length?'none':'block';
+  $('motifEmpty').style.display=motifs.some(m=>!isWmMotif(m))?'none':'block';
   motifs.forEach(m=>{
+    if(isWmMotif(m))return;
     const card=document.createElement('div');card.className='motif-card';
     card.innerHTML=`<img src="${motifThumb(m)}" alt=""><button class="x">×</button><div class="small">${m.name}</div>`;
     card.querySelector('img').onclick=()=>placeMotif(m.id,m.img);
@@ -10720,7 +10723,7 @@ function patPick(){
     const grid=ov.querySelector('#ppGrid');let done=false;
     const fin=v=>{if(done)return;done=true;ov.style.display='none';resolve(v);};
     const card=(src,label,fn)=>{const c=document.createElement('div');c.className='pp-card';c.innerHTML='<img alt=""><div></div>';c.querySelector('img').src=src;c.lastChild.textContent=label;c.onclick=fn;grid.appendChild(c);};
-    motifs.filter(m=>m.img&&m.src).forEach(m=>card(motifThumb(m),m.name||'Pattern',()=>fin(m)));
+    motifs.filter(m=>!isWmMotif(m)&&m.img&&m.src).forEach(m=>card(motifThumb(m),m.name||'Pattern',()=>fin(m)));
     if(bgImg&&bgImg.src)card(bgImg.src,'Background pattern',async()=>{
       let src=bgImg.src;
       if(!/^data:/.test(src)){try{const c=document.createElement('canvas');c.width=bgImg.naturalWidth;c.height=bgImg.naturalHeight;c.getContext('2d').drawImage(bgImg,0,0);src=c.toDataURL('image/png');}catch(e){fin(null);return;}}
@@ -14365,7 +14368,7 @@ async function authorPictureFiles(){
 }
 function safeFileName(n){return String(n||'brush').trim().replace(/[^\w\- ]+/g,'').replace(/\s+/g,'-').slice(0,40)||'brush';}
 // One motif (or the selected vector path) -> one .brush ------------------------------------------------
-function motifBrushRows(){return motifs.filter(m=>m.img);}
+function motifBrushRows(){return motifs.filter(m=>m.img&&!isWmMotif(m));}
 function renderBrushSetList(){
   const host=$('brushSetList');if(!host)return;host.innerHTML='';
   const list=motifBrushRows();
