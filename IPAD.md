@@ -905,3 +905,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v485 — Highlight is a thin shine
 - Highlight now has its own "Highlight size" slider (default 10) and is a narrow arc set a little inside the edge on the light side, instead of a mirror of the shadow.
+
+## v486 — Edit shadow/highlight points from the panel
+- Shadow & highlight panel: "✏️ Edit shadow points" / "✏️ Edit highlight points" open Edit Path on the piece (tap again for the next piece). Hand-edited pieces keep their shape when sliders move; Add shadow/highlight resets to automatic.
