@@ -894,3 +894,7 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 - Layers panel: "🧹 Remove duplicate fills" deletes identical stacked colour fills and the empty layers they leave.
 - Selecting a shape scrolls its layer into view in the Layers panel.
 - Test hook `__sketchpadShadow`.
+
+## v483 — Separate delete buttons, Stroke panel reliability
+- Inner shadow section: "✖ Delete shadow" and "✖ Delete highlight" are separate buttons.
+- Tapping a layer row while Edit Path is open now finishes Edit Path first, so the Stroke panel is not left hidden.
