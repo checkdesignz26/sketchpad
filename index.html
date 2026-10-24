@@ -109,6 +109,11 @@ button,input,select{font:inherit}
    to reach instead. */
 .float-panel-done{padding:4px 10px;font-size:12.5px;cursor:pointer}
 .float-panel-handle>span:first-child{white-space:nowrap}
+#qaPanel{--qs:1}
+#qaPanel #qaGrid .btn{font-size:calc(14px*var(--qs));padding:calc(10px*var(--qs)) calc(8px*var(--qs));border-radius:calc(12px*var(--qs))}
+#qaPanel #qaGrid{gap:calc(8px*var(--qs))!important}
+#qaSizeGrip{position:absolute;right:2px;bottom:0;width:34px;height:34px;display:flex;align-items:flex-end;justify-content:flex-end;padding:0 6px 3px 0;font-size:18px;line-height:1;opacity:.6;cursor:nwse-resize;touch-action:none;user-select:none;-webkit-user-select:none}
+#qaPanel{padding-bottom:30px!important}
 .float-panel-grip{opacity:.55;font-size:17px;letter-spacing:-1px;cursor:move}
 .kf-hide{display:none!important}
 /* ---- text & fonts (v129) ---- */
@@ -1138,11 +1143,14 @@ html.in-suite .suite-only{display:block!important}
       <button id="qaMove" class="btn" title="Drag any shape, stroke or picture to move it — no need to select first">✥ Move</button>
       <button id="qaDup" class="btn" title="Duplicate the selection">⧉ Duplicate</button>
       <button id="qaDel" class="btn danger" title="Delete the selection (Undo brings it back)">🗑 Delete</button>
+      <button id="qaCopy" class="btn" title="Copy the selection (strokes, shapes, text and pictures)">📋 Copy</button>
+      <button id="qaPaste" class="btn" title="Paste what you copied. It also works in another project (strokes, shapes and text)">📥 Paste</button>
       <button id="qaFlipH" class="btn" title="Mirror the selection left to right">⇋ Flip H</button>
       <button id="qaFlipV" class="btn" title="Mirror the selection top to bottom">⇵ Flip V</button>
       <button id="qaErase" class="btn" title="Eraser on/off">🧹 Erase</button>
       <button id="qaDraw" class="btn" title="Back to drawing">✏️ Draw</button>
     </div>
+    <div id="qaSizeGrip" title="Drag to make this panel bigger or smaller">⇲</div>
   </div>
   <div class="float-panel" id="pathEditBar" style="display:none;">
     <div class="float-panel-handle" id="pathEditBarHandle">
@@ -1554,7 +1562,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v443'; // keep in step with CACHE in sw.js
+const APP_V='v444'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -18097,6 +18105,56 @@ function qaFlip(axis){
     setStatus('⇋ Nothing selected — tap a shape, stroke or picture first (Select or Move).');
   }catch(err){setStatus('Could not flip that: '+(err&&err.message||err));}
 }
+// Copy / Paste in Quick actions: strokes, shapes and text go through the same saved clipboard as "Copy to another project"; pictures (motifs) are copied inside this project.
+let qaPlacedClip=[];
+function qaCopy(){
+  try{
+    const pids=(multiSel&&multiSel.placedIds&&multiSel.placedIds.length)?multiSel.placedIds.slice():(selected?[selected]:[]);
+    const pl=placed.filter(p=>pids.includes(p.id)&&p.img);
+    const hasStrokes=!!((multiSel&&multiSel.strokeIds&&multiSel.strokeIds.length)||(selectedStrokeId&&strokes.find(x=>x.id===selectedStrokeId&&x.brushId!=='eraser')));
+    if(!pl.length&&!hasStrokes){setStatus('📋 Nothing selected to copy. Tap Select, then tap a shape, stroke, text or picture.');return;}
+    qaPlacedClip=pl.map(p=>{const c=Object.assign({},p);delete c.id;delete c.groupId;return c;});
+    if(hasStrokes)copySelectionToClipboard();
+    else{try{localStorage.removeItem('sp-clip');}catch(e){}setStatus('📋 Copied '+pl.length+' picture'+(pl.length===1?'':'s')+'. Tap Paste to add a copy.');}
+  }catch(e){setStatus('⚠️ Could not copy: '+(e&&e.message||e));}
+}
+function qaPaste(){
+  try{
+    let hasStrokeClip=false;try{const d=JSON.parse(localStorage.getItem('sp-clip')||'null');hasStrokeClip=!!(d&&d.strokes&&d.strokes.length);}catch(e){}
+    const okPl=qaPlacedClip.filter(c=>motifs.some(m=>m.id===c.motifId));
+    if(!hasStrokeClip&&!okPl.length){setStatus('📥 Nothing copied yet. Select something, then tap Copy.');return;}
+    if(okPl.length){
+      const lay=(layers.find(l=>l.id===activeLayerId&&!l.tpl&&!l.locked)||{}).id;
+      const ids=[];
+      okPl.forEach(c=>{const e=motifs.find(m=>m.id===c.motifId),n=Object.assign({},c,{id:crypto.randomUUID(),img:e.img||c.img,layerId:lay||c.layerId,x:c.x+30,y:c.y+30});placed.push(n);ids.push(n.id);});
+      qaPlacedClip=qaPlacedClip.map(c=>Object.assign({},c,{x:c.x+30,y:c.y+30}));
+      if(hasStrokeClip)pasteFromClipboard();
+      else{
+        try{setMulti([],ids,null);}catch(e){selected=ids[ids.length-1];}
+        if(mode!=='edit'){try{$('editModeBtn').click();}catch(e){}}
+        try{rebuildAllLayers();}catch(e){}
+        pushHist();redraw();try{scheduleAutosave();}catch(e){}
+        setStatus('📥 Pasted '+ids.length+' picture'+(ids.length===1?'':'s')+'. Drag to move it. Undo removes it.');
+      }
+    }else pasteFromClipboard();
+  }catch(e){setStatus('⚠️ Could not paste: '+(e&&e.message||e));}
+}
+$('qaCopy').onclick=()=>{qaCopy();qaSync();};
+$('qaPaste').onclick=()=>{qaPaste();qaSync();};
+// The panel can be made bigger or smaller with the corner grip; the buttons scale with it and the size is remembered.
+(function(){
+  const panel=$('qaPanel'),grip=$('qaSizeGrip'),BASE=226,MIN=170,MAX=440;
+  function setW(w){w=Math.max(MIN,Math.min(MAX,Math.round(w)));panel.style.width=w+'px';panel.style.setProperty('--qs',(w/BASE).toFixed(3));return w;}
+  try{const v=+localStorage.getItem('sp-qaW');if(v>=MIN&&v<=MAX)setW(v);}catch(e){}
+  grip.addEventListener('pointerdown',e=>{
+    e.preventDefault();e.stopPropagation();
+    const x0=e.clientX,y0=e.clientY,w0=panel.offsetWidth,h0=panel.offsetHeight;
+    try{grip.setPointerCapture(e.pointerId);}catch(_){}
+    const mv=ev=>{const w=setW(w0+((ev.clientX-x0)+(ev.clientY-y0)*(w0/h0))/2);try{const pos=floatPanelPositions.qaPanel;if(pos){const c=clampFloatPanelPos(panel,pos.x,pos.y);panel.style.left=c.x+'px';panel.style.top=c.y+'px';floatPanelPositions.qaPanel=c;}}catch(_){}};
+    const up=()=>{grip.removeEventListener('pointermove',mv);try{localStorage.setItem('sp-qaW',String(panel.offsetWidth));}catch(_){}};
+    grip.addEventListener('pointermove',mv);grip.addEventListener('pointerup',up,{once:true});grip.addEventListener('pointercancel',up,{once:true});
+  });
+})();
 $('qaFlipH').onclick=()=>{qaFlip('h');qaSync();};
 $('qaFlipV').onclick=()=>{qaFlip('v');qaSync();};
 $('qaSelect').onclick=()=>qaToEdit(false);
