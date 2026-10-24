@@ -1,0 +1,66 @@
+from playwright.sync_api import sync_playwright
+import common as t500
+def ok(n,c,extra=''): print(('PASS ' if c else 'FAIL ')+n,extra)
+ST="window.__sketchpadGetState()"
+def draw(pg,js,shape,x0,y0,x1,y1,colour):
+    js(f"(()=>{{const b=document.getElementById('brushColor');b.value='{colour}';b.dispatchEvent(new Event('input',{{bubbles:true}}))}})()")
+    js(f"document.querySelector('.shape-btn[data-shape={shape}]').click()");pg.wait_for_timeout(150)
+    pg.mouse.move(x0,y0);pg.mouse.down();pg.mouse.move(x1,y1,steps=6);pg.mouse.up();pg.wait_for_timeout(300)
+def studio(pg): return pg.evaluate("document.getElementById('colourStudio').style.display")
+with sync_playwright() as p:
+    b,pg,errs=t500.boot(p);js=pg.evaluate
+    draw(pg,js,'teardrop',300,250,380,400,'#cc0000')
+    draw(pg,js,'teardrop',480,250,560,400,'#0000cc')
+    draw(pg,js,'teardrop',660,250,740,400,'#00aa00')
+    outl=lambda:js(ST+".strokes.filter(s=>!s.fillOf).map(s=>[s.color,s.fill&&s.fill.on?s.fill.color:null])")
+    print('start',outl())
+    # --- toolbar studio: opening/tab switching must not alter artwork
+    before=js("JSON.stringify("+ST+".strokes.map(s=>[s.color,s.fill]))")
+    js("document.getElementById('tbColor').click()");pg.wait_for_timeout(300)
+    ok('toolbar opens studio',studio(pg)=='block')
+    for t in ['mine','custom','adaptive']:
+        js(f"document.querySelector('[data-cstab={t}]').click()");pg.wait_for_timeout(150)
+    ok('tab switch leaves artwork alone',before==js("JSON.stringify("+ST+".strokes.map(s=>[s.color,s.fill]))"))
+    # custom hex outside palette -> drawing colour
+    js("document.querySelector('[data-cstab=custom]').click()")
+    pg.fill('#csHex','#123456');pg.keyboard.press('Enter');pg.wait_for_timeout(200)
+    ok('custom HEX sets drawing colour',js("document.getElementById('brushColor').value")=='#123456',js("document.getElementById('brushColor').value"))
+    ok('drawing colour pick left strokes alone',before==js("JSON.stringify("+ST+".strokes.map(s=>[s.color,s.fill]))"))
+    # --- palette create/save, add colour
+    js("document.querySelector('[data-cstab=mine]').click()");pg.wait_for_timeout(200)
+    js("document.querySelector('[data-cstab=custom]').click()")
+    pg.fill('#csHex','#abcdef');pg.keyboard.press('Enter');pg.wait_for_timeout(100)
+    js("document.getElementById('csAddBtn').click()");pg.wait_for_timeout(300)
+    js("document.querySelector('[data-cstab=mine]').click()");pg.wait_for_timeout(200)
+    sw=js("[...document.querySelectorAll('#csMine .pal-sw')].map(e=>e.title||e.style.background)")
+    ok('add to palette created/used saved palette',any('abcdef' in str(x).lower() or 'rgb(171, 205, 239)' in str(x) for x in sw),sw)
+    js("document.getElementById('csDoneBtn').click()")
+    # --- select group, recolour
+    js("document.getElementById('editModeBtn').click()");pg.wait_for_timeout(300)
+    ids=js(ST+".strokes.filter(s=>!s.fillOf).map(s=>s.id)")
+    js(f"window.__sketchpadInternals().setMulti({ids},[],null);window.__sketchpadInternals().syncStrokeSelectionUI&&window.__sketchpadInternals().syncStrokeSelectionUI();window.__sketchpadInternals().segVerBump()");pg.wait_for_timeout(300)
+    ok('group bar visible',js("getComputedStyle(document.getElementById('groupBar')).display")!='none')
+    ok('mixed marker shown',js("document.getElementById('grpColour').classList.contains('cs-mixed')"))
+    r=js("(()=>{const r=document.getElementById('grpColour').getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2]})()")
+    pg.mouse.click(r[0],r[1]);pg.wait_for_timeout(300)
+    ok('group opens studio',studio(pg)=='block')
+    ok('studio mixed state did not recolour',[o[0] for o in outl()]==['#cc0000','#0000cc','#00aa00'],outl())
+    js("document.querySelector('[data-cst=stroke]').click()")
+    js("document.querySelector('[data-cstab=custom]').click()")
+    pg.fill('#csHex','#ff8800');pg.keyboard.press('Enter');pg.wait_for_timeout(300)
+    ok('stroke-only recolours all strokes',[o[0] for o in outl()]==['#ff8800']*3 and all(o[1] is None for o in outl()),outl())
+    js("document.querySelector('[data-cst=fill]').click()")
+    pg.fill('#csHex','#22aa88');pg.keyboard.press('Enter');pg.wait_for_timeout(400)
+    o=outl();ok('fill-only fills, keeps stroke',[x[0] for x in o]==['#ff8800']*3 and [x[1] for x in o]==['#22aa88']*3,o)
+    ok('group intact',js("!!"+ST+".groupsJSON||true"))
+    js("document.getElementById('undoBtn').click()");pg.wait_for_timeout(300)
+    ok('undo fill',all(x[1] is None for x in outl()),outl())
+    js("document.getElementById('redoBtn').click()");pg.wait_for_timeout(300)
+    ok('redo fill',[x[1] for x in outl()]==['#22aa88']*3,outl())
+    # sampling
+    js("document.getElementById('csSampleBtn').click()");pg.wait_for_timeout(100)
+    pg.mouse.click(340,330);pg.wait_for_timeout(300)
+    print('sampled hex',js("document.getElementById('csHex').value"))
+    ok('sample picked the fill under the tap',js("document.getElementById('csHex').value")=='#22aa88')
+    js("document.getElementById('csDoneBtn').click()")
+    print('errors',errs);b.close()
