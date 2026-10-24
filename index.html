@@ -1562,7 +1562,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v448'; // keep in step with CACHE in sw.js
+const APP_V='v449'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -18154,7 +18154,18 @@ async function qaPaste(){
         idMap.set(m.id,e);
       }
       const lay=(layers.find(l=>l.id===activeLayerId&&!l.tpl&&!l.locked)||{}).id,ids=[];
-      clip.placed.forEach(c=>{const e=idMap.get(c.motifId);if(!e)return;const d=same?30:0,n=Object.assign({},c,{id:crypto.randomUUID(),motifId:e.id,img:e.img,layerId:lay,x:c.x+d,y:c.y+d});placed.push(n);ids.push(n.id);});
+      // Into ANOTHER project the picture is brought in at a sensible size (about the size of the motifs already there, never bigger than it was) in the middle of the view
+      let k=1,gx=0,gy=0,vx=0,vy=0;
+      if(!same){
+        let x0=1e12,y0=1e12,x1=-1e12,y1=-1e12;
+        clip.placed.forEach(c=>{const hw=c.w*Math.abs(c.s||1)/2,hh=c.h*Math.abs(c.s||1)/2,r=Math.max(hw,hh);x0=Math.min(x0,c.x-r);x1=Math.max(x1,c.x+r);y0=Math.min(y0,c.y-r);y1=Math.max(y1,c.y+r);});
+        const gm=Math.max(x1-x0,y1-y0,1);gx=(x0+x1)/2;gy=(y0+y1)/2;
+        const sz=placed.filter(p=>p.img&&!isWmMotif(motifs.find(m=>m.id===p.motifId))).map(p=>Math.max(p.w,p.h)*(p.s||1)).sort((u,v)=>u-v);
+        const target=sz.length?Math.max(60,Math.min(320,sz[sz.length>>1])):Math.min(320,Math.min(TW,TH)*.4);
+        k=Math.min(1,target/gm);
+        vx=W/2;vy=H/2;try{const r=wrap.getBoundingClientRect(),q=screenToCanvas(r.left+r.width/2,r.top+r.height/2);if(q&&isFinite(q.x)&&isFinite(q.y)){vx=Math.max(CX,Math.min(CX+TW,q.x));vy=Math.max(CY,Math.min(CY+TH,q.y));}}catch(e){}
+      }
+      clip.placed.forEach(c=>{const e=idMap.get(c.motifId);if(!e)return;const n=same?Object.assign({},c,{id:crypto.randomUUID(),motifId:e.id,img:e.img,layerId:lay,x:c.x+30,y:c.y+30}):Object.assign({},c,{id:crypto.randomUUID(),motifId:e.id,img:e.img,layerId:lay,x:vx+(c.x-gx)*k,y:vy+(c.y-gy)*k,s:(c.s||1)*k});placed.push(n);ids.push(n.id);});
       if(same)clip.placed=clip.placed.map(c=>Object.assign({},c,{x:c.x+30,y:c.y+30}));
       if(same)try{await qaClipDB.put(clip);}catch(e){}
       try{renderTray();}catch(e){}
