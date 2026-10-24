@@ -1572,7 +1572,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v453'; // keep in step with CACHE in sw.js
+const APP_V='v454'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -1608,7 +1608,7 @@ let baseScale=1;
 // iPad Safari kills the tab when the canvases add up to roughly 400 MB, and every layer owns TWO canvases (one of them
 // renderScale-squared times bigger). So the sharpness bucket is lowered when there are many layers, to stay inside a budget.
 let sharpLevel=0;try{sharpLevel=Math.max(0,Math.min(2,+localStorage.getItem('sp-sharp')||0));}catch(e){}
-function canvasBudgetMB(){return [220,380,560][sharpLevel];}
+function canvasBudgetMB(){return [160,380,560][sharpLevel];}
 function budgetScale(n){
   const base=W*H*4/1048576;
   for(const b of [2,1.5,1]){const mb=base*(n*(b===1?1:1+b*b)+2*b*b+6);if(mb<=canvasBudgetMB())return b;}
