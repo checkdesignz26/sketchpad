@@ -1072,7 +1072,7 @@ html.in-suite .suite-only{display:block!important}
     </section>
     <section class="section" id="shadowSection">
       <div class="section-title">🌓 Inner shadow</div>
-      <div class="hint" style="margin-top:0;">Select a filled shape. A shadow is added on top of the fill, kept inside its edge and under the outline.</div>
+      <div class="hint" style="margin-top:0;">Tap inside the coloured area to select the fill shape (not the black outline), then Add shadow.</div>
       <div class="slider-row"><label>Light from</label><input id="shLight" type="range" min="0" max="360" value="135"><span id="shLightV">↖</span></div>
       <div class="slider-row"><label>Size</label><input id="shSize" type="range" min="4" max="120" value="28"><span id="shSizeV">28</span></div>
       <div class="slider-row"><label>Darkness</label><input id="shDark" type="range" min="5" max="80" value="30"><span id="shDarkV">30%</span></div>
@@ -1595,7 +1595,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v474'; // keep in step with CACHE in sw.js
+const APP_V='v475'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -8783,7 +8783,9 @@ function shBase(o){ // {stroke to get geometry from, fill colour}
 }
 function shRemoveFor(id){const n=strokes.length;const lay=new Set();strokes=strokes.filter(x=>{if(x.shadowOf===id){lay.add(x.layerId);return false;}return true;});lay.forEach(l=>rebuildLayer(l));return n-strokes.length;}
 function shadowAdd(o,opt){
-  const b=shBase(o),A=strokeToPolyBoolPoly(b.geo);if(!A)return 'That shape has no area to shade.';
+  const b=shBase(o);
+  if(!(b.geo.fillColor||b.geo.fillOf||(o.fill&&o.fill.on)))return 'This is only an outline, with no colour inside. Tap inside the coloured area (the red part) to select the fill shape, then tap Add shadow.';
+  const A=strokeToPolyBoolPoly(b.geo);if(!A)return 'That shape has no area to shade.';
   const a=opt.angle*Math.PI/180,dx=Math.cos(a)*opt.size,dy=-Math.sin(a)*opt.size; // angle measured like a clock-less compass: 0 = right, 90 = up
   const B={regions:A.regions.map(r=>r.map(([x,y])=>[x+dx,y+dy])),inverted:false};
   let res;try{res=ctTry(()=>PolyBool.difference(A,B));}catch(e){res=null;}

@@ -867,3 +867,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 ## v473/v474 — Inner shadow (v474 moves it into the Stroke panel Fill box)
 - New "🌓 Inner shadow" section (above Shape builder): select a filled shape, choose light direction, size, darkness, tap Add shadow.
 - Shadow = fill shape minus itself nudged toward the light (PolyBool), so it stays inside the fill; inserted straight above the fill and under the outline line. Strokes carry `shadowOf`; deleted with their shape, Remove button clears it.
+
+## v475 — Inner shadow guard
+- Add shadow on a plain outline (no fill) now explains to pick the coloured fill shape instead of painting a black blob.
