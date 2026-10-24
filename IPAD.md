@@ -876,3 +876,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v477 — Inner shadow works from the outline
 - With a plain outline selected (Fill off), Add shadow finds the largest colour fill around the outline's centre and shades that, placed above the fill and under the outline.
+
+## v478 — Shadow/highlight on their own layers
+- Add shadow now creates a "Shadow" layer directly above the fill's layer (own opacity, blur, blend), made of normal editable closed paths (nodes). New ✨ Add highlight does the same on a "Highlight" layer on the light side (lightened fill colour). Remove clears both.
