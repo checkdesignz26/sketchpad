@@ -848,3 +848,7 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v468 — Bigger Mix a colour swatch
 - The live preview in Colour → Mix a colour is now a full-width 104 px swatch (was a thin strip) with the code under it, and stays at the top while you drag the sliders.
+
+## v469 — Shadows & highlights from extracted colours
+- Colour → Palette from an image has a new **🌗 Shadows & highlights** panel: pick how many darker (shadow) and lighter (highlight) tones, the strength, and an optional natural look (shadows lean cooler, highlights lean warmer). Each extracted colour (only the ones you chose, if any) becomes a column from lightest to darkest; tap a shade to use it.
+- **Add shades to palette** adds just the new shades to the chosen saved palette; **New palette from all** saves the colours plus their shades.
