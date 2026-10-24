@@ -414,6 +414,7 @@ html.in-suite .suite-only{display:block!important}
 .mk-note{font:700 11px system-ui;color:var(--muted,#6b6080);text-align:center}
 .layer-thumb{position:static;grid-column:1;grid-row:1;display:block;width:78px;height:78px;border-radius:13px;border:2px solid var(--btnBorder);background:rgba(255,255,255,.75);box-sizing:border-box;cursor:zoom-in}
 .layer-row.hidden-l .layer-thumb{opacity:.35}
+.group-row .gthumb{width:52px;height:52px;border-radius:10px;border:2px solid var(--btnBorder);background:rgba(255,255,255,.8);box-sizing:border-box;flex:0 0 auto}
 .layer-name{grid-column:2;grid-row:1;font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .layer-opacity{flex:1;min-width:0;height:36px;touch-action:none}
 .layer-opline{flex:1 0 100%;box-sizing:border-box;min-width:0;display:flex;align-items:center;gap:10px;padding:0 4px;font-size:12px;font-weight:800;color:var(--muted)}
@@ -953,7 +954,7 @@ html.in-suite .suite-only{display:block!important}
     <section class="section" id="layersSection">
       <div class="section-title">📚 Layers</div>
       <div class="row" style="margin:4px 0 8px;"><button id="layerSelBtn" class="btn mini" style="flex:1" title="Tick several layers to group or merge them">☑ Select layers</button></div>
-      <div id="layerSelBar" style="display:none;margin:0 0 8px;"><div id="layerSelCount" class="hint" style="margin:0 0 6px"></div><div class="row" style="gap:6px;flex-wrap:wrap"><button id="layerGroupBtn" class="btn mini" style="flex:1" title="Put the ticked layers into one folder">📁 Group</button><button id="layerMergeBtn" class="btn mini" style="flex:1" title="Join the ticked layers (they must sit next to each other) into one layer">⤵ Merge</button><button id="layerUngroupBtn" class="btn mini" style="flex:1" title="Take the ticked layers out of their group">Ungroup</button></div></div>
+      <div id="layerSelBar" style="display:none;margin:0 0 8px;"><div id="layerSelCount" class="hint" style="margin:0 0 6px"></div><div class="row" style="gap:6px;flex-wrap:wrap"><button id="layerGroupBtn" class="btn mini" style="flex:1" title="Put the ticked layers into one folder">📁 Group</button><button id="layerMergeBtn" class="btn mini" style="flex:1" title="Join the ticked layers (they must sit next to each other) into one layer">⤵ Merge</button><button id="layerUngroupBtn" class="btn mini" style="flex:1" title="Take the ticked layers out of their group">Ungroup</button><button id="layerDelSelBtn" class="btn mini" style="flex:1" title="Delete every ticked layer">🗑 Delete</button></div></div>
       <div id="layersList"></div>
       <div class="row" style="margin-top:4px;">
         <button id="addLayerBtn" class="btn mini" style="flex:1">+ Add</button>
@@ -1572,7 +1573,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v456'; // keep in step with CACHE in sw.js
+const APP_V='v457'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -6454,14 +6455,14 @@ function layerSelSync(){
   const bar=$('layerSelBar'),btn=$('layerSelBtn');if(!bar||!btn)return;
   bar.style.display=layerSelMode?'block':'none';btn.textContent=layerSelMode?'✓ Done selecting':'☑ Select layers';btn.classList.toggle('active',layerSelMode);
   const n=layerSel.size;$('layerSelCount').textContent=n?n+' layer'+(n===1?'':'s')+' ticked. Tap rows to tick or untick.':'Tap layers to tick them, then Group or Merge.';
-  $('layerGroupBtn').disabled=n<2;$('layerMergeBtn').disabled=n<2;$('layerUngroupBtn').disabled=!layers.some(l=>layerSel.has(l.id)&&l.lg);
+  $('layerDelSelBtn').disabled=n<1;$('layerGroupBtn').disabled=n<2;$('layerMergeBtn').disabled=n<2;$('layerUngroupBtn').disabled=!layers.some(l=>layerSel.has(l.id)&&l.lg);
 }
 function layerGroupRow(gid){
   const mem=layerGroupMembers(gid),first=mem[0];
   const row=document.createElement('div');
   row.className='group-row'+(layerSelMode&&mem.every(m=>layerSel.has(m.id))?' lsel-on':'');
   const allVis=mem.every(m=>m.visible!==false),allLock=mem.every(m=>m.locked);
-  row.innerHTML='<span style="font-size:18px">'+(first.lgc?'▸':'▾')+'</span><span class="gname" title="Tap to fold or unfold. Press ✎ to rename">📁 '+escapeHtml(first.lgn||'Group')+' · '+mem.length+'</span>'
+  row.innerHTML='<canvas class="gthumb" width="116" height="116" data-gid="'+gid+'" title="Everything in this group, combined"></canvas><span style="font-size:18px">'+(first.lgc?'▸':'▾')+'</span><span class="gname" title="Tap to fold or unfold. Press ✎ to rename">📁 '+escapeHtml(first.lgn||'Group')+' · '+mem.length+'</span>'
     +'<button type="button" class="gbtn gvis" title="Show or hide the whole group">'+(allVis?'👁':'🚫')+'</button>'
     +'<button type="button" class="gbtn glock" title="Lock or unlock the whole group">'+(allLock?'🔒':'🔓')+'</button>'
     +'<button type="button" class="gbtn gren" title="Rename the group">✎</button>'
@@ -6500,7 +6501,7 @@ function groupLayerIds(ids){
   layers.splice(hi+1-sel.length,0,...sel);
   sel.forEach(l=>{l.lg=gid;l.lgn='Group '+n;l.lgc=false;});
   layerSel.clear();layerSelMode=false;
-  compositeDirty=true;segVer++;renderLayersList();pushHist();redraw();
+  renderLayersList();pushHist();
   setStatus('📁 Grouped '+sel.length+' layers as "Group '+n+'". They now sit together. Tap the folder to fold it away, or ⛓ to ungroup.');
 }
 function ungroupLayers(gid){
@@ -6545,6 +6546,7 @@ async function mergeLayerIds(ids){
 $('layerSelBtn').onclick=()=>{layerSelMode=!layerSelMode;if(!layerSelMode)layerSel.clear();renderLayersList();};
 $('layerGroupBtn').onclick=()=>groupLayerIds(new Set(layerSel));
 $('layerMergeBtn').onclick=()=>mergeLayerIds(new Set(layerSel));
+$('layerDelSelBtn').onclick=()=>{const ids=new Set(layers.filter(l=>layerSel.has(l.id)).map(l=>l.id));if(!ids.size)return;const n=strokes.filter(s=>ids.has(s.layerId)).length+placed.filter(p=>ids.has(p.layerId)).length;askYesNo('Delete '+ids.size+' layer'+(ids.size===1?'':'s')+'?',(n?'This removes them and their '+n+' item'+(n===1?'':'s')+'. ':'They are empty. ')+'You can Undo it straight afterwards.','Delete',()=>{deleteLayers(ids);layerSelMode=false;layerSel.clear();layerSelSync();renderLayersList();});};
 $('layerUngroupBtn').onclick=()=>{const gs=new Set(layers.filter(l=>layerSel.has(l.id)&&l.lg).map(l=>l.lg));layers.forEach(l=>{if(layerSel.has(l.id)&&l.lg){l.lg=null;l.lgn='';l.lgc=false;}});renderLayersList();pushHist();setStatus('⛓ Took '+layerSel.size+' layer'+(layerSel.size===1?'':'s')+' out of their group.');};
 function renderLayersList(){
   try{if(layers.length&&computeRenderScale()!==renderScale)applyTransform();}catch(e){}
@@ -6694,12 +6696,13 @@ function layerThumbsRun(){
     if(al&&strokes.reduce((a,q)=>a+(q.layerId===al.id?1:0),0)<=600){const idle=window.requestIdleCallback||(f=>setTimeout(f,60));idle(()=>{try{const c=document.createElement('canvas');c.width=c.height=116;drawLayerThumb(al,c);}catch(e){}},{timeout:1500});}
     return;
   }
-  const cvs=[...host.querySelectorAll('canvas.layer-thumb')];
+  const cvs=[...host.querySelectorAll('canvas.layer-thumb,canvas.gthumb')];
   let i=0;_thumbBusy=true;
   const step=()=>{
     const t0=performance.now();
     while(i<cvs.length&&performance.now()-t0<30){
       const cv=cvs[i++],l=layers.find(x=>x.id===cv.dataset.lid);
+      if(cv.dataset.gid){try{if(cv.isConnected)drawGroupThumb(cv.dataset.gid,cv);}catch(e){console.warn('[gthumb]',e);}continue;}
       try{if(l&&cv.isConnected)drawLayerThumb(l,cv);}catch(e){console.warn('[thumb]',e);}
     }
     if(i>=cvs.length){_thumbBusy=false;return;}
@@ -6708,6 +6711,31 @@ function layerThumbsRun(){
   step();
 }
 try{const _lh=$('layersList');if(_lh&&window.IntersectionObserver)new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting))layerThumbsSoon(0);}).observe(_lh);}catch(e){}
+// A group's picture: every visible layer in it, drawn together on one small canvas (cached until something in the group changes).
+function drawGroupThumb(gid,cv){
+  const mem=layerGroupMembers(gid);if(!mem.length)return;
+  const c=cv.getContext('2d'),TW=cv.width,first=mem[0];
+  const sig=mem.map(l=>l.id+(l.visible===false?'h':'v')+(l.opacity==null?1:l.opacity)+layerThumbSig(l.id)).join('|');
+  if(first._gtn&&first._gtn.sig===sig){c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,TW,TW);c.drawImage(first._gtn.cv,0,0);return;}
+  const t=document.createElement('canvas');t.width=t.height=TW;const tc=t.getContext('2d');
+  const vis=mem.filter(l=>l.visible!==false),ids=new Set(vis.map(l=>l.id));
+  let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity,n=0;
+  for(const st of strokes){if(!ids.has(st.layerId)||hiddenStrokeIds.has(st.id)||st.guideHidden)continue;n++;const P=st.points;if(!P)continue;const pd=((st.settings&&st.settings.size)||10)/2+2;for(let i=0;i<P.length;i++){const q=P[i];if(q.x-pd<x0)x0=q.x-pd;if(q.x+pd>x1)x1=q.x+pd;if(q.y-pd<y0)y0=q.y-pd;if(q.y+pd>y1)y1=q.y+pd;}}
+  vis.forEach(l=>layerMotifs(l.id).forEach(p=>{const b=motifAABB(p);if(b){x0=Math.min(x0,b.x0);y0=Math.min(y0,b.y0);x1=Math.max(x1,b.x1);y1=Math.max(y1,b.y1);}}));
+  if(!(x1>x0)){x0=0;y0=0;x1=W;y1=H;}
+  x0=Math.max(0,x0);y0=Math.max(0,y0);x1=Math.min(W,x1);y1=Math.min(H,y1);
+  const bw=Math.max(48,x1-x0),bh=Math.max(48,y1-y0),cxm=(x0+x1)/2,cym=(y0+y1)/2;
+  const k=Math.min(TW*0.92/bw,TW*0.92/bh),ox=TW/2-cxm*k,oy=TW/2-cym*k;
+  if(n>2500){tc.fillStyle='rgba(120,100,150,.25)';tc.fillRect(4,4,TW-8,TW-8);tc.fillStyle='rgba(60,40,90,.8)';tc.font='bold 22px system-ui';tc.textAlign='center';tc.fillText(n+' strokes',TW/2,TW/2+8);}
+  else{
+    const sk=BrushEngine.skipSmudge,was=sk&&sk.on;if(sk)sk.on=true;
+    try{vis.forEach(l=>{const lc=document.createElement('canvas');lc.width=lc.height=TW;const lx=lc.getContext('2d');lx.save();lx.setTransform(k,0,0,k,ox,oy);try{replayLayerInto(lx,l.id);}finally{lx.restore();}tc.globalAlpha=l.opacity==null?1:l.opacity;tc.drawImage(lc,0,0);lc.width=lc.height=1;});}
+    finally{if(sk)sk.on=was;tc.globalAlpha=1;}
+    tc.drawImage(t,0,0);
+  }
+  first._gtn={sig,cv:t};
+  c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,TW,TW);c.drawImage(t,0,0);
+}
 function drawLayerThumb(l,cv){
   const c=cv.getContext('2d'),TW=cv.width;
   const nS=strokes.reduce((a,q)=>a+(q.layerId===l.id?1:0),0);
@@ -7062,7 +7090,6 @@ function askYesNo(title,detail,yesLabel,onYes){
   try{no.focus();}catch(e){}
 }
 function askDeleteLayer(id){
-  if(layers.length<=1){setStatus('⚠️ At least one layer is required.');return;}
   const layer=layers.find(l=>l.id===id);if(!layer)return;
   const n=strokes.filter(s=>s.layerId===id).length+placed.filter(p=>p.layerId===id).length;
   askYesNo('Delete "'+layer.name+'"?',(n?'This removes the layer and its '+n+' item'+(n===1?'':'s')+'. ':'This removes the empty layer. ')+'You can Undo it straight afterwards.','Delete',()=>deleteLayer(id));
@@ -7083,24 +7110,28 @@ function clearLayerNow(id){
   compositeDirty=true;try{syncStrokeSelectionUI();}catch(e){}renderLayersList();pushHist();redraw();try{scheduleAutosave();}catch(e){}
   setStatus('🧹 Cleared "'+layer.name+'" ('+n+' stroke'+(n===1?'':'s')+'). Tap Undo to bring it back.');
 }
-function deleteLayer(id){
-  if(layers.length<=1){setStatus('⚠️ At least one layer is required.');return;}
-  const layer=layers.find(l=>l.id===id);if(!layer)return;
-  const affected=strokes.filter(s=>s.layerId===id).length;
-  // No confirm() — iPad Home-Screen web apps can silently suppress it (the layer then looked undeletable). Undo brings it back.
-  crumb('delete layer '+layer.name);
-  const goneIds=new Set(strokes.filter(s=>s.layerId===id).map(s=>s.id));
-  strokes=strokes.filter(s=>s.layerId!==id);placed=placed.filter(p=>p.layerId!==id);
-  layers=layers.filter(l=>l.id!==id);
-  try{layer.canvas.width=layer.canvas.height=1;layer.dcanvas.width=layer.dcanvas.height=1;}catch(e){}
-  if(activeLayerId===id)activeLayerId=layers[layers.length-1].id;
+function deleteLayer(id){deleteLayers(new Set([id]));}
+// Deletes any number of layers in one go. The app needs at least one layer to draw on, so if every layer goes, one fresh empty layer is kept.
+function deleteLayers(ids){
+  const gone=layers.filter(l=>ids.has(l.id));if(!gone.length)return;
+  crumb('delete '+gone.length+' layer(s)');
+  const goneIds=new Set(strokes.filter(s=>ids.has(s.layerId)).map(s=>s.id));
+  const affected=goneIds.size;
+  strokes=strokes.filter(s=>!ids.has(s.layerId));placed=placed.filter(p=>!ids.has(p.layerId));
+  layers=layers.filter(l=>!ids.has(l.id));
+  gone.forEach(layer=>{try{layer.canvas.width=layer.canvas.height=1;layer.dcanvas.width=layer.dcanvas.height=1;}catch(e){}try{pixFree(layer.id);}catch(e){}});
+  let kept=false;
+  if(!layers.length){const nl=makeLayer('Layer 1');layers.push(nl);kept=true;}
+  if(!layers.find(l=>l.id===activeLayerId))activeLayerId=layers[layers.length-1].id;
+  layerSel.delete&&gone.forEach(l=>layerSel.delete(l.id));
   if(selectedStrokeId&&!strokes.find(s=>s.id===selectedStrokeId)){selectedStrokeId=null;syncStrokeSelectionUI();}
   renderLayersList();
-  // only layers that depended on the deleted one need redrawing (clipped layers, or strokes clipped to its shapes) — rebuilding all of them at once is what ran the iPad out of memory
+  // only layers that depended on a deleted one need redrawing (clipped layers, or strokes clipped to its shapes); rebuilding all of them at once runs the iPad out of memory
   try{const need=new Set(strokes.filter(q=>q.clipStrokeId&&goneIds.has(q.clipStrokeId)||q.fillOf&&goneIds.has(q.fillOf)).map(q=>q.layerId));layers.forEach(l=>{if(l.clip||need.has(l.id))rebuildLayer(l.id);});}catch(e){}
+  try{if(kept)rebuildLayer(layers[0].id);}catch(e){}
   try{syncAwake();}catch(e){}
   pushHist();segVer++;compositeDirty=true;redraw();
-  setStatus('🗑 Deleted "'+layer.name+'"'+(affected?' and its '+affected+' stroke'+(affected===1?'':'s'):'')+' — tap Undo to bring it back.');
+  setStatus('🗑 Deleted '+(gone.length===1?'"'+gone[0].name+'"':gone.length+' layers')+(affected?' and '+(affected===1?'its 1 stroke':'their '+affected+' strokes'):'')+(kept?' — one empty layer was kept because the app needs one to draw on':'')+' — tap Undo to bring '+(gone.length===1?'it':'them')+' back.');
 }
 $('addLayerBtn').onclick=()=>{
   const layer=makeLayer('Layer '+(layers.length+1));
