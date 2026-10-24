@@ -859,3 +859,7 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 ## v471 — Fill swatch uses the Colour panel
 - The toolbar **Fill** swatch now opens the app's Colour panel (on its Fill tab, with your project palette, Mix and eyedropper) instead of the iPad's own colour picker, same as the Stroke swatch. With a shape selected it changes that shape's fill; with nothing selected it sets the colour of new fills and turns fill on.
 - Swatches that name a target (like Fill) keep it when the panel opens, instead of flipping back to Brush.
+
+## v472 — Pen tool: auto-fill + cleaner look
+- Closed pen shapes now fill automatically when fill colour = stroke colour (or Auto-fill is on).
+- Pen overlay restyled: thin blue 1.25px path with faint width ghost, small square anchors, hollow ring on the first point, slim handles.
