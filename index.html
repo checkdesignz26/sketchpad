@@ -1562,7 +1562,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v451'; // keep in step with CACHE in sw.js
+const APP_V='v452'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -3218,7 +3218,22 @@ function snapshot(){
 // so the oldest steps are dropped once they pass a size budget (always keeping the last few).
 function histSize(){let n=0;history.forEach(h=>{n+=(h.strokesJSON||'').length+(h.placed||'').length+(h.groupsJSON||'').length+(h.layersJSON||'').length;});return n;}
 function histTrim(){while(history.length>4&&histSize()>48e6)history.shift();}
-function pushHist(){try{tplArrowSync();}catch(e){}try{radialSync();}catch(e){console.warn('[sketchpad] radial sync failed',e);}try{fillSync();}catch(e){console.warn('[sketchpad] fill sync failed',e);}try{ctSync();}catch(e){console.warn('[sketchpad] contour sync failed',e);}crumb('pushHist '+strokes.length+' strokes');try{pruneGroups();}catch(e){}try{symSync();}catch(e){console.warn('[sketchpad] symmetry sync failed',e);}try{txRefresh();}catch(e){}try{if(window.SPTimelapse)SPTimelapse.onPush();}catch(e){}try{if(typeof refreshBlends==='function')refreshBlends();if(typeof refreshObjBlends==='function')refreshObjBlends();}catch(e){console.warn('[sketchpad] blend refresh failed',e);}history=history.slice(0,hIndex+1);history.push(snapshot());try{const mc=placed.filter(p=>p.img).length;if(mc!==window._motifCnt){window._motifCnt=mc;renderLayersList();}}catch(e){}if(history.length>100)history.shift();histTrim();hIndex=history.length-1;try{layerThumbsSoon(250);}catch(_){}try{if(window.SPTimelapse)SPTimelapse.afterPush();}catch(e){}try{motifLodSoon();}catch(e){}scheduleAutosave();}
+// Empty layers left behind by "a layer for each object" (a stroke that was undone, erased, deleted or joined leaves its layer empty) are tidied away.
+// 'auto' = only layers made this session, never the one you are on; 'named' = also layers an earlier session made, found by their names (Stroke 7, Circle 2...).
+const AUTO_LAYER_NAME=/^(Stroke|Shape|Circle|Ellipse|Rectangle|Rounded rectangle|Triangle|Line|Star|Polygon|Diamond|Heart|Arrow)( \d+)?$/;
+function pruneEmptyLayers(mode){
+  if(layers.length<2)return 0;
+  const used=new Set();strokes.forEach(s=>used.add(s.layerId));placed.forEach(p=>used.add(p.layerId));
+  const gone=layers.filter(l=>!used.has(l.id)&&l.id!==activeLayerId&&!l.locked&&!l.clip&&!l.tpl&&(!l.kind||l.kind==='vector')&&l.visible!==false===true&&(l.opacity==null||l.opacity===100)&&!(l.blend&&l.blend!=='source-over')&&!(l.blur>0)&&(l.autoObj||(mode==='named'&&AUTO_LAYER_NAME.test(l.name))));
+  if(!gone.length||gone.length>=layers.length)return 0;
+  const ids=new Set(gone.map(l=>l.id));
+  layers=layers.filter(l=>!ids.has(l.id));
+  gone.forEach(l=>{try{if(l.canvas&&!l.asleep)l.canvas.width=l.canvas.height=1;if(l.dcanvas&&l.dcanvas!==l.canvas&&!l.asleep)l.dcanvas.width=l.dcanvas.height=1;}catch(e){}try{pixFree(l.id);}catch(e){}});
+  try{segVer++;compositeDirty=true;}catch(e){}
+  try{renderLayersList();}catch(e){}
+  return gone.length;
+}
+function pushHist(){try{pruneEmptyLayers('auto');}catch(e){}try{tplArrowSync();}catch(e){}try{radialSync();}catch(e){console.warn('[sketchpad] radial sync failed',e);}try{fillSync();}catch(e){console.warn('[sketchpad] fill sync failed',e);}try{ctSync();}catch(e){console.warn('[sketchpad] contour sync failed',e);}crumb('pushHist '+strokes.length+' strokes');try{pruneGroups();}catch(e){}try{symSync();}catch(e){console.warn('[sketchpad] symmetry sync failed',e);}try{txRefresh();}catch(e){}try{if(window.SPTimelapse)SPTimelapse.onPush();}catch(e){}try{if(typeof refreshBlends==='function')refreshBlends();if(typeof refreshObjBlends==='function')refreshObjBlends();}catch(e){console.warn('[sketchpad] blend refresh failed',e);}history=history.slice(0,hIndex+1);history.push(snapshot());try{const mc=placed.filter(p=>p.img).length;if(mc!==window._motifCnt){window._motifCnt=mc;renderLayersList();}}catch(e){}if(history.length>100)history.shift();histTrim();hIndex=history.length-1;try{layerThumbsSoon(250);}catch(_){}try{if(window.SPTimelapse)SPTimelapse.afterPush();}catch(e){}try{motifLodSoon();}catch(e){}scheduleAutosave();}
 // Synchronous now (no more toDataURL()/Image round-trip for the drawing layer) — cheaper AND
 // simpler: JSON-serialised stroke points are far smaller than a full 1800x1800 PNG snapshot per
 // undo step, and replaying them is deterministic so this never has to wait on an image decode.
@@ -15353,6 +15368,7 @@ async function applyDocObject(doc,opts){
     renderSavedPalettesList();
     syncColourTargetUI();
     if(!(opts&&opts.keepCollection)){try{collRestore(doc);}catch(e){coll=null;}}
+    try{const n=pruneEmptyLayers('named');if(n)setTimeout(()=>{try{setStatus('🧹 Tidied away '+n+' empty layer'+(n===1?'':'s')+' left over from one-layer-per-stroke.');}catch(e){}},600);}catch(e){}
     return true;
   }catch(e){console.warn('[sketchpad] restore failed',e);return false;}
 }
@@ -16326,6 +16342,7 @@ function tbProjectMenu(){
     {label:'📐 Resize project…',disabled:!activeProject,run:()=>resizeProjectFlow()},
     {label:'🔲 Watermark grid…',disabled:!activeProject,run:()=>watermarkGridFlow()},
     {label:'🔤 Give each text its own layer',disabled:!activeProject,run:()=>txTidyLayers()},
+    {label:'🧹 Remove empty layers',sub:'left over from one-layer-per-stroke',disabled:!activeProject,run:()=>{const n=pruneEmptyLayers('named');if(n){pushHist();redraw();}setStatus(n?'🧹 Removed '+n+' empty layer'+(n===1?'':'s')+'. Undo brings them back.':'No empty Stroke or Shape layers to remove.');}},
   ]);
 }
 function tbSelectMenu(anchor){
