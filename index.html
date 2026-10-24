@@ -1088,6 +1088,7 @@ html.in-suite .suite-only{display:block!important}
       <div class="hint" style="margin-top:0;">Tap inside the coloured area to select the fill shape (not the black outline), then Add shadow.</div>
       <div class="slider-row"><label>Light from</label><input id="shLight" type="range" min="0" max="360" value="135"><span id="shLightV">↖</span></div>
       <div class="slider-row"><label>Size</label><input id="shSize" type="range" min="4" max="120" value="28"><span id="shSizeV">28</span></div>
+      <div class="slider-row"><label>Highlight size</label><input id="shHSize" type="range" min="2" max="60" value="10"><span id="shHSizeV">10</span></div>
       <div class="slider-row"><label>Darkness</label><input id="shDark" type="range" min="5" max="80" value="30"><span id="shDarkV">30%</span></div>
       <button id="shPick" class="btn" style="width:100%;margin-top:6px;">🎯 Pick the colour to shade</button>
       <div class="grid" style="margin-top:8px;grid-template-columns:1fr 1fr;gap:6px;">
@@ -1611,7 +1612,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v484'; // keep in step with CACHE in sw.js
+const APP_V='v485'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -8825,8 +8826,13 @@ function shadowAdd(o,opt){
   const A=strokeToPolyBoolPoly(b.geo);if(!A)return 'That shape has no area to shade.';
   const a=opt.angle*Math.PI/180,dx=Math.cos(a)*opt.size,dy=-Math.sin(a)*opt.size; // angle measured like a clock-less compass: 0 = right, 90 = up
   const hl=opt.kind==='highlight',sg=hl?-1:1; // a highlight is the crescent on the light side, so the copy slides away from the light
-  const B={regions:A.regions.map(r=>r.map(([x,y])=>[x+sg*dx,y+sg*dy])),inverted:false};
-  let res;try{res=ctTry(()=>PolyBool.difference(A,B));}catch(e){res=null;}
+  let A1=A,dx1=dx,dy1=dy;
+  if(hl){ // a highlight is a thin shine: a narrow arc a little inside the edge on the light side, sized by its own slider
+    const hs=Math.max(2,opt.hsize||10);dx1=Math.cos(a)*hs;dy1=-Math.sin(a)*hs;
+    try{const sh=ctTry(()=>ctShrink(A,Math.max(5,hs*0.9)));if(sh&&sh.regions&&sh.regions.length)A1=sh;}catch(e){}
+  }
+  const B={regions:A1.regions.map(r=>r.map(([x,y])=>[x+sg*dx1,y+sg*dy1])),inverted:false};
+  let res;try{res=ctTry(()=>PolyBool.difference(A1,B));}catch(e){res=null;}
   if(!res)return 'Could not work out the shadow for that shape.';
   const regs=polyBoolRegionsToStrokeRegions(res.regions,1).filter(r=>polygonArea(r)>=2);
   if(!regs.length)return 'No shadow fits. Try a smaller size.';
@@ -8864,12 +8870,12 @@ function shadowAdd(o,opt){
 window.__sketchpadShadow=(id,kind)=>{const o=strokes.find(x=>x.id===id);if(!o)return 'no stroke';const r=shadowAdd(o,{angle:135,size:28,dark:.3,kind:kind||'shadow'});if(!r){pushHist();redraw();}return r;};
 (function(){
   const g=id=>document.getElementById(id);if(!g('shAdd'))return;
-  const upd=()=>{g('shLightV').textContent=shArrow(+g('shLight').value);g('shSizeV').textContent=g('shSize').value;g('shDarkV').textContent=g('shDark').value+'%';};
+  const upd=()=>{g('shLightV').textContent=shArrow(+g('shLight').value);g('shSizeV').textContent=g('shSize').value;g('shDarkV').textContent=g('shDark').value+'%';g('shHSizeV').textContent=g('shHSize').value;};
   let liveT=0;
   const liveRun=()=>{liveT=0;try{const o=shTarget();if(!o)return;const b=shBase(o),oid=b.auto?b.geo.id:b.outline.id;let any=false;
-    ['shadow','highlight'].forEach(k=>{if(strokes.some(x=>x.shadowOf===oid&&(x.shKind||'shadow')===k)){any=true;shadowAdd(o,{angle:+g('shLight').value,size:+g('shSize').value,dark:+g('shDark').value/100,kind:k,live:true});}});
+    ['shadow','highlight'].forEach(k=>{if(strokes.some(x=>x.shadowOf===oid&&(x.shKind||'shadow')===k)){any=true;shadowAdd(o,{angle:+g('shLight').value,size:+g('shSize').value,dark:+g('shDark').value/100,hsize:+g('shHSize').value,kind:k,live:true});}});
     if(any){g('shMsg').textContent='Updating live… let go to keep it.';redraw();}}catch(e){console.warn(e);}};
-  ['shLight','shSize','shDark'].forEach(id=>{g(id).oninput=()=>{upd();if(!liveT)liveT=requestAnimationFrame(liveRun);};g(id).onchange=()=>{try{liveRun();pushHist();g('shMsg').textContent='Updated.';}catch(e){}};});upd();
+  ['shLight','shSize','shHSize','shDark'].forEach(id=>{g(id).oninput=()=>{upd();if(!liveT)liveT=requestAnimationFrame(liveRun);};g(id).onchange=()=>{try{liveRun();pushHist();g('shMsg').textContent='Updated.';}catch(e){}};});upd();
   g('shAdd').onclick=()=>{
     const o=shTarget();if(!o||!o.points){g('shMsg').textContent='Select a filled shape first.';return;}
     const err=shadowAdd(o,{angle:+g('shLight').value,size:+g('shSize').value,dark:+g('shDark').value/100,kind:'shadow'});
@@ -8893,7 +8899,7 @@ window.__sketchpadShadow=(id,kind)=>{const o=strokes.find(x=>x.id===id);if(!o)re
     const L=layers.find(l=>l.id===hit.layerId);setStatus('🎯 Selected the colour on "'+(L?L.name:'that layer')+'". Now tap Add shadow or Add highlight.');
   },true);
   g('shHi').onclick=()=>{const o=shTarget();if(!o||!o.points){g('shMsg').textContent='Select a filled shape first.';return;}
-    const err=shadowAdd(o,{angle:+g('shLight').value,size:+g('shSize').value,dark:+g('shDark').value/100,kind:'highlight'});
+    const err=shadowAdd(o,{angle:+g('shLight').value,size:+g('shSize').value,dark:+g('shDark').value/100,hsize:+g('shHSize').value,kind:'highlight'});
     if(err){g('shMsg').textContent=err;return;}g('shMsg').textContent='Highlight added on its own layer.';pushHist();redraw();};
   const rem=kind=>{const o=shTarget();if(!o){g('shMsg').textContent='Select the shape first.';return;}
     const ids=[o.fillOf||o.id];try{const bb=shBase(o);if(bb.auto)ids.push(bb.geo.id);}catch(e){}
