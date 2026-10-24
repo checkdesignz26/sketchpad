@@ -882,3 +882,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v479 — Layer tap steps through pieces
 - Tapping a layer selects its biggest shape first; tapping the same layer again selects the next piece (status shows "Piece n of m"). Lets you reach each part of a multi-piece Shadow/Highlight layer.
+
+## v480 — One layer per shadow/highlight piece
+- If a shadow or highlight comes out as several separate pieces, each piece now gets its own layer (Shadow, Shadow 2…; biggest first), stacked above the fill's layer.
