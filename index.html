@@ -1562,7 +1562,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v447'; // keep in step with CACHE in sw.js
+const APP_V='v448'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -3739,13 +3739,14 @@ async function watermarkLogoGrid(r,old){
   const cols=Math.round(+r.cols),rows=Math.round(+r.rows),ang=(+r.ang||0),rad=ang*Math.PI/180;
   let src;
   try{
-    const lf=r.logo||await (await fetch(motifs.find(isWmMotif).src)).blob();
+    const lf=r.logo||await (await fetch(r.logoSrc)).blob();
     const url=URL.createObjectURL(lf);let im;
     try{im=await motifLoadImg(url);}finally{URL.revokeObjectURL(url);}
     const iw=im.naturalWidth||im.width,ih=im.naturalHeight||im.height;if(!iw||!ih)throw new Error('empty');
     const k=Math.min(1,1200/Math.max(iw,ih)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(iw*k));c.height=Math.max(1,Math.round(ih*k));
     c.getContext('2d').drawImage(im,0,0,c.width,c.height);src=c.toDataURL('image/png');c.width=c.height=1;
   }catch(e){setStatus('⚠️ That picture could not be opened. Try a PNG or JPG.');return;}
+  try{await qaClipDB.put(src,'wmlogo');}catch(e){} // remembered on this iPad, so any project can use it without choosing the file again
   const img=await motifLoadImg(src),iw=img.width,ih=img.height;
   // the logo's earlier copy (if any) goes; the picture is kept as a motif called "Watermark logo" so it is saved with the project
   for(let q=motifs.length-1;q>=0;q--)if(motifs[q].name==='Watermark logo'&&!placed.some(pp=>pp.motifId===motifs[q].id&&!(old&&pp.layerId===old.id)))motifs.splice(q,1);
@@ -3770,11 +3771,12 @@ async function watermarkGridFlow(){
   if(!activeProject){setStatus('Open a project first, then add a watermark grid.');return;}
   if(editingMotifId){setStatus('Tap Done or Cancel on the motif you are editing first.');return;}
   let last='';try{last=localStorage.getItem('sp-wmText')||'';}catch(e){}
-  const old=layers.find(l=>l.name==='Watermark'),ratio=TH/TW,wmEnt=motifs.find(isWmMotif);
+  let savedLogo=null;try{savedLogo=await qaClipDB.get('wmlogo');}catch(e){}
+  const old=layers.find(l=>l.name==='Watermark'),ratio=TH/TW,pm=motifs.find(isWmMotif),wmEnt=pm?{src:pm.src}:(savedLogo?{src:savedLogo}:null);
   const r=await projAsk({title:'🔲 Watermark grid',fields:[
     {key:'kind',label:'Watermark is',type:'chips',value:wmEnt?'logo':'text',options:[['text','Text'],['logo','My logo']]},
     {key:'txt',label:'Watermark text',type:'text',value:last||'© Your shop name',showIf:v=>v.kind!=='logo'},
-    {key:'logo',label:wmEnt?'Your logo (shown below). Choose a picture only to replace it':'Logo picture (PNG with a see-through background works best)',type:'file',value:null,preview:wmEnt?wmEnt.src:'',hint:wmEnt?'Using the logo already in this project.':'',showIf:v=>v.kind==='logo'},
+    {key:'logo',label:wmEnt?'Your logo (shown below). Choose a picture only to replace it':'Logo picture (PNG with a see-through background works best)',type:'file',value:null,preview:wmEnt?wmEnt.src:'',hint:wmEnt?'Using your saved logo. Choose a picture only to replace it.':'',showIf:v=>v.kind==='logo'},
     {key:'cols',label:'Copies across',type:'number',value:'3',min:1},
     {key:'rows',label:'Copies down',type:'number',value:String(Math.max(1,Math.round(3*ratio)))},
     {key:'ang',label:'Angle (degrees)',type:'number',value:'-30',min:-180},
@@ -3786,7 +3788,7 @@ async function watermarkGridFlow(){
     ok:old?'Replace watermark':'Add watermark',
     validate:v=>{if(v.kind==='logo'){if(!v.logo&&!wmEnt)return 'Choose your logo picture.';}else if(!String(v.txt).trim())return 'Type the watermark text.';const c=+v.cols,rw=+v.rows;if(!(c>=1&&c<=12&&rw>=1&&rw<=12))return 'Use 1 to 12 copies across and down.';if(!isFinite(+v.ang))return 'Enter an angle such as -30.';return '';}});
   if(!r)return;
-  if(r.kind==='logo'){await watermarkLogoGrid(r,old);return;}
+  if(r.kind==='logo'){r.logoSrc=wmEnt&&wmEnt.src;await watermarkLogoGrid(r,old);return;}
   const txt=String(r.txt).trim(),cols=Math.round(+r.cols),rows=Math.round(+r.rows),ang=(+r.ang||0)*Math.PI/180;
   try{localStorage.setItem('sp-wmText',txt);}catch(e){}
   const d=txDefaults();if(!SPFonts.has({src:d.font.src,family:d.font.family}))d.font={src:'bundled',family:'Lora'};
@@ -18112,8 +18114,8 @@ function qaFlip(axis){
 // Copy / Paste in Quick actions: strokes, shapes, text and pictures (motifs) can all be pasted into another project.
 // Pictures (motifs) are kept in a small database of their own (not localStorage: the pictures can be big), so they survive switching projects and reopening the app.
 const qaClipDB={db:null,open(){return new Promise((res,rej)=>{if(this.db)return res(this.db);try{const rq=indexedDB.open('sp-clipdb',1);rq.onupgradeneeded=()=>{rq.result.createObjectStore('clip');};rq.onsuccess=()=>{this.db=rq.result;res(this.db);};rq.onerror=()=>rej(rq.error);}catch(e){rej(e);}});},
-  async put(v){const db=await this.open();return new Promise((res,rej)=>{const t=db.transaction('clip','readwrite');t.objectStore('clip').put(v,'motifs');t.oncomplete=()=>res();t.onerror=()=>rej(t.error);});},
-  async get(){const db=await this.open();return new Promise((res,rej)=>{const r=db.transaction('clip').objectStore('clip').get('motifs');r.onsuccess=()=>res(r.result||null);r.onerror=()=>rej(r.error);});},
+  async put(v,key){const db=await this.open();return new Promise((res,rej)=>{const t=db.transaction('clip','readwrite');t.objectStore('clip').put(v,key||'motifs');t.oncomplete=()=>res();t.onerror=()=>rej(t.error);});},
+  async get(key){const db=await this.open();return new Promise((res,rej)=>{const r=db.transaction('clip').objectStore('clip').get(key||'motifs');r.onsuccess=()=>res(r.result||null);r.onerror=()=>rej(r.error);});},
   async clear(){const db=await this.open();return new Promise(res=>{const t=db.transaction('clip','readwrite');t.objectStore('clip').delete('motifs');t.oncomplete=()=>res();t.onerror=()=>res();});}};
 function qaImgSrc(e){
   if(e.src)return e.src;
