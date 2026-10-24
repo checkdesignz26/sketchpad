@@ -1562,7 +1562,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v446'; // keep in step with CACHE in sw.js
+const APP_V='v447'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -3739,7 +3739,8 @@ async function watermarkLogoGrid(r,old){
   const cols=Math.round(+r.cols),rows=Math.round(+r.rows),ang=(+r.ang||0),rad=ang*Math.PI/180;
   let src;
   try{
-    const url=URL.createObjectURL(r.logo);let im;
+    const lf=r.logo||await (await fetch(motifs.find(isWmMotif).src)).blob();
+    const url=URL.createObjectURL(lf);let im;
     try{im=await motifLoadImg(url);}finally{URL.revokeObjectURL(url);}
     const iw=im.naturalWidth||im.width,ih=im.naturalHeight||im.height;if(!iw||!ih)throw new Error('empty');
     const k=Math.min(1,1200/Math.max(iw,ih)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(iw*k));c.height=Math.max(1,Math.round(ih*k));
@@ -3769,11 +3770,11 @@ async function watermarkGridFlow(){
   if(!activeProject){setStatus('Open a project first, then add a watermark grid.');return;}
   if(editingMotifId){setStatus('Tap Done or Cancel on the motif you are editing first.');return;}
   let last='';try{last=localStorage.getItem('sp-wmText')||'';}catch(e){}
-  const old=layers.find(l=>l.name==='Watermark'),ratio=TH/TW;
+  const old=layers.find(l=>l.name==='Watermark'),ratio=TH/TW,wmEnt=motifs.find(isWmMotif);
   const r=await projAsk({title:'🔲 Watermark grid',fields:[
-    {key:'kind',label:'Watermark is',type:'chips',value:'text',options:[['text','Text'],['logo','My logo']]},
+    {key:'kind',label:'Watermark is',type:'chips',value:wmEnt?'logo':'text',options:[['text','Text'],['logo','My logo']]},
     {key:'txt',label:'Watermark text',type:'text',value:last||'© Your shop name',showIf:v=>v.kind!=='logo'},
-    {key:'logo',label:'Logo picture (PNG with a see-through background works best)',type:'file',value:null,showIf:v=>v.kind==='logo'},
+    {key:'logo',label:wmEnt?'Your logo (shown below). Choose a picture only to replace it':'Logo picture (PNG with a see-through background works best)',type:'file',value:null,preview:wmEnt?wmEnt.src:'',hint:wmEnt?'Using the logo already in this project.':'',showIf:v=>v.kind==='logo'},
     {key:'cols',label:'Copies across',type:'number',value:'3',min:1},
     {key:'rows',label:'Copies down',type:'number',value:String(Math.max(1,Math.round(3*ratio)))},
     {key:'ang',label:'Angle (degrees)',type:'number',value:'-30',min:-180},
@@ -3783,7 +3784,7 @@ async function watermarkGridFlow(){
     {key:'stag',label:'Rows',type:'chips',value:'yes',options:[['yes','Staggered'],['no','Straight']]}],
     note:(old?'There is already a Watermark layer. Adding again replaces it. ':'')+'Each copy is normal text on a layer named Watermark, so you can still move, recolour or delete it. The grid fits inside the pattern area, so it repeats cleanly if the pattern tiles.',
     ok:old?'Replace watermark':'Add watermark',
-    validate:v=>{if(v.kind==='logo'){if(!v.logo)return 'Choose your logo picture.';}else if(!String(v.txt).trim())return 'Type the watermark text.';const c=+v.cols,rw=+v.rows;if(!(c>=1&&c<=12&&rw>=1&&rw<=12))return 'Use 1 to 12 copies across and down.';if(!isFinite(+v.ang))return 'Enter an angle such as -30.';return '';}});
+    validate:v=>{if(v.kind==='logo'){if(!v.logo&&!wmEnt)return 'Choose your logo picture.';}else if(!String(v.txt).trim())return 'Type the watermark text.';const c=+v.cols,rw=+v.rows;if(!(c>=1&&c<=12&&rw>=1&&rw<=12))return 'Use 1 to 12 copies across and down.';if(!isFinite(+v.ang))return 'Enter an angle such as -30.';return '';}});
   if(!r)return;
   if(r.kind==='logo'){await watermarkLogoGrid(r,old);return;}
   const txt=String(r.txt).trim(),cols=Math.round(+r.cols),rows=Math.round(+r.rows),ang=(+r.ang||0)*Math.PI/180;
@@ -15061,7 +15062,7 @@ function projAsk(o){
       const row=pjEl('div','pj-field');row.appendChild(pjEl('label',null,f.label));
       vals[f.key]=f.value==null?'':f.value;
       if(f.type==='text'){const i=pjEl('input','pj-input');i.type='text';i.value=vals[f.key];i.maxLength=80;i.oninput=()=>{vals[f.key]=i.value;};inputs[f.key]=i;row.appendChild(i);}
-      else if(f.type==='file'){const i=pjEl('input','pj-input');i.type='file';i.accept=f.accept||'image/*';const nm=pjEl('div','pj-dlg-note',f.hint||'');i.onchange=()=>{const fl=i.files&&i.files[0];if(!fl){vals[f.key]=null;return;}vals[f.key]=fl;nm.textContent=fl.name;};row.appendChild(i);row.appendChild(nm);}
+      else if(f.type==='file'){const i=pjEl('input','pj-input');i.type='file';i.accept=f.accept||'image/*';const nm=pjEl('div','pj-dlg-note',f.hint||'');let th=null;if(f.preview!==undefined){th=pjEl('img');th.alt='';th.style.cssText='display:'+(f.preview?'block':'none')+';max-width:120px;max-height:80px;margin:6px 0;border:1px solid var(--line);border-radius:8px;background:repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/12px 12px;object-fit:contain';if(f.preview)th.src=f.preview;row.appendChild(th);}i.onchange=()=>{const fl=i.files&&i.files[0];if(!fl){vals[f.key]=null;return;}vals[f.key]=fl;nm.textContent=fl.name;if(th){try{if(th._u)URL.revokeObjectURL(th._u);th._u=URL.createObjectURL(fl);th.src=th._u;th.style.display='block';}catch(e){}}};row.appendChild(i);row.appendChild(nm);}
       else if(f.type==='select'){const s=pjEl('select','pj-input');f.options.forEach(([v,t])=>{const op=pjEl('option',null,t);op.value=v;s.appendChild(op);});s.value=vals[f.key];s.onchange=()=>{vals[f.key]=s.value;};row.appendChild(s);}
       else if(f.type==='number'){const i=pjEl('input','pj-input');i.type='number';i.inputMode='decimal';i.step='any';i.min=f.min!=null?f.min:0;i.value=vals[f.key];i.oninput=()=>{vals[f.key]=i.value;};inputs[f.key]=i;row.appendChild(i);}
       else if(f.type==='chips'){const w=pjEl('div','pj-chiprow');f.options.forEach(([v,t])=>{const b=pjEl('button','pj-chip'+(v===vals[f.key]?' active':''),t);b.type='button';b.onclick=()=>{vals[f.key]=v;[...w.children].forEach(x=>x.classList.toggle('active',x===b));};w.appendChild(b);});row.appendChild(w);}
