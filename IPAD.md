@@ -855,3 +855,7 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v470 — Simpler shades panel
 - Shadows & highlights now defaults to 1 highlight + 1 shadow and shows just two tidy rows (lighter, darker), one swatch per extracted colour, instead of a full column per colour. Up to 3 of each if wanted.
+
+## v471 — Fill swatch uses the Colour panel
+- The toolbar **Fill** swatch now opens the app's Colour panel (on its Fill tab, with your project palette, Mix and eyedropper) instead of the iPad's own colour picker, same as the Stroke swatch. With a shape selected it changes that shape's fill; with nothing selected it sets the colour of new fills and turns fill on.
+- Swatches that name a target (like Fill) keep it when the panel opens, instead of flipping back to Brush.

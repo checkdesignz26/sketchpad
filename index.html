@@ -1583,7 +1583,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v470'; // keep in step with CACHE in sw.js
+const APP_V='v471'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -10861,7 +10861,7 @@ function colGet(t){
   const f=sel.st.find(x=>!x.fillOf&&!x.fillColor&&x.fill&&x.fill.on);return palHex(f&&f.fill.color)||palHex(nextFill)||'#ffd166';
 }
 function colSetBrush(hex){const b=$('brushColor');b.value=hex;b.dispatchEvent(new Event('input',{bubbles:true}));try{tbColorSync();}catch(e){}}
-function colSetFill(hex){nextFill=hex;['fillColorInput','areaFillColorInput'].forEach(id=>{const e=$(id);if(e)e.value=hex;});}
+function colSetFill(hex){nextFill=hex;if(COL.tbFill&&!colSel()){autoFill.on=true;autoFill.same=false;autoFill.color=hex;try{localStorage.setItem('sp-autoFill',JSON.stringify(autoFill));}catch(e){}const c=$('autoFillColor'),sm=$('autoFillSame');if(c)c.value=hex;if(sm)sm.checked=false;try{tbFillSync(true);}catch(e){}}['fillColorInput','areaFillColorInput'].forEach(id=>{const e=$(id);if(e)e.value=hex;});}
 // hex: a colour, or null for None. commit: a finished choice (one undo step); false while a slider is still being dragged.
 function colApply(hex,commit){
   const t=COL.target,sel=colSel();
@@ -10894,7 +10894,7 @@ function colRefresh(force){
     const t=COL.target,hex=colGet(t);
     const sig=[t,hex,has,colGet('brush'),colGet('stroke'),colGet('fill'),eyedropOn].join('|');
     CS.hex=hex;
-    try{tbColorSync();}catch(e){}
+    try{tbColorSync();}catch(e){}try{tbFillSync();}catch(e){}
     if(sig===COL.sig&&!force)return;COL.sig=sig;
     document.querySelectorAll('#cuTargets [data-cut]').forEach(b=>{const k=b.dataset.cut;b.classList.toggle('active',k===t);const d=b.querySelector('.cu-dot');if(d)d.style.background=colGet(k);});
     const notes={brush:'Sets the colour of your next strokes (and Paint Inside).',
@@ -10916,11 +10916,12 @@ function colRefresh(force){
   }catch(e){}
 }
 function colourOpen(target){
-  if(target)COL.target=target;else colAuto(true);
+  COL.tbFill=!!(COL._fromTb&&target==='fill');COL._fromTb=false;
+  if(target){COL.target=target;COL.holdT=Date.now();}else colAuto(true);
   try{window.__sketchpadPanels.open('colour');}catch(e){}
   colRefresh(true);
 }
-window.__colOnOpen=()=>{colAuto(true);colRefresh(true);};
+window.__colOnOpen=()=>{if(COL.holdT&&Date.now()-COL.holdT<800){COL.lastSel=!!colSel();}else colAuto(true);colRefresh(true);}; // opened from a swatch that named its target (Fill): keep that target
 // the Custom (mix) controls
 function csPaintPrev(hex){
   const nt=$('csNative');if(nt)nt.value=hex;const pv=$('csPrev');if(pv)pv.style.background=hex;
@@ -10953,7 +10954,7 @@ function csSet(hex,commit,opt){
   hx.addEventListener('change',()=>{const h=palHex(hx.value);if(h)csSet(h,true);else colRefresh(true);});
   $('csNative').addEventListener('input',e=>csSet(e.target.value,false));$('csNative').addEventListener('change',e=>csSet(e.target.value,true));
   $('cuNone').onclick=()=>colApply(null,true);
-  document.querySelectorAll('#cuTargets [data-cut]').forEach(b=>b.onclick=()=>{COL.target=b.dataset.cut;colRefresh(true);});
+  document.querySelectorAll('#cuTargets [data-cut]').forEach(b=>b.onclick=()=>{COL.target=b.dataset.cut;COL.tbFill=false;colRefresh(true);});
   palAddColour=()=>colGet(COL.target);
   setInterval(colRefresh,300);
 })();
@@ -11010,6 +11011,7 @@ function csBindInput(el,target){
 }
 (function(){
   csBindInput($('tbColor'),null);
+  csBindInput($('tbFill'),()=>{COL._fromTb=true;return 'fill';}); // the toolbar Fill swatch opens the same Colour panel (with your palette) instead of the phone's colour picker
   csBindInput($('brushColor'),'brush');
   csBindInput($('grpColour'),'stroke');
   csBindInput($('grpFillColour'),'fill');
