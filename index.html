@@ -1070,6 +1070,18 @@ html.in-suite .suite-only{display:block!important}
         <div class="hint">The result uses the base shape's own colour and brush, stays a real editable vector path (including any hole it creates), and becomes the new selection. Only closed vector outlines work here — open paths, fills, and painted content aren't supported yet.</div>
       </div>
     </section>
+    <section class="section" id="shadowSection">
+      <div class="section-title">🌓 Inner shadow</div>
+      <div class="hint" style="margin-top:0;">Select a filled shape. A shadow is added on top of the fill, kept inside its edge and under the outline.</div>
+      <div class="slider-row"><label>Light from</label><input id="shLight" type="range" min="0" max="360" value="135"><span id="shLightV">↖</span></div>
+      <div class="slider-row"><label>Size</label><input id="shSize" type="range" min="4" max="120" value="28"><span id="shSizeV">28</span></div>
+      <div class="slider-row"><label>Darkness</label><input id="shDark" type="range" min="5" max="80" value="30"><span id="shDarkV">30%</span></div>
+      <div class="grid" style="margin-top:8px;grid-template-columns:1fr 1fr;gap:6px;">
+        <button id="shAdd" class="btn primary">🌓 Add shadow</button>
+        <button id="shRemove" class="btn">✖ Remove</button>
+      </div>
+      <div id="shMsg" class="hint"></div>
+    </section>
     <section class="section" id="booleanSection">
       <div class="section-title">🧩 Shape builder</div>
       <div id="boolHint" class="hint" style="margin-top:0;">Select a closed shape, turn on Pick shapes, then tap the other shapes you want to combine.</div>
@@ -1583,7 +1595,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v472'; // keep in step with CACHE in sw.js
+const APP_V='v473'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -7206,6 +7218,7 @@ function duplicateLayerDeep(src,name){
     const c=JSON.parse(JSON.stringify(s));
     c.id=idMap.get(s.id);c.layerId=copy.id;delete c._sig;
     if(c.fillOf&&idMap.has(c.fillOf))c.fillOf=idMap.get(c.fillOf);
+    if(c.shadowOf&&idMap.has(c.shadowOf))c.shadowOf=idMap.get(c.shadowOf);
     if(c.clipStrokeId&&idMap.has(c.clipStrokeId))c.clipStrokeId=idMap.get(c.clipStrokeId);
     return c;
   });
@@ -8749,6 +8762,56 @@ function runBoolean(op){
   pushHist();redraw();
   setStatus('🧩 '+label+(made.length>1?' into '+made.length+' separate shapes.':' into one shape.')+' Undo brings the originals back.');
 }
+
+// ---- inner shadow: fill shape minus itself nudged toward the light = a crescent that can never leave the shape ----
+function shArrow(a){return ['→','↗','↑','↖','←','↙','↓','↘'][Math.round((((a%360)+360)%360)/45)%8];}
+function shShade(hex,k){const m=/^#?([0-9a-f]{6})$/i.exec(palHex(hex)||'');if(!m)return '#000000';const n=parseInt(m[1],16);let r=n>>16,g=(n>>8)&255,b=n&255;
+  r=Math.round(r*(1-k)*0.92);g=Math.round(g*(1-k)*0.85);b=Math.round(b*(1-k)*0.95); // cooler, richer shade than plain black
+  return '#'+[r,g,b].map(v=>Math.max(0,Math.min(255,v)).toString(16).padStart(2,'0')).join('');}
+function shTarget(){
+  const o=strokes.find(x=>x.id===selectedStrokeId);if(!o)return null;
+  if(o.shadowOf){return strokes.find(x=>x.id===o.shadowOf)||null;}
+  return o;
+}
+function shBase(o){ // {stroke to get geometry from, fill colour}
+  if(o.fillOf){const out=strokes.find(x=>x.id===o.fillOf);return {geo:o,col:o.fillColor||o.color,outline:out||o};}
+  if(o.fillColor)return {geo:o,col:o.fillColor,outline:o};
+  const f=strokes.find(x=>x.fillOf===o.id);
+  if(f)return {geo:f,col:f.fillColor||f.color,outline:o};
+  if(o.fill&&o.fill.on)return {geo:o,col:o.fill.same?o.color:o.fill.color,outline:o};
+  return {geo:o,col:o.color,outline:o};
+}
+function shRemoveFor(id){const n=strokes.length;const lay=new Set();strokes=strokes.filter(x=>{if(x.shadowOf===id){lay.add(x.layerId);return false;}return true;});lay.forEach(l=>rebuildLayer(l));return n-strokes.length;}
+function shadowAdd(o,opt){
+  const b=shBase(o),A=strokeToPolyBoolPoly(b.geo);if(!A)return 'That shape has no area to shade.';
+  const a=opt.angle*Math.PI/180,dx=Math.cos(a)*opt.size,dy=-Math.sin(a)*opt.size; // angle measured like a clock-less compass: 0 = right, 90 = up
+  const B={regions:A.regions.map(r=>r.map(([x,y])=>[x+dx,y+dy])),inverted:false};
+  let res;try{res=ctTry(()=>PolyBool.difference(A,B));}catch(e){res=null;}
+  if(!res)return 'Could not work out the shadow for that shape.';
+  const regs=polyBoolRegionsToStrokeRegions(res.regions,1).filter(r=>polygonArea(r)>=2);
+  if(!regs.length)return 'No shadow fits. Try a smaller size.';
+  const out=b.outline,fillS=b.geo;
+  shRemoveFor(out.id);
+  const col=shShade(b.col,opt.dark),made=regs.map(r=>{const st={id:crypto.randomUUID(),brushId:out.brushId,layerId:fillS.layerId,color:col,fillColor:col,settings:null,points:r.map(p=>({x:p.x,y:p.y,pressure:.5})),nodes:null,closed:true,clipStrokeId:null,shape:null,shadowOf:out.id,fillOpacity:1};if(out.groupId)st.groupId=out.groupId;return st;});
+  strokes=strokes.filter(x=>x.shadowOf!==out.id);
+  const at=Math.max(strokes.indexOf(fillS),0)+1; // straight above the fill, still under the outline line
+  strokes.splice(at,0,...made);
+  rebuildLayer(fillS.layerId);
+  return null;
+}
+(function(){
+  const g=id=>document.getElementById(id);if(!g('shAdd'))return;
+  const upd=()=>{g('shLightV').textContent=shArrow(+g('shLight').value);g('shSizeV').textContent=g('shSize').value;g('shDarkV').textContent=g('shDark').value+'%';};
+  ['shLight','shSize','shDark'].forEach(id=>{g(id).oninput=()=>{upd();if(g('shAdd')._live)g('shAdd').click();};});upd();
+  g('shAdd').onclick=()=>{
+    const o=shTarget();if(!o||!o.points){g('shMsg').textContent='Select a filled shape first.';return;}
+    const err=shadowAdd(o,{angle:+g('shLight').value,size:+g('shSize').value,dark:+g('shDark').value/100});
+    if(err){g('shMsg').textContent=err;return;}
+    g('shMsg').textContent='Shadow added. Change the sliders and tap Add again to redo it.';
+    pushHist();redraw();
+  };
+  g('shRemove').onclick=()=>{const o=shTarget();if(!o)return;const n=shRemoveFor(o.fillOf||o.id)+(o.fillOf?0:0);g('shMsg').textContent=n?'Shadow removed.':'No shadow on this shape.';if(n){pushHist();redraw();}};
+})();
 function syncBooleanUI(){
   const sec=$('booleanSection');if(!sec||!sec.offsetParent)return;
   const L=boolPickedStrokes(),ok=L.length>=2;
@@ -11195,6 +11258,7 @@ function fillSync(){
       const o=strokes.find(x=>x.id===f.fillOf);
       if(!o||!o.fill||!o.fill.on||!efEligible(o)){strokes=strokes.filter(x=>x!==f);touched.add(f.layerId);if(o&&o.fill&&!efEligible(o))o.fill=null;}
     });
+    strokes.filter(x=>x.shadowOf&&!strokes.some(o=>o.id===x.shadowOf)).forEach(x=>{strokes=strokes.filter(q=>q!==x);touched.add(x.layerId);}); // shadow whose shape was deleted
     strokes.filter(o=>o.fill&&o.fill.on&&efEligible(o)).forEach(o=>{
       const col=o.fill.same?o.color:o.fill.color;
       let f=strokes.find(x=>x.fillOf===o.id);
@@ -11393,7 +11457,7 @@ setInterval(()=>{try{efRefresh();}catch(e){}},600);
     if(scope==='layer')return strokes.filter(s=>s.layerId===activeLayerId&&s.brushId!=='smudge');
     const ids=new Set(multiSel&&multiSel.strokeIds?multiSel.strokeIds:[]);
     const sel=pathEditStrokeId||selectedStrokeId;if(sel)ids.add(sel);
-    const out=strokes.filter(s=>ids.has(s.id)||ids.has(s.fillOf)||ids.has(s.contourOf)||ids.has(s.radialOf));
+    const out=strokes.filter(s=>ids.has(s.id)||ids.has(s.fillOf)||ids.has(s.shadowOf)||ids.has(s.contourOf)||ids.has(s.radialOf));
     return out;
   }
   function snapshot(list){return list.map(s=>({s,vals:colourProps(s).map(([g])=>g())}));}
@@ -11458,7 +11522,7 @@ setInterval(()=>{try{efRefresh();}catch(e){}},600);
     let list;
     if(rc.scope==='all')list=strokes.slice();
     else if(rc.scope==='layer')list=strokes.filter(s=>s.layerId===activeLayerId);
-    else{const ids=new Set(multiSel&&multiSel.strokeIds?multiSel.strokeIds:[]);const sel=pathEditStrokeId||selectedStrokeId;if(sel)ids.add(sel);list=strokes.filter(s=>ids.has(s.id)||ids.has(s.fillOf)||ids.has(s.contourOf)||ids.has(s.radialOf));}
+    else{const ids=new Set(multiSel&&multiSel.strokeIds?multiSel.strokeIds:[]);const sel=pathEditStrokeId||selectedStrokeId;if(sel)ids.add(sel);list=strokes.filter(s=>ids.has(s.id)||ids.has(s.fillOf)||ids.has(s.shadowOf)||ids.has(s.contourOf)||ids.has(s.radialOf));}
     const out=[],skip={locked:0,stamp:0,marble:0};
     list.forEach(s=>{
       if(s.brushId==='smudge'){skip.marble++;return;}
