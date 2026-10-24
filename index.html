@@ -370,6 +370,14 @@ html.in-suite .suite-only{display:block!important}
 .brush-swatch .fav-star.active{background:var(--orange);color:#3a2e26;border-color:var(--orange)}
 #eraserToggle.active{background:var(--dangerBg)!important;border:1px solid var(--dangerBorder)!important}
 .layer-row{display:grid;grid-template-columns:78px minmax(0,1fr) 34px;column-gap:12px;row-gap:8px;align-items:center;padding:8px;border-radius:14px;border:1px solid var(--cardBorder);margin-bottom:8px;background:var(--btnBg);cursor:pointer}
+.layer-row.ingroup{margin-left:16px}
+.layer-row.lsel{position:relative}
+.layer-row.lsel-on{outline:3px solid var(--pink);outline-offset:-1px}
+.layer-row.lsel-on:after{content:'✓';position:absolute;left:4px;top:4px;width:22px;height:22px;border-radius:50%;background:var(--pink);color:#fff;font-weight:900;font-size:14px;display:flex;align-items:center;justify-content:center}
+.group-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 10px;border-radius:14px;border:1px dashed var(--btnBorder);margin-bottom:8px;background:rgba(183,156,240,.15);cursor:pointer}
+.group-row .gname{flex:1 1 120px;min-width:0;font-weight:800;font-size:15px}
+.group-row .gbtn{width:38px;height:38px;border-radius:10px;border:1px solid var(--btnBorder);background:rgba(255,255,255,.65);font-size:18px;display:flex;align-items:center;justify-content:center;padding:0}
+.group-row.lsel-on{outline:3px solid var(--pink);outline-offset:-1px}
 .layer-row.active{border-color:var(--pink);box-shadow:0 0 0 2px rgba(255,142,214,.3)}
 .layer-row.locked .layer-name::after{content:' 🔒';font-size:11px}
 .layer-row.alock .layer-name::after{content:' α';font-size:12px;color:var(--pink)}
@@ -944,6 +952,8 @@ html.in-suite .suite-only{display:block!important}
     </section>
     <section class="section" id="layersSection">
       <div class="section-title">📚 Layers</div>
+      <div class="row" style="margin:4px 0 8px;"><button id="layerSelBtn" class="btn mini" style="flex:1" title="Tick several layers to group or merge them">☑ Select layers</button></div>
+      <div id="layerSelBar" style="display:none;margin:0 0 8px;"><div id="layerSelCount" class="hint" style="margin:0 0 6px"></div><div class="row" style="gap:6px;flex-wrap:wrap"><button id="layerGroupBtn" class="btn mini" style="flex:1" title="Put the ticked layers into one folder">📁 Group</button><button id="layerMergeBtn" class="btn mini" style="flex:1" title="Join the ticked layers (they must sit next to each other) into one layer">⤵ Merge</button><button id="layerUngroupBtn" class="btn mini" style="flex:1" title="Take the ticked layers out of their group">Ungroup</button></div></div>
       <div id="layersList"></div>
       <div class="row" style="margin-top:4px;">
         <button id="addLayerBtn" class="btn mini" style="flex:1">+ Add</button>
@@ -1562,7 +1572,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v452'; // keep in step with CACHE in sw.js
+const APP_V='v453'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -3207,7 +3217,7 @@ function applyMotifVersions(mv){
 function snapshot(){
   return {
     strokesJSON:strokesToJSON(),
-    layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock,blur:l.blur||0,clip:!!l.clip,tpl:l.tpl||0,arHide:l.arHide||0}))),
+    layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock,blur:l.blur||0,clip:!!l.clip,tpl:l.tpl||0,arHide:l.arHide||0,lg:l.lg||undefined,lgn:l.lg?l.lgn:undefined,lgc:l.lg&&l.lgc?1:undefined}))),
     activeLayerId,
     placed:JSON.stringify(placed.map(p=>({...p,img:null}))),
     selected,selectedStrokeId,
@@ -3264,7 +3274,7 @@ function applyLayerMeta(layerMeta,wantActiveId){
   const used=new Set();
   const take=m=>{const o=old.find(l=>l.id===m.id&&!used.has(l));if(o){used.add(o);return o;}return makeLayer(m.name);};
   if(layerMeta&&layerMeta.length){
-    layers=layerMeta.map(m=>{const l=take(m);l.name=m.name;l.id=m.id;l.kind=m.kind||'vector';l.visible=m.visible!==false;l.locked=!!m.locked;l.opacity=(m.opacity!=null)?m.opacity:100;l.blend=m.blend||'source-over';l.alphaLock=!!m.alphaLock;l.blur=+m.blur||0;l.clip=!!m.clip;l.tpl=m.tpl||0;l.arHide=m.arHide||0;return l;});
+    layers=layerMeta.map(m=>{const l=take(m);l.name=m.name;l.id=m.id;l.kind=m.kind||'vector';l.visible=m.visible!==false;l.locked=!!m.locked;l.opacity=(m.opacity!=null)?m.opacity:100;l.blend=m.blend||'source-over';l.alphaLock=!!m.alphaLock;l.blur=+m.blur||0;l.clip=!!m.clip;l.tpl=m.tpl||0;l.arHide=m.arHide||0;l.lg=m.lg||null;l.lgn=m.lgn||'';l.lgc=!!m.lgc;return l;});
   }else{
     layers=defaultLayers();
   }
@@ -4694,7 +4704,7 @@ function captureMotif(subset,stayInEdit){
   if(!preview){if(subset){strokes=allStrokes;rebuildAllLayers();}setStatus('Nothing to capture yet — draw with Apple Pencil first.');return}
   const source={
     strokesJSON:strokesToJSON(),
-    layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock,blur:l.blur||0,clip:!!l.clip,tpl:l.tpl||0,arHide:l.arHide||0}))),
+    layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock,blur:l.blur||0,clip:!!l.clip,tpl:l.tpl||0,arHide:l.arHide||0,lg:l.lg||undefined,lgn:l.lg?l.lgn:undefined,lgc:l.lg&&l.lgc?1:undefined}))),
     bounds:preview.bounds,
   };
   // returnToDraw=true: the user was mid-drawing when they captured — see the comment on
@@ -6435,6 +6445,107 @@ function moveMotifsToLayer(list,target){
   compositeDirty=true;renderLayersList();pushHist();redraw();
   setStatus(target?('🖼 '+list.length+' motif'+(list.length===1?'':'s')+' now on “'+name+'” — they follow that layer’s opacity, blend, order and visibility. Undo reverses it.'):('🖼 '+list.length+' motif'+(list.length===1?'':'s')+' set loose above all layers.'));
 }
+// ---- Select, group and merge layers --------------------------------------------------------------------------------------------
+// Groups are folders: they fold away, hide, lock and move as one (a layer belongs to a group through its `lg` id; layers of one group always sit together).
+// Merge joins neighbouring layers into the lowest one: every stroke and picture stays editable, nothing is flattened.
+let layerSelMode=false;const layerSel=new Set();
+function layerGroupMembers(gid){return layers.filter(l=>l.lg===gid);}
+function layerSelSync(){
+  const bar=$('layerSelBar'),btn=$('layerSelBtn');if(!bar||!btn)return;
+  bar.style.display=layerSelMode?'block':'none';btn.textContent=layerSelMode?'✓ Done selecting':'☑ Select layers';btn.classList.toggle('active',layerSelMode);
+  const n=layerSel.size;$('layerSelCount').textContent=n?n+' layer'+(n===1?'':'s')+' ticked. Tap rows to tick or untick.':'Tap layers to tick them, then Group or Merge.';
+  $('layerGroupBtn').disabled=n<2;$('layerMergeBtn').disabled=n<2;$('layerUngroupBtn').disabled=!layers.some(l=>layerSel.has(l.id)&&l.lg);
+}
+function layerGroupRow(gid){
+  const mem=layerGroupMembers(gid),first=mem[0];
+  const row=document.createElement('div');
+  row.className='group-row'+(layerSelMode&&mem.every(m=>layerSel.has(m.id))?' lsel-on':'');
+  const allVis=mem.every(m=>m.visible!==false),allLock=mem.every(m=>m.locked);
+  row.innerHTML='<span style="font-size:18px">'+(first.lgc?'▸':'▾')+'</span><span class="gname" title="Tap to fold or unfold. Press ✎ to rename">📁 '+escapeHtml(first.lgn||'Group')+' · '+mem.length+'</span>'
+    +'<button type="button" class="gbtn gvis" title="Show or hide the whole group">'+(allVis?'👁':'🚫')+'</button>'
+    +'<button type="button" class="gbtn glock" title="Lock or unlock the whole group">'+(allLock?'🔒':'🔓')+'</button>'
+    +'<button type="button" class="gbtn gren" title="Rename the group">✎</button>'
+    +'<button type="button" class="gbtn gup" title="Move the group up">↑</button>'
+    +'<button type="button" class="gbtn gdn" title="Move the group down">↓</button>'
+    +'<button type="button" class="gbtn gmerge" title="Merge the whole group into one layer">⤵</button>'
+    +'<button type="button" class="gbtn gungrp" title="Ungroup (the layers stay)">⛓</button>';
+  const q=s=>row.querySelector(s),stop=(el,fn)=>{el.onclick=e=>{e.stopPropagation();fn();};};
+  stop(q('.gvis'),()=>{mem.forEach(m=>{m.visible=!allVis;});compositeDirty=true;segVer++;renderLayersList();pushHist();redraw();});
+  stop(q('.glock'),()=>{mem.forEach(m=>{m.locked=!allLock;});renderLayersList();pushHist();});
+  stop(q('.gren'),async()=>{const r=await projAsk({title:'✎ Rename group',fields:[{key:'n',label:'Name',type:'text',value:first.lgn||'Group'}],ok:'Rename'});if(r&&String(r.n).trim()){const nm=String(r.n).trim().slice(0,40);mem.forEach(m=>{m.lgn=nm;});renderLayersList();pushHist();}});
+  stop(q('.gup'),()=>moveLayerGroup(gid,1));stop(q('.gdn'),()=>moveLayerGroup(gid,-1));
+  stop(q('.gmerge'),()=>mergeLayerIds(new Set(mem.map(m=>m.id))));
+  stop(q('.gungrp'),()=>{ungroupLayers(gid);});
+  row.onclick=()=>{
+    if(layerSelMode){const all=mem.every(m=>layerSel.has(m.id));mem.forEach(m=>{if(all)layerSel.delete(m.id);else layerSel.add(m.id);});renderLayersList();return;}
+    const f=!first.lgc;mem.forEach(m=>{m.lgc=f;});renderLayersList();pushHist();
+  };
+  return row;
+}
+function moveLayerGroup(gid,dir){
+  const idx=layers.map((l,i)=>l.lg===gid?i:-1).filter(i=>i>=0);if(!idx.length)return;
+  const a=idx[0],b=idx[idx.length-1],block=layers.slice(a,b+1);
+  const nb=dir>0?layers[b+1]:layers[a-1];if(!nb)return;
+  const nbN=nb.lg?layers.filter(l=>l.lg===nb.lg).length:1;
+  layers.splice(a,block.length);
+  layers.splice(dir>0?a+nbN:a-nbN,0,...block);
+  compositeDirty=true;segVer++;renderLayersList();pushHist();redraw();
+}
+function groupLayerIds(ids){
+  const sel=layers.filter(l=>ids.has(l.id));
+  if(sel.length<2){setStatus('📁 Tick two or more layers first.');return;}
+  const hi=Math.max(...sel.map(l=>layers.indexOf(l))),gid=crypto.randomUUID();
+  const names=new Set(layers.map(l=>l.lgn).filter(Boolean));let n=1;while(names.has('Group '+n))n++;
+  layers=layers.filter(l=>!ids.has(l.id));
+  layers.splice(hi+1-sel.length,0,...sel);
+  sel.forEach(l=>{l.lg=gid;l.lgn='Group '+n;l.lgc=false;});
+  layerSel.clear();layerSelMode=false;
+  compositeDirty=true;segVer++;renderLayersList();pushHist();redraw();
+  setStatus('📁 Grouped '+sel.length+' layers as "Group '+n+'". They now sit together. Tap the folder to fold it away, or ⛓ to ungroup.');
+}
+function ungroupLayers(gid){
+  const mem=layerGroupMembers(gid);mem.forEach(l=>{l.lg=null;l.lgn='';l.lgc=false;});
+  renderLayersList();pushHist();setStatus('⛓ Ungrouped. The '+mem.length+' layers stay where they are.');
+}
+async function mergeLayerIds(ids){
+  const sel=layers.filter(l=>ids.has(l.id));
+  if(sel.length<2){setStatus('⤵ Tick two or more layers to merge.');return;}
+  const idx=sel.map(l=>layers.indexOf(l));
+  if(Math.max(...idx)-Math.min(...idx)!==sel.length-1){setStatus('⤵ Merge needs layers that sit next to each other. Move them together first (↑ ↓), then merge.');return;}
+  if(sel.some(l=>l.locked)){setStatus('🔒 A locked layer is in the way. Unlock it first.');return;}
+  if(sel.some(l=>(l.kind&&l.kind!=='vector')||l.tpl)){setStatus('⤵ Guide and template layers cannot be merged.');return;}
+  if(editingMotifId||pathEditStrokeId){setStatus('⤵ Finish what you are editing first, then merge.');return;}
+  const tgt=sel[0],diff=[];
+  sel.slice(1).forEach(l=>{
+    if(l.visible===false)diff.push('"'+l.name+'" is hidden');
+    if((l.opacity==null?100:l.opacity)!==(tgt.opacity==null?100:tgt.opacity))diff.push('"'+l.name+'" has a different opacity');
+    if((l.blend||'source-over')!==(tgt.blend||'source-over'))diff.push('"'+l.name+'" has a different blend mode');
+    if(l.blur>0)diff.push('"'+l.name+'" is blurred');
+    if(l.clip)diff.push('"'+l.name+'" is clipped to the layer below');
+    if(l.alphaLock)diff.push('"'+l.name+'" has alpha lock on');
+  });
+  if(diff.length){
+    const ok=await projAsk({title:'⤵ Merge '+sel.length+' layers?',message:'These differ from the lowest layer, "'+tgt.name+'":\n• '+diff.slice(0,5).join('\n• ')+(diff.length>5?'\n• and '+(diff.length-5)+' more':'')+'\n\nThe merged layer uses the settings of "'+tgt.name+'". Undo brings everything back.',ok:'Merge',cancel:'Cancel'});
+    if(!ok)return;
+  }
+  const set=new Set(sel.map(l=>l.id)),order=new Map(sel.map((l,i)=>[l.id,i]));
+  const sortBy=(arr)=>{const slots=[],mem=[];arr.forEach((o,i)=>{if(set.has(o.layerId)){slots.push(i);mem.push({o,k:mem.length});}});
+    mem.sort((a,b)=>order.get(a.o.layerId)-order.get(b.o.layerId)||a.k-b.k);slots.forEach((pos,k)=>{arr[pos]=mem[k].o;});mem.forEach(m=>{m.o.layerId=tgt.id;});};
+  sortBy(strokes);sortBy(placed);
+  const gone=sel.slice(1);
+  layers=layers.filter(l=>!gone.includes(l));
+  gone.forEach(l=>{try{if(!l.asleep){l.canvas.width=l.canvas.height=1;if(l.dcanvas!==l.canvas)l.dcanvas.width=l.dcanvas.height=1;}}catch(e){}try{pixFree(l.id);}catch(e){}});
+  if(tgt.lg&&layers.filter(l=>l.lg===tgt.lg).length<2){tgt.lg=null;tgt.lgn='';tgt.lgc=false;} // a folder with one layer left is just a layer
+  tgt._tn=null;activeLayerId=tgt.id;layerSel.clear();layerSelMode=false;
+  rebuildLayer(tgt.id);compositeDirty=true;segVer++;
+  try{invalidateDetail();}catch(e){}
+  renderLayersList();pushHist();redraw();
+  setStatus('⤵ Merged '+sel.length+' layers into "'+tgt.name+'". Every stroke and picture is still editable. Undo brings the layers back.');
+}
+$('layerSelBtn').onclick=()=>{layerSelMode=!layerSelMode;if(!layerSelMode)layerSel.clear();renderLayersList();};
+$('layerGroupBtn').onclick=()=>groupLayerIds(new Set(layerSel));
+$('layerMergeBtn').onclick=()=>mergeLayerIds(new Set(layerSel));
+$('layerUngroupBtn').onclick=()=>{const gs=new Set(layers.filter(l=>layerSel.has(l.id)&&l.lg).map(l=>l.lg));layers.forEach(l=>{if(layerSel.has(l.id)&&l.lg){l.lg=null;l.lgn='';l.lgc=false;}});renderLayersList();pushHist();setStatus('⛓ Took '+layerSel.size+' layer'+(layerSel.size===1?'':'s')+' out of their group.');};
 function renderLayersList(){
   try{if(layers.length&&computeRenderScale()!==renderScale)applyTransform();}catch(e){}
   const host=$('layersList');if(!host)return;
@@ -6494,10 +6605,14 @@ function renderLayersList(){
         host.appendChild(r);
       });
     }}catch(e){}
+  let curG=null;
   layers.slice().reverse().forEach(layer=>{
+    if(layer.lg&&layer.lg!==curG){curG=layer.lg;host.appendChild(layerGroupRow(layer.lg));}
+    if(!layer.lg)curG=null;
+    if(layer.lg&&layer.lgc)return; // its group is folded away
     const row=document.createElement('div');
     const li=layers.indexOf(layer),isClip=!!layer.clip&&li>0;
-    row.className='layer-row'+(layer.visible?'':' hidden-l')+(layer.id===activeLayerId?' active':'')+(layer.locked?' locked':'')+(layer.alphaLock?' alock':'')+(isClip?' clipped':'');
+    row.className='layer-row'+(layer.lg?' ingroup':'')+(layerSelMode?' lsel':'')+(layerSelMode&&layerSel.has(layer.id)?' lsel-on':'')+(layer.visible?'':' hidden-l')+(layer.id===activeLayerId?' active':'')+(layer.locked?' locked':'')+(layer.alphaLock?' alock':'')+(isClip?' clipped':'');
     row.innerHTML=
       '<canvas class="layer-thumb" width="116" height="116" data-lid="'+layer.id+'" title="What is on this layer"></canvas>'
       +'<span class="layer-name" title="Tap to rename">'+escapeHtml(layer.name)+'</span>'
@@ -6509,6 +6624,7 @@ function renderLayersList(){
       +'<button type="button" class="layer-icon-btn layer-xform" title="Select this whole layer to resize, turn or move it">⤢</button>'
       +'<button type="button" class="layer-icon-btn layer-up" title="Move up">↑</button>'
       +'<button type="button" class="layer-icon-btn layer-down" title="Move down">↓</button>'
+      +'<button type="button" class="layer-icon-btn layer-mergedn" title="Merge down: join this layer into the one below it">⤵</button>'
       +'<button type="button" class="layer-icon-btn layer-clear" title="Clear this layer (empty it, keep the layer)">🧹</button>'
       +'<button type="button" class="layer-icon-btn layer-del" title="Delete this layer">✕</button>'
       +'</div>'
@@ -6550,9 +6666,12 @@ function renderLayersList(){
     row.querySelector('.layer-down').onclick=e=>{e.stopPropagation();moveLayer(layer.id,-1);};
     row.querySelector('.layer-del').onclick=e=>{e.stopPropagation();askDeleteLayer(layer.id);};
     row.querySelector('.layer-clear').onclick=e=>{e.stopPropagation();askClearLayer(layer.id);};
+    row.querySelector('.layer-mergedn').onclick=e=>{e.stopPropagation();if(li<=0){setStatus('⤵ This is the bottom layer: there is nothing below it to merge into.');return;}mergeLayerIds(new Set([layer.id,layers[li-1].id]));};
     row.onclick=()=>{activeLayerId=layer.id;renderLayersList();compositeDirty=true;redraw();};
+    if(layerSelMode)row.addEventListener('click',e=>{e.stopPropagation();e.preventDefault();if(layerSel.has(layer.id))layerSel.delete(layer.id);else layerSel.add(layer.id);renderLayersList();},true);
     host.appendChild(row);
   });
+  try{layerSelSync();}catch(e){}
   syncAreaFillLayerSelect();
   try{host.querySelectorAll('canvas.layer-thumb').forEach(cv=>{const l=layers.find(x=>x.id===cv.dataset.lid);if(l&&l._tn)cv.getContext('2d').drawImage(l._tn.cv,0,0);});}catch(e){} // keep the last picture on screen until the new one is ready
   try{layerThumbsSoon(0);}catch(e){}
@@ -6916,8 +7035,11 @@ function startLayerRename(id){
 }
 function moveLayer(id,dir){
   const i=layers.findIndex(l=>l.id===id);if(i<0)return;
-  const j=i+dir;if(j<0||j>=layers.length)return;
-  const tmp=layers[i];layers[i]=layers[j];layers[j]=tmp;
+  const me=layers[i];let j=i+dir;if(j<0||j>=layers.length)return;
+  const nb=layers[j];
+  if(me.lg&&nb.lg!==me.lg){me.lg=null;me.lgn='';me.lgc=false;setStatus('📁 "'+me.name+'" moved out of its group.');}
+  else if(nb.lg&&nb.lg!==me.lg){while(j+dir>=0&&j+dir<layers.length&&layers[j+dir].lg===nb.lg)j+=dir;} // hop over a whole group
+  layers.splice(i,1);layers.splice(j,0,me);
   compositeDirty=true;
   renderLayersList();pushHist();redraw();
 }
@@ -6986,6 +7108,7 @@ $('renameLayerBtn').onclick=()=>{const l=getActiveLayer();if(l)startLayerRename(
 function duplicateLayerDeep(src,name){
   const copy=makeLayer(name||src.name+' copy');
   copy.visible=src.visible;copy.opacity=src.opacity;copy.locked=false;copy.blur=src.blur||0;copy.blend=src.blend||'source-over';copy.alphaLock=!!src.alphaLock;copy.clip=!!src.clip;
+  copy.lg=src.lg||null;copy.lgn=src.lgn||'';copy.lgc=!!src.lgc;
   layers.splice(layers.indexOf(src)+1,0,copy);
   const srcStrokes=strokes.filter(s=>s.layerId===src.id),idMap=new Map();
   srcStrokes.forEach(s=>idMap.set(s.id,crypto.randomUUID()));
@@ -13151,7 +13274,7 @@ function enterEditMotif(){
  try{const sa=$('selectAreaBtn');if(sa&&sa.classList.contains('active'))sa.onclick();}catch(e){} // a left-over Select Area box would swallow the taps that pick strokes
  editingMotifStash={
   strokesJSON:strokesToJSON(),
-  layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock,blur:l.blur||0,clip:!!l.clip,tpl:l.tpl||0,arHide:l.arHide||0}))),
+  layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock,blur:l.blur||0,clip:!!l.clip,tpl:l.tpl||0,arHide:l.arHide||0,lg:l.lg||undefined,lgn:l.lg?l.lgn:undefined,lgc:l.lg&&l.lgc?1:undefined}))),
   activeLayerId,mode,
   hist:history,hIdx:hIndex, // the pattern's own Undo history, put back when the motif session ends
   mOld:{id:entry.id,source:cleanMotifSource(entry.source),src:entry.src}, // so Undo can bring the motif back as it was
@@ -13243,7 +13366,7 @@ function finishEditMotif(){
   setStatus('✓ Motif updated — every linked instance now reflects your changes.');
  };
  if(entry&&preview){
-  entry.source={strokesJSON:strokesToJSON(),layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock,blur:l.blur||0,clip:!!l.clip,tpl:l.tpl||0,arHide:l.arHide||0}))),bounds:preview.bounds};
+  entry.source={strokesJSON:strokesToJSON(),layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock,blur:l.blur||0,clip:!!l.clip,tpl:l.tpl||0,arHide:l.arHide||0,lg:l.lg||undefined,lgn:l.lg?l.lgn:undefined,lgc:l.lg&&l.lgc?1:undefined}))),bounds:preview.bounds};
   const img=new Image();
   img.onload=()=>{
    entry.img=img;entry.src=preview.src;
@@ -13286,7 +13409,7 @@ function recolourStrokeList(list,map){
 // trick Edit Motif uses, so Paint Inside clips and layer opacity come out identical), then restoring.
 function renderMotifSourcePreview(source){
   if(editingMotifId)return null;
-  const stash={strokesJSON:strokesToJSON(),layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock,blur:l.blur||0,clip:!!l.clip,tpl:l.tpl||0,arHide:l.arHide||0}))),activeLayerId};
+  const stash={strokesJSON:strokesToJSON(),layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock,blur:l.blur||0,clip:!!l.clip,tpl:l.tpl||0,arHide:l.arHide||0,lg:l.lg||undefined,lgn:l.lg?l.lgn:undefined,lgc:l.lg&&l.lgc?1:undefined}))),activeLayerId};
   let preview=null;
   try{
     strokes=JSON.parse(source.strokesJSON);
@@ -14559,7 +14682,7 @@ function buildDocObject(){
     tileW:TW,tileH:TH,tilePhys:tilePhys,repeatPreview:showTiling?'tiled':'single',canvasTiling:canvasTiling,
     brushSettings:BrushEngine.exportSettings(),
     strokesJSON:strokesToJSON(),
-    layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock,blur:l.blur||0,clip:!!l.clip,tpl:l.tpl||0,arHide:l.arHide||0}))),
+    layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock,blur:l.blur||0,clip:!!l.clip,tpl:l.tpl||0,arHide:l.arHide||0,lg:l.lg||undefined,lgn:l.lg?l.lgn:undefined,lgc:l.lg&&l.lgc?1:undefined}))),
     activeLayerId,
     placedJSON:JSON.stringify(placed.map(p=>({...p,img:null}))),
     groupsJSON:JSON.stringify(groups),motifsHidden,
@@ -14616,7 +14739,7 @@ function queueJob(fn){const job=saveChain.then(fn,fn);saveChain=job.then(()=>{},
 function blankDoc(lay,tile,phys,preview){
   const dl=defaultLayers();
   const tt=tile?tileFromRatio(tile.split(':')[0],tile.split(':')[1]):[TILE,TILE];
-  return {format:'sketchpad-project',version:2,tileW:tt[0],tileH:tt[1],strokesJSON:'[]',layersJSON:JSON.stringify(dl.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock,blur:l.blur||0,clip:!!l.clip,tpl:l.tpl||0,arHide:l.arHide||0}))),activeLayerId:dl[dl.length-1].id,placedJSON:'[]',groupsJSON:'{}',motifs:[],editingMotifId:null,editingMotifStash:null,bgSrc:null,bgOpacity:1,bgShown:true,tracesJSON:'[]',traceLocked:true,customBrushes:[],layout:lay||'grid',activeTemplate:null,savedPalettes:savedPalettes.map(p=>({id:crypto.randomUUID(),name:p.name,hexes:p.hexes.slice()})),tilePhys:phys||null,repeatPreview:preview||'tiled',savedAt:Date.now()};
+  return {format:'sketchpad-project',version:2,tileW:tt[0],tileH:tt[1],strokesJSON:'[]',layersJSON:JSON.stringify(dl.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock,blur:l.blur||0,clip:!!l.clip,tpl:l.tpl||0,arHide:l.arHide||0,lg:l.lg||undefined,lgn:l.lg?l.lgn:undefined,lgc:l.lg&&l.lgc?1:undefined}))),activeLayerId:dl[dl.length-1].id,placedJSON:'[]',groupsJSON:'{}',motifs:[],editingMotifId:null,editingMotifStash:null,bgSrc:null,bgOpacity:1,bgShown:true,tracesJSON:'[]',traceLocked:true,customBrushes:[],layout:lay||'grid',activeTemplate:null,savedPalettes:savedPalettes.map(p=>({id:crypto.randomUUID(),name:p.name,hexes:p.hexes.slice()})),tilePhys:phys||null,repeatPreview:preview||'tiled',savedAt:Date.now()};
 }
 function docCounts(d){const n=j=>{try{return JSON.parse(j||'[]').length;}catch(e){return 0;}};return {strokes:n(d.strokesJSON),motifs:(d.motifs||[]).length};}
 function makeThumb(){
@@ -15253,11 +15376,16 @@ async function bootProjects(){
     const meta=metas.find(m=>m.id===id)||metas.sort((a,b)=>b.updatedAt-a.updatedAt)[0];
     // Reopen the last project after an update / reload unless she switched it off. bootOpen's crash guard and 6 s open limit protect against a heavy swirly project.
     let pref=null;try{pref=localStorage.getItem('sp-autoOpen');}catch(e){}
-    const auto=pref!=='0';
+    // Crash-loop guard: if the app was killed last time (the iPad ran out of memory), do not reopen the same project on its own. That left the app stuck on
+    // "a problem repeatedly occurred" with no way to reach the Projects list. Start on the Projects screen instead; tapping the project opens it as usual.
+    const crashedLast=Array.isArray(_prevCrumbs);
+    const asked=/[?&]start=1\b/.test(location.search);
+    const auto=pref!=='0'&&!crashedLast&&!asked;
     startLast=meta;
     if(auto){await bootOpen(meta);return;}
     // Start screen: nothing is opened (and nothing can crash) until she picks a project.
     await enterNoProject(true);startMode=true;openProjects();
+    if(crashedLast||asked)setTimeout(()=>{try{setStatus(asked&&!crashedLast?'Start screen: nothing was opened for you. Pick a project.':'⚠️ The app closed unexpectedly last time, so “'+meta.name+'” was not opened for you. Tap it in Projects when you are ready.');}catch(e){}},400);
   }catch(e){
     console.warn('[sketchpad] project storage unavailable',e);
     autosaveBlocked=true;$('saveStatusPill').textContent='⚠️ Storage unavailable';$('saveStatusPill').classList.add('failed');
@@ -15327,7 +15455,7 @@ async function applyDocObject(doc,opts){
       if(entry){
         const preview=renderCurrentArtworkPreview();
         if(preview){
-          entry.source={strokesJSON:strokesToJSON(),layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock,blur:l.blur||0,clip:!!l.clip,tpl:l.tpl||0,arHide:l.arHide||0}))),bounds:preview.bounds};
+          entry.source={strokesJSON:strokesToJSON(),layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock,blur:l.blur||0,clip:!!l.clip,tpl:l.tpl||0,arHide:l.arHide||0,lg:l.lg||undefined,lgn:l.lg?l.lgn:undefined,lgc:l.lg&&l.lgc?1:undefined}))),bounds:preview.bounds};
           await new Promise(res=>{const img=new Image();img.onload=()=>{entry.img=img;entry.src=preview.src;placed.forEach(p=>{if(p.motifId===entry.id)p.img=img;});res();};img.onerror=res;img.src=preview.src;});
         }
       }
@@ -18283,7 +18411,7 @@ boot();
 // Seamlessly Creative suite integration (see the bottom of this file once frozen into the
 // suite), just exposed unconditionally here since it's harmless and useful standalone too.
 $('tbTimelapseBtn').onclick=()=>{if(window.SPTimelapse)SPTimelapse.open();else setStatus('Timelapse is still loading — try again in a moment.');};
-window.__sketchpadGetState=()=>({strokeCount:strokes.length,strokes,placed,motifs,activeBrushId,eraserActive,selectedStrokeId,groups,multiSel,groupInsideId,selAddArmed,histLen:history.length,hIndex,layout,layers:layers.map(l=>({id:l.id,name:l.name,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock,blur:l.blur||0,clip:!!l.clip,tpl:l.tpl||0,arHide:l.arHide||0})),activeLayerId,pathEditStrokeId,pathEditNodes,pathEditClosed,selectedNodeIndex,pathEditTool,copiedBrushStyle,continueStrokeId,joinPendingStrokeId,paintMode,paintInsideTargetId,armedShapeType,constrainShape,holdTriggered,holdCorrectedShape,currentPointsLength:currentPoints.length,zoom,panX,panY,baseScale,renderScale,rot,canvasBackingWidth:canvas.width,displayBackingWidth:displayCanvas.width,sidebarCollapsed});
+window.__sketchpadGetState=()=>({strokeCount:strokes.length,strokes,placed,motifs,activeBrushId,eraserActive,selectedStrokeId,groups,multiSel,groupInsideId,selAddArmed,histLen:history.length,hIndex,layout,layers:layers.map(l=>({id:l.id,name:l.name,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock,blur:l.blur||0,clip:!!l.clip,tpl:l.tpl||0,arHide:l.arHide||0,lg:l.lg||undefined,lgn:l.lg?l.lgn:undefined,lgc:l.lg&&l.lgc?1:undefined})),activeLayerId,pathEditStrokeId,pathEditNodes,pathEditClosed,selectedNodeIndex,pathEditTool,copiedBrushStyle,continueStrokeId,joinPendingStrokeId,paintMode,paintInsideTargetId,armedShapeType,constrainShape,holdTriggered,holdCorrectedShape,currentPointsLength:currentPoints.length,zoom,panX,panY,baseScale,renderScale,rot,canvasBackingWidth:canvas.width,displayBackingWidth:displayCanvas.width,sidebarCollapsed});
 // Test-only: exposes the app's own screen<->canvas coordinate mapping directly, so a test can
 // place a real pointer event at the exact screen position corresponding to a given canvas-space
 // point (or vice versa) at whatever zoom/pan/rotation is currently active, without having to
