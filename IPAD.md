@@ -902,3 +902,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 ## v484 — Shadow & highlight panel
 - Own panel "Shadow & highlight" (rail icon with sliders, also a "🌓 Shadow & highlight…" button in the Stroke panel's Fill box). Bigger sliders and buttons.
 - Sliders update the shadow and highlight live; pieces are updated in place so their layers keep their opacity/blur/blend.
+
+## v485 — Highlight is a thin shine
+- Highlight now has its own "Highlight size" slider (default 10) and is a narrow arc set a little inside the edge on the light side, instead of a mirror of the shadow.
