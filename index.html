@@ -1595,7 +1595,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v476'; // keep in step with CACHE in sw.js
+const APP_V='v477'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -8784,6 +8784,14 @@ function shBase(o){ // {stroke to get geometry from, fill colour}
   const f=strokes.find(x=>x.fillOf===o.id);
   if(f)return {geo:f,col:f.fillColor||f.color,outline:o};
   if(o.fill&&o.fill.on)return {geo:o,col:o.fill.same?o.color:o.fill.color,outline:o};
+  // a plain outline: shade the largest colour fill that sits around the middle of it
+  try{const pts=o.nodes?nodesToPoints(o.nodes,true):(o.points||[]);if(pts.length>2){
+    let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;pts.forEach(q=>{x0=Math.min(x0,q.x);y0=Math.min(y0,q.y);x1=Math.max(x1,q.x);y1=Math.max(y1,q.y);});
+    const cx=(x0+x1)/2,cy=(y0+y1)/2;let best=null,ba=0;
+    strokes.forEach(f=>{if(!f.fillColor||f.shadowOf||f.text||f.patFill||f.id===o.id)return;const P=strokeToPolyBoolPoly(f);if(!P)return;
+      const inside=P.regions.reduce((n,r)=>{let c=false;for(let i=0,j=r.length-1;i<r.length;j=i++){if(((r[i][1]>cy)!==(r[j][1]>cy))&&(cx<(r[j][0]-r[i][0])*(cy-r[i][1])/(r[j][1]-r[i][1])+r[i][0]))c=!c;}return n^(c?1:0);},0);
+      if(!inside)return;const ar=P.regions.reduce((q,r)=>q+polygonArea(r.map(v=>({x:v[0],y:v[1]}))),0);if(ar>ba){ba=ar;best=f;}});
+    if(best)return {geo:best,col:best.fillColor,outline:o,auto:true};}}catch(e){}
   return {geo:o,col:o.color,outline:o};
 }
 function shRemoveFor(id){const n=strokes.length;const lay=new Set();strokes=strokes.filter(x=>{if(x.shadowOf===id){lay.add(x.layerId);return false;}return true;});lay.forEach(l=>rebuildLayer(l));return n-strokes.length;}
@@ -8797,7 +8805,7 @@ function shadowAdd(o,opt){
   if(!res)return 'Could not work out the shadow for that shape.';
   const regs=polyBoolRegionsToStrokeRegions(res.regions,1).filter(r=>polygonArea(r)>=2);
   if(!regs.length)return 'No shadow fits. Try a smaller size.';
-  const out=b.outline,fillS=b.geo;
+  const out=b.auto?b.geo:b.outline,fillS=b.geo;
   shRemoveFor(out.id);
   const col=shShade(b.col,opt.dark),made=regs.map(r=>{const st={id:crypto.randomUUID(),brushId:out.brushId,layerId:fillS.layerId,color:col,fillColor:col,settings:null,points:r.map(p=>({x:p.x,y:p.y,pressure:.5})),nodes:null,closed:true,clipStrokeId:null,shape:null,shadowOf:out.id,fillOpacity:1};if(out.groupId)st.groupId=out.groupId;return st;});
   strokes=strokes.filter(x=>x.shadowOf!==out.id);
@@ -8817,7 +8825,7 @@ function shadowAdd(o,opt){
     g('shMsg').textContent='Shadow added. Change the sliders and tap Add again to redo it.';
     pushHist();redraw();
   };
-  g('shRemove').onclick=()=>{const o=shTarget();if(!o)return;const n=shRemoveFor(o.fillOf||o.id)+(o.fillOf?0:0);g('shMsg').textContent=n?'Shadow removed.':'No shadow on this shape.';if(n){pushHist();redraw();}};
+  g('shRemove').onclick=()=>{const o=shTarget();if(!o)return;let n=shRemoveFor(o.fillOf||o.id);try{const bb=shBase(o);if(bb.auto)n+=shRemoveFor(bb.geo.id);}catch(e){}g('shMsg').textContent=n?'Shadow removed.':'No shadow on this shape.';if(n){pushHist();redraw();}};
 })();
 function syncBooleanUI(){
   const sec=$('booleanSection');if(!sec||!sec.offsetParent)return;
