@@ -1573,7 +1573,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v466'; // keep in step with CACHE in sw.js
+const APP_V='v467'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -6598,7 +6598,24 @@ function renderLayersList(){
         gs.onchange=e=>{e.stopPropagation();if(gs.value==='__pick')return;moveMotifsToLayer(placed.filter(q=>q.img),gs.value);};
         gr.onclick=e=>e.stopPropagation();host.appendChild(gr);
       }
-      if(motifsOpen)pm.slice().reverse().forEach(p=>{
+      const wmCopies=pm.filter(q=>isWmMotif(motifs.find(m=>m.id===q.motifId)));
+      if(motifsOpen&&wmCopies.length>1){ // the watermark logo grid is ONE row here, not one per copy
+        const w0=wmCopies[0],allHid=wmCopies.every(q=>q.hidden),pa0=Math.round((w0.alpha!=null?w0.alpha:1)*100);
+        const r=document.createElement('div');r.className='layer-row motif-sub'+(allHid?' hidden-l':'');r.style.marginLeft='14px';
+        r.innerHTML='<canvas class="layer-thumb" width="116" height="116"></canvas><span class="layer-name">Watermark logo · '+wmCopies.length+' copies</span>'
+          +'<button type="button" class="layer-vis'+(allHid?'':' on')+'" title="Show/hide the whole watermark">'+(allHid?'':'✓')+'</button>'
+          +'<div class="layer-tools"><button type="button" class="layer-icon-btn mdel" title="Delete the whole watermark">✕</button></div>'
+          +'<div class="layer-opline"><span>Opacity</span><input type="range" class="mop" min="0" max="100" step="1" value="'+pa0+'"><span class="mpct">'+pa0+'%</span></div>';
+        const c2=r.querySelector('canvas').getContext('2d'),sc=Math.min(104/w0.w,104/w0.h);c2.fillStyle='#fff';c2.fillRect(0,0,116,116);try{c2.drawImage(w0.img,58-w0.w*sc/2,58-w0.h*sc/2,w0.w*sc,w0.h*sc);}catch(e){}
+        r.onclick=()=>{};
+        r.querySelector('.layer-vis').onclick=e=>{e.stopPropagation();wmCopies.forEach(q=>{q.hidden=!allHid;});compositeDirty=true;renderLayersList();pushHist();redraw();};
+        r.querySelector('.mdel').onclick=e=>{e.stopPropagation();const ids=new Set(wmCopies.map(q=>q.id));placed=placed.filter(q=>!ids.has(q.id));if(ids.has(selected))selected=null;try{rebuildAllLayers();}catch(er){}renderLayersList();pushHist();redraw();setStatus('Watermark removed.');};
+        const mop=r.querySelector('.mop'),mpct=r.querySelector('.mpct');mop.onclick=e=>e.stopPropagation();
+        mop.oninput=e=>{e.stopPropagation();const v=+mop.value;mpct.textContent=v+'%';wmCopies.forEach(q=>{q.alpha=v/100;});compositeDirty=true;redraw();};
+        mop.onchange=()=>{pushHist();};
+        host.appendChild(r);
+      }
+      if(motifsOpen)pm.slice().reverse().filter(q=>!(wmCopies.length>1&&wmCopies.includes(q))).forEach(p=>{
         const mo=motifs.find(q=>q.id===p.motifId),nm=(mo&&mo.name)||'Motif';
         const r=document.createElement('div');
         r.className='layer-row motif-sub'+(p.hidden?' hidden-l':'')+(p.id===selected?' active':'');
