@@ -963,7 +963,7 @@ html.in-suite .suite-only{display:block!important}
     </section>
     <section class="section" id="layersSection">
       <div class="section-title">📚 Layers</div>
-      <div class="row" style="margin:4px 0 8px;"><button id="layerSelBtn" class="btn mini" style="flex:1" title="Tick several layers to group or merge them">☑ Select layers</button></div>
+      <div class="row" style="margin:4px 0 8px;"><button id="layerSelBtn" class="btn mini" style="flex:1" title="Tick several layers to group or merge them">☑ Select layers</button><button id="dupFillBtn" class="btn mini" style="flex:1" title="Delete colour fills that sit exactly on top of an identical fill, and the empty layers they leave behind">🧹 Remove duplicate fills</button></div>
       <div id="layerSelBar" style="display:none;margin:0 0 8px;"><div id="layerSelCount" class="hint" style="margin:0 0 6px"></div><div class="row" style="gap:6px;flex-wrap:wrap"><button id="layerGroupBtn" class="btn mini" style="flex:1" title="Put the ticked layers into one folder">📁 Group</button><button id="layerMergeBtn" class="btn mini" style="flex:1" title="Join the ticked layers (they must sit next to each other) into one layer">⤵ Merge</button><button id="layerUngroupBtn" class="btn mini" style="flex:1" title="Take the ticked layers out of their group">Ungroup</button><button id="layerDelSelBtn" class="btn mini" style="flex:1" title="Delete every ticked layer">🗑 Delete</button></div></div>
       <div id="layersList"></div>
       <div class="row" style="margin-top:4px;">
@@ -1597,7 +1597,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v481'; // keep in step with CACHE in sw.js
+const APP_V='v482'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -3255,11 +3255,11 @@ function histSize(){let n=0;history.forEach(h=>{n+=(h.strokesJSON||'').length+(h
 function histTrim(){while(history.length>4&&histSize()>48e6)history.shift();}
 // Empty layers left behind by "a layer for each object" (a stroke that was undone, erased, deleted or joined leaves its layer empty) are tidied away.
 // 'auto' = only layers made this session, never the one you are on; 'named' = also layers an earlier session made, found by their names (Stroke 7, Circle 2...).
-const AUTO_LAYER_NAME=/^(Stroke|Shape|Circle|Ellipse|Rectangle|Rounded rectangle|Triangle|Line|Star|Polygon|Diamond|Heart|Arrow)( \d+)?$/;
+const AUTO_LAYER_NAME=/^(Fill|Shadow|Highlight|Stroke|Shape|Circle|Ellipse|Rectangle|Rounded rectangle|Triangle|Line|Star|Polygon|Diamond|Heart|Arrow)( \d+)?$/;
 function pruneEmptyLayers(mode){
   if(layers.length<2)return 0;
   const used=new Set();strokes.forEach(s=>used.add(s.layerId));placed.forEach(p=>used.add(p.layerId));
-  const gone=layers.filter(l=>!used.has(l.id)&&l.id!==activeLayerId&&!l.locked&&!l.clip&&!l.tpl&&(!l.kind||l.kind==='vector')&&l.visible!==false===true&&(l.opacity==null||l.opacity===100)&&!(l.blend&&l.blend!=='source-over')&&!(l.blur>0)&&(l.autoObj||(mode==='named'&&AUTO_LAYER_NAME.test(l.name))));
+  const gone=layers.filter(l=>!used.has(l.id)&&l.id!==activeLayerId&&!l.locked&&!l.clip&&!l.tpl&&(!l.kind||l.kind==='vector')&&l.visible!==false===true&&(l.opacity==null||l.opacity===100)&&!(l.blend&&l.blend!=='source-over')&&!(l.blur>0)&&(l.autoObj||/^(Fill|Shadow|Highlight)( \d+)?$/.test(l.name)||(mode==='named'&&AUTO_LAYER_NAME.test(l.name))));
   if(!gone.length||gone.length>=layers.length)return 0;
   const ids=new Set(gone.map(l=>l.id));
   layers=layers.filter(l=>!ids.has(l.id));
@@ -5083,7 +5083,7 @@ function syncStrokeSelectionUI0(){
     const key=ids.join(',');
     if(key&&key!==syncStrokeSelectionUI._selKey&&!ids.some(id=>{const q=strokes.find(x=>x.id===id);return q&&q.text;})){ // picking a piece of text leaves the active layer alone, so the next motif or line does not land on the text's layer
       const lids=new Set(ids.map(id=>{const q=strokes.find(x=>x.id===id);return q&&q.layerId;}).filter(Boolean));
-      if(lids.size===1){const lid=[...lids][0];if(lid!==activeLayerId&&layers.some(l=>l.id===lid&&!l.locked)){activeLayerId=lid;try{renderLayersList();}catch(e){}setStatus('Switched to the layer this is on.');}}
+      if(lids.size===1){const lid=[...lids][0];if(lid!==activeLayerId&&layers.some(l=>l.id===lid&&!l.locked)){activeLayerId=lid;try{renderLayersList();setTimeout(()=>{try{const r=document.querySelector('#layersList .layer-row.active');if(r)r.scrollIntoView({block:'nearest'});}catch(_){}},40);}catch(e){}setStatus('Switched to the layer this is on.');}}
     }
     syncStrokeSelectionUI._selKey=key;
   }catch(e){}
@@ -8825,7 +8825,7 @@ function shadowAdd(o,opt){
   const ordered=regs.slice().sort((u,v)=>ra(v)-ra(u));
   const made=[],newL=[];
   ordered.forEach((r,k)=>{
-    const L=makeLayer(k?nm+' '+(k+1):nm);L.shadowLayer=true;layers.splice(at+1+k,0,L);newL.push(L);
+    const L=makeLayer(k?nm+' '+(k+1):nm);L.shadowLayer=true;L.autoObj=true;layers.splice(at+1+k,0,L);newL.push(L);
     const nodes=pointsToNodes(r.map(p=>({x:p.x,y:p.y,pressure:.5})),true);
     const st={id:crypto.randomUUID(),brushId:out.brushId,layerId:L.id,color:col,fillColor:col,settings:null,points:nodesToPoints(nodes,true),nodes,closed:true,clipStrokeId:null,shape:null,shadowOf:out.id,shKind:hl?'highlight':'shadow',fillOpacity:1};
     if(out.groupId)st.groupId=out.groupId;made.push(st);});
@@ -8836,6 +8836,7 @@ function shadowAdd(o,opt){
   try{renderLayersList();}catch(e){}
   return null;
 }
+window.__sketchpadShadow=(id,kind)=>{const o=strokes.find(x=>x.id===id);if(!o)return 'no stroke';const r=shadowAdd(o,{angle:135,size:28,dark:.3,kind:kind||'shadow'});if(!r){pushHist();redraw();}return r;};
 (function(){
   const g=id=>document.getElementById(id);if(!g('shAdd'))return;
   const upd=()=>{g('shLightV').textContent=shArrow(+g('shLight').value);g('shSizeV').textContent=g('shSize').value;g('shDarkV').textContent=g('shDark').value+'%';};
@@ -8867,6 +8868,23 @@ function shadowAdd(o,opt){
     if(err){g('shMsg').textContent=err;return;}g('shMsg').textContent='Highlight added on its own layer.';pushHist();redraw();};
   g('shRemove').onclick=()=>{const o=shTarget();if(!o)return;let n=shRemoveFor(o.fillOf||o.id);try{const bb=shBase(o);if(bb.auto)n+=shRemoveFor(bb.geo.id);}catch(e){}g('shMsg').textContent=n?'Shadow removed.':'No shadow on this shape.';if(n){pushHist();redraw();}};
 })();
+
+// ---- duplicate colour fills: tapping Area Fill again on the same spot stacks an identical fill on a new layer ----
+(function(){const b=document.getElementById('dupFillBtn');if(!b)return;
+  b.onclick=()=>{
+    const seen=new Map(),kill=new Set();
+    strokes.forEach(s=>{if(!s.fillColor||s.shadowOf||s.text||!s.points||s.points.length<3)return;
+      let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;s.points.forEach(p=>{x0=Math.min(x0,p.x);y0=Math.min(y0,p.y);x1=Math.max(x1,p.x);y1=Math.max(y1,p.y);});
+      const k=[String(s.fillColor).toLowerCase(),s.points.length,Math.round(x0),Math.round(y0),Math.round(x1),Math.round(y1),s.fillGradient?1:0].join('|');
+      if(seen.has(k))kill.add(seen.get(k)); // keep the later (upper) one, drop the older twin
+      seen.set(k,s.id);});
+    if(!kill.size){setStatus('🧹 No duplicate fills found.');return;}
+    const lay=new Set(strokes.filter(s=>kill.has(s.id)).map(s=>s.layerId));
+    strokes=strokes.filter(s=>!kill.has(s.id));lay.forEach(id=>{try{rebuildLayer(id);}catch(e){}});
+    try{pruneEmptyLayers('named');}catch(e){}
+    pushHist();redraw();try{renderLayersList();}catch(e){}
+    setStatus('🧹 Removed '+kill.size+' duplicate fill'+(kill.size===1?'':'s')+' and the empty layers they left. Undo brings them back.');
+  };})();
 function syncBooleanUI(){
   const sec=$('booleanSection');if(!sec||!sec.offsetParent)return;
   const L=boolPickedStrokes(),ok=L.length>=2;
@@ -10343,7 +10361,7 @@ function areaFillNewLayerUnder(pts,gap){
   if(!near.size)return null;
   let best=null;near.forEach((n,id)=>{const i=layers.findIndex(l=>l.id===id);if(best===null||i>best.i)best={id,i};}); // the highest layer with lines around the area
   const top=layers[best.i];let name='Fill 1',n=1;while(layers.some(l=>l.name===name))name='Fill '+(++n);
-  const nl=makeLayer(name);nl.lg=top.lg||null;nl.lgn=top.lgn||'';nl.lgc=false;
+  const nl=makeLayer(name);nl.autoObj=true;nl.lg=top.lg||null;nl.lgn=top.lgn||'';nl.lgc=false;
   layers.splice(best.i,0,nl);
   return nl;
 }
