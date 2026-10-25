@@ -1015,3 +1015,6 @@ Area Fill grabs every canvas tap while it is on, which also made it hard to sele
 
 ## v515 — Moving a motif is smooth again
 Dragging a motif used to re-flatten every layer behind it on each pointer move (about 2 s of work for a 60-move drag on the Shading project). Now the motif being dragged is drawn as one picture on the live layer, and the layers are rebuilt once when you let go (same idea the stroke drag already used). Final position and picture are pixel-identical to before; slow frames (95th percentile) 66 ms -> 17 ms, long freezes 56 -> 2. Only motifs that sit on a layer use this; group moves are unchanged. Switch back with window.__noLiveMotif=true.
+
+## v516 — My shading styles
+Shadow panel, bottom: "🎨 My shading styles". 💾 Save stores the current sliders (light, sizes, highlight brightness, darkness, blur on/off and amounts) under a name (kept on this device). "Apply to the selected shape" shades one fill with the style; "Apply to colours I tick…" lists the colour fills of the open motif (a selected motif is opened for editing first) and shades every shape of the ticked colours. Results are ordinary shadow/highlight pieces on their own layers, so sliders, Edit points, Draw my own, blur and Undo all still work; the panel sliders are set to the style when applied. Hand-drawn pieces are kept.
