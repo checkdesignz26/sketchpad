@@ -1620,7 +1620,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v504'; // keep in step with CACHE in sw.js
+const APP_V='v505'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -2750,17 +2750,49 @@ function segScratchGet(pw,ph,sc){
   const c=segScratch.getContext('2d');c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,pw,ph);c.setTransform(sc,0,0,sc,0,0);return c;
 }
 function segScratchFree(){/* kept allocated: re-creating it on every layer switch made iPad Safari run out of memory */}
+// The flattened picture of a run of sleeping layers is only as big as the artwork on them (plus a safe margin), not the whole canvas:
+// one small bowl used to cost two full-size pictures. Anything unusual (blur, tiling, pictures, text, odd layers) keeps the full size.
+let segScratchC=null;
+function segWhy(w){window.__segWhy=w;return null;}
+function segBounds(item){
+  if(window.__segCrop===false)return segWhy('off');
+  const ids=new Set();
+  for(const l of item.layers){if(l.blur>0||(l.kind&&l.kind!=='vector'))return segWhy('layer '+l.name+' blur/kind');ids.add(l.id);}
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9,n=0,sz=0;
+  for(const m of placed){if(!ids.has(m.layerId))continue;if(!m.img)return segWhy('placed non-picture');const k=Math.max(1,Math.abs(m.fx==null?1:m.fx),Math.abs(m.fy==null?1:m.fy)),a=motifAABB({...m,w:m.w*k,h:m.h*k});x0=Math.min(x0,a.x0);x1=Math.max(x1,a.x1);y0=Math.min(y0,a.y0);y1=Math.max(y1,a.y1);n++;sz=Math.max(sz,40);}
+  for(const o of strokes){
+    if(!ids.has(o.layerId))continue;
+    if(o.text||o.img||o.brushId==='eraser'||o.brushId==='smudge'||!o.points||!o.points.length)return segWhy('stroke '+(o.brushId||'')+' '+(o.text?'text':'')+(o.points?o.points.length:'nopts'));
+    for(const q of o.points){if(q.x<x0)x0=q.x;if(q.x>x1)x1=q.x;if(q.y<y0)y0=q.y;if(q.y>y1)y1=q.y;}
+    const z=(o.settings&&o.settings.size)||30;if(z>sz)sz=z;n++;
+  }
+  if(!n)return [0,0,1,1]; // nothing drawn on these layers: a 1-pixel picture is enough
+  const pad=sz*3+48;x0=Math.max(0,Math.floor(x0-pad));y0=Math.max(0,Math.floor(y0-pad));x1=Math.min(W,Math.ceil(x1+pad));y1=Math.min(H,Math.ceil(y1+pad));
+  if(showTiling&&(x0<CX||y0<CY||x1>CX+TW||y1>CY+TH))return segWhy('tile edge'); // art near a tile edge is also drawn wrapped round to the other side: keep the full picture
+  if(x1<=x0||y1<=y0||(x1-x0)*(y1-y0)>0.7*W*H)return segWhy('big '+(x1-x0)+'x'+(y1-y0));
+  return [x0,y0,x1-x0,y1-y0];
+}
 function segFor(idx,item){
-  const key=segVer+'|'+renderScale+'|'+item.layers.map(l=>l.id+':'+l.opacity+':'+(l.blur||0)).join(',')+'|'+(showTiling?1:0);
+  const bd=segBounds(item);
+  const key=segVer+'|'+renderScale+'|'+item.layers.map(l=>l.id+':'+l.opacity+':'+(l.blur||0)).join(',')+'|'+(showTiling?1:0)+'|'+(bd?bd.join(','):'');
   let e=segCache[idx];if(!e)e=segCache[idx]={cv:document.createElement('canvas'),key:''};
   if(e.key===key)return e.cv;
-  window.__segBuilds=(window.__segBuilds||0)+1;crumb('seg build '+item.layers.length+' layers');
-  const pw=Math.round(W*renderScale),ph=Math.round(H*renderScale);
+  window.__segBuilds=(window.__segBuilds||0)+1;crumb('seg build '+item.layers.length+' layers'+(bd?' (cropped)':''));
+  e.rect=bd;
+  const pw=Math.round((bd?bd[2]:W)*renderScale),ph=Math.round((bd?bd[3]:H)*renderScale);
   if(e.cv.width!==pw||e.cv.height!==ph){e.cv.width=pw;e.cv.height=ph;}
   const c=e.cv.getContext('2d');c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,pw,ph);
   item.layers.forEach(l=>{
-    const sc=segScratchGet(pw,ph,renderScale);replayLayerInto(sc,l.id);if(l.blur>0)blurLayerCanvas(segScratch,renderScale,l.blur,showTiling);
-    c.save();c.globalAlpha=l.opacity/100;c.drawImage(segScratch,0,0);c.restore();
+    let sc,src;
+    if(bd){
+      if(!segScratchC)segScratchC=document.createElement('canvas');
+      if(segScratchC.width!==pw||segScratchC.height!==ph){segScratchC.width=pw;segScratchC.height=ph;}
+      sc=segScratchC.getContext('2d');sc.setTransform(1,0,0,1,0,0);sc.clearRect(0,0,pw,ph);sc.setTransform(renderScale,0,0,renderScale,-bd[0]*renderScale,-bd[1]*renderScale);src=segScratchC;
+      replayLayerInto(sc,l.id);
+    }else{
+      sc=segScratchGet(pw,ph,renderScale);replayLayerInto(sc,l.id);if(l.blur>0)blurLayerCanvas(segScratch,renderScale,l.blur,showTiling);src=segScratch;
+    }
+    c.save();c.globalAlpha=l.opacity/100;c.drawImage(src,0,0);c.restore();
   });
   sentinel(c);segScratchFree();e.key=key;return e.cv;
 }
@@ -3238,7 +3270,7 @@ function updateDisplayComposite(){
     if(it.live){const l=it.live;let pic=l.blur>0?blurredLayerPicture(l):l.dcanvas;
       if(it.st==='base')cp.keep(pic,pic.width,pic.height);else if(it.st==='clip')pic=cp.cut(pic,pic.width,pic.height);
       displayCtx.save();displayCtx.globalAlpha=l.opacity/100;displayCtx.globalCompositeOperation=l.blend||'source-over';displayCtx.drawImage(pic,0,0,W,H);displayCtx.restore();}
-    else{displayCtx.drawImage(segFor(si++,it),0,0,W,H);}
+    else{const sv=segFor(si,it),sr=segCache[si].rect;si++;if(sr)displayCtx.drawImage(sv,sr[0],sr[1],sr[2],sr[3]);else displayCtx.drawImage(sv,0,0,W,H);}
   });
   segTrim(si);cp.free();
   sentinel(displayCtx);
@@ -17179,14 +17211,16 @@ function tlLine(){
 function memoryReport(){
   const mb=c=>c?(c.width*c.height*4/1048576):0;
   let lay=0;layers.forEach(l=>{lay+=mb(l.canvas)+(l.dcanvas!==l.canvas?mb(l.dcanvas):0);});
-  const other=segCache.reduce((a,e)=>a+mb(e.cv),0)+mb(canvas)+mb(displayCanvas)+mb(compositeCanvas)+mb(liveLayer)+mb(detailCanvas)+mb(detailScratch);
+  const other=segCache.reduce((a,e)=>a+mb(e.cv),0)+mb(canvas)+mb(displayCanvas)+mb(compositeCanvas)+mb(liveLayer)+mb(detailCanvas)+mb(detailScratch)+mb(segScratch)+mb(segScratchC);
   let pts=0;strokes.forEach(st=>{pts+=(st.points?st.points.length:0);});
+  window.__memParts=(()=>{const o={};const d=(n,c)=>{if(c)o[n]=c.width+'x'+c.height+'='+Math.round(mb(c)*10)/10;};d('canvas',canvas);d('display',displayCanvas);d('composite',compositeCanvas);d('liveLayer',liveLayer);d('detail',detailCanvas);d('detailScratch',detailScratch);o.seg=segCache.map(e=>e.cv.width+'x'+e.cv.height+'='+Math.round(mb(e.cv)*10)/10).join(',');return o;})();
   let mpx=0,msrc=0,msrcStrokes=0,mred=0,mfull=0;motifs.forEach(m=>{if(m.img&&motifIsReduced(m)){mred++;mfull+=(m.img._fullW||0)*(m.img._fullH||0)*4/1048576;}if(m.img)mpx+=(m.img.naturalWidth||m.img.width||0)*(m.img.naturalHeight||m.img.height||0)*4/1048576;msrc+=(m.src||'').length/1e6;if(m.source)msrcStrokes+=((m.source.strokesJSON||'').length)/1e6;});
   let bg=0;try{if(bgImg)bg=(bgImg.naturalWidth||bgImg.width||0)*(bgImg.naturalHeight||bgImg.height||0)*4/1048576;}catch(e){}
   const f=n=>(Math.round(n*10)/10);
   const total=lay+other+mpx+bg+histSize()/1e6;
   return 'Layer canvases: '+f(lay)+' MB ('+layers.length+' layers, '+layers.filter(l=>!l.asleep).length+' awake, view sharpness '+renderScale+')\nScreen canvases: '+f(other)+' MB\nMotif pictures: '+f(mpx)+' MB ('+motifs.length+' motifs'+(mred?', '+mred+' as smaller working copies instead of about '+f(mfull)+' MB of originals; the originals come back for exports':'')+'), their drawings '+f(msrcStrokes)+' MB of data\nBackground picture: '+f(bg)+' MB\nUndo history: ~'+f(histSize()/1e6)+' M characters ('+history.length+' steps)\nStrokes: '+strokes.length+' ('+pts+' points)\n'+tlLine()+'\nEstimated total: about '+f(total)+' MB. iPad Safari usually stops around 400 MB of canvases.'+crumbsReport();
 }
+window.__sketchpadMem=()=>{const t=memoryReport();return {parts:window.__memParts,text:t,renderScale};};
 function tbMoreMenu(btn){
   const items=[{head:'More'}];
   (btn._moved||[]).slice().reverse().forEach(it=>{
