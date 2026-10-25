@@ -974,3 +974,8 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v504 — One panel for shadow points
 - While a shadow/highlight piece is selected or its points are being edited, the Stroke and Edit Path panels stay hidden. The Shadow & highlight panel has the point tools itself: Move, Add point, Smooth, Corner, Delete point, Done.
+
+## v505 — Less memory for small drawings
+- The flattened pictures of sleeping layers (two full-size canvases, plus a full-size scratch canvas) are now cropped to where the artwork actually is. A small motif in a big canvas used to cost ~110 MB of those at the 1.5 sharpness; now it is a few MB. Pixel-for-pixel identical output was checked against the old path.
+- Kept at full size (as before) for: blurred layers, artwork touching a tile edge when Tiling is on, text, erasers/smudge, picture layers.
+- Memory check counts the scratch canvases too (they were missing from the total).
