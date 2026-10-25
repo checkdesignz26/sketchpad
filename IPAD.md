@@ -956,3 +956,8 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v499 — Light direction dial
 - The "Light from" arrow is replaced by a little dial: ☀️ sits on the side the light comes FROM, the ball's shadow falls on the opposite side. Tap or drag the dial to set the direction (the slider still works).
+
+## v500 — Re-shading replaces, dial easier
+- Changing the light (or Add again) now replaces shadow/highlight pieces made on ANY identical copy of the fill (stacked duplicate fills no longer leave an old shadow behind); Delete clears them all too.
+- Shadow/highlight layer flags (`shadowLayer`, `autoObj`) are saved with the project and motifs, so reopened motifs still tidy/replace them correctly.
+- Dial snaps to 15° steps, so it is easier to land on a direction.
