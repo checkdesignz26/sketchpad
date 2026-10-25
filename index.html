@@ -1623,7 +1623,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v511'; // keep in step with CACHE in sw.js
+const APP_V='v512'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -2694,6 +2694,8 @@ function blurCanvasInPlace(cv,sigma){
 }
 // Blur a flattened layer picture (cv covers the whole W x H canvas at scale sc). With tiling on, wrap round the tile edges.
 // A thin highlight loses most of its strength when blurred (the light spreads out and fades), so a blurred highlight could vanish. Draw it over itself a few times to bring the strength back.
+// While a motif is open for editing it is a single picture, not a repeating tile: blurring must not wrap round the tile edge (it dropped the part of the art outside the tile and folded the other side in, so shadows looked different until Done).
+function blurWrap(){return !!showTiling&&!editingMotifId;}
 function blurRestore(cv,lay){if(!lay||!lay.shadowLayer||!/^Highlight/.test(lay.name||''))return;const o=cv.getContext('2d');o.save();o.setTransform(1,0,0,1,0,0);o.globalCompositeOperation='source-over';const t=document.createElement('canvas');t.width=cv.width;t.height=cv.height;t.getContext('2d').drawImage(cv,0,0);for(let i=0;i<3;i++)o.drawImage(t,0,0);o.restore();t.width=t.height=1;}
 function blurLayerCanvas(cv,sc,blur,wrap,rect,lay){
   const sigma=blur*sc;if(!(sigma>0.3))return;
@@ -2720,7 +2722,7 @@ function blurredLayerPicture(l){
   const c=cv.getContext('2d');c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,pw,ph);
   if(l.asleep){const e=segScratchGet(pw,ph,sc);replayLayerInto(e,l.id);c.drawImage(segScratch,0,0);}
   else c.drawImage(l.dcanvas,0,0,pw,ph);
-  blurLayerCanvas(cv,sc,l.blur,showTiling,null,l);
+  blurLayerCanvas(cv,sc,l.blur,blurWrap(),null,l);
   _blCache.delete(l.id);_blCache.set(l.id,{key,cv});
   while(_blCache.size>3){const k=_blCache.keys().next().value;const e=_blCache.get(k);try{e.cv.width=e.cv.height=1;}catch(_){}_blCache.delete(k);}
   return cv;
@@ -2795,7 +2797,7 @@ function segFor(idx,item){
       sc=segScratchC.getContext('2d');sc.setTransform(1,0,0,1,0,0);sc.clearRect(0,0,pw,ph);sc.setTransform(renderScale,0,0,renderScale,-bd[0]*renderScale,-bd[1]*renderScale);src=segScratchC;
       replayLayerInto(sc,l.id);
     }else{
-      sc=segScratchGet(pw,ph,renderScale);replayLayerInto(sc,l.id);if(l.blur>0)blurLayerCanvas(segScratch,renderScale,l.blur,showTiling,null,l);src=segScratch;
+      sc=segScratchGet(pw,ph,renderScale);replayLayerInto(sc,l.id);if(l.blur>0)blurLayerCanvas(segScratch,renderScale,l.blur,blurWrap(),null,l);src=segScratch;
     }
     c.save();c.globalAlpha=l.opacity/100;c.drawImage(src,0,0);c.restore();
   });
@@ -3253,7 +3255,7 @@ function updateComposite(){
       if(!tmp){tmp=document.createElement('canvas');tmp.width=W;tmp.height=H;}
       const t=tmp.getContext('2d');t.setTransform(1,0,0,1,0,0);t.clearRect(0,0,W,H);replayLayerInto(t,l.id);src=tmp;
     }
-    if(l.blur>0){if(src===l.canvas){if(!tmp){tmp=document.createElement('canvas');tmp.width=W;tmp.height=H;}const t2=tmp.getContext('2d');t2.setTransform(1,0,0,1,0,0);t2.clearRect(0,0,W,H);t2.drawImage(l.canvas,0,0,W,H);src=tmp;}blurLayerCanvas(src,src.width/W,l.blur,showTiling,null,l);}
+    if(l.blur>0){if(src===l.canvas){if(!tmp){tmp=document.createElement('canvas');tmp.width=W;tmp.height=H;}const t2=tmp.getContext('2d');t2.setTransform(1,0,0,1,0,0);t2.clearRect(0,0,W,H);t2.drawImage(l.canvas,0,0,W,H);src=tmp;}blurLayerCanvas(src,src.width/W,l.blur,blurWrap(),null,l);}
     {const nx=layers[i+1];if(st==='base'&&nx&&nx.clip)cp.keep(src,src.width,src.height);else if(st==='clip')src=cp.cut(src,src.width,src.height);}
     compositeCtx.save();compositeCtx.globalAlpha=l.opacity/100;compositeCtx.globalCompositeOperation=l.blend||'source-over';compositeCtx.drawImage(src,0,0);compositeCtx.restore();
   });
@@ -19105,6 +19107,7 @@ window.__sketchpadGetState=()=>({strokeCount:strokes.length,strokes,placed,motif
 window.__spEditingMotif=()=>!!editingMotifId;
 window.__sketchpadPanelSim=(sid,ed,open)=>{selectedStrokeId=sid;editingMotifId=ed;strokePanelOpen=!!open;syncStrokeSelectionUI();return document.getElementById("strokeSelectSection").style.display;};
 window.__sketchpadScreenToCanvas=screenToCanvas;
+window.__sketchpadMotifEdit={enter:(id,r)=>{const p=placed.find(q=>q.id===id)||placed[0];if(r!=null)p.r=r;selected=p.id;enterEditMotif();},finish:()=>finishEditMotif(),fill:()=>{const f=strokes.filter(s=>s.fillColor&&!s.shadowOf&&s.points&&s.points.length>20);f.sort((a,b)=>b.points.length-a.points.length);return f[0]&&f[0].id;}}; // test hook
 window.__sketchpadCanvasToScreenAbs=(x,y)=>{
   // canvasToScreen() returns coordinates relative to #canvasWrap (it positions DOM overlays that
   // live inside wrap) — add wrap's own viewport offset back to get absolute client coordinates,

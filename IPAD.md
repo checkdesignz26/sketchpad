@@ -997,3 +997,6 @@ A thin highlight loses most of its strength when blurred. After blurring a "High
 
 ## v511 — Draw my own shadow / highlight
 Shadow panel: "✍️ Draw my own shadow" and "✍️ Draw my own highlight". Tap, then draw one shape on the canvas; it becomes a normal piece (own layer "Shadow (mine)", clipped to the fill, blur, Edit points, Undo). Pieces drawn by hand (shCustom) are kept when you tap Add shadow / Add highlight again, and are only removed by Delete or Undo. They use the colour from the sliders at the time they were drawn.
+
+## v512 — Shadows looked different in Edit Motif than after Done
+With blur on, a motif that crosses the tile edge was blurred as if the tile wrapped round: part of the art outside the tile was dropped and the other side folded in, so shadows/highlights in the Edit Motif view differed from the saved motif. Blur no longer wraps the tile edge while a motif is open for editing (blurWrap()). Test hook: window.__sketchpadMotifEdit.
