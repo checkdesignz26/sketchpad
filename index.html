@@ -1087,6 +1087,7 @@ html.in-suite .suite-only{display:block!important}
       <div class="slider-row"><label>Highlight size</label><input id="shHSize" type="range" min="2" max="60" value="10"><span id="shHSizeV">10</span></div>
       <div class="slider-row"><label>Blur</label><button id="shBlurOn" class="btn" type="button" style="flex:1">Blur: Off</button></div>
       <div id="shBlurBox" style="display:none">
+      <div class="hint" id="shBlurScope" style="margin:0 0 4px">Blur applies to all shadows / highlights of this shape. Tap one piece first to blur just that piece.</div>
       <div class="slider-row"><label>Shadow blur</label><input id="shBlurS" type="range" min="0" max="40" value="0"><span id="shBlurSV">Off</span></div>
       <div class="slider-row"><label>Highlight blur</label><input id="shBlurH" type="range" min="0" max="40" value="0"><span id="shBlurHV">Off</span></div>
       </div>
@@ -1096,6 +1097,7 @@ html.in-suite .suite-only{display:block!important}
         <button id="shAdd" class="btn primary">🌓 Add shadow</button>
         <button id="shEditSh" class="btn">✏️ Edit shadow points</button>
         <button id="shEditHi" class="btn">✏️ Edit highlight points</button>
+      <div id="shNodeRow" style="display:none;margin:6px 0"><div class="hint" style="margin:0 0 4px">Editing points: tap a point, drag to move it.</div><div class="row"><button id="shNodeDel" class="btn mini danger" style="flex:1">✕ Delete point</button><button id="shNodeDone" class="btn mini primary" style="flex:1">✓ Done</button></div></div>
         <button id="shHi" class="btn">✨ Add highlight</button>
         <button id="shRemove" class="btn">✖ Delete shadow</button>
         <button id="shRemoveHi" class="btn">✖ Delete highlight</button>
@@ -1614,7 +1616,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v502'; // keep in step with CACHE in sw.js
+const APP_V='v503'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -8996,7 +8998,7 @@ window.__sketchpadShadow=(id,kind,op)=>{const o=strokes.find(x=>x.id===id);if(!o
   const blurAll=(vS,vH)=>{[['shadow',vS],['highlight',vH]].forEach(([k,v])=>blurLayers(k).forEach(l=>{l.blur=v;}));segVer++;compositeDirty=true;redraw();};
   g('shBlurOn').onclick=()=>{window.__shBlurOn=!window.__shBlurOn;if(window.__shBlurOn){['shadow','highlight'].forEach(k=>{if(!window.__shBlur[k])window.__shBlur[k]=12;});g('shBlurS').value=window.__shBlur.shadow;g('shBlurH').value=window.__shBlur.highlight;g('shBlurSV').textContent=window.__shBlur.shadow+' px';g('shBlurHV').textContent=window.__shBlur.highlight+' px';blurAll(window.__shBlur.shadow,window.__shBlur.highlight);}else{window.__shBlur={shadow:0,highlight:0};g('shBlurS').value=0;g('shBlurH').value=0;g('shBlurSV').textContent='Off';g('shBlurHV').textContent='Off';blurAll(0,0);}blurUI();pushHist();try{scheduleAutosave();}catch(e){}};
   blurUI();
-  const blurLayers=kind=>{const o=shTarget();if(!o)return[];const b=shBase(o),oid=b.auto?b.geo.id:b.outline.id;const ids=new Set(strokes.filter(x=>x.shadowOf===oid&&(x.shKind||'shadow')===kind).map(x=>x.layerId));return layers.filter(l=>ids.has(l.id));};
+  const blurLayers=kind=>{const sel=strokes.find(x=>x.id===selectedStrokeId);if(sel&&sel.shadowOf&&(sel.shKind||'shadow')===kind)return layers.filter(l=>l.id===sel.layerId);const o=shTarget();if(!o)return[];const b=shBase(o),oid=b.auto?b.geo.id:b.outline.id;const ids=new Set(strokes.filter(x=>x.shadowOf===oid&&(x.shKind||'shadow')===kind).map(x=>x.layerId));return layers.filter(l=>ids.has(l.id));};
   [['shBlurS','shBlurSV','shadow'],['shBlurH','shBlurHV','highlight']].forEach(([id,vid,kind])=>{
     const apply=()=>{const v=+g(id).value;blurLayers(kind).forEach(l=>{l.blur=v;});segVer++;compositeDirty=true;redraw();};
     // Dragging only moves the number; the blur itself is drawn once when you let go (a full-size blur on every drag step froze the iPad).
@@ -9033,6 +9035,8 @@ window.__sketchpadShadow=(id,kind,op)=>{const o=strokes.find(x=>x.id===id);if(!o
     },30);
   },true);
   let shSelPrev=null;setInterval(()=>{try{const id=selectedStrokeId;if(id===shSelPrev)return;shSelPrev=id;if(id==null)return;const o=strokes.find(x=>x.id===id);if(o&&o.shadowOf&&!g('shadowSection').offsetParent&&window.__spOpenPanel)window.__spOpenPanel('shadow');}catch(e){}},250);
+  g('shNodeDel').onclick=()=>{try{g('nodeDeleteBtn').click();}catch(e){}};g('shNodeDone').onclick=()=>{try{commitEditPath();}catch(e){try{g('pathEditDoneBtn').click();}catch(_){}}};
+  setInterval(()=>{try{const ed=pathEditStrokeId&&strokes.find(x=>x.id===pathEditStrokeId);g('shNodeRow').style.display=(ed&&ed.shadowOf)?'':'none';const sel=strokes.find(x=>x.id===selectedStrokeId);g('shBlurScope').textContent=(sel&&sel.shadowOf)?'Blur applies to this '+((sel.shKind||'shadow')==='highlight'?'highlight':'shadow')+' piece only. Tap empty canvas / the shape to blur them all.':'Blur applies to all shadows / highlights of this shape. Tap one piece first to blur just that piece.';}catch(e){}},300);
   let shWasOpen=false;setInterval(()=>{try{if(!g('shadowSection').offsetParent){shWasOpen=false;return;}if(!shWasOpen){shWasOpen=true;window.__shBlurOn=false;blurUI();if(areaFillArmed){areaFillArmed=false;try{syncAreaFillUI();}catch(_){}}}const o=shTarget();const L=o&&layers.find(l=>l.id===(shBase(o).geo.layerId));
     [['shBlurS','shBlurSV','shadow'],['shBlurH','shBlurHV','highlight']].forEach(([id,vid,kind])=>{if(document.activeElement===g(id)||performance.now()-(window.__shDrag||0)<2500)return;const ls=blurLayers(kind);if(ls.length){const v=ls[0].blur||0;if(+g(id).value!==v)g(id).value=v;g(vid).textContent=v?v+' px':'Off';window.__shBlur[kind]=v;if(v&&!window.__shBlurOn){window.__shBlurOn=true;blurUI();}}});
     g('shTgt').textContent=o?('Shading: '+(L?L.name:'selected shape')):'Tap a colour on the canvas to shade it.';}catch(e){}},400);
