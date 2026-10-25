@@ -930,3 +930,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 - Blur is set on the shadow/highlight layer, so it can also be changed later in the layer's own blur control.
 - Shadow and highlight layers are clipped to the fill below, so blur never spills outside the shape.
 - New shadows pick up the current slider values; Undo restores the previous blur.
+
+## v493 — Blur slider no longer stalls
+- Dragging Shadow/Highlight blur now re-renders at most about every 0.2 s; the exact value is applied when you let go.
