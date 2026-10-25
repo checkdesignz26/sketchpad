@@ -1009,3 +1009,6 @@ Measured on the Shading project (desktop Chromium, sharpness 1x, so iPad numbers
 - **No leak found:** repeated panel open/close, slider storms, blur toggles, undo/redo and save+reopen keep canvas memory flat; JS heap grows ~2 MB per saved undo step (history, capped).
 - **Remaining:** each piece still keeps its own full-size layer canvas while a motif is being edited (clip groups need their layers awake), plus the idle layer-picture cache. Cropping the layer canvases themselves would be a larger change to the layer system. Not measured on a real iPad.
 - Boxes are not used when art touches the tile edge (outside Edit Motif) or a layer has text/pictures/erasers; those use the previous full-size path. Debug hooks: window.__boxCrop=false (old full-size path), window.__shNoThin=true (old shape maths), window.__shT / __shPh (timings).
+
+## v514 — Area Fill can no longer stay switched on by accident
+Area Fill grabs every canvas tap while it is on, which also made it hard to select a single stroke. Now: a pill button "Area Fill is ON — tap here to turn it off" is always visible while it is on; it switches itself off when its panel is closed or when you start editing a path; and the motif Area Fill shortcut always puts it back as it was, even if something fails half way (that could leave it on).
