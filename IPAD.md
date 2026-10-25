@@ -979,3 +979,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 - The flattened pictures of sleeping layers (two full-size canvases, plus a full-size scratch canvas) are now cropped to where the artwork actually is. A small motif in a big canvas used to cost ~110 MB of those at the 1.5 sharpness; now it is a few MB. Pixel-for-pixel identical output was checked against the old path.
 - Kept at full size (as before) for: blurred layers, artwork touching a tile edge when Tiling is on, text, erasers/smudge, picture layers.
 - Memory check counts the scratch canvases too (they were missing from the total).
+
+## v506 — Layer rename error fixed
+- Tapping a layer name to rename it could fail with "null is not an object (evaluating 'nameEl.replaceWith')" when the Layers list had group headers, motif rows or folded groups (rows were found by position). The row is now found by the layer's id.
