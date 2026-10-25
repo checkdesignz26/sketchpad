@@ -1614,7 +1614,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v496'; // keep in step with CACHE in sw.js
+const APP_V='v497'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -20818,6 +20818,7 @@ SPFonts.init().then(()=>{txRefreshMissing();});
     time:'<rect x="3" y="7" width="12.5" height="10" rx="2"/><path d="M15.5 11l5.5-3v8l-5.5-3z"/>',
     clone:'<rect x="3" y="3" width="11" height="11" rx="2.5"/><rect x="10" y="10" width="11" height="11" rx="2.5" stroke-dasharray="2 2.5"/>',
     gradient:'<rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M3.5 17l17-10M3.5 12.5l17-10M7.5 20.5l13-7.5" stroke-dasharray="1.5 2.5"/>',
+    shade:'<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>',
     adjust:'<path d="M5 5v14M12 5v14M19 5v14"/><circle cx="5" cy="14" r="2.2"/><circle cx="12" cy="8" r="2.2"/><circle cx="19" cy="15" r="2.2"/>',
     width:'<path d="M3 12 Q12 2 21 12 Q12 22 3 12 Z"/>',
     contour:'<rect x="3.5" y="3.5" width="17" height="17" rx="5"/><rect x="8" y="8" width="8" height="8" rx="2.5"/>',
@@ -20850,7 +20851,7 @@ SPFonts.init().then(()=>{txRefreshMissing();});
     repeat:{title:'Repeat & tiling',icon:'repeat',get:()=>[secByTitle(/repeat layouts/i)]},
     templates:{title:'Pattern Templates',icon:'tpl',get:()=>[$('tplSection')]},
     width:{title:'Width tool',icon:'width',get:()=>[$('widthSection')]},
-    shadow:{title:'Shadow & highlight',icon:'adjust',pin:true,get:()=>[$('shadowSection')]},
+    shadow:{title:'Shadow & highlight',icon:'shade',pin:true,get:()=>[$('shadowSection')]},
     mug:{title:'Mug preview',icon:'mug',keep:true,get:()=>[window.__mkSection()]}
   };
   // ---- rail buttons: proxy = the existing top-bar button that actually selects the tool ----
@@ -20861,6 +20862,7 @@ SPFonts.init().then(()=>{txRefreshMissing();});
     {id:'blendbrush',label:'Blend brush (mix colours softly)',icon:'blendbrush',proxy:'tbBlendBrushBtn',panel:'brush'},
     {id:'colour',label:'Colour',icon:'palette',panel:'colour',swatch:1},
     {id:'layers',label:'Layers',icon:'layers',panel:'layers'},
+    {id:'shadow',label:'Shadow & highlight (tap a filled shape on your drawing)',icon:'shade',panel:'shadow'},
     {id:'mug',label:'Mug preview (live)',icon:'mug',panel:'mug'},
     {id:'repeat',label:'Repeat & tiling',icon:'repeat',panel:'repeat'},
     {id:'templates',label:'Pattern Templates (layout guides)',icon:'tpl',panel:'templates'},
@@ -20869,7 +20871,6 @@ SPFonts.init().then(()=>{txRefreshMissing();});
     {id:'shapes',label:'Shapes',icon:'shapes',panel:'shapes'},
     {id:'boolean',label:'Shape builder (Add, Subtract, Intersect, Xor, Divide)',icon:'bool',panel:'boolean'},
     {id:'contour',label:'Contour copies & round corners',icon:'contour',panel:'contour'},
-    {id:'shadow',label:'Shadow & highlight (select a filled shape first)',icon:'adjust',panel:'shadow'},
     {id:'width',label:'Width tool (thick and thin parts of a line)',icon:'width',panel:'width'},
     {id:'gradient',label:'Gradient fill',icon:'gradient',panel:'gradient'},
     {id:'adjust',label:'Adjust colours (invert, hue, saturation, brightness)',icon:'adjust',panel:'adjust'},
