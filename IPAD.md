@@ -953,3 +953,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 - **Fill layers:** Area Fill puts new fills into one shared "Fills" layer under the lines instead of a new layer per tap (when the lines are on one layer). Existing projects keep their layers.
 - **Empty shadow layers:** shadow/highlight layers (clipped, blurred) were skipped by the empty-layer cleanup since v492; they are tidied away again.
 - **Dots:** tiny leftover shadow/highlight pieces (under ~40 px² or a small share of the main piece) are dropped.
+
+## v499 — Light direction dial
+- The "Light from" arrow is replaced by a little dial: ☀️ sits on the side the light comes FROM, the ball's shadow falls on the opposite side. Tap or drag the dial to set the direction (the slider still works).
