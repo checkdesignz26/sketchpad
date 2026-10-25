@@ -961,3 +961,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 - Changing the light (or Add again) now replaces shadow/highlight pieces made on ANY identical copy of the fill (stacked duplicate fills no longer leave an old shadow behind); Delete clears them all too.
 - Shadow/highlight layer flags (`shadowLayer`, `autoObj`) are saved with the project and motifs, so reopened motifs still tidy/replace them correctly.
 - Dial snaps to 15° steps, so it is easier to land on a direction.
+
+## v501 — Area Fill no longer paints when using Shadow & highlight
+- If Area Fill was left switched on, tapping the shape to shade it also painted a new fill. Opening the Shadow & highlight panel (or tapping while it is open) now switches Area Fill off first.
