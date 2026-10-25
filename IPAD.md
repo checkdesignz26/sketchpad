@@ -947,3 +947,9 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v497 — Shadow & highlight in the left tool rail
 - Own half-moon icon, placed right under Layers in the left rail (it shared the sliders icon with Colour tools and sat near the bottom). Works on any filled shape you drew — no motif needed: open it, tap the coloured area, Add shadow.
+
+## v498 — Fewer layers, no dots, first shadow on a motif
+- **First shadow on a motif:** with the Shadow & highlight panel open, tap the motif — it opens for editing and the colour under your finger is selected; tap Add shadow, then Done. (Pick button works the same.)
+- **Fill layers:** Area Fill puts new fills into one shared "Fills" layer under the lines instead of a new layer per tap (when the lines are on one layer). Existing projects keep their layers.
+- **Empty shadow layers:** shadow/highlight layers (clipped, blurred) were skipped by the empty-layer cleanup since v492; they are tidied away again.
+- **Dots:** tiny leftover shadow/highlight pieces (under ~40 px² or a small share of the main piece) are dropped.
