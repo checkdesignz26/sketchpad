@@ -1109,6 +1109,14 @@ html.in-suite .suite-only{display:block!important}
         <button id="shRemove" class="btn">✖ Delete shadow</button>
         <button id="shRemoveHi" class="btn">✖ Delete highlight</button>
       </div>
+      <div id="shStyleBox" style="margin-top:10px;border-top:1px solid rgba(0,0,0,.12);padding-top:8px;">
+        <div class="hint" style="margin:0 0 4px;font-weight:700;">🎨 My shading styles</div>
+        <div class="hint" style="margin:0 0 6px;">Save the sliders above (light, sizes, brightness, darkness, blur) and use them on other shapes. Everything it makes is a normal shadow and highlight, so you can still change it afterwards.</div>
+        <div class="row" style="gap:6px;margin-bottom:6px;"><select id="shStyleSel" style="flex:1;min-width:0;"></select><button id="shStyleSave" class="btn mini">💾 Save</button><button id="shStyleDel" class="btn mini danger">✕</button></div>
+        <button id="shStyleApply" class="btn" style="width:100%;margin-bottom:6px;">🎨 Apply to the selected shape</button>
+        <button id="shStyleColours" class="btn" style="width:100%;">🎨 Apply to colours I tick…</button>
+        <div id="shStyleList" style="display:none;margin-top:8px;"></div>
+      </div>
     </section>
     <section class="section" id="booleanSection">
       <div class="section-title">🧩 Shape builder</div>
@@ -1623,7 +1631,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v515'; // keep in step with CACHE in sw.js
+const APP_V='v516'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -9222,6 +9230,43 @@ window.__sketchpadShadow=(id,kind,op)=>{const o=strokes.find(x=>x.id===id);if(!o
         g('shMsg').textContent='Your '+kind+' was added. Use Edit points to reshape it, or Blur to soften it.';pushHist();redraw();};
       window.addEventListener('pointermove',mv,true);window.addEventListener('pointerup',up,true);window.addEventListener('pointercancel',up,true);
     },true);
+  })();
+  // ---- My shading styles: save the slider settings under a name, apply them to one shape or to the colours you tick ----
+  (()=>{
+    const KEY='sp-shstyles';const load=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'[]')||[];}catch(e){return [];}};
+    const store=a=>{try{localStorage.setItem(KEY,JSON.stringify(a));}catch(e){}};
+    const sel=g('shStyleSel'),msg=t=>{g('shMsg').textContent=t;};
+    const fill=()=>{const a=load();sel.innerHTML=a.length?a.map((x,i)=>'<option value="'+i+'">'+x.name.replace(/</g,'&lt;')+'</option>').join(''):'<option value="">(no saved style yet)</option>';};fill();
+    const cur=()=>({angle:+g('shLight').value,size:+g('shSize').value,dark:+g('shDark').value/100,hsize:+g('shHSize').value,hlight:+g('shHLight').value/100,blurOn:!!window.__shBlurOn,blurS:(window.__shBlur&&window.__shBlur.shadow)||0,blurH:(window.__shBlur&&window.__shBlur.highlight)||0});
+    g('shStyleSave').onclick=()=>{let nm=null;try{nm=prompt('Name this style',sel.value!==''&&load()[+sel.value]?load()[+sel.value].name:'My style');}catch(e){}
+      if(!nm)return;nm=nm.trim().slice(0,40);if(!nm)return;const a=load(),st=Object.assign({name:nm},cur()),i=a.findIndex(x=>x.name===nm);if(i>=0)a[i]=st;else a.push(st);store(a);fill();sel.value=String(i>=0?i:a.length-1);msg('Saved style “'+nm+'”.');};
+    g('shStyleDel').onclick=()=>{const a=load(),i=+sel.value;if(sel.value===''||!a[i])return;const nm=a[i].name;a.splice(i,1);store(a);fill();msg('Deleted style “'+nm+'”.');};
+    const getStyle=()=>{const a=load(),st=sel.value!==''?a[+sel.value]:null;if(!st)msg('Save a style first (set the sliders, then 💾 Save).');return st;};
+    // put the style on the panel sliders so the panel keeps editing exactly what was applied
+    const toPanel=st=>{[['shLight',st.angle],['shSize',st.size],['shDark',Math.round(st.dark*100)],['shHSize',st.hsize],['shHLight',Math.round((st.hlight==null?.5:st.hlight)*100)]].forEach(([id,v])=>{g(id).value=v;g(id).dispatchEvent(new Event('input',{bubbles:true}));});
+      window.__shBlur=window.__shBlur||{shadow:0,highlight:0};window.__shBlurOn=!!st.blurOn;window.__shBlur.shadow=st.blurOn?st.blurS:0;window.__shBlur.highlight=st.blurOn?st.blurH:0;
+      try{g('shBlurS').value=window.__shBlur.shadow;g('shBlurH').value=window.__shBlur.highlight;g('shBlurSV').textContent=st.blurOn&&st.blurS?st.blurS+' px':'Off';g('shBlurHV').textContent=st.blurOn&&st.blurH?st.blurH+' px':'Off';g('shBlurOn').textContent='Blur: '+(st.blurOn?'On':'Off');g('shBlurOn').classList.toggle('active',!!st.blurOn);g('shBlurBox').style.display=st.blurOn?'':'none';}catch(e){}};
+    const applyTo=(o,st)=>{ // one shape: shadow + highlight with the style, each on its own layer with the style's blur
+      const base={angle:st.angle,size:st.size,dark:st.dark,hsize:st.hsize,hlight:st.hlight,force:true};
+      let err=shadowAdd(o,Object.assign({kind:'shadow'},base));if(err)return err;
+      err=shadowAdd(o,Object.assign({kind:'highlight'},base));if(err)return err;
+      const ids=shTwinIds(shBase(o).geo?shBase(o).geo:o);
+      strokes.forEach(x=>{if(x.shadowOf&&ids.has(x.shadowOf)||x.shadowOf===o.id){const L=layers.find(l=>l.id===x.layerId);if(L)L.blur=st.blurOn?((x.shKind||'shadow')==='highlight'?st.blurH:st.blurS):0;}});
+      return null;};
+    g('shStyleApply').onclick=()=>{const st=getStyle();if(!st)return;const o=shTarget();if(!o||!o.points){msg('Select a filled shape first (🎯 Pick the colour to shade).');return;}
+      toPanel(st);const e=applyTo(o,st);if(e){msg(e);return;}segVer++;compositeDirty=true;pushHist();redraw();msg('Applied “'+st.name+'”. Change the sliders to adjust it.');};
+    // colours list
+    const fills=()=>{const seen=new Set(),by=new Map();strokes.forEach(q=>{if(!q.fillColor||q.shadowOf||q.text||q.brushId==='eraser'||!q.points||q.points.length<3)return;const L=layers.find(l=>l.id===q.layerId);if(L&&(L.visible===false||L.locked))return;
+      const k=String(q.fillColor).toLowerCase();if(!by.has(k))by.set(k,[]);by.get(k).push(q);});return by;};
+    const showList=()=>{const box=g('shStyleList'),by=fills();if(!by.size){box.style.display='';box.innerHTML='<div class="hint">No colour fills here. Open the motif with ✏️ Edit Motif first.</div>';return;}
+      box.style.display='';box.innerHTML='<div class="hint" style="margin:0 0 4px;">Tick the colours to shade:</div>'+[...by.entries()].map(([c,l],i)=>'<label style="display:flex;align-items:center;gap:8px;margin:4px 0;"><input type="checkbox" class="shStyleCk" data-c="'+c+'"><span style="width:22px;height:22px;border-radius:6px;border:1px solid rgba(0,0,0,.3);background:'+c+';display:inline-block"></span><span>'+c+' · '+l.length+' shape'+(l.length>1?'s':'')+'</span></label>').join('')+'<button id="shStyleGo" class="btn primary" style="width:100%;margin-top:6px;">🎨 Apply to ticked colours</button>';
+      g('shStyleGo').onclick=async()=>{const st=getStyle();if(!st)return;const picked=[...box.querySelectorAll('.shStyleCk:checked')].map(x=>x.dataset.c);if(!picked.length){msg('Tick at least one colour.');return;}
+        toPanel(st);const done=new Set();let n=0,bad=0;const t0=performance.now();
+        for(const c of picked){for(const o of (fills().get(c)||[])){if(done.has(o.id))continue;shTwinIds(o).forEach(i=>done.add(i));msg('Shading '+(++n)+'…');await new Promise(r=>setTimeout(r,20));const e=applyTo(o,st);if(e)bad++;}}
+        segVer++;compositeDirty=true;pushHist();redraw();msg('Applied “'+st.name+'” to '+(n-bad)+' shape'+(n-bad===1?'':'s')+(bad?' ('+bad+' too small to shade)':'')+'. Tap a colour to adjust it, or Undo.');};};
+    g('shStyleColours').onclick=()=>{if(!getStyle())return;
+      if(!editingMotifId&&selected&&placed.some(p=>p.id===selected&&p.img)){try{enterEditMotif();[0,150,600,1400].forEach(t=>setTimeout(()=>{try{window.__spOpenPanel('shadow');}catch(e){}},t));}catch(e){}setTimeout(showList,700);return;}
+      showList();};
   })();
   g('shEditSh').onclick=()=>editKind('shadow');g('shEditHi').onclick=()=>editKind('highlight');
   g('shHi').onclick=()=>{const o=shTarget();if(!o||!o.points){g('shMsg').textContent='Select a filled shape first.';return;}
