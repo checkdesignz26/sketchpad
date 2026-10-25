@@ -971,3 +971,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 ## v503 — Blur per piece, delete points in the shadow panel
 - Select one shadow/highlight piece and the blur sliders change only that piece (each piece has its own layer); with the shape selected they change all pieces of that kind. A line under Blur says which.
 - While editing shadow/highlight points, the Shadow & highlight panel shows **✕ Delete point** and **✓ Done** buttons (same as the Edit Path panel's Delete Node / Done).
+
+## v504 — One panel for shadow points
+- While a shadow/highlight piece is selected or its points are being edited, the Stroke and Edit Path panels stay hidden. The Shadow & highlight panel has the point tools itself: Move, Add point, Smooth, Corner, Delete point, Done.
