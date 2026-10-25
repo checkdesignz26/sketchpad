@@ -944,3 +944,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v496 — Blur slider drag
 - Dragging a blur slider only moves the number; the blur is drawn once when you release (a full-size blur per drag step froze the iPad). The panel no longer snaps the slider back while you are dragging.
+
+## v497 — Shadow & highlight in the left tool rail
+- Own half-moon icon, placed right under Layers in the left rail (it shared the sliders icon with Colour tools and sat near the bottom). Works on any filled shape you drew — no motif needed: open it, tap the coloured area, Add shadow.
