@@ -1012,3 +1012,6 @@ Measured on the Shading project (desktop Chromium, sharpness 1x, so iPad numbers
 
 ## v514 — Area Fill can no longer stay switched on by accident
 Area Fill grabs every canvas tap while it is on, which also made it hard to select a single stroke. Now: a pill button "Area Fill is ON — tap here to turn it off" is always visible while it is on; it switches itself off when its panel is closed or when you start editing a path; and the motif Area Fill shortcut always puts it back as it was, even if something fails half way (that could leave it on).
+
+## v515 — Moving a motif is smooth again
+Dragging a motif used to re-flatten every layer behind it on each pointer move (about 2 s of work for a 60-move drag on the Shading project). Now the motif being dragged is drawn as one picture on the live layer, and the layers are rebuilt once when you let go (same idea the stroke drag already used). Final position and picture are pixel-identical to before; slow frames (95th percentile) 66 ms -> 17 ms, long freezes 56 -> 2. Only motifs that sit on a layer use this; group moves are unchanged. Switch back with window.__noLiveMotif=true.
