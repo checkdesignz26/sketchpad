@@ -924,3 +924,9 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 - A shadow is placed above the topmost identical copy of the fill, so duplicate fills stacked above no longer hide it.
 - Shadows follow their shape: moving the fill moves the shadow; reshaping regenerates it (hand-edited pieces keep their shape). Undo/redo checked.
 - Size only changes the shadow, Highlight size only the highlight, Darkness only colour/strength, Light from changes both.
+
+## v492 — Blur for shadow and highlight
+- Shadow & highlight panel has **Shadow blur** and **Highlight blur** sliders (0–40 px, Off at 0), Gaussian, updated live.
+- Blur is set on the shadow/highlight layer, so it can also be changed later in the layer's own blur control.
+- Shadow and highlight layers are clipped to the fill below, so blur never spills outside the shape.
+- New shadows pick up the current slider values; Undo restores the previous blur.
