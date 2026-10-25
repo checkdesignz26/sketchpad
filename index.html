@@ -1614,7 +1614,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v494'; // keep in step with CACHE in sw.js
+const APP_V='v495'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -2695,17 +2695,24 @@ function blurLayerCanvas(cv,sc,blur,wrap,rect){
   const o=cv.getContext('2d');o.save();o.setTransform(1,0,0,1,0,0);o.clearRect(0,0,cv.width,cv.height);o.drawImage(wk,pad,pad,tw,th,tx,ty,tw,th);o.restore();
   wk.width=wk.height=1;
 }
-let _blOut=null;
-// The picture of one layer at the current screen resolution with its blur applied (shared canvas: use it straight away).
+const _blCache=new Map(); // layer id -> {key,cv}: a blurred picture is made once, then reused until the layer, zoom or blur changes (it used to be rebuilt on every redraw = lag and crashes on iPad)
+function blurCacheClear(){_blCache.forEach(e=>{try{e.cv.width=e.cv.height=1;}catch(_){}});_blCache.clear();}
+// The picture of one layer at the current screen resolution with its blur applied (never modify the returned canvas).
 function blurredLayerPicture(l){
   const sc=renderScale,pw=Math.round(W*sc),ph=Math.round(H*sc);
-  if(!_blOut)_blOut=document.createElement('canvas');
-  if(_blOut.width!==pw||_blOut.height!==ph){_blOut.width=pw;_blOut.height=ph;}
-  const c=_blOut.getContext('2d');c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,pw,ph);
+  let n=0,last='';for(let i=strokes.length-1;i>=0;i--){const o=strokes[i];if(o.layerId===l.id){n++;if(!last)last=o.id;}}
+  const key=[segVer,l._bv||0,sc,pw,ph,l.blur,showTiling?1:0,l.asleep?1:0,n,last,showTiling?[CX,CY,TW,TH].join(','):''].join('|');
+  const hit=_blCache.get(l.id);
+  if(hit&&hit.key===key){_blCache.delete(l.id);_blCache.set(l.id,hit);return hit.cv;}
+  const cv=hit?hit.cv:document.createElement('canvas');
+  if(cv.width!==pw||cv.height!==ph){cv.width=pw;cv.height=ph;}
+  const c=cv.getContext('2d');c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,pw,ph);
   if(l.asleep){const e=segScratchGet(pw,ph,sc);replayLayerInto(e,l.id);c.drawImage(segScratch,0,0);}
   else c.drawImage(l.dcanvas,0,0,pw,ph);
-  blurLayerCanvas(_blOut,sc,l.blur,showTiling);
-  return _blOut;
+  blurLayerCanvas(cv,sc,l.blur,showTiling);
+  _blCache.delete(l.id);_blCache.set(l.id,{key,cv});
+  while(_blCache.size>3){const k=_blCache.keys().next().value;const e=_blCache.get(k);try{e.cv.width=e.cv.height=1;}catch(_){}_blCache.delete(k);}
+  return cv;
 }
 // Plan, bottom to top: a live layer (own bitmap) or a run of sleeping layers drawn from one cached picture.
 function layerPlan(){
@@ -3133,7 +3140,7 @@ function renderBrushStrokeCapped(ctx,stroke,brush,settings,alphaMul){
   ctx.restore();
 }
 function rebuildLayer(layerId){
-  const layer=layers.find(l=>l.id===layerId);if(!layer)return;
+  const layer=layers.find(l=>l.id===layerId);if(!layer)return;layer._bv=(layer._bv||0)+1;
   // Any geometry change (joined ends, closed gaps, moved nodes) reaches the linked fill here, so it can never keep an older shape.
   if(!window.__fillBusy&&strokes.some(o=>o.fill&&o.fill.on&&o.layerId===layerId)){try{fillSync();}catch(e){}}
   if(layer.asleep){
@@ -9002,6 +9009,7 @@ window.__sketchpadShadow=(id,kind,op)=>{const o=strokes.find(x=>x.id===id);if(!o
       try{syncStrokeSelectionUI();updateSelectedControls();}catch(_){}
     },30);
   },true);
+  let shSelPrev=null;setInterval(()=>{try{const id=selectedStrokeId;if(id===shSelPrev)return;shSelPrev=id;if(id==null)return;const o=strokes.find(x=>x.id===id);if(o&&o.shadowOf&&!g('shadowSection').offsetParent&&window.__spOpenPanel)window.__spOpenPanel('shadow');}catch(e){}},250);
   let shWasOpen=false;setInterval(()=>{try{if(!g('shadowSection').offsetParent){shWasOpen=false;return;}if(!shWasOpen){shWasOpen=true;window.__shBlurOn=false;blurUI();}const o=shTarget();const L=o&&layers.find(l=>l.id===(shBase(o).geo.layerId));
     [['shBlurS','shBlurSV','shadow'],['shBlurH','shBlurHV','highlight']].forEach(([id,vid,kind])=>{if(document.activeElement===g(id))return;const ls=blurLayers(kind);if(ls.length){const v=ls[0].blur||0;if(+g(id).value!==v)g(id).value=v;g(vid).textContent=v?v+' px':'Off';window.__shBlur[kind]=v;if(v&&!window.__shBlurOn){window.__shBlurOn=true;blurUI();}}});
     g('shTgt').textContent=o?('Shading: '+(L?L.name:'selected shape')):'Tap a colour on the canvas to shade it.';}catch(e){}},400);
