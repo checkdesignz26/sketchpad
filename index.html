@@ -1100,6 +1100,8 @@ html.in-suite .suite-only{display:block!important}
         <button id="shHi" class="btn">✨ Add highlight</button>
         <button id="shEditSh" class="btn">✏️ Edit shadow points</button>
         <button id="shEditHi" class="btn">✏️ Edit highlight points</button>
+        <button id="shDrawSh" class="btn">✍️ Draw my own shadow</button>
+        <button id="shDrawHi" class="btn">✍️ Draw my own highlight</button>
       <div id="shNodeRow" style="display:none;margin:6px 0;grid-column:1/-1"><div class="hint" style="margin:0 0 4px">Editing points: tap a point, drag to move it.</div>
         <div class="row" style="gap:6px;margin-bottom:6px"><button id="shNodeSel" class="btn mini" style="flex:1">↖ Move</button><button id="shNodeAdd" class="btn mini" style="flex:1">➕ Add point</button></div>
         <div class="row" style="gap:6px;margin-bottom:6px"><button id="shNodeSmooth" class="btn mini" style="flex:1">⌒ Smooth</button><button id="shNodeCorner" class="btn mini" style="flex:1">⌐ Corner</button></div>
@@ -1621,7 +1623,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v510'; // keep in step with CACHE in sw.js
+const APP_V='v511'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -8886,7 +8888,7 @@ function shBase0(o){ // {stroke to get geometry from, fill colour}
     if(best)return {geo:best,col:best.fillColor,outline:o,auto:true};}}catch(e){}
   return {geo:o,col:o.color,outline:o};
 }
-function shRemoveFor(id,kind){const n=strokes.length;const lay=new Set();const _g=strokes.find(x=>x.id===id),_tw=_g?shTwinIds(_g):new Set([id]);strokes=strokes.filter(x=>{if(_tw.has(x.shadowOf)&&(!kind||(x.shKind||'shadow')===kind)){lay.add(x.layerId);return false;}return true;});
+function shRemoveFor(id,kind,keepOwn){const n=strokes.length;const lay=new Set();const _g=strokes.find(x=>x.id===id),_tw=_g?shTwinIds(_g):new Set([id]);strokes=strokes.filter(x=>{if(_tw.has(x.shadowOf)&&(!kind||(x.shKind||'shadow')===kind)&&!(keepOwn&&x.shCustom)){lay.add(x.layerId);return false;}return true;});
   lay.forEach(l=>{const L=layers.find(q=>q.id===l);if(L&&L.shadowLayer&&!strokes.some(x=>x.layerId===l)){const i=layers.indexOf(L);if(i>=0&&layers.length>1){layers.splice(i,1);if(activeLayerId===l)activeLayerId=(layers[Math.max(0,i-1)]||layers[0]).id;}}else rebuildLayer(l);});
   try{renderLayersList();}catch(e){}
   return n-strokes.length;}
@@ -8930,7 +8932,7 @@ function shadowAdd(o,opt){
   const kindName=hl?'highlight':'shadow';
   const gp=b.geo.points||[],shP={n:gp.length,x:gp[0].x,y:gp[0].y,lx:gp[gp.length-1].x,ly:gp[gp.length-1].y},shOpt={angle:opt.angle,size:opt.size,dark:opt.dark,hsize:opt.hsize,hlight:opt.hlight};
   // Same number of pieces as before: update them in place, so their layers keep their own opacity, blur and blend (and sliders can update live)
-  const twinIds=shTwinIds(out);const old=strokes.filter(x=>twinIds.has(x.shadowOf)&&(x.shKind||'shadow')===kindName).sort((u,v)=>layers.findIndex(l=>l.id===u.layerId)-layers.findIndex(l=>l.id===v.layerId));
+  const twinIds=shTwinIds(out);const old=strokes.filter(x=>twinIds.has(x.shadowOf)&&(x.shKind||'shadow')===kindName&&!x.shCustom).sort((u,v)=>layers.findIndex(l=>l.id===u.layerId)-layers.findIndex(l=>l.id===v.layerId));
   const oldSorted=old.slice().sort((u,v)=>ra(v.points)-ra(u.points));
   if(old.length&&old.length===ordered.length){
     oldSorted.forEach((st,k)=>{st.color=col;st.fillColor=col;st.shP=shP;st.shOpt=shOpt;if(st.shHand&&!opt.force)return; // a piece you reshaped by hand keeps its shape (tap Add to reset it)
@@ -8938,7 +8940,7 @@ function shadowAdd(o,opt){
     new Set(old.map(x=>x.layerId)).forEach(id=>rebuildLayer(id));
     return null;
   }
-  shRemoveFor(out.id,kindName);
+  shRemoveFor(out.id,kindName,true);
   const fl2=layers.find(q=>q.id===fillS.layerId);at=fl2?layers.indexOf(fl2):layers.length-1;
   const made=[],newL=[];
   ordered.forEach((r,k)=>{
@@ -8955,6 +8957,30 @@ function shadowAdd(o,opt){
   return null;
 }
 
+// A shadow or highlight you drew yourself: the line you drew becomes a normal piece (own layer, clipped to the fill, blur / edit points / undo like any other piece).
+function shDrawPiece(o,kind,pts,opt){
+  const b=shBase(o);if(!(b.geo.fillColor||b.geo.fillOf||(o.fill&&o.fill.on)))return 'Pick a colour fill first.';
+  if(!pts||pts.length<6)return 'Draw a bigger shape.';
+  let p=pts.map(q=>({x:q.x,y:q.y,pressure:.5}));
+  try{p=rdpSimplifyClosedLoop(p,1.6);}catch(e){}
+  if(p.length<3||polygonArea(p.map(q=>[q.x,q.y]))<30)return 'Draw a bigger shape.';
+  const hl=kind==='highlight',out=b.auto?b.geo:b.outline,fillS=b.geo;
+  const col=hl?shLight(b.col,opt.hlight!=null?Math.max(0,Math.min(1,opt.hlight)):Math.min(.85,opt.dark*1.6)):shShade(b.col,opt.dark);
+  const gp=b.geo.points||[],shP={n:gp.length,x:gp[0].x,y:gp[0].y,lx:gp[gp.length-1].x,ly:gp[gp.length-1].y},shOpt={angle:opt.angle,size:opt.size,dark:opt.dark,hsize:opt.hsize,hlight:opt.hlight};
+  const fl=layers.find(q=>q.id===fillS.layerId);const at=fl?layers.indexOf(fl):layers.length-1;
+  const keepActive=activeLayerId,nm=hl?'Highlight':'Shadow';
+  const L=makeLayer(nm+' (mine)');L.shadowLayer=true;L.autoObj=true;L.clip=true;L.blur=(window.__shBlurOn&&window.__shBlur&&window.__shBlur[kind])||0;
+  let k=0;while(layers.some(q=>q.shadowLayer&&q.name===L.name+(k?' '+(k+1):'')))k++;if(k)L.name+=' '+(k+1);
+  layers.splice(at+1,0,L);
+  const nodes=pointsToNodes(p,true);
+  const st={id:crypto.randomUUID(),brushId:out.brushId,layerId:L.id,color:col,fillColor:col,settings:null,points:nodesToPoints(nodes,true),nodes,closed:true,clipStrokeId:null,shape:null,shadowOf:out.id,shKind:kind,shP,shOpt,fillOpacity:1,shHand:true,shCustom:true};
+  if(out.groupId)st.groupId=out.groupId;
+  strokes.splice(Math.max(strokes.indexOf(fillS),0)+1,0,st);
+  activeLayerId=keepActive;rebuildLayer(L.id);rebuildLayer(fillS.layerId);
+  selectedStrokeId=st.id;
+  try{renderLayersList();}catch(e){}
+  return null;
+}
 // A shadow follows its shape: if the shape only moved, the shadow moves with it; if it was reshaped, the shadow is worked out again
 // (pieces you edited by hand keep their shape).
 function shSync(){
@@ -8974,7 +9000,7 @@ function shSync(){
       if(moved){
         pieces.forEach(st=>{st.points=st.points.map(q=>({...q,x:q.x+dx,y:q.y+dy}));if(st.nodes)st.nodes=st.nodes.map(n=>{const m={...n,x:n.x+dx,y:n.y+dy};['hi','ho'].forEach(k=>{if(n[k])m[k]={...n[k],x:n[k].x+dx,y:n[k].y+dy};});return m;});
           st.shP={n:gp.length,x:f.x,y:f.y,lx:l.x,ly:l.y};lay.add(st.layerId);});
-      }else{
+      }else if(pieces.every(x=>x.shCustom)){return;}else{
         shadowAdd(par,Object.assign({},pieces[0].shOpt||{angle:135,size:28,dark:.3,hsize:10},{kind:pieces[0].shKind||'shadow',live:true}));
       }
       lay.forEach(id=>{try{rebuildLayer(id);}catch(e){}});
@@ -8995,7 +9021,7 @@ window.__sketchpadShadow=(id,kind,op)=>{const o=strokes.find(x=>x.id===id);if(!o
     const has=k=>strokes.some(x=>x.shadowOf===oid&&(x.shKind||'shadow')===k);
     if(!has('shadow')&&!has('highlight')){ // nothing there yet: the first slider move creates it, so you see the result straight away
       const k=liveKind==='highlight'?'highlight':'shadow';const e=shadowAdd(o,{angle:+g('shLight').value,size:+g('shSize').value,dark:+g('shDark').value/100,hsize:+g('shHSize').value,hlight:+g('shHLight').value/100,kind:k,live:true});if(!e){redraw();g('shMsg').textContent='Updating live…';}return;}
-    ['shadow','highlight'].forEach(k=>{if(which&&which!=='both'&&which!==k)return;if(strokes.some(x=>x.shadowOf===oid&&(x.shKind||'shadow')===k)){any=true;shadowAdd(o,{angle:+g('shLight').value,size:+g('shSize').value,dark:+g('shDark').value/100,hsize:+g('shHSize').value,hlight:+g('shHLight').value/100,kind:k,live:true});}});
+    ['shadow','highlight'].forEach(k=>{if(which&&which!=='both'&&which!==k)return;if(strokes.some(x=>x.shadowOf===oid&&(x.shKind||'shadow')===k&&!x.shCustom)){any=true;shadowAdd(o,{angle:+g('shLight').value,size:+g('shSize').value,dark:+g('shDark').value/100,hsize:+g('shHSize').value,hlight:+g('shHLight').value/100,kind:k,live:true});}});
     if(any){g('shMsg').textContent='Updating live… let go to keep it.';redraw();}}catch(e){console.warn(e);}};
   let liveKind='shadow',liveWhich='both';
   ['shLight','shSize','shHSize','shHLight','shDark'].forEach(id=>{const hi=id==='shHSize'||id==='shHLight';g(id).oninput=()=>{liveKind=hi?'highlight':'shadow';liveWhich=hi?'highlight':id==='shSize'?'shadow':'both';upd();if(!liveT)liveT=requestAnimationFrame(liveRun);};g(id).onchange=()=>{try{liveRun(hi?'highlight':id==='shSize'?'shadow':'both');pushHist();g('shMsg').textContent='Updated.';}catch(e){}};});upd();
@@ -9083,6 +9109,26 @@ window.__sketchpadShadow=(id,kind,op)=>{const o=strokes.find(x=>x.id===id);if(!o
   let shWasOpen=false;setInterval(()=>{try{if(!g('shadowSection').offsetParent){shWasOpen=false;return;}if(!shWasOpen){shWasOpen=true;window.__shBlurOn=false;blurUI();if(areaFillArmed){areaFillArmed=false;try{syncAreaFillUI();}catch(_){}}}const o=shTarget();const L=o&&layers.find(l=>l.id===(shBase(o).geo.layerId));
     [['shBlurS','shBlurSV','shadow'],['shBlurH','shBlurHV','highlight']].forEach(([id,vid,kind])=>{if(document.activeElement===g(id)||performance.now()-(window.__shDrag||0)<2500)return;const ls=blurLayers(kind);if(ls.length){const v=ls[0].blur||0;if(+g(id).value!==v)g(id).value=v;g(vid).textContent=v?v+' px':'Off';window.__shBlur[kind]=v;if(v&&!window.__shBlurOn){window.__shBlurOn=true;blurUI();}}});
     g('shTgt').textContent=o?('Shading: '+(L?L.name:'selected shape')):'Tap a colour on the canvas to shade it.';}catch(e){}},400);
+  // Draw my own: arm, then draw one closed shape on the canvas with finger or pencil; it becomes a normal piece
+  (()=>{let ov=null;const off=()=>{window.__shDraw=null;g('shDrawSh').classList.remove('active');g('shDrawHi').classList.remove('active');g('shDrawSh').textContent='✍️ Draw my own shadow';g('shDrawHi').textContent='✍️ Draw my own highlight';if(ov){ov.remove();ov=null;}};
+    const arm=kind=>{if(window.__shDraw===kind){off();return;}const o=shTarget();if(!o||!o.points||!(o.fillColor||shBase(o).geo.fillColor)){g('shMsg').textContent='Select a filled shape first (🎯 Pick the colour to shade).';return;}
+      off();window.__shDraw=kind;const bt=g(kind==='highlight'?'shDrawHi':'shDrawSh');bt.classList.add('active');bt.textContent='✍️ Draw on the canvas… (tap here to cancel)';setStatus('✍️ Draw the '+kind+' shape on the canvas. Keep it inside the colour; it is trimmed to the edge.');};
+    g('shDrawSh').onclick=()=>arm('shadow');g('shDrawHi').onclick=()=>arm('highlight');
+    canvas.addEventListener('pointerdown',e=>{
+      if(!window.__shDraw)return;e.stopImmediatePropagation();e.preventDefault();
+      const kind=window.__shDraw,raw=[{x:e.clientX,y:e.clientY}];
+      const r=canvas.getBoundingClientRect();ov=document.createElement('canvas');ov.width=Math.round(r.width);ov.height=Math.round(r.height);ov.style.cssText='position:fixed;left:'+r.left+'px;top:'+r.top+'px;width:'+r.width+'px;height:'+r.height+'px;pointer-events:none;z-index:99999';document.body.appendChild(ov);
+      const c=ov.getContext('2d');const draw=()=>{c.clearRect(0,0,ov.width,ov.height);c.beginPath();raw.forEach((q,i)=>{const x=q.x-r.left,y=q.y-r.top;i?c.lineTo(x,y):c.moveTo(x,y);});c.closePath();c.fillStyle='rgba(255,255,255,.35)';c.fill();c.strokeStyle='#e0559a';c.lineWidth=2;c.setLineDash([6,4]);c.stroke();};
+      const mv=ev=>{raw.push({x:ev.clientX,y:ev.clientY});draw();ev.preventDefault();};
+      const up=ev=>{window.removeEventListener('pointermove',mv,true);window.removeEventListener('pointerup',up,true);window.removeEventListener('pointercancel',up,true);
+        const pts=raw.map(q=>screenToCanvas(q.x,q.y));off();
+        const o=shTarget();if(!o){return;}
+        const err=shDrawPiece(o,kind,pts,{angle:+g('shLight').value,size:+g('shSize').value,dark:+g('shDark').value/100,hsize:+g('shHSize').value,hlight:+g('shHLight').value/100});
+        if(err){g('shMsg').textContent=err;return;}
+        g('shMsg').textContent='Your '+kind+' was added. Use Edit points to reshape it, or Blur to soften it.';pushHist();redraw();};
+      window.addEventListener('pointermove',mv,true);window.addEventListener('pointerup',up,true);window.addEventListener('pointercancel',up,true);
+    },true);
+  })();
   g('shEditSh').onclick=()=>editKind('shadow');g('shEditHi').onclick=()=>editKind('highlight');
   g('shHi').onclick=()=>{const o=shTarget();if(!o||!o.points){g('shMsg').textContent='Select a filled shape first.';return;}
     const err=shadowAdd(o,{angle:+g('shLight').value,size:+g('shSize').value,dark:+g('shDark').value/100,hsize:+g('shHSize').value,hlight:+g('shHLight').value/100,kind:'highlight',force:true});

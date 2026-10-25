@@ -994,3 +994,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v510 — Blurred highlights no longer vanish
 A thin highlight loses most of its strength when blurred. After blurring a "Highlight" layer, the picture is now drawn over itself a few times (blurRestore) so a blurred highlight stays visible. Shadows are unchanged.
+
+## v511 — Draw my own shadow / highlight
+Shadow panel: "✍️ Draw my own shadow" and "✍️ Draw my own highlight". Tap, then draw one shape on the canvas; it becomes a normal piece (own layer "Shadow (mine)", clipped to the fill, blur, Edit points, Undo). Pieces drawn by hand (shCustom) are kept when you tap Add shadow / Add highlight again, and are only removed by Delete or Undo. They use the colour from the sliders at the time they were drawn.
