@@ -917,3 +917,10 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 - Sliders styled like the other panels (small handles). Panel shows "Shading: <layer>" and says to just tap the colour.
 - While the panel is open, tapping the artwork selects the colour fill under the finger; the Stroke panel is not needed.
 - First slider move creates a shadow (Highlight size creates a highlight) when none exists; after that every slider updates live.
+
+## v489–v491 — Shadow behaviour audit
+- Direction verified numerically on a circle, an irregular blob and the bowl (8 light angles): the shadow always falls opposite the light (cosine ≥ 0.99 with the expected vector). Light-from is 0° = right, 90° = up (counter-clockwise); the panel now spells it out ("Light from the upper left → shadow falls to the lower right").
+- Geometry: fill outline is simplified and rounded first (traced fills are jagged), the crescent gets an opening (rounds horns, removes slivers) and stray small patches are dropped.
+- A shadow is placed above the topmost identical copy of the fill, so duplicate fills stacked above no longer hide it.
+- Shadows follow their shape: moving the fill moves the shadow; reshaping regenerates it (hand-edited pieces keep their shape). Undo/redo checked.
+- Size only changes the shadow, Highlight size only the highlight, Darkness only colour/strength, Light from changes both.
