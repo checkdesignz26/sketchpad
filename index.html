@@ -1085,6 +1085,8 @@ html.in-suite .suite-only{display:block!important}
       <div class="slider-row"><label>Light from</label><input id="shLight" type="range" min="0" max="360" value="135"><span id="shLightV">↖</span></div>
       <div class="slider-row"><label>Size</label><input id="shSize" type="range" min="4" max="120" value="28"><span id="shSizeV">28</span></div>
       <div class="slider-row"><label>Highlight size</label><input id="shHSize" type="range" min="2" max="60" value="10"><span id="shHSizeV">10</span></div>
+      <div class="slider-row"><label>Shadow blur</label><input id="shBlurS" type="range" min="0" max="40" value="0"><span id="shBlurSV">Off</span></div>
+      <div class="slider-row"><label>Highlight blur</label><input id="shBlurH" type="range" min="0" max="40" value="0"><span id="shBlurHV">Off</span></div>
       <div class="slider-row"><label>Darkness</label><input id="shDark" type="range" min="5" max="80" value="30"><span id="shDarkV">30%</span></div>
       <button id="shPick" class="btn" style="width:100%;margin-top:6px;">🎯 Pick the colour to shade</button>
       <div class="grid" style="margin-top:8px;grid-template-columns:1fr 1fr;gap:6px;">
@@ -1609,7 +1611,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v491'; // keep in step with CACHE in sw.js
+const APP_V='v492'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -8881,7 +8883,8 @@ function shadowAdd(o,opt){
   const fl2=layers.find(q=>q.id===fillS.layerId);at=fl2?layers.indexOf(fl2):layers.length-1;
   const made=[],newL=[];
   ordered.forEach((r,k)=>{
-    const L=makeLayer(k?nm+' '+(k+1):nm);L.shadowLayer=true;L.autoObj=true;layers.splice(at+1+k,0,L);newL.push(L);
+    const L=makeLayer(k?nm+' '+(k+1):nm);L.shadowLayer=true;L.autoObj=true;L.blur=(window.__shBlur&&window.__shBlur[kindName])||0;L.clip=true; // clipped to the fill below, so a blurred edge never spills outside the shape
+    layers.splice(at+1+k,0,L);newL.push(L);
     const nodes=pointsToNodes(r.map(p=>({x:p.x,y:p.y,pressure:.5})),true);
     const st={id:crypto.randomUUID(),brushId:out.brushId,layerId:L.id,color:col,fillColor:col,settings:null,points:nodesToPoints(nodes,true),nodes,closed:true,clipStrokeId:null,shape:null,shadowOf:out.id,shKind:kindName,shP,shOpt,fillOpacity:1};
     if(out.groupId)st.groupId=out.groupId;made.push(st);});
@@ -8956,6 +8959,13 @@ window.__sketchpadShadow=(id,kind,op)=>{const o=strokes.find(x=>x.id===id);if(!o
     try{syncStrokeSelectionUI();updateSelectedControls();}catch(_){}
     const L=layers.find(l=>l.id===hit.layerId);setStatus('🎯 Selected the colour on "'+(L?L.name:'that layer')+'". Now tap Add shadow or Add highlight.');
   },true);
+  // Blur: a Gaussian blur on the shadow / highlight layers themselves (kept adjustable, not baked in)
+  window.__shBlur=window.__shBlur||{shadow:0,highlight:0};
+  const blurLayers=kind=>{const o=shTarget();if(!o)return[];const b=shBase(o),oid=b.auto?b.geo.id:b.outline.id;const ids=new Set(strokes.filter(x=>x.shadowOf===oid&&(x.shKind||'shadow')===kind).map(x=>x.layerId));return layers.filter(l=>ids.has(l.id));};
+  [['shBlurS','shBlurSV','shadow'],['shBlurH','shBlurHV','highlight']].forEach(([id,vid,kind])=>{
+    g(id).oninput=()=>{const v=+g(id).value;window.__shBlur[kind]=v;g(vid).textContent=v?v+' px':'Off';blurLayers(kind).forEach(l=>{l.blur=v;});segVer++;compositeDirty=true;redraw();};
+    g(id).onchange=()=>{pushHist();try{scheduleAutosave();}catch(e){}};
+  });
   const editIdx={shadow:0,highlight:0};
   const editKind=kind=>{const o=shTarget();if(!o){g('shMsg').textContent='Select the shape first.';return;}
     const b=shBase(o),oid=b.auto?b.geo.id:b.outline.id;
@@ -8985,6 +8995,7 @@ window.__sketchpadShadow=(id,kind,op)=>{const o=strokes.find(x=>x.id===id);if(!o
     },30);
   },true);
   setInterval(()=>{try{if(!g('shadowSection').offsetParent)return;const o=shTarget();const L=o&&layers.find(l=>l.id===(shBase(o).geo.layerId));
+    [['shBlurS','shBlurSV','shadow'],['shBlurH','shBlurHV','highlight']].forEach(([id,vid,kind])=>{if(document.activeElement===g(id))return;const ls=blurLayers(kind);if(ls.length){const v=ls[0].blur||0;if(+g(id).value!==v)g(id).value=v;g(vid).textContent=v?v+' px':'Off';window.__shBlur[kind]=v;}});
     g('shTgt').textContent=o?('Shading: '+(L?L.name:'selected shape')):'Tap a colour on the canvas to shade it.';}catch(e){}},400);
   g('shEditSh').onclick=()=>editKind('shadow');g('shEditHi').onclick=()=>editKind('highlight');
   g('shHi').onclick=()=>{const o=shTarget();if(!o||!o.points){g('shMsg').textContent='Select a filled shape first.';return;}
