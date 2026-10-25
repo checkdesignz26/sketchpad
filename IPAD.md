@@ -912,3 +912,8 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 ## v487 — Shadow panel robustness
 - Panel controls fall back to the last shape you worked on when nothing is selected; Delete shadow/highlight works when a shadow piece itself is selected; the panel message moved to the top and is mirrored to the status bar.
 - Test hooks `__sketchpadSelect`, `__sketchpadShadow`.
+
+## v488 — Shadow & highlight panel redesign
+- Sliders styled like the other panels (small handles). Panel shows "Shading: <layer>" and says to just tap the colour.
+- While the panel is open, tapping the artwork selects the colour fill under the finger; the Stroke panel is not needed.
+- First slider move creates a shadow (Highlight size creates a highlight) when none exists; after that every slider updates live.
