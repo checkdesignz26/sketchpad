@@ -991,3 +991,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v509 — Highlight brightness
 - New **Highlight brightness** slider (0–100%, default 50%) in the Shadow & highlight panel: how far the highlight is lightened towards white. 100% = pure white. Updates live and is remembered with the highlight.
+
+## v510 — Blurred highlights no longer vanish
+A thin highlight loses most of its strength when blurred. After blurring a "Highlight" layer, the picture is now drawn over itself a few times (blurRestore) so a blurred highlight stays visible. Shadows are unchanged.
