@@ -964,3 +964,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v501 — Area Fill no longer paints when using Shadow & highlight
 - If Area Fill was left switched on, tapping the shape to shade it also painted a new fill. Opening the Shadow & highlight panel (or tapping while it is open) now switches Area Fill off first.
+
+## v502 — Shadows and highlights stay put
+- A selected shadow/highlight piece no longer shows the move/turn/resize box, cannot be dragged, turned, flipped, resized or duplicated by hand (a message explains). They are changed only with the Shadow & highlight panel or "Edit shadow points" (nodes), so they can never drift off their shape.
