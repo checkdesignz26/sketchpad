@@ -967,3 +967,7 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v502 — Shadows and highlights stay put
 - A selected shadow/highlight piece no longer shows the move/turn/resize box, cannot be dragged, turned, flipped, resized or duplicated by hand (a message explains). They are changed only with the Shadow & highlight panel or "Edit shadow points" (nodes), so they can never drift off their shape.
+
+## v503 — Blur per piece, delete points in the shadow panel
+- Select one shadow/highlight piece and the blur sliders change only that piece (each piece has its own layer); with the shape selected they change all pieces of that kind. A line under Blur says which.
+- While editing shadow/highlight points, the Shadow & highlight panel shows **✕ Delete point** and **✓ Done** buttons (same as the Edit Path panel's Delete Node / Done).
