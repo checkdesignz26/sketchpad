@@ -941,3 +941,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 ## v495 — Blur lag fix + panel opens for shadow layers
 - Blurred layers are now blurred once and the picture is reused until the layer, zoom or blur changes (before, it was re-blurred on every redraw — the cause of lag/crashes on iPad). At most 3 blurred pictures are kept in memory.
 - Selecting a shadow or highlight (tapping it, or its layer in the Layers list) opens the Shadow & highlight panel automatically.
+
+## v496 — Blur slider drag
+- Dragging a blur slider only moves the number; the blur is drawn once when you release (a full-size blur per drag step froze the iPad). The panel no longer snaps the slider back while you are dragging.
