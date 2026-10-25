@@ -1623,7 +1623,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v512'; // keep in step with CACHE in sw.js
+const APP_V='v513'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -2515,14 +2515,64 @@ function layerShouldWake(l){return l.id===activeLayerId||l.pin||l.keepAwake||(l.
 function layerInClipGroup(l){const i=layers.indexOf(l);if(i<0)return false;if(l.clip)return i>0;const n=layers[i+1];return !!(n&&n.clip);}
 // Clipping masks: a clipped layer only shows where the layer below it (its base) has paint. One pass bottom-to-top per flatten.
 let _cpMask=null,_cpTmp=null;
+// ---- v513: small working pictures for shadows / highlights ----
+// A shadow or highlight piece used to cost full-canvas buffers for its clip mask, its clip copy and its blurred picture, however small it was
+// (a tiny bowl = about 7 full canvases; on the iPad at high sharpness each is 30-50 MB). These helpers work on just the box around the piece.
+// layerBox(l) = [x,y,w,h] in canvas units around everything drawn on the layer (grown by the blur reach), or null when it is not safe to crop
+// (text, pictures, erasers, motifs on the layer, art that wraps over a tile edge) - then the original full-size path is used.
+function layerBox(l){
+  if(window.__boxCrop===false)return null;
+  let n=0,last='';for(let i=strokes.length-1;i>=0;i--){const o=strokes[i];if(o.layerId===l.id){n++;if(!last)last=o.id;}}
+  const key=[segVer,l._bv||0,n,last,l.blur||0,showTiling?1:0,editingMotifId?1:0].join('|');
+  if(l._bxK===key)return l._bx;
+  let box=null;
+  try{
+    if(!n){window.__boxWhy='no strokes';throw 0;}if(placed.some(m=>m.layerId===l.id)){window.__boxWhy='placed on layer';throw 0;}
+    let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9,sz=0;
+    for(const o of strokes){
+      if(o.layerId!==l.id)continue;
+      if(o.text||o.img||o.brushId==='eraser'||o.brushId==='smudge'||o.clipStrokeId||!o.points||!o.points.length)throw 0;
+      for(const q of o.points){if(q.x<x0)x0=q.x;if(q.x>x1)x1=q.x;if(q.y<y0)y0=q.y;if(q.y>y1)y1=q.y;}
+      const z=(o.settings&&o.settings.size)||30;if(z>sz)sz=z;
+    }
+    const pad=Math.ceil(sz*3+8+(l.blur>0?l.blur*3+4:0));
+    x0=Math.max(0,Math.floor(x0-pad));y0=Math.max(0,Math.floor(y0-pad));x1=Math.min(W,Math.ceil(x1+pad));y1=Math.min(H,Math.ceil(y1+pad));
+    if(showTiling&&!editingMotifId&&(x0<=CX||y0<=CY||x1>=CX+TW||y1>=CY+TH)){window.__boxWhy='tile edge '+[x0,y0,x1,y1,CX,CY,TW,TH].join(',');throw 0;} // touches a tile edge: drawn wrapped round, keep the full picture
+    if(x1<=x0||y1<=y0||(x1-x0)*(y1-y0)>0.6*W*H)throw 0;
+    box=[x0,y0,x1-x0,y1-y0];
+  }catch(e){box=null;if(e!==0)console.warn(e);}
+  (window.__boxWhyAll=window.__boxWhyAll||{})[l.name]=box?box.join(','):(window.__boxWhy||'?');
+  l._bxK=key;l._bx=box;return box;
+}
+const _boxCv={mask:null,tmp:null,blur:new Map()};
+function boxCanvas(c,w,h){if(!c)c=document.createElement('canvas');if(c.width!==w||c.height!==h){c.width=w;c.height=h;}const g=c.getContext('2d');g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='source-over';g.globalAlpha=1;g.clearRect(0,0,w,h);return c;}
+function boxFree(){['mask','tmp'].forEach(k=>{const c=_boxCv[k];if(c){c.width=c.height=1;}_boxCv[k]=null;});_boxCv.blur.forEach(e=>{try{e.cv.width=e.cv.height=1;}catch(_){}});_boxCv.blur.clear();}
+// The layer's picture for the box: [canvas, sx, sy, sw, sh] = canvas + the part of it to use (blurred when the layer has blur; blurred pictures are cached).
+function boxPicture(l,box,k){
+  const sx=Math.round(box[0]*k),sy=Math.round(box[1]*k),sw=Math.max(1,Math.round(box[2]*k)),sh=Math.max(1,Math.round(box[3]*k));
+  if(!(l.blur>0))return [l.dcanvas,sx,sy,sw,sh];
+  const key=[segVer,l._bv||0,k,l.blur,box.join(','),l.asleep?1:0].join('|');
+  let e=_boxCv.blur.get(l.id);
+  if(!e||e.key!==key){
+    if(!e){e={cv:document.createElement('canvas'),key:''};}
+    _boxCv.blur.delete(l.id);
+    e.cv.width=sw;e.cv.height=sh;const c=e.cv.getContext('2d');c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,sw,sh);
+    c.drawImage(l.dcanvas,sx,sy,sw,sh,0,0,sw,sh);
+    blurLayerCanvas(e.cv,k,l.blur,false,null,l); // the box already includes the blur reach and is away from tile edges, so no wrapping is needed
+    e.key=key;
+  }
+  _boxCv.blur.set(l.id,e);
+  while(_boxCv.blur.size>4){const k0=_boxCv.blur.keys().next().value;const o=_boxCv.blur.get(k0);try{o.cv.width=o.cv.height=1;}catch(_){}_boxCv.blur.delete(k0);}
+  return [e.cv,0,0,sw,sh];
+}
 function clipPass(own){
-  let has=false,vis=true,mask=own?null:_cpMask,tmp=own?null:_cpTmp;
+  let has=false,vis=true,mask=own?null:_cpMask,tmp=own?null:_cpTmp,used=false;
   const mk=(c,w,h)=>{if(!c)c=document.createElement('canvas');if(c.width!==w||c.height!==h){c.width=w;c.height=h;}const g=c.getContext('2d');g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='source-over';g.globalAlpha=1;g.clearRect(0,0,w,h);return c;};
   return {
     start(l){if(l.clip&&has)return (vis&&l.visible)?'clip':'skip';has=true;vis=l.visible;return l.visible?'base':'skip';},
-    keep(src,w,h){mask=mk(mask,w,h);if(!own)_cpMask=mask;mask.getContext('2d').drawImage(src,0,0,w,h);},
-    cut(src,w,h){if(!mask||mask.width!==w||mask.height!==h)return src;tmp=mk(tmp,w,h);if(!own)_cpTmp=tmp;const g=tmp.getContext('2d');g.drawImage(src,0,0,w,h);g.globalCompositeOperation='destination-in';g.drawImage(mask,0,0);g.globalCompositeOperation='source-over';return tmp;},
-    free(){if(own){if(mask)mask.width=mask.height=1;if(tmp)tmp.width=tmp.height=1;}else if(!layers.some(l=>l.clip)&&_cpMask){_cpMask.width=_cpMask.height=1;if(_cpTmp)_cpTmp.width=_cpTmp.height=1;}}
+    keep(src,w,h){used=true;mask=mk(mask,w,h);if(!own)_cpMask=mask;mask.getContext('2d').drawImage(src,0,0,w,h);},
+    cut(src,w,h){used=true;if(!mask||mask.width!==w||mask.height!==h)return src;tmp=mk(tmp,w,h);if(!own)_cpTmp=tmp;const g=tmp.getContext('2d');g.drawImage(src,0,0,w,h);g.globalCompositeOperation='destination-in';g.drawImage(mask,0,0);g.globalCompositeOperation='source-over';return tmp;},
+    free(){if(own){if(mask)mask.width=mask.height=1;if(tmp)tmp.width=tmp.height=1;}else if((!used||!layers.some(l=>l.clip))&&_cpMask){_cpMask.width=_cpMask.height=1;if(_cpTmp)_cpTmp.width=_cpTmp.height=1;}}
   };
 }
 // ---- Layer picture cache (v189) ----
@@ -2775,7 +2825,7 @@ function segBounds(item){
   }
   if(!n)return [0,0,1,1]; // nothing drawn on these layers: a 1-pixel picture is enough
   const pad=sz*3+48;x0=Math.max(0,Math.floor(x0-pad));y0=Math.max(0,Math.floor(y0-pad));x1=Math.min(W,Math.ceil(x1+pad));y1=Math.min(H,Math.ceil(y1+pad));
-  if(showTiling&&(x0<CX||y0<CY||x1>CX+TW||y1>CY+TH))return segWhy('tile edge'); // art near a tile edge is also drawn wrapped round to the other side: keep the full picture
+  if(showTiling&&!editingMotifId&&(x0<CX||y0<CY||x1>CX+TW||y1>CY+TH))return segWhy('tile edge'); // (while a motif is open for editing it is one picture, not a repeating tile) // art near a tile edge is also drawn wrapped round to the other side: keep the full picture
   if(x1<=x0||y1<=y0||(x1-x0)*(y1-y0)>0.7*W*H)return segWhy('big '+(x1-x0)+'x'+(y1-y0));
   return [x0,y0,x1-x0,y1-y0];
 }
@@ -3268,18 +3318,44 @@ function updateComposite(){
 // resizeRenderTargets), so drawImage's dest size must be given explicitly as W,H (the LOGICAL
 // size) rather than left to the image's own (already renderScale-sized) natural pixel size —
 // otherwise the transform would scale an already-scaled bitmap up a second time.
+function drawFull(l,it,cp){ // the original full-size way (used when a layer cannot be cropped safely)
+  let pic=l.blur>0?blurredLayerPicture(l):l.dcanvas;
+  if(it.st==='base')cp.keep(pic,pic.width,pic.height);else if(it.st==='clip')pic=cp.cut(pic,pic.width,pic.height);
+  displayCtx.save();displayCtx.globalAlpha=l.opacity/100;displayCtx.globalCompositeOperation=l.blend||'source-over';displayCtx.drawImage(pic,0,0,W,H);displayCtx.restore();
+}
 function updateDisplayComposite(){
   try{motifSync();}catch(e){}
   syncAwake();
   displayCtx.clearRect(0,0,W,H);
   let si=0;const cp=clipPass();
-  layerPlan().forEach(it=>{
-    if(it.live){const l=it.live;let pic=l.blur>0?blurredLayerPicture(l):l.dcanvas;
-      if(it.st==='base')cp.keep(pic,pic.width,pic.height);else if(it.st==='clip')pic=cp.cut(pic,pic.width,pic.height);
-      displayCtx.save();displayCtx.globalAlpha=l.opacity/100;displayCtx.globalCompositeOperation=l.blend||'source-over';displayCtx.drawImage(pic,0,0,W,H);displayCtx.restore();}
+  const plan=layerPlan();
+  plan.forEach((it,pi)=>{
+    if(it.live){const l=it.live;
+      let bx=(l.dcanvas&&l.dcanvas.width>1&&(l.blur>0||l.clip||it.st==='base'))?layerBox(l):null;
+      if(it.st==='base'){_boxCv.maskBox=null; // a base can use the small mask only if every layer clipped to it can too
+        for(let j=pi+1;bx&&j<plan.length&&plan[j].live&&plan[j].st==='clip';j++){const c=plan[j].live;if(!(c.dcanvas&&c.dcanvas.width>1&&layerBox(c)))bx=null;}}
+      if(bx){ // small working pictures: only the box around this layer's art
+        window.__boxN=(window.__boxN||0)+1;
+        const k=l.dcanvas.width/W,P=boxPicture(l,bx,k);
+        if(it.st==='base'){ // remember the shape of the base layer (its box) for the layers clipped to it
+          _boxCv.mask=boxCanvas(_boxCv.mask,P[3],P[4]);_boxCv.mask.getContext('2d').drawImage(P[0],P[1],P[2],P[3],P[4],0,0,P[3],P[4]);_boxCv.maskBox=bx;_boxCv.maskK=k;
+        }
+        let src=P[0],sx=P[1],sy=P[2],sw=P[3],sh=P[4],dx=bx[0],dy=bx[1],dw=bx[2],dh=bx[3];
+        if(it.st==='clip'){
+          const mb=_boxCv.maskBox;if(!_boxCv.mask||!mb||_boxCv.maskK!==k){/* base not boxed: fall back */ drawFull(l,it,cp);return;}
+          const ix0=Math.max(bx[0],mb[0]),iy0=Math.max(bx[1],mb[1]),ix1=Math.min(bx[0]+bx[2],mb[0]+mb[2]),iy1=Math.min(bx[1]+bx[3],mb[1]+mb[3]);
+          if(ix1<=ix0||iy1<=iy0)return; // nothing in common: nothing to show
+          const w=Math.max(1,Math.round((ix1-ix0)*k)),h=Math.max(1,Math.round((iy1-iy0)*k));
+          _boxCv.tmp=boxCanvas(_boxCv.tmp,w,h);const g=_boxCv.tmp.getContext('2d');
+          g.drawImage(P[0],P[1]+Math.round((ix0-bx[0])*k),P[2]+Math.round((iy0-bx[1])*k),w,h,0,0,w,h);
+          g.globalCompositeOperation='destination-in';g.drawImage(_boxCv.mask,Math.round((ix0-mb[0])*k),Math.round((iy0-mb[1])*k),w,h,0,0,w,h);g.globalCompositeOperation='source-over';
+          src=_boxCv.tmp;sx=0;sy=0;sw=w;sh=h;dx=ix0;dy=iy0;dw=ix1-ix0;dh=iy1-iy0;
+        }
+        displayCtx.save();displayCtx.globalAlpha=l.opacity/100;displayCtx.globalCompositeOperation=l.blend||'source-over';displayCtx.drawImage(src,sx,sy,sw,sh,dx,dy,dw,dh);displayCtx.restore();
+      }else{window.__fullN=(window.__fullN||0)+1;drawFull(l,it,cp);}}
     else{const sv=segFor(si,it),sr=segCache[si].rect;si++;if(sr)displayCtx.drawImage(sv,sr[0],sr[1],sr[2],sr[3]);else displayCtx.drawImage(sv,0,0,W,H);}
   });
-  segTrim(si);cp.free();
+  segTrim(si);cp.free();if(!layers.some(l=>l.clip||l.blur>0))boxFree();
   sentinel(displayCtx);
 }
 // Stroke points carry long decimals (e.g. 412.38571923) that add up: a detailed drawing's undo step was ~9 million characters.
@@ -8894,6 +8970,11 @@ function shRemoveFor(id,kind,keepOwn){const n=strokes.length;const lay=new Set()
   lay.forEach(l=>{const L=layers.find(q=>q.id===l);if(L&&L.shadowLayer&&!strokes.some(x=>x.layerId===l)){const i=layers.indexOf(L);if(i>=0&&layers.length>1){layers.splice(i,1);if(activeLayerId===l)activeLayerId=(layers[Math.max(0,i-1)]||layers[0]).id;}}else rebuildLayer(l);});
   try{renderLayersList();}catch(e){}
   return n-strokes.length;}
+// The smoothing below adds many points on gentle curves. They make the boolean and rounding steps (which grow with the number of points) take seconds,
+// and they change nothing you can see: keep only the points that matter (within a small fraction of a pixel).
+function shThin(P,eps){
+  return {regions:P.regions.map(r=>{if(r.length<12)return r;try{const q=rdpSimplifyClosedLoop(r.map(([x,y])=>({x,y,pressure:.5})),eps);return q.length>=3?q.map(p=>[p.x,p.y]):r;}catch(e){return r;}}),inverted:!!P.inverted};
+}
 function shSmoothPoly(P){ // traced fills have jagged edges: simplify, then round the corners so the shadow edge is clean
   const regs=P.regions.map(r=>{
     let pts=r.map(([x,y])=>({x,y,pressure:.5}));
@@ -8903,25 +8984,28 @@ function shSmoothPoly(P){ // traced fills have jagged edges: simplify, then roun
   });
   return {regions:regs,inverted:false};
 }
-function shadowAdd(o,opt){
+function shadowAdd(o,opt){const _t0=performance.now();try{return shadowAdd_(o,opt);}finally{(window.__shT=window.__shT||[]).push(Math.round(performance.now()-_t0));if(window.__shT.length>200)window.__shT.shift();}}
+function shadowAdd_(o,opt){
+  const _P=window.__shPh={};let _pt=performance.now();const _mk=n=>{const t=performance.now();_P[n]=Math.round(t-_pt);_pt=t;};
   const b=shBase(o);
   if(!(b.geo.fillColor||b.geo.fillOf||(o.fill&&o.fill.on)))return 'This is only an outline, with no colour inside. Tap inside the coloured area (the red part) to select the fill shape, then tap Add shadow.';
   let A=strokeToPolyBoolPoly(b.geo);if(!A)return 'That shape has no area to shade.';
-  try{A=shSmoothPoly(A);}catch(e){}
+  _mk('prep');try{A=shSmoothPoly(A);if(!window.__shNoThin)A=shThin(A,0.3);}catch(e){}_mk('smooth');_P.Apts=A.regions.reduce((n,r)=>n+r.length,0);
   const a=opt.angle*Math.PI/180,dx=Math.cos(a)*opt.size,dy=-Math.sin(a)*opt.size; // angle measured like a clock-less compass: 0 = right, 90 = up
   const hl=opt.kind==='highlight',sg=hl?-1:1; // a highlight is the crescent on the light side, so the copy slides away from the light
   let A1=A,dx1=dx,dy1=dy;
   if(hl){ // a highlight is a thin shine: a narrow arc a little inside the edge on the light side, sized by its own slider
     const hs=Math.max(2,opt.hsize||10);dx1=Math.cos(a)*hs;dy1=-Math.sin(a)*hs;
-    try{const sh=ctTry(()=>ctShrink(A,Math.max(5,hs*0.9)));if(sh&&sh.regions&&sh.regions.length)A1=sh;}catch(e){}
+    try{const sh=ctTry(()=>ctShrink(A,Math.max(5,hs*0.9),window.__shNoThin?0:10));if(sh&&sh.regions&&sh.regions.length)A1=sh;}catch(e){}
   }
-  const B={regions:A1.regions.map(r=>r.map(([x,y])=>[x+sg*dx1,y+sg*dy1])),inverted:false};
+  _mk('hlShrink');const B={regions:A1.regions.map(r=>r.map(([x,y])=>[x+sg*dx1,y+sg*dy1])),inverted:false};
   let res;try{res=ctTry(()=>PolyBool.difference(A1,B));}catch(e){res=null;}
-  if(!res)return 'Could not work out the shadow for that shape.';
+  if(!window.__shNoThin&&res)try{res=shThin(res,0.4);}catch(e){}
+  _mk('diff');if(!res)return 'Could not work out the shadow for that shape.';_P.resPts=res.regions.reduce((n,r)=>n+r.length,0);
   // Tidy the raw crescent: an opening (shrink then grow) rounds the sharp horns and removes hairline slivers, then small stray patches are dropped
   let C=res;
-  try{const rr=hl?Math.max(1,Math.min(3,(opt.hsize||10)*0.12)):Math.max(1.2,Math.min(6,opt.size*0.1));const o2=ctTry(()=>ctGrow(ctShrink(res,rr),rr));if(o2&&o2.regions&&o2.regions.length)C=o2;}catch(e){}
-  let regs=polyBoolRegionsToStrokeRegions(C.regions,1.2).filter(r=>polygonArea(r)>=2);
+  try{const rr=hl?Math.max(1,Math.min(3,(opt.hsize||10)*0.12)):Math.max(1.2,Math.min(6,opt.size*0.1));const ns=window.__shNoThin?0:(rr<=3?6:8);const o2=ctTry(()=>ctGrow(ctShrink(res,rr,ns),rr,ns));if(o2&&o2.regions&&o2.regions.length)C=o2;}catch(e){}
+  _mk('opening');let regs=polyBoolRegionsToStrokeRegions(C.regions,1.2).filter(r=>polygonArea(r)>=2);
   if(regs.length){const big=Math.max(...regs.map(r=>polygonArea(r))),minA=Math.max(hl?0.15*big:0.1*big,hl?40:Math.max(40,0.12*opt.size*opt.size));regs=regs.filter(r=>polygonArea(r)>=minA);}
   if(!regs.length)return 'No shadow fits. Try a smaller size.';
   const out=b.auto?b.geo:b.outline,fillS=b.geo;
@@ -9187,8 +9271,8 @@ function ctLoops(s){ // -> {loops:[[ [x,y] ...]], closed}
   return {loops:[pts.map(p=>[p.x,p.y])],closed:!!s.closed&&pts.length>=3};
 }
 let MITER_LIMIT=10;
-function ctBand(loops,closed,r,miter){
-  const items=[],N=Math.max(12,Math.min(48,Math.ceil(r*1.2)));
+function ctBand(loops,closed,r,miter,nSeg){
+  const items=[],N=nSeg||Math.max(12,Math.min(48,Math.ceil(r*1.2)));
   loops.forEach(L=>{
     const n=L.length,m=closed?n:n-1;
     if(miter&&miter>0){ // sharp corners: add a miter kite on the outer side of every real turn, so pointed tips stay pointed
@@ -9231,8 +9315,8 @@ function ctOuterOnly(regs){ // drop loops nested an odd number of times (holes) 
   return regs.filter((r,i)=>{let depth=0;regs.forEach((o,j)=>{if(i!==j&&ctInPoly(r[0],o))depth++;});return depth%2===0;});
 }
 function ctPolyLoops(poly){return (poly.regions||[]).filter(r=>r.length>=3);}
-function ctGrow(poly,r){return PolyBool.union(poly,ctBand(ctPolyLoops(poly),true,r));}
-function ctShrink(poly,r){return PolyBool.difference(poly,ctBand(ctPolyLoops(poly),true,r));}
+function ctGrow(poly,r,nSeg){return PolyBool.union(poly,ctBand(ctPolyLoops(poly),true,r,0,nSeg));}
+function ctShrink(poly,r,nSeg){return PolyBool.difference(poly,ctBand(ctPolyLoops(poly),true,r,0,nSeg));}
 function ctRegions(poly,eps){return polyBoolRegionsToStrokeRegions(poly.regions,eps).filter(g=>polygonArea(g)>=4);}
 $('rcRad').oninput=e=>{$('rcRadVal').textContent=e.target.value;};
 let ctInside=false;
