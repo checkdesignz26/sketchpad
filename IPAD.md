@@ -982,3 +982,6 @@ Your Memory check after the blank canvas showed no crash and only about 115 MB i
 
 ## v506 — Layer rename error fixed
 - Tapping a layer name to rename it could fail with "null is not an object (evaluating 'nameEl.replaceWith')" when the Layers list had group headers, motif rows or folded groups (rows were found by position). The row is now found by the layer's id.
+
+## v507 — Panel order
+- Add shadow / Add highlight sit together at the top of the buttons; the point-editing tools (Move, Add point, Smooth, Corner, Delete point, Done) appear below the Edit buttons across the full width, so they no longer push Add highlight out of view.

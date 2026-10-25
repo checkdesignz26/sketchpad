@@ -1096,13 +1096,13 @@ html.in-suite .suite-only{display:block!important}
       <button id="shPick" class="btn" style="width:100%;margin-top:6px;">🎯 Pick the colour to shade</button>
       <div class="grid" style="margin-top:8px;grid-template-columns:1fr 1fr;gap:6px;">
         <button id="shAdd" class="btn primary">🌓 Add shadow</button>
+        <button id="shHi" class="btn">✨ Add highlight</button>
         <button id="shEditSh" class="btn">✏️ Edit shadow points</button>
         <button id="shEditHi" class="btn">✏️ Edit highlight points</button>
-      <div id="shNodeRow" style="display:none;margin:6px 0"><div class="hint" style="margin:0 0 4px">Editing points: tap a point, drag to move it.</div>
+      <div id="shNodeRow" style="display:none;margin:6px 0;grid-column:1/-1"><div class="hint" style="margin:0 0 4px">Editing points: tap a point, drag to move it.</div>
         <div class="row" style="gap:6px;margin-bottom:6px"><button id="shNodeSel" class="btn mini" style="flex:1">↖ Move</button><button id="shNodeAdd" class="btn mini" style="flex:1">➕ Add point</button></div>
         <div class="row" style="gap:6px;margin-bottom:6px"><button id="shNodeSmooth" class="btn mini" style="flex:1">⌒ Smooth</button><button id="shNodeCorner" class="btn mini" style="flex:1">⌐ Corner</button></div>
         <div class="row" style="gap:6px"><button id="shNodeDel" class="btn mini danger" style="flex:1">✕ Delete point</button><button id="shNodeDone" class="btn mini primary" style="flex:1">✓ Done</button></div></div>
-        <button id="shHi" class="btn">✨ Add highlight</button>
         <button id="shRemove" class="btn">✖ Delete shadow</button>
         <button id="shRemoveHi" class="btn">✖ Delete highlight</button>
       </div>
@@ -1620,7 +1620,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v506'; // keep in step with CACHE in sw.js
+const APP_V='v507'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
