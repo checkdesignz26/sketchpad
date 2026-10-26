@@ -1639,7 +1639,7 @@ const canvas=document.getElementById('canvas'),mainCtx=canvas.getContext('2d'),w
 try{if(/[?&]suite\b/.test(location.search)||window.self!==window.top)document.documentElement.classList.add('in-suite');}catch(e){}
 if(window.navigator.standalone)document.documentElement.classList.add('is-standalone');
 const W=1800,H=1800,TILE=780,C=(W-TILE)/2;let TW=TILE,TH=TILE,CX=C,CY=C; // TILE = the tile's LONG side (always 780); TW x TH is the real repeat tile (rectangular cards), centred on the canvas
-const APP_V='v538'; // keep in step with CACHE in sw.js
+const APP_V='v539-dev'; // keep in step with CACHE in sw.js
 let viewLocked=(function(){try{return localStorage.getItem('sp-viewLock')==='1';}catch(e){return false;}})(); // Lock view: finger pan / pinch no longer move the canvas
 let rotLocked=(function(){try{return localStorage.getItem('sp-rotLock')!=='0';}catch(e){return true;}})();
 let zoom=1,panX=0,panY=0,rot=0,showTiling=true,showGuides=sessionStorage.getItem('sp-showGuides')==='1',layout='grid',mode='draw';
@@ -14272,7 +14272,7 @@ function duplicateMotifInstance(){
 function makeIndependentMotif(){
  const m=getSel();if(!m||!m.motifId)return;
  const entry=motifs.find(x=>x.id===m.motifId);if(!entry)return;
- const clone={id:crypto.randomUUID(),img:entry.img,src:entry.src,name:entry.name+' (independent)',source:entry.source?JSON.parse(JSON.stringify(entry.source)):null};
+ const clone={id:crypto.randomUUID(),img:entry.img,src:entry.src,name:entry.name+' (independent)',source:entry.source?JSON.parse(JSON.stringify(cleanMotifSource(entry.source))):null};
  motifs.push(clone);
  m.motifId=clone.id;
  renderTray();pushHist();redraw();updateSelectedControls();
@@ -15709,7 +15709,7 @@ function buildDocObject(){
     activeLayerId,
     placedJSON:JSON.stringify(placed.map(p=>({...p,img:null}))),
     groupsJSON:JSON.stringify(groups),motifsHidden,
-    motifs:motifs.map(m=>({id:m.id,src:m.src,name:m.name,source:m.source||null})),
+    motifs:motifs.map(m=>({id:m.id,src:m.src,name:m.name,source:cleanMotifSource(m.source)||null})), // never save the zoom cache (_sk/_lm): a parsed copy of the same strokes, rebuilt when needed
     editingMotifId,
     editingMotifFrame:(editingMotifId&&editingMotifFrame)?editingMotifFrame:null, // where the open motif's copy sits (position/size/turn): needed to put the strokes back in the motif's own space if the app closes mid-edit
     editingMotifStash:editingMotifStash?JSON.stringify((()=>{const {hist,hIdx,mOld,...keep}=editingMotifStash;return keep;})()):null, // only what recovering after a crash needs (the pattern's strokes, layers, mode). The undo history and the motif's old copy stay in memory: they were doubling every save (~22 MB each time)
@@ -16452,7 +16452,7 @@ async function applyDocObject(doc,opts){
     // id in load order so placed[] (below) has something stable to resolve against, but leave
     // source null rather than inventing vector data that was never actually captured.
     const sk=doc.strokesJSON||'';const loadNeed={};try{JSON.parse(doc.placedJSON||'[]').forEach(q=>{const id=q.motifId;if(id)loadNeed[id]=Math.max(loadNeed[id]||0,Math.max(q.w||0,q.h||0)*Math.abs(q.s||1));});}catch(_){}
-    for(const m of (doc.motifs||[])){await new Promise(res=>{const img=new Image();img.onload=async()=>{const ent={id:m.id||crypto.randomUUID(),img,src:m.src,name:m.name,source:m.source||null};motifs.push(ent);try{if(!sk.includes(ent.id)){const nd=loadNeed[ent.id]||0;await motifReduce(ent,Math.max(MOTIF_MIN_WORK,Math.ceil(nd*motifExportScale(doc.tilePhys&&doc.tilePhys.w,doc.tileW)*MOTIF_HEADROOM/16)*16));}else ent.pin=true;}catch(_){}res();};img.onerror=()=>{/* keep the motif (and its saved picture) even if this device could not decode it just now, so the next autosave cannot drop it */motifs.push({id:m.id||crypto.randomUUID(),img:null,src:m.src,name:m.name,source:m.source||null,loadFailed:true});res();};img.src=m.src;});}
+    for(const m of (doc.motifs||[])){await new Promise(res=>{const img=new Image();img.onload=async()=>{const ent={id:m.id||crypto.randomUUID(),img,src:m.src,name:m.name,source:cleanMotifSource(m.source)||null};motifs.push(ent);try{if(!sk.includes(ent.id)){const nd=loadNeed[ent.id]||0;await motifReduce(ent,Math.max(MOTIF_MIN_WORK,Math.ceil(nd*motifExportScale(doc.tilePhys&&doc.tilePhys.w,doc.tileW)*MOTIF_HEADROOM/16)*16));}else ent.pin=true;}catch(_){}res();};img.onerror=()=>{/* keep the motif (and its saved picture) even if this device could not decode it just now, so the next autosave cannot drop it */motifs.push({id:m.id||crypto.randomUUID(),img:null,src:m.src,name:m.name,source:m.source||null,loadFailed:true});res();};img.src=m.src;});}
     renderTray();
     // Strokes must be parsed BEFORE applyLayerMeta, since migrating strokes with no valid
     // layerId onto the fallback layer (old, pre-layers documents) happens inside it.
@@ -19353,7 +19353,7 @@ async function qaCopy(){
     if(hasStrokes)copySelectionToClipboard();else{try{localStorage.removeItem('sp-clip');}catch(e){}}
     if(pl.length){
       const ids=[...new Set(pl.map(p=>p.motifId))],ms=[];
-      for(const id of ids){const e=motifs.find(m=>m.id===id);if(e)ms.push({id:e.id,name:e.name,src:qaImgSrc(e),source:e.source||null});}
+      for(const id of ids){const e=motifs.find(m=>m.id===id);if(e)ms.push({id:e.id,name:e.name,src:qaImgSrc(e),source:cleanMotifSource(e.source)||null});}
       const items=pl.filter(p=>ms.some(m=>m.id===p.motifId)).map(p=>{const c=Object.assign({},p);delete c.id;delete c.img;delete c.groupId;delete c.layerId;return c;});
       await qaClipDB.put({v:1,from:(activeProject&&activeProject.id)||'',fromName:(activeProject&&activeProject.name)||'',motifs:ms,placed:items});
       setStatus('📋 Copied '+items.length+' picture'+(items.length===1?'':'s')+(hasStrokes?' and the strokes':'')+'. Open any project and tap Paste.');
@@ -19372,7 +19372,7 @@ async function qaPaste(){
         let e=motifs.find(x=>x.id===m.id&&(same||x.src===m.src))||motifs.find(x=>x.src&&x.src===m.src);
         if(!e){
           const img=await motifLoadImg(m.src);
-          e={id:crypto.randomUUID(),img,src:m.src,name:m.name,source:m.source||null};motifs.push(e);added.push(e);
+          e={id:crypto.randomUUID(),img,src:m.src,name:m.name,source:cleanMotifSource(m.source)||null};motifs.push(e);added.push(e);
         }
         idMap.set(m.id,e);
       }
