@@ -3602,9 +3602,26 @@ function applyMotifVersions(mv){
     const img=new Image();img.onload=()=>{e.img=img;placed.forEach(p=>{if(p.motifId===id)p.img=img;});try{renderTray();}catch(_){}try{redraw();}catch(_){}};img.src=v.src;
   });
 }
+// Undo steps share the JSON text of strokes that did not change since the previous step (strings are immutable, so sharing is safe):
+// a step only costs memory for the strokes that are new or different. `strokesJSON` is still available (built on demand) for restore().
+function strokePartsShared(prev){
+  strokesToJSON(); // rounds numbers once per stroke, exactly as before
+  const pm=new Map();
+  if(prev&&prev._parts){for(let i=0;i<prev._ids.length;i++)pm.set(prev._ids[i],prev._parts[i]);}
+  const parts=new Array(strokes.length),ids=new Array(strokes.length);
+  for(let i=0;i<strokes.length;i++){
+    const st=strokes[i];let j=JSON.stringify(st);if(j===undefined)j='null';
+    const k=(st&&st.id!=null)?'s'+st.id:'i'+i;
+    const o=pm.get(k);
+    parts[i]=(o!==undefined&&o===j)?o:j; ids[i]=k;
+  }
+  return {parts,ids};
+}
 function snapshot(){
+  const sh=strokePartsShared(history[Math.min(hIndex,history.length-1)]);
   return {
-    strokesJSON:strokesToJSON(),
+    _parts:sh.parts,_ids:sh.ids,
+    get strokesJSON(){return '['+this._parts.join(',')+']';},
     layersJSON:JSON.stringify(layers.map(l=>({id:l.id,name:l.name,kind:l.kind,visible:l.visible,locked:l.locked,opacity:l.opacity,blend:l.blend||'source-over',alphaLock:!!l.alphaLock,blur:l.blur||0,clip:!!l.clip,shadowLayer:!!l.shadowLayer,autoObj:!!l.autoObj,tpl:l.tpl||0,arHide:l.arHide||0,lg:l.lg||undefined,lgn:l.lg?l.lgn:undefined,lgc:l.lg&&l.lgc?1:undefined}))),
     activeLayerId,
     placed:JSON.stringify(placed.map(p=>({...p,img:null}))),
@@ -3614,8 +3631,9 @@ function snapshot(){
 }
 // Undo steps keep a full copy of the drawing each; with very detailed drawings 100 of them add up to hundreds of MB of memory,
 // so the oldest steps are dropped once they pass a size budget (always keeping the last few).
-function histSize(){let n=0;history.forEach(h=>{n+=(h.strokesJSON||'').length+(h.placed||'').length+(h.groupsJSON||'').length+(h.layersJSON||'').length;});return n;}
-function histTrim(){const big=history.length&&((history[history.length-1].strokesJSON||'').length>8e6);const floor=big?3:4;while(history.length>floor&&histSize()>48e6)history.shift();} // a huge illustration/motif makes every undo step 10-20 MB: keep fewer of those rather than fill iPad memory
+function histSize(){const seen=new Set();let n=0;history.forEach(h=>{if(h._parts){h._parts.forEach(x=>{if(!seen.has(x)){seen.add(x);n+=x.length+1;}});}else n+=(h.strokesJSON||'').length;n+=(h.placed||'').length+(h.groupsJSON||'').length+(h.layersJSON||'').length;});return n;} // counts shared stroke text once
+function histLast(){const h=history[history.length-1];if(!h)return 0;return h._parts?h._parts.reduce((a,x)=>a+x.length+1,0):(h.strokesJSON||'').length;}
+function histTrim(){const big=history.length&&histLast()>8e6;const floor=big?3:4;while(history.length>floor&&histSize()>48e6)history.shift();} // a huge illustration/motif makes every undo step 10-20 MB: keep fewer of those rather than fill iPad memory
 // Empty layers left behind by "a layer for each object" (a stroke that was undone, erased, deleted or joined leaves its layer empty) are tidied away.
 // 'auto' = only layers made this session, never the one you are on; 'named' = also layers an earlier session made, found by their names (Stroke 7, Circle 2...).
 const AUTO_LAYER_NAME=/^(Fills?|Shadow|Highlight|Stroke|Shape|Circle|Ellipse|Rectangle|Rounded rectangle|Triangle|Line|Star|Polygon|Diamond|Heart|Arrow)( \d+)?$/;
