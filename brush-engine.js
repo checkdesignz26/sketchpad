@@ -144,6 +144,7 @@
       id, name, family: 'stamp', renderMode: 'vector', stamp: true, stampImg: img, stampCanvas: c, tinted: {},
       defaults: { size: 90, opacity: 100, smoothing: 35, pressureWidth: 0, pressureOpacity: 0, spacing: 100, follow: 0, tint: 0 },
       hardness: 1, jitter: 0, streaky: 0, taper: 'none',
+      lock: { pressureOpacity: 0 }, // Apple Pencil pressure never changes a stamp's opacity
     };
     if (noRegister) return brush;
     if (old) { BRUSHES[BRUSHES.indexOf(old)] = brush; } else { BRUSHES.push(brush); }
@@ -555,7 +556,7 @@
         img = tintedTip(brush, src, variants[Math.floor(rv() * 8)]);
       }
       const sz = settings.size * pressureFactor(pt.pressure, settings.pressureWidth) * taperAt(brush, i, pts.length);
-      const op = (settings.opacity / 100) * pressureFactor(pt.pressure, settings.pressureOpacity) * alphaMul;
+      const op = (settings.opacity / 100) * alphaMul; // stamps ignore pen pressure for opacity (also for strokes drawn before this was locked)
       if (sz <= 0.5 || op <= 0) continue;
       const k = sz / longest, w = src.width * k, h = src.height * k;
       ctx.globalAlpha = Math.max(0, Math.min(1, op));
